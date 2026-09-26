@@ -50,3 +50,4 @@
 - Prototype cart verified and saved to `hardware/prototype-cart.md` (~$916 incl. camera and PPK2).
 - Filled guest carts in the T3 browser: Amazon, SparkFun, Adafruit, Pololu, Voltaic, United Lithium, K&J, Heritage (strap; Coburn is dealer-only). DigiKey and TI block automated adds; GoPro and Hologram left to do by hand. Status and DigiKey paste list in `hardware/prototype-cart.md`.
 - Parts revenue options in `docs/PARTS-REVENUE.md`: affiliate links earn ~$10–20 per build (SparkFun 10% on Originals, Amazon ~3%, GoPro 3%, Adafruit none); kits ~$100–200 margin each. Recommend both: disclosed affiliate list now, kits after the prototype works.
+- Strategy set (`docs/STRATEGY.md`): assembled OpenCollars first; proprietary collar later; open device API always; paid OpenPasture subscription. Permissive licences (Apache-2.0 / CERN-OHL-P / CC BY) so the proprietary collar can reuse open work.
