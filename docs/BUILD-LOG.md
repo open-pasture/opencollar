@@ -56,6 +56,15 @@
 
 ## 2026-09-26
 
+- **Collar rule: only cue a crossing.** The collar now cues "outside" only when the animal goes from inside (or the warning zone) to outside under the boundary it holds. At boot and after every new boundary the fence is unarmed; the first fix inside the polygon arms it. Unarmed and outside means silent, state `outside`. After a crossing (10 s of outside tone) it disarms, so an animal walking back in isn't cued in the warning zone on the way. 10 s outside limit and 20 s active / 30 s rest unchanged.
+  - Why: an audio cue only teaches when the animal can escape it by moving away from the edge. A fence drawn on top of an animal gives no direction, only noise, and cueing an animal that is already out punishes it for coming back.
+  - Enables moves as sweeps: openpasture sets a target and sends a series of boundaries whose back edge sits just behind the rearmost animal, so only those animals hear the warning cue and walk forward. The collar needs nothing new for it; each step is a newer boundary.
+  - `cue_rearm()` added to `cue.c`; `main.c` applies every boundary through `apply_boundary()`, which calls it. Boundary download over LTE should use the same function.
+  - Host tests added: a new boundary that leaves the animal outside gives no cue, walking in arms it, crossing out cues; a new boundary with the animal in its warning zone cues at once. All pass (`make -C firmware/tests/host`). Firmware still builds (NCS v3.4.1, 68.8 KB flash).
+  - `protocol/README.md` updated with the rule, `herd_id` in the boundary command (signed by the server; a collar rejects another herd's boundary), and a note on moves. The same rule is ported to openpasture's `op-geo` and its collar simulator.
+
+## 2026-09-26
+
 - **3D design setup.** Blender 5.2.2 installed. MCP for Blender add-on installed and enabled, telemetry off, and registered with Claude Code as the `blender` MCP server (user scope). Live socket test from Python works. 3D Print Toolbox extension installed.
 - `mechanical/` pipeline built: `./build.sh` runs each `parts/*.py` in headless Blender and exports STL. It renders front/side/top/bottom/iso views plus a section with cut faces in red, and checks manifold, normals, minimum wall (inward ray cast), size against spec and clearance against reference bodies. Volume and solid mass are reported. Any failure gives a non-zero exit.
 - The wall check caught knife-edge slivers inside engraved digits (6, 9, 3 in Blender's font). Labels get an explicit, commented allowance; structure is still checked at 1.2 mm.

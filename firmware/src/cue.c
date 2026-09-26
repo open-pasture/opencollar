@@ -6,7 +6,14 @@ void cue_init(struct cue *c, const struct cue_config *cfg)
 {
 	memset(c, 0, sizeof(*c));
 	c->cfg = *cfg;
-	c->last_state = GEOFENCE_UNKNOWN;
+}
+
+void cue_rearm(struct cue *c)
+{
+	c->armed = false;
+	c->seen_outside = false;
+	c->escaping = false;
+	c->cueing = false;
 }
 
 static uint8_t warning_volume(double margin_m, double warn_m)
@@ -29,16 +36,35 @@ struct cue_command cue_update(struct cue *c, const struct geofence_result *r,
 	struct cue_command cmd = {0};
 	bool want = false;
 
-	if (r->state == GEOFENCE_OUTSIDE && c->last_state != GEOFENCE_OUTSIDE) {
-		c->outside_since_ms = now_ms;
+	switch (r->state) {
+	case GEOFENCE_INSIDE:
+		c->armed = true;
+		c->escaping = false;
+		break;
+	case GEOFENCE_WARNING:
+		if (!c->seen_outside) {
+			c->armed = true;
+		}
+		c->escaping = false;
+		break;
+	case GEOFENCE_OUTSIDE:
+		if (c->armed) {
+			/* A real crossing: cue it, then stay quiet until back inside */
+			c->armed = false;
+			c->escaping = true;
+			c->outside_since_ms = now_ms;
+		}
+		c->seen_outside = true;
+		break;
+	default:
+		break;
 	}
-	c->last_state = r->state;
 
-	if (r->state == GEOFENCE_WARNING) {
+	if (r->state == GEOFENCE_WARNING && c->armed) {
 		want = true;
 		cmd.freq_hz = c->cfg.warn_freq_hz;
 		cmd.volume = warning_volume(r->margin_m, warn_m);
-	} else if (r->state == GEOFENCE_OUTSIDE &&
+	} else if (r->state == GEOFENCE_OUTSIDE && c->escaping &&
 		   now_ms - c->outside_since_ms < (int64_t)c->cfg.outside_max_ms) {
 		want = true;
 		cmd.freq_hz = c->cfg.outside_freq_hz;

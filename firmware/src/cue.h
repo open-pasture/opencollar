@@ -6,6 +6,17 @@
  * stops, so an animal that has escaped isn't cued indefinitely. Continuous
  * cueing is capped and followed by a rest period, which also stops GPS drift
  * near the edge from causing endless beeping.
+ *
+ * Only a crossing is cued. The fence is armed by an inside fix and disarmed by
+ * boot, a new boundary (cue_rearm) or a crossing. While unarmed the collar is
+ * silent: an animal a new boundary leaves outside isn't cued, and neither is
+ * one walking back in through the warning zone. An audio cue only teaches
+ * when the animal can escape it by moving away from the edge.
+ *
+ * What arms it: after boot or a new boundary, the first fix inside the polygon
+ * (inside or warning), so an animal a new boundary puts in the warning zone is
+ * cued straight away. Once the collar has seen the animal outside, only a fix
+ * clear of the warning zone arms it again.
  */
 #ifndef OPENCOLLAR_CUE_H
 #define OPENCOLLAR_CUE_H
@@ -37,10 +48,17 @@ struct cue {
 	int64_t active_since_ms;
 	int64_t rest_until_ms;
 	int64_t outside_since_ms;
-	enum geofence_state last_state;
+	bool armed;        /* An inside fix under the current boundary; cues allowed */
+	bool seen_outside; /* Outside since the last rearm, so warning doesn't arm */
+	bool escaping;     /* Crossed out; the outside tone window is running */
 };
 
+/* Starts unarmed. */
 void cue_init(struct cue *c, const struct cue_config *cfg);
+
+/* Call whenever a new boundary is applied: silent until the next inside fix.
+ * Keeps any forced rest that is running. */
+void cue_rearm(struct cue *c);
 
 struct cue_command cue_update(struct cue *c, const struct geofence_result *r,
 			      double warn_m, int64_t now_ms);

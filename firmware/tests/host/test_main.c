@@ -183,12 +183,93 @@ static void test_cue_outside_times_out(void)
 	struct geofence_result r = {.state = GEOFENCE_OUTSIDE, .margin_m = -3};
 	struct cue_command cmd;
 
+	struct geofence_result in = {.state = GEOFENCE_INSIDE, .margin_m = 20};
+
 	cue_init(&c, &CUE_CFG);
-	cmd = cue_update(&c, &r, 5.0, 0);
+	CHECK(!cue_update(&c, &in, 5.0, 0).active);
+	cmd = cue_update(&c, &r, 5.0, 1000);
 	CHECK(cmd.active && cmd.freq_hz == 1000 && cmd.volume == 4);
-	CHECK(cue_update(&c, &r, 5.0, 9000).active);
-	CHECK(!cue_update(&c, &r, 5.0, 10000).active);
+	CHECK(cue_update(&c, &r, 5.0, 10000).active);
+	CHECK(!cue_update(&c, &r, 5.0, 11000).active);
 	CHECK(!cue_update(&c, &r, 5.0, 60000).active);
+}
+
+/* Feed a fix through the fence and the cue, as main.c does */
+static struct cue_command step(struct geofence *gf, struct cue *c, struct geo_point p,
+			       int64_t now_ms, enum geofence_state *state)
+{
+	struct geofence_result r = geofence_update(gf, p, 3);
+
+	*state = r.state;
+	return cue_update(c, &r, CFG.warn_m, now_ms);
+}
+
+static void test_cue_only_a_crossing(void)
+{
+	struct geofence gf;
+	struct cue c;
+	struct cue_command cmd;
+	enum geofence_state st;
+	int64_t t = 0;
+
+	/* A new boundary that leaves the animal outside: silent, state outside */
+	make_square(&gf);
+	cue_init(&c, &CUE_CFG);
+	for (; t < 60000; t += 1000) {
+		cmd = step(&gf, &c, at(50, -20), t, &st);
+		CHECK(!cmd.active && st == GEOFENCE_OUTSIDE);
+	}
+
+	/* Walks in through the warning zone: still silent, then arms inside */
+	CHECK(!step(&gf, &c, at(50, -2), t += 1000, &st).active);
+	CHECK(!step(&gf, &c, at(50, 2), t += 1000, &st).active && st == GEOFENCE_WARNING);
+	CHECK(!step(&gf, &c, at(50, 4), t += 1000, &st).active && st == GEOFENCE_WARNING);
+	CHECK(!c.armed);
+	CHECK(!step(&gf, &c, at(50, 20), t += 1000, &st).active && st == GEOFENCE_INSIDE);
+	CHECK(c.armed);
+
+	/* Armed: the warning zone cues, and crossing out cues for 10 s */
+	cmd = step(&gf, &c, at(50, 3), t += 1000, &st);
+	CHECK(cmd.active && cmd.freq_hz == CUE_CFG.warn_freq_hz);
+	cmd = step(&gf, &c, at(50, -1), t += 1000, &st);
+	CHECK(cmd.active && cmd.freq_hz == CUE_CFG.outside_freq_hz && st == GEOFENCE_OUTSIDE);
+	CHECK(step(&gf, &c, at(50, -3), t + 9000, &st).active);
+	CHECK(!step(&gf, &c, at(50, -3), t + 10000, &st).active);
+	t += 10000;
+
+	/* Coming back in after the crossing: no warning cues on the way in */
+	CHECK(!step(&gf, &c, at(50, 2), t += 1000, &st).active && st == GEOFENCE_WARNING);
+	CHECK(!step(&gf, &c, at(50, 4), t += 1000, &st).active);
+	/* Then outside again without arming: not a crossing */
+	CHECK(!step(&gf, &c, at(50, -2), t += 1000, &st).active);
+}
+
+static void test_cue_rearm_on_new_boundary(void)
+{
+	struct geofence gf;
+	struct cue c;
+	struct cue_command cmd;
+	enum geofence_state st;
+	struct geo_point moved[] = {at(0, 30), at(100, 30), at(100, 130), at(0, 130)};
+
+	make_square(&gf);
+	cue_init(&c, &CUE_CFG);
+	CHECK(!step(&gf, &c, at(50, 50), 0, &st).active && c.armed);
+
+	/* A new boundary puts the animal in its warning zone: cued at once */
+	CHECK(geofence_init(&gf, &CFG, moved, 4, 2) == 0);
+	cue_rearm(&c);
+	CHECK(!c.armed);
+	cmd = step(&gf, &c, at(50, 33), 1000, &st);
+	CHECK(cmd.active && st == GEOFENCE_WARNING && cmd.freq_hz == CUE_CFG.warn_freq_hz);
+
+	/* A new boundary that leaves it outside: no crossing, no cue */
+	struct geo_point away[] = {at(0, 60), at(100, 60), at(100, 160), at(0, 160)};
+
+	CHECK(geofence_init(&gf, &CFG, away, 4, 3) == 0);
+	cue_rearm(&c);
+	CHECK(!step(&gf, &c, at(50, 33), 2000, &st).active && st == GEOFENCE_OUTSIDE);
+	CHECK(!step(&gf, &c, at(50, 40), 3000, &st).active);
 }
 
 int main(void)
@@ -201,6 +282,8 @@ int main(void)
 	test_cue_volume_ramps();
 	test_cue_rest_after_max_active();
 	test_cue_outside_times_out();
+	test_cue_only_a_crossing();
+	test_cue_rearm_on_new_boundary();
 
 	if (failures) {
 		printf("%d failure(s)\n", failures);

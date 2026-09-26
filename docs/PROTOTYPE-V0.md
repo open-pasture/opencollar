@@ -25,7 +25,7 @@ Goal: draw a boundary in OpenPasture, send it to a collar built from off-the-she
 | --- | --- |
 | `src/main.c` | Starts the modem in GNSS-only mode, 1 Hz fixes, feeds each fix to the geofence and cue policy, logs every decision over serial |
 | `src/geofence.c` | Projects the polygon to local metres; signed distance to the edge; inside / warning / outside with hysteresis; ignores fixes worse than 10 m |
-| `src/cue.c` | Warning-zone beeps get louder toward the edge; outside tone for 10 s then stops; 20 s max continuous cue then 30 s rest |
+| `src/cue.c` | Only cues a crossing: unarmed at boot and after each new boundary until an inside fix, silent while unarmed. Warning-zone beeps get louder toward the edge; outside tone for 10 s after a crossing, then stops; 20 s max continuous cue then 30 s rest |
 | `src/buzzer.c` | Qwiic Buzzer I2C driver |
 | `src/boundary.h` | Compiled-in boundary. Real coordinates go in `boundary_local.h` (gitignored) |
 | `tests/host/` | Geofence and cue tests that run on a laptop: `make -C firmware/tests/host` |

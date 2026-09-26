@@ -115,6 +115,20 @@ static int gnss_start(void)
 	return err;
 }
 
+/*
+ * Every boundary goes through here: at boot now, and from the LTE download
+ * once that exists. The fence starts unarmed under each new boundary, so an
+ * animal it leaves outside is never cued (see cue.h).
+ */
+static int apply_boundary(const struct geo_point *vertices, int n, uint32_t version)
+{
+	if (geofence_init(&fence, &geofence_cfg, vertices, n, version) != 0) {
+		return -1;
+	}
+	cue_rearm(&cue);
+	return 0;
+}
+
 static void handle_fix(const struct fix *f)
 {
 	static int64_t last_no_fix_log;
@@ -136,10 +150,10 @@ static void handle_fix(const struct fix *f)
 		buzzer_play(cmd.freq_hz, cmd.volume, cmd.duration_ms);
 	}
 
-	LOG_INF("fix %.6f,%.6f acc=%.1fm sats=%u state=%s margin=%.1fm%s cue=%s vol=%u",
+	LOG_INF("fix %.6f,%.6f acc=%.1fm sats=%u state=%s margin=%.1fm%s%s cue=%s vol=%u",
 		f->lat, f->lon, (double)f->accuracy, f->sats_in_fix,
 		geofence_state_str(r.state), r.margin_m, r.degraded ? " (degraded)" : "",
-		cmd.active ? "on" : "off", cmd.volume);
+		cue.armed ? "" : " (unarmed)", cmd.active ? "on" : "off", cmd.volume);
 
 	if (r.changed) {
 		LOG_INF("event: state -> %s", geofence_state_str(r.state));
@@ -152,15 +166,15 @@ int main(void)
 
 	LOG_INF("OpenCollar V0 starting");
 
-	if (geofence_init(&fence, &geofence_cfg, boundary_vertices,
-			  ARRAY_LEN(boundary_vertices), BOUNDARY_VERSION) != 0) {
+	cue_init(&cue, &cue_cfg);
+
+	if (apply_boundary(boundary_vertices, ARRAY_LEN(boundary_vertices),
+			   BOUNDARY_VERSION) != 0) {
 		LOG_ERR("Invalid boundary");
 		return 0;
 	}
 	LOG_INF("Boundary v%u loaded: %u vertices", BOUNDARY_VERSION,
 		(unsigned)ARRAY_LEN(boundary_vertices));
-
-	cue_init(&cue, &cue_cfg);
 
 	if (buzzer_init() == 0) {
 		/* Short chirp so you know the cue path works at boot */

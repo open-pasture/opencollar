@@ -18,12 +18,35 @@ Nothing here is sent over the air yet.
   ignores any boundary older than or equal to the one it holds.
 - **Everything is acknowledged.** A boundary counts as active only once the
   collar reports it applied.
+- **Only a crossing is cued.** See below.
+
+## Collar rule: only cue a crossing
+
+The collar cues "outside" only when the animal goes from inside (or the warning
+zone) to outside under the boundary it holds.
+
+- At boot and whenever a new boundary is applied, the fence is **unarmed**. The
+  first fix inside the polygon arms it. If that fix is in the warning zone, the
+  warning cue plays at once, which is how a moved boundary pushes an animal.
+- While unarmed and outside, the collar is silent and reports state `outside`.
+  A boundary that leaves an animal outside never cues it.
+- A crossing cues the outside tone for up to 10 s, then disarms. An animal
+  walking back in is not cued in the warning zone on its way; a fix clear of
+  the warning zone arms the fence again.
+- Warning-zone cues are otherwise unchanged: louder toward the edge, at most
+  20 s of continuous cueing, then 30 s of rest.
+
+Why: an audio cue only teaches when the animal can escape it by moving away
+from the edge. A fence drawn on top of an animal, or behind it, gives no
+direction, only noise. In the firmware this is `cue.c`; `main.c` calls
+`cue_rearm()` whenever it applies a boundary.
 
 ## Boundary (down)
 
 ```json
 {
   "command_id": "bc_01J8...",
+  "herd_id": "herd_01J7...",
   "version": 42,
   "effective_at": "2026-09-25T12:30:00Z",
   "boundary": [[-92.4100, 38.1200], [-92.4000, 38.1200], [-92.4000, 38.1300], [-92.4100, 38.1300]],
@@ -37,6 +60,10 @@ Nothing here is sent over the air yet.
   `GEOFENCE_MAX_VERTICES`.
 - `effective_at` lets a boundary be staged ahead of time. Absent means now.
 - `warn_m` and `hysteresis_m` are optional and override the collar's defaults.
+- `herd_id` is the herd the boundary is for. Openpasture signs it with the rest
+  of the command (Ed25519 over the canonical JSON, sent as `sig`). A collar
+  rejects a command for a herd other than its own. Commands without `herd_id`
+  (older servers) are accepted.
 
 The collar validates before applying: vertex count, coordinate ranges, a ring
 that does not cross itself, and a version newer than the current one. A failure
@@ -52,6 +79,15 @@ handle neither directly:
   N+1 with a later `effective_at`.
 - **Exclusions** are cut out of the ring by the engine before sending, where the
   shape allows it. Holes inside a polygon are future work in the firmware.
+
+### Moves
+
+To move a herd, openpasture sets a target and **sweeps** the active boundary
+toward it: a series of ordinary boundaries, each one containing every animal,
+with its back edge just behind the rearmost animal so only the animals at the
+back hear the warning cue and walk forward. The next step goes out once the
+herd has moved up. The last step is the target. The collar needs nothing new
+for this beyond the rule above: each step is just a newer boundary.
 
 ## Acknowledgement (up)
 
