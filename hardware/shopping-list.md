@@ -31,7 +31,16 @@ Goal: A/B test against the nRF9151's built-in GNSS on the same walk. Prefer Qwii
 | Copper-clad board or aluminium plate, ~70×70 mm | Ground plane under the patch, to measure its effect | $5 |
 | Qwiic IMU breakout (e.g. LSM6DSO or ISM330DHCX) | Motion-gated fixes, dead reckoning, rotation logging | $15–30 |
 
-## 4. Field test gear
+## 4. V1-alpha (dev boards in a real shell, see `docs/V1-DESIGN.md`)
+
+| Item | Why | Approx. |
+| --- | --- | --- |
+| 2 × 0.8–1 W ETFE mini solar panels (~110 × 70 mm) | Solar faces either side of the GNSS patch | $10 each |
+| Solar charger breakout that supports LiFePO4 with MPPT (TI BQ25798 eval board or equivalent) | Proves the solar + LiFePO4 power path before the custom board | $25–40 |
+| 26650 LiFePO4 cells (3.2 V, ~3.5 Ah) + holder | V1 battery chemistry | $6 each |
+| Steel or zinc counterweight blanks, 500–600 g | Bottom of the collar | $10 |
+
+## 5. Field test gear
 
 | Item | Why |
 | --- | --- |
