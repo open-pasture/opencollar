@@ -1,5 +1,7 @@
 # Shopping list, in stages
 
+> The current, simplified order for the first prototype is in `prototype-cart.md`. This staged list is the longer-term plan.
+
 Each stage unlocks the next. Prices are rough.
 
 **Strategy: build one good collar first.** One board can run the nRF9151's built-in GPS and a MAX-M10S at the same time, so GPS comparisons happen side by side on a single collar. Buy multiples only when the design is proven and we need units for the pilot.
