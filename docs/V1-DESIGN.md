@@ -46,7 +46,7 @@ From FCC teardowns and a published field study (`research/virtual-fence-gnss.md`
                   └──────────────────┘   later battery (see BOTTOM-BAY.md)
 ```
 
-**One sealed top unit, one swappable bottom module, nothing electrical in the strap.** The bottom needs mass to keep the GNSS antenna facing up, so instead of a dead counterweight the bottom is a **bay** that takes interchangeable modules within a fixed mass window: plain ballast by default, a camera on a few collars, an extra battery later. Modules are self-contained and talk to the top unit over Bluetooth LE if they need to, so no cable ever runs through the strap. Commercial collars that wire a bottom battery to the top add a cable that flexes thousands of times a day on a moving animal; we don't. Details in `BOTTOM-BAY.md`.
+**One sealed top unit, one swappable bottom module, one wired strap.** The bottom needs mass to keep the GNSS antenna facing up, so instead of a dead counterweight the bottom is a **bay** that takes interchangeable modules within a fixed mass window: plain ballast by default, a camera on a few collars, an extra battery later. Every collar has conductors in one fixed-length section of the strap, so any module plugs into any collar. The collar never depends on that wire: the top unit runs on its own battery and fence logic, and a damaged strap is detected, isolated and reported. Details in `BOTTOM-BAY.md`.
 
 The GNSS patch sits at the crown of the top unit with nothing over it. The solar panels sit on the two sloped faces either side, like Nofence, so the panels never shade the antenna.
 
@@ -70,7 +70,7 @@ The GNSS patch sits at the crown of the top unit with nothing over it. The solar
 | **Power on** | Hall-effect sensor | Ships asleep. A magnet wakes it: no switch, no hole in the case. |
 | **Status** | One LED behind a light pipe | Confirms power-on, network and GNSS fix at setup |
 | **Service** | Pogo-pin pads under a screw cap | Debug and recovery flashing. Normal updates go over the air. |
-| **Extension connector** | Sealed 4-pin connector on the top unit (blanking plug on base collars), plus power-path circuitry for an external LiFePO4 pack | Makes the Battery Extension a field upgrade instead of a new collar (see `BOTTOM-BAY.md`) |
+| **Strap connector** | Sealed 4-pin connector to the wired strap, with short-circuit protection, plus power-path circuitry for an external LiFePO4 pack | Any bay module plugs in; the Battery Extension is a field upgrade (see `BOTTOM-BAY.md`) |
 | **Bluetooth LE** (V1-beta) | Small BLE chip, e.g. Nordic nRF54L15 | Controls a camera module (Open GoPro API), identifies the fitted bay module, shelter beacons, phone setup |
 
 ### Electric pulse

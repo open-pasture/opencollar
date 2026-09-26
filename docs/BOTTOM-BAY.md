@@ -12,8 +12,8 @@ The collar always works on its own. Everything in the bay is optional.
 
 | Package | What's in it | Who it's for |
 | --- | --- | --- |
-| **OpenCollar** (base) | Top unit + strap + **ballast module** | Most animals. The cheapest complete virtual fence collar |
-| **+ Battery Extension** (add-on) | Battery module + **powered strap** | Northern winters, heavy shade, collars running the pulse or a camera hard |
+| **OpenCollar** (base) | Top unit + wired strap + **ballast module** | Most animals. The cheapest complete virtual fence collar |
+| **+ Battery Extension** (add-on) | Battery module (plugs into the existing strap) | Northern winters, heavy shade, collars running the pulse or a camera hard |
 | **+ Camera** (add-on) | Camera module (GoPro mount + power bank) | A few animals per herd, for footage and research |
 
 Every module doubles as the counterweight, so swapping one never changes how the collar balances.
@@ -25,24 +25,32 @@ Every module doubles as the counterweight, so swapping one never changes how the
 | Mount | Cradle on the strap; modules lock in with two captive stainless thumbscrews (tool-free, can't vibrate loose) |
 | Mass window | **450–650 g per module**, to be tuned on real animals |
 | Envelope | Fixed maximum size and a low, rounded profile. Nothing protruding that can snag on fences or hit the ground when grazing |
-| Electrical | **None by default.** The base strap has no wires. Only the Battery Extension adds a connection, through its own powered strap (below) |
-| Identification | Each module identifies itself (over the powered strap, or by BLE/NFC tag) so the top unit and app know what's fitted |
+| Electrical | **Every collar has a wired strap** (below). Modules plug in; the ballast module has a sealed dummy connector |
+| Identification | Each module identifies itself over the wire, so the top unit and app know what's fitted |
+
+### The wired strap
+
+Wiring every collar costs a few dollars and gives one strap for every collar, plug-in modules, collar power for the camera, and module ID and control without Bluetooth.
+
+- **Where the wires go:** the strap has two sections running from the top unit down to the bay. Conductors run in **one fixed-length section only**; the sizing buckle is on the other, so the collar still adjusts to any neck.
+- **Construction:** high-strand flex-rated wire laid in a zigzag inside the belting, IP68 connectors at both ends.
+- **Connector: 4 pins.** DC power (either direction: a battery module supplies it, a camera module draws it), ground, and two data lines for module ID, fuel gauge and camera control.
+- **The collar never depends on it.** The top unit runs on its internal battery and fence logic whether or not the strap is intact. Its port has short-circuit protection, so a crushed strap or flooded connector gets reported and isolated, never drains the collar.
+- **Wear part:** replaceable without tools.
+- **Prove it early:** V1-alpha straps are wired from day one, so person-wear and cow tests show whether the wiring survives before V1 is frozen.
 
 ## Modules
 
 | Module | V1? | What it is | Mass comes from |
 | --- | --- | --- | --- |
 | **Ballast** | Yes, ships with every collar | Sealed shell with a steel or zinc slab | The slab |
-| **Battery Extension** | Designed in V1, built after the first pilot | LiFePO4 pack that the top unit draws from and charges | The cells |
+| **Battery Extension** | Designed in V1, built after the first pilot | LiFePO4 pack that plugs into the strap; the top unit draws from it and charges it | The cells |
 | **Camera** | Yes, a few units | GoPro-standard mount, camera, and a power bank | The camera and the power bank |
 | Sensors | Later | Ideas: water-point proximity, temperature | TBD |
 
 ### Battery Extension
 
-**How it connects: a powered strap, sold with the module.** Getting power from the bottom to the top unit needs conductors around the neck. Rather than wiring every collar (and giving every collar a cable that flexes all day), only Battery Extension buyers get it:
-- The **powered strap** has flexible conductors molded inside the belting, with sealed IP68 connectors at each end. It replaces the plain strap.
-- It's a **wear part**: if it ever fails, the farmer swaps the strap and the collar keeps running on its internal battery in the meantime.
-- **Connector: 4 pins.** Battery +, ground, a data line for the pack's ID and fuel gauge, and one spare (for a future camera that runs off collar power, for example).
+**How it connects:** it plugs into the wired strap every collar already has. Swap the ballast module for the battery module and it's installed.
 
 **How it works:**
 - **Pack:** 4 × 26650 LiFePO4 (~45 Wh, ~350 g plus shell), inside the mass window. With the internal ~22 Wh, total autonomy with no sun goes from ~60 days to **~190 days**.
@@ -50,11 +58,8 @@ Every module doubles as the counterweight, so swapping one never changes how the
 - **Failure-safe:** if the strap or pack fails, the top unit sees it, reports it, and carries on with its internal battery. Containment never depends on the extension.
 
 **What V1 must include so this is a pure add-on later:**
-- The **mating connector on the top unit**, sealed with a blanking plug on base collars.
-- **Power-path circuitry** on the main board that can charge and draw from an external LiFePO4 pack.
+- **Power-path circuitry** on the main board that can charge and draw from an external LiFePO4 pack through the strap.
 - **Firmware** that detects the pack and adds it to the energy and telemetry reports.
-
-That adds a few dollars to every top unit, but it means a base collar can be upgraded in the field without opening it.
 
 ## Electric pulse: top unit, not the bay
 
@@ -74,7 +79,7 @@ The fastest useful version needs no custom electronics:
 - **Camera:** a GoPro, for its waterproofing (10 m without a housing), stabilization and ruggedness, and because of its open control API (below). The base GoPro HERO is roughly $200; any action camera fits the mount for cheaper tests.
 - **Power bank as the ballast.** A ~10,000 mAh (~37 Wh, ~200 g) USB-C bank sits in the module and powers the camera through a sealed cable. The mass we needed anyway now runs the camera for many hours of video instead of the camera's own ~1.5 hours.
 - **Top-up ballast** (a small steel plate) brings the module into the 450–650 g window.
-- Later option: power the camera from the collar through the powered strap's spare pin, so a camera collar with a Battery Extension doesn't need its own power bank.
+- Later option: power and control the camera through the wired strap, so the camera module doesn't need its own power bank.
 - **Capture schedule:** GoPro Labs (GoPro's free official firmware add-on, programmed by showing the camera a QR code) supports delayed starts, scheduled daily captures and long-interval time-lapse. To confirm which Labs modes power the camera down between shots on our model.
 
 ### What the camera sees from the bottom
@@ -93,7 +98,7 @@ GoPro publishes the **Open GoPro API**: start/stop recording, change settings, c
 - **Camera health** (battery, storage) reported in the collar's normal telemetry.
 - Footage stays on the camera's card and is collected at the handling yard. LTE-M is far too slow for video; at most, small stills or event metadata go over the network.
 
-This needs BLE in the top unit. The nRF9151 doesn't have it, so V1-beta adds a small BLE chip (e.g. Nordic nRF54L15, a few dollars). That same chip also enables shelter beacons (switching GNSS off under roofs, as Nofence does), phone setup, and identifying which bay module is fitted.
+With the wired strap, a small bridge chip in the camera module can pass commands from the collar to the camera, so BLE isn't strictly required. BLE is still worth adding to the top unit. The nRF9151 doesn't have it, so V1-beta adds a small BLE chip (e.g. Nordic nRF54L15, a few dollars). That same chip also enables shelter beacons (switching GNSS off under roofs, as Nofence does), phone setup, and identifying which bay module is fitted.
 
 ### Risks to test
 
