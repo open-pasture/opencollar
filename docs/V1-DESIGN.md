@@ -149,5 +149,5 @@ Target at volume: under $120. Plus data: LTE-M at a few KB per report is about $
 ## What makes it better than the others
 
 - **Position:** four constellations, a clean antenna placement and more ground plane, IMU-aided filtering and strict accuracy gating before any cue. Target is half the real-world error of today's collars, with a dual-band upgrade ready if the tests justify it.
-- **Reliability:** no base station, no cable in the strap, no SIM tray, no charging. LiFePO4 for safety and life. Fence logic keeps working without signal.
+- **Reliability:** no base station, no SIM tray, no charging, and nothing the fence depends on outside the sealed top unit. LiFePO4 for safety and life. Fence logic keeps working without signal.
 - **Openness:** the only collar with published hardware, firmware and an open device API. Farmers can repair it, and any software can drive it.
