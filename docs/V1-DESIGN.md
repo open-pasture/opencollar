@@ -134,7 +134,7 @@ Target at volume: under $120. Plus data: LTE-M at a few KB per report is about $
 1. **V1-alpha: dev boards in a real shell** (now).
    - nRF9151 Connect Kit + SparkFun MAX-M10S + IMU + solar charger + battery, in a printed top unit with a bottom bay (ballast module, plus one GoPro camera module) on a real strap.
    - Validates the layout, GNSS performance against V0, the energy budget and the firmware.
-   - 3 units. Walk tests, then worn by a person, then on a cow alongside the pilot farm's fence.
+   - One collar first. Walk tests, then worn by a person, then on a cow alongside the pilot farm's fence. Build more once it works.
 2. **V1-beta: one custom board.**
    - The same parts on a single 4-layer board shaped to the shell, factory-assembled (e.g. JLCPCB).
    - 10–20 units.

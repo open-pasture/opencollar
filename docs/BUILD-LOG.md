@@ -42,3 +42,4 @@
 - Changed to a **wired strap on every collar** (one strap, plug-in modules, collar power for the camera). Conditions: collar never depends on it, short-circuit protected port, wires only in the fixed-length strap section, flex-rated wire + IP68 connectors, and V1-alpha straps wired from day one to prove durability.
 - Shopping list rewritten in five stages (bench + GPS, power, V1-alpha shells, camera, field). ~$1,800–2,400 total.
 - Blender tooling plan in `docs/DESIGN-TOOLING.md`: blender-mcp for live sessions, headless scripts in `mechanical/` as the source of truth, and a six-step self-review checklist. Blender not yet installed.
+- Cut to **one collar first**: the built-in GPS and a MAX-M10S log side by side on the same board, so extra kits aren't needed yet. Shopping list down to ~$900–1,200 including the camera.
