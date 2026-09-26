@@ -4,7 +4,7 @@ Goal: draw a boundary in OpenPasture, send it to a collar built from off-the-she
 
 ## Bring-up checklist
 
-- [ ] Parts laid out, photographed, BOM recorded
+- [x] Parts laid out, photographed, BOM recorded
 - [ ] Voltages and logic levels checked
 - [ ] SIM activated
 - [ ] MCU: blink + serial logging
