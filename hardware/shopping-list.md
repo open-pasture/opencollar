@@ -1,52 +1,89 @@
-# Shopping list
+# Shopping list, in stages
 
-## 1. Unblock V0 (order now)
+Each stage unlocks the next. Prices are rough.
 
-| Item | Why | Approx. |
-| --- | --- | --- |
-| Nano-SIM with LTE-M data (Hologram Hyper or Onomondo) | Telemetry, boundary download, A-GNSS. Check LTE-M coverage at the pilot farm when choosing. | $5 + ~$1–5/mo |
-| SparkFun Qwiic Cable, Female Jumper 4-pin (PRT-14988), x2 | Connects the buzzer to the board's header pins | $2 each |
-| MX1.25-2P battery pigtails, or a JST-PH-2.0 → MX1.25 adapter | Board's battery socket is 1.25 mm; confirm the PKCELL plug first | $5–8 |
-| USB-C data cable (if needed) | Flashing and logs | $8 |
+## Stage 1: unblock the bench and start playing with GPS (order today)
 
-## 2. Measure what matters
+Goal: V0 end to end (GPS → geofence → buzzer → LTE), plus the first GNSS comparisons against the nRF9151.
 
-| Item | Why | Approx. |
-| --- | --- | --- |
-| Nordic Power Profiler Kit II (PPK2) | Measures real current draw per GPS fix, LTE report, and sleep. Battery life estimates are guesses without it. | $100 |
-| Multimeter (if you don't have one) | Battery polarity, voltages | $25 |
-| 2 more nRF9151 Connect Kits | Side-by-side antenna and placement tests with identical radios; also the first 3-unit field batch | $60–80 each |
+| Item | Qty | Why | Approx. |
+| --- | --- | --- | --- |
+| Nano-SIM with LTE-M data (Hologram Hyper or Onomondo) | 3 | Telemetry, boundary download, A-GNSS; one per dev board | $5 each + ~$2/mo |
+| SparkFun Qwiic Cable, Female Jumper 4-pin (PRT-14988) | 6 | Qwiic breakouts to the nRF9151 header pins | $2 each |
+| SparkFun Qwiic cable kit (assorted lengths) | 1 | Chaining GNSS, IMU and buzzer | $10 |
+| MX1.25-2P battery pigtails / JST-PH → MX1.25 adapters | 5 | The board's battery socket is 1.25 mm | $8 |
+| nRF9151 Connect Kit | 2 more | Three identical radios for side-by-side tests | $60–80 each |
+| **u-blox MAX-M10S breakout** (SparkFun Qwiic) | 2 | V1 GNSS candidate, four constellations | $45 each |
+| **u-blox MAX-F10S or NEO-F10N L1/L5 breakout** | 1 | Is dual-band worth it? | $60–90 |
+| Dual-band L1/L5 active antenna (stacked patch or small quadrifilar helix), U.FL/SMA | 1 | Needed for the F10 | $20–40 |
+| 25 × 25 mm active L1 patch, U.FL | 2 | V1 antenna size | $10–15 each |
+| 35 × 35 mm active L1 patch, U.FL | 1 | How much does bigger help? | $15–20 |
+| U.FL ↔ SMA pigtails | 4 | Swapping antennas between boards | $10 |
+| Copper-clad board, ~70 × 70 mm | 3 | Ground planes under the patches | $10 |
+| Qwiic IMU (LSM6DSO or ISM330DHCX) | 2 | Motion-gated fixes, rotation logging | $15–30 each |
+| USB-C data cables | 3 | Flashing and logs | $15 |
 
-## 3. GPS experiments (priority #1 for V1)
+**Stage 1 total: ~$650–800**
 
-Goal: A/B test against the nRF9151's built-in GNSS on the same walk. Prefer Qwiic/I2C breakouts so they plug into the same board.
+## Stage 2: measure power and prove the solar + LiFePO4 power path
 
-| Item | Why | Approx. |
-| --- | --- | --- |
-| u-blox **MAX-M10S** breakout (SparkFun Qwiic version) | Likely V1 default: L1, GPS + Galileo + BeiDou + GLONASS, < 25 mW. About 3x the satellites of the nRF9151. | $45 |
-| u-blox **MAX-F10S** (or NEO-F10N) L1/L5 breakout | Dual-band accuracy candidate, 1.0 m CEP with SBAS. Tells us whether L5 is worth the extra power. | $60–90 |
-| Dual-band L1/L5 active antenna (stacked patch or small quadrifilar helix), U.FL/SMA | Required for the F10; the helix also tests rotation tolerance | $20–40 |
-| 25×25 mm active L1 patch antenna, U.FL | Bigger than the current patch; test on the nRF9151 and the M10S | $10–15 |
-| 35×35 mm active L1 patch antenna, U.FL | Upper bound on how much a bigger patch helps | $15–20 |
-| Copper-clad board or aluminium plate, ~70×70 mm | Ground plane under the patch, to measure its effect | $5 |
-| Qwiic IMU breakout (e.g. LSM6DSO or ISM330DHCX) | Motion-gated fixes, dead reckoning, rotation logging | $15–30 |
+Goal: real numbers for the energy budget before the battery is sized.
 
-## 4. V1-alpha (dev boards in a real shell, see `docs/V1-DESIGN.md`)
+| Item | Qty | Why | Approx. |
+| --- | --- | --- | --- |
+| Nordic Power Profiler Kit II (PPK2) | 1 | Current per GPS fix, per LTE report, in sleep | $100 |
+| Multimeter (if you don't have a good one) | 1 | Polarity, voltages | $25–40 |
+| Solar charger board with MPPT and LiFePO4 support (TI BQ25798 evaluation board or equivalent) | 1 | The V1 charger, on the bench | $50–150 |
+| ETFE mini solar panels, 0.8–1 W, ~110 × 70 mm | 4 | Two per collar (either side of the GNSS patch) | $10 each |
+| 26650 LiFePO4 cells, 3.2 V ~3.5 Ah | 8 | Two per top unit + spares; also enough for one Battery Extension pack | $6 each |
+| 26650 cell holders / nickel strip + small spot-weld kit (or pre-built 2P packs) | 1 | Assembling packs | $30–60 |
+| Small LiFePO4 protection boards (1S) | 4 | Safety on every pack | $3 each |
 
-| Item | Why | Approx. |
-| --- | --- | --- |
-| 2 × 0.8–1 W ETFE mini solar panels (~110 × 70 mm) | Solar faces either side of the GNSS patch | $10 each |
-| Solar charger breakout that supports LiFePO4 with MPPT (TI BQ25798 eval board or equivalent) | Proves the solar + LiFePO4 power path before the custom board | $25–40 |
-| 26650 LiFePO4 cells (3.2 V, ~3.5 Ah) + holder | V1 battery chemistry | $6 each |
-| Steel or zinc ballast blanks, 450–650 g | Ballast module for the bottom bay | $10 |
-| GoPro HERO (base model), or a cheap action camera for early fit tests | Camera module (see `docs/BOTTOM-BAY.md`) | $200 (GoPro), $50–80 (action cam) |
-| 10,000 mAh USB-C power bank, compact | Powers the camera; doubles as the module's mass | $25 |
-| GoPro two-prong mount buckles + thumbscrews | Mount printed into the camera module | $10 |
+**Stage 2 total: ~$350–500**
 
-## 5. Field test gear
+## Stage 3: V1-alpha collars (dev boards in printed shells)
 
-| Item | Why |
-| --- | --- |
-| IP67 project boxes | Weatherproof housing for backpack and first cattle tests before the printed enclosure |
-| Cattle neck strap with buckle, plus a counterweight | How commercial collars keep the antenna on top of the neck |
-| USB power bank | Multi-hour outdoor runs before the battery is sorted out |
+Goal: three wearable collars. Shells printed by our fabrication partner.
+
+| Item | Qty | Why | Approx. |
+| --- | --- | --- | --- |
+| **Printed parts from our fabrication partner**: top unit shells, bay cradles, ballast module shells, one camera module | 3 sets | The enclosure | Filament/resin + printing time |
+| Print material: ASA (UV-stable) or PA12, per the printer's capabilities | as needed | Outdoor-rated shells | $40–80 |
+| Silicone O-ring cord kit + cyanoacrylate for joining, or pre-sized O-rings once dimensions are set | 1 | Sealing | $20 |
+| Adhesive ePTFE vent patches (Gore-style) | 10 | Pressure equalization; acoustic vent for the buzzer | $15 |
+| Stainless steel M3 screws + brass heat-set inserts kit | 1 | Assembly | $25 |
+| 50 mm polyester webbing + cam/side-release buckles, stainless hardware | 3 collars | Strap | $40 |
+| Ultra-flexible silicone wire, 24–26 AWG, 4 colours | 1 set | Wired strap conductors | $20 |
+| IP68 4-pin circular connectors (M8 or similar), male + female pairs | 6 pairs | Strap ↔ top unit and strap ↔ bay | $8–15 per pair |
+| Steel or zinc ballast blanks, 450–650 g | 3 | Ballast modules | $10 each |
+| Piezo transducer, sealed, ~95 dB | 3 | Louder, waterproof cue (vs. the Qwiic buzzer) | $5 each |
+| Neodymium magnet + hall sensor breakout | 3 | Magnet power-on | $5 each |
+
+**Stage 3 total: ~$450–650** (plus printing)
+
+## Stage 4: camera module
+
+Goal: one camera collar for the pilot.
+
+| Item | Qty | Why | Approx. |
+| --- | --- | --- | --- |
+| GoPro HERO (base model) | 1 | Camera module; open API for later collar control | $200 |
+| Cheap action camera with GoPro mount | 1 | Fit and balance tests without risking the GoPro | $50–80 |
+| Compact 10,000 mAh USB-C power bank | 1 | Camera power, doubles as module mass | $25 |
+| GoPro two-prong mount buckles + thumbscrews | 1 set | Mount interface | $10 |
+| High-endurance microSD card, 128 GB | 2 | Long recordings | $30 |
+| Replaceable clear lens protectors | 1 pack | Mud and scratches | $10 |
+
+**Stage 4 total: ~$325–355**
+
+## Stage 5: field testing
+
+| Item | Qty | Why | Approx. |
+| --- | --- | --- | --- |
+| IP67 project boxes | 3 | Backpack tests before shells are ready | $20 |
+| Waterproof USB power banks | 2 | Long outdoor runs | $40 |
+| Handheld GPS or phone with RTK/survey app access, or a known survey marker nearby | 1 | Reference points to measure real accuracy (CEP) against | Varies |
+
+## All stages
+
+**~$1,800–2,400**, not counting printing, SIMs' monthly data, or a PPK2 you may already have.
