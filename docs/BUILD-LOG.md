@@ -49,3 +49,4 @@
 - Two versions agreed: **DIY** (bought strap + printed parts, unwired; ballast or standalone GoPro+power bank; optional M8 harness) and **sold OpenCollar** (wired strap; supports Battery Extension and Battery + Camera). Same top unit, firmware and bay standard.
 - Prototype cart verified and saved to `hardware/prototype-cart.md` (~$916 incl. camera and PPK2).
 - Filled guest carts in the T3 browser: Amazon, SparkFun, Adafruit, Pololu, Voltaic, United Lithium, K&J, Heritage (strap; Coburn is dealer-only). DigiKey and TI block automated adds; GoPro and Hologram left to do by hand. Status and DigiKey paste list in `hardware/prototype-cart.md`.
+- Parts revenue options in `docs/PARTS-REVENUE.md`: affiliate links earn ~$10–20 per build (SparkFun 10% on Originals, Amazon ~3%, GoPro 3%, Adafruit none); kits ~$100–200 margin each. Recommend both: disclosed affiliate list now, kits after the prototype works.
