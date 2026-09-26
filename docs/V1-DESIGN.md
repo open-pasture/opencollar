@@ -70,6 +70,7 @@ The GNSS patch sits at the crown of the top unit with nothing over it. The solar
 | **Power on** | Hall-effect sensor | Ships asleep. A magnet wakes it: no switch, no hole in the case. |
 | **Status** | One LED behind a light pipe | Confirms power-on, network and GNSS fix at setup |
 | **Service** | Pogo-pin pads under a screw cap | Debug and recovery flashing. Normal updates go over the air. |
+| **Extension connector** | Sealed 4-pin connector on the top unit (blanking plug on base collars), plus power-path circuitry for an external LiFePO4 pack | Makes the Battery Extension a field upgrade instead of a new collar (see `BOTTOM-BAY.md`) |
 | **Bluetooth LE** (V1-beta) | Small BLE chip, e.g. Nordic nRF54L15 | Controls a camera module (Open GoPro API), identifies the fitted bay module, shelter beacons, phone setup |
 
 ### Electric pulse

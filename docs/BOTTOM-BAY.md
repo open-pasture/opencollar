@@ -6,30 +6,55 @@ The GNSS antenna only works well pointing at the sky. Without weight at the bott
 
 **What we can change is what that mass is.** Instead of a lump of steel, the bottom of the collar is a **bay**: a standard cradle on the strap that accepts interchangeable modules. Each module must fall within the same mass window, so the collar balances the same whichever one is fitted.
 
+## Product lineup
+
+The collar always works on its own. Everything in the bay is optional.
+
+| Package | What's in it | Who it's for |
+| --- | --- | --- |
+| **OpenCollar** (base) | Top unit + strap + **ballast module** | Most animals. The cheapest complete virtual fence collar |
+| **+ Battery Extension** (add-on) | Battery module + **powered strap** | Northern winters, heavy shade, collars running the pulse or a camera hard |
+| **+ Camera** (add-on) | Camera module (GoPro mount + power bank) | A few animals per herd, for footage and research |
+
+Every module doubles as the counterweight, so swapping one never changes how the collar balances.
+
 ## The bay standard
 
 | | |
 | --- | --- |
-| Mount | Cradle riveted/bolted to the strap; modules lock in with two captive stainless thumbscrews (tool-free, can't vibrate loose) |
+| Mount | Cradle on the strap; modules lock in with two captive stainless thumbscrews (tool-free, can't vibrate loose) |
 | Mass window | **450–650 g per module**, to be tuned on real animals |
 | Envelope | Fixed maximum size and a low, rounded profile. Nothing protruding that can snag on fences or hit the ground when grazing |
-| Electrical | **None through the strap.** Each module is self-contained. Modules that need to talk to the top unit use Bluetooth LE |
-| Identification | Each module carries a BLE or NFC tag so the top unit and app know what's fitted |
-
-No wires through the strap keeps the most failure-prone part out of the design. It also means a farmer can swap a module in the field in under a minute.
+| Electrical | **None by default.** The base strap has no wires. Only the Battery Extension adds a connection, through its own powered strap (below) |
+| Identification | Each module identifies itself (over the powered strap, or by BLE/NFC tag) so the top unit and app know what's fitted |
 
 ## Modules
 
 | Module | V1? | What it is | Mass comes from |
 | --- | --- | --- | --- |
-| **Ballast** | Yes, default | Sealed shell with a steel or zinc slab. The cheapest option and what most collars wear | The slab |
+| **Ballast** | Yes, ships with every collar | Sealed shell with a steel or zinc slab | The slab |
+| **Battery Extension** | Designed in V1, built after the first pilot | LiFePO4 pack that the top unit draws from and charges | The cells |
 | **Camera** | Yes, a few units | GoPro-standard mount, camera, and a power bank | The camera and the power bank |
-| **Battery** | Later | Extra energy for the top unit, for dark winters or heavy camera or pulse use | The cells |
-| Sensors | Later | Ideas: rumen or water-point proximity beacons, gas, temperature | TBD |
+| Sensors | Later | Ideas: water-point proximity, temperature | TBD |
 
-### Why the battery module waits
+### Battery Extension
 
-Feeding power to the top unit needs either a cable through the strap (the thing we deleted) or a contact/inductive link across the strap. The V1 energy budget already runs 60+ days without sun on the top unit's own cells, so this module isn't needed yet. We'll revisit it if the camera or pulse change the budget.
+**How it connects: a powered strap, sold with the module.** Getting power from the bottom to the top unit needs conductors around the neck. Rather than wiring every collar (and giving every collar a cable that flexes all day), only Battery Extension buyers get it:
+- The **powered strap** has flexible conductors molded inside the belting, with sealed IP68 connectors at each end. It replaces the plain strap.
+- It's a **wear part**: if it ever fails, the farmer swaps the strap and the collar keeps running on its internal battery in the meantime.
+- **Connector: 4 pins.** Battery +, ground, a data line for the pack's ID and fuel gauge, and one spare (for a future camera that runs off collar power, for example).
+
+**How it works:**
+- **Pack:** 4 × 26650 LiFePO4 (~45 Wh, ~350 g plus shell), inside the mass window. With the internal ~22 Wh, total autonomy with no sun goes from ~60 days to **~190 days**.
+- **Charging:** the top unit's solar charger fills the internal battery first, then sends surplus down to the pack. The pack has its own protection circuit and fuel gauge and reports its charge to the top unit.
+- **Failure-safe:** if the strap or pack fails, the top unit sees it, reports it, and carries on with its internal battery. Containment never depends on the extension.
+
+**What V1 must include so this is a pure add-on later:**
+- The **mating connector on the top unit**, sealed with a blanking plug on base collars.
+- **Power-path circuitry** on the main board that can charge and draw from an external LiFePO4 pack.
+- **Firmware** that detects the pack and adds it to the energy and telemetry reports.
+
+That adds a few dollars to every top unit, but it means a base collar can be upgraded in the field without opening it.
 
 ## Electric pulse: top unit, not the bay
 
@@ -49,6 +74,7 @@ The fastest useful version needs no custom electronics:
 - **Camera:** a GoPro, for its waterproofing (10 m without a housing), stabilization and ruggedness, and because of its open control API (below). The base GoPro HERO is roughly $200; any action camera fits the mount for cheaper tests.
 - **Power bank as the ballast.** A ~10,000 mAh (~37 Wh, ~200 g) USB-C bank sits in the module and powers the camera through a sealed cable. The mass we needed anyway now runs the camera for many hours of video instead of the camera's own ~1.5 hours.
 - **Top-up ballast** (a small steel plate) brings the module into the 450–650 g window.
+- Later option: power the camera from the collar through the powered strap's spare pin, so a camera collar with a Battery Extension doesn't need its own power bank.
 - **Capture schedule:** GoPro Labs (GoPro's free official firmware add-on, programmed by showing the camera a QR code) supports delayed starts, scheduled daily captures and long-interval time-lapse. To confirm which Labs modes power the camera down between shots on our model.
 
 ### What the camera sees from the bottom
