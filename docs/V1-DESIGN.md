@@ -65,7 +65,7 @@ The GNSS patch sits at the crown of the top unit with nothing over it. The solar
 | **Audio cue** | Sealed piezo transducer, ~95 dB, behind an acoustic vent membrane | Loud, waterproof, no moving parts |
 | **Battery** | 2 × 26650 **LiFePO4** in parallel (~22 Wh, ~170 g) | LiFePO4 over Li-ion: much safer in summer sun on an animal, 2,000+ cycles, flat voltage. |
 | **Solar** | 2 × ~0.8 W ETFE-laminated monocrystalline panels (≈ 1.5 W total) | ETFE survives UV and scratching; glass doesn't belong on a cow |
-| **Charger** | TI **BQ25798** | MPPT solar charging, supports LiFePO4, stops charging below 0 °C (LiFePO4 must not charge when frozen) |
+| **Charger** | TI **BQ25798**, with its charge-enable held off by a hardware pull-up until firmware has set the LiFePO4 limit (3.6 V), so a blank or crashed board can't overcharge | MPPT solar charging, supports LiFePO4, stops charging below 0 °C (LiFePO4 must not charge when frozen) |
 | **Fuel gauge** | Coulomb counter (e.g. MAX17260) | Real state of charge. LiFePO4's flat voltage makes voltage-based estimates useless. |
 | **Power on** | Hall-effect sensor | Ships asleep. A magnet wakes it: no switch, no hole in the case. |
 | **Status** | One LED behind a light pipe | Confirms power-on, network and GNSS fix at setup |
@@ -76,6 +76,13 @@ The GNSS patch sits at the crown of the top unit with nothing over it. The solar
 ### Electric pulse
 
 Every commercial collar escalates from audio to a mild electric pulse, and containment depends on it. V1 ships **audio-first** while we validate position and behaviour at the pilot farm with his existing fence as the backstop. The top unit reserves space, electrode openings on its underside (resting on top of the neck) and a connector for a stimulus board, so adding it is fitting a board, not a redesign. It lives in the top unit, not the bottom bay, so every collar can enforce whichever module is fitted. It goes in once we have the welfare logic and field data to do it responsibly.
+
+### Battery safety layers
+
+1. Charge limit enforced in hardware: shipped collars hold charging off until the limit is set; the DIY build uses a Li-ion charger whose 4.2 V limit is fixed in hardware (no configuration at all).
+2. Cell protection circuit (overcharge, over-discharge, over-current).
+3. Temperature cutoff: no charging below 0 °C or when hot.
+4. Firmware monitoring and reporting.
 
 ## Energy budget
 

@@ -103,7 +103,19 @@ The kit's onboard charger defaults to 4.2 V, which overcharges LiFePO4. In the i
 - **PPK2 cable**: check the cable the Power Profiler Kit needs on arrival.
 - **Print material**: our fabrication partner's ASA/PA12 and TPU.
 
-## Safety before first power-up
+## DIY power path (no software step)
+
+The published DIY build uses a different battery setup from our bench rig, so builders never configure a charger:
+
+| Item | Vendor | Part | $ |
+| --- | --- | --- | --- |
+| Universal USB/DC/Solar charger, bq24074 (4.2 V fixed in hardware, 6–10 V solar input) | [Adafruit](https://www.adafruit.com/product/4755) | 4755 | 14.95 |
+| 10K NTC thermistor (charge temperature cutoff) | [Adafruit](https://www.adafruit.com/product/372) | 372 | 4.00 |
+| Li-ion pack 3.7 V 6600 mAh with protection circuit, JST-PH | [Adafruit](https://www.adafruit.com/product/353) | 353 | 24.50 |
+
+It replaces the BQ25798 board, LiFePO4 cells, holders, BMS and fuel gauge kit. Every charger involved (bq24074 and the nRF9151 kit's own) defaults to 4.2 V, which is correct for Li-ion, so a board with no firmware can't overcharge anything. Protection layers: hardware charge limit → pack protection circuit → thermistor cutoff.
+
+## Safety before first power-up (our bench rig and shipped collars only)
 
 - **nRF9151 kit charger:** `charger chgdis 1`, `charger vbatreg 3500`, `cfgsync` in the interface shell before any LiFePO4 cell is connected.
 - **BQ25798 board:** it defaults to Li-ion charge voltages. Keep charging disabled (its /CE jumper) until the firmware has set LiFePO4 charge voltage (3.60 V) over I2C. Never leave cells connected to it with solar input and charging enabled at default settings.
