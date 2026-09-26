@@ -6,14 +6,26 @@ The GNSS antenna only works well pointing at the sky. Without weight at the bott
 
 **What we can change is what that mass is.** Instead of a lump of steel, the bottom of the collar is a **bay**: a standard cradle on the strap that accepts interchangeable modules. Each module must fall within the same mass window, so the collar balances the same whichever one is fitted.
 
-## Product lineup
+## Two ways to get a collar
+
+| | **DIY (open design)** | **OpenCollar (sold)** |
+| --- | --- | --- |
+| Strap | Any standard ~50 mm cattle neck strap you buy | Our wired strap |
+| Printed parts | Top unit, bay cradle, modules, printed from the published files | Supplied |
+| Wiring | None by default. Optional: add the harness (an off-the-shelf M8 cordset clipped along the strap) | Built in |
+| Bottom modules | Self-contained only: **ballast**, or **camera** (GoPro + its own power bank) | Ballast, **Battery Extension**, **Battery + Camera**, anything that uses the bus |
+| Fence | Identical. The top unit is the same, and the fence never depends on the bottom module | Identical |
+
+Same top unit, same firmware, same bay standard in both. The DIY collar gives up only the modules that share power with the collar (Battery Extension, collar-charged camera). Adding the M8 harness to a DIY collar unlocks them.
+
+## Product lineup (sold)
 
 The collar always works on its own. Everything in the bay is optional.
 
 | Package | What's in it | Who it's for |
 | --- | --- | --- |
 | **OpenCollar** (base) | Top unit + wired strap + **ballast module** | Most animals. The cheapest complete virtual fence collar |
-| **+ Battery Extension** (add-on) | Battery module (plugs into the existing strap) | Northern winters, heavy shade, collars running the pulse or a camera hard |
+| **+ Battery Extension** (add-on) | Battery module | Northern winters, heavy shade, collars running the pulse or a camera hard |
 | **+ Camera** (add-on) | Battery + Camera module (a Battery Extension with a GoPro mount) | A few animals per herd, for footage and research |
 
 Every module doubles as the counterweight, so swapping one never changes how the collar balances.
@@ -25,7 +37,7 @@ Every module doubles as the counterweight, so swapping one never changes how the
 | Mount | Cradle on the strap; modules lock in with two captive stainless thumbscrews (tool-free, can't vibrate loose) |
 | Mass window | **450–650 g per module**, to be tuned on real animals |
 | Envelope | Fixed maximum size and a low, rounded profile. Nothing protruding that can snag on fences or hit the ground when grazing |
-| Electrical | **Every collar has a wired strap** (below). Modules plug in; the ballast module has a sealed dummy connector |
+| Electrical | Optional. Sold collars have a wired strap; DIY collars can add the harness. Self-contained modules (ballast, standalone camera) work with or without it |
 | Identification | Each module identifies itself over the wire, so the top unit and app know what's fitted |
 
 ### The wired strap: a harness that rides on a bought strap
