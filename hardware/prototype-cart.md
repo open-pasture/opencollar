@@ -43,8 +43,8 @@ One collar, as close to V1 as breakout boards allow. Stock and prices checked on
 ## Strap, enclosure, cables, SIM, measurement
 | Item | Vendor | Part | Qty | $ | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 48" cow neck strap, 2", buckle | [Coburn](https://www.coburn.com/48-economy-cow-neck-strap/) | ENS48-04 | 1 | 16.35 | |
-| M3 screw assortment | [Amazon](https://www.amazon.com/dp/B0GHMM79M9) | B0GHMM79M9 | 1 | 8.99 | Stainless not confirmed |
+| 48" cow neck strap, 1-3/4" double-thick nylon, nickel buckle, blue | [Heritage Animal Health](https://www.heritageanimalhealth.shop/products/neck-strap-cow-blue-48-inches) | — | 1 | 23.10 | Coburn only sells to dealers |
+| M3 screw assortment | [Amazon](https://www.amazon.com/dp/B0GHMM79M9) | B0GHMM79M9 | 1 | 8.99 | 304 stainless |
 | M3 × 4 brass heat-set inserts (50) | [Adafruit](https://www.adafruit.com/product/4255) | 4255 | 1 | 5.95 | |
 | 2 mm silicone O-ring cord | [Amazon](https://www.amazon.com/dp/B00QVB0ZG6) | B00QVB0ZG6 | 1 | 15.39 | |
 | M6 screw-in ePTFE vent | [DigiKey](https://www.digikey.com/en/products/detail/amphenol-ltw/VENT-PS2NGY-O8001/9920611) | VENT-PS2NGY-O8001 | 1 | 3.31 | |
@@ -66,3 +66,33 @@ One collar, as close to V1 as breakout boards allow. Stock and prices checked on
 
 ## Before connecting a LiFePO4 cell to the kit
 The kit's onboard charger defaults to 4.2 V, which overcharges LiFePO4. In the interface shell: `charger chgdis 1`, `charger vbatreg 3500`, `cfgsync`. Power path: panels → BQ25798EVM (charge 3.60 V) → 2P LiFePO4 pack via BMS; EVM system output (~3.0 V min) → kit battery socket.
+
+## Cart status (2026-09-26, guest carts in the T3 browser panel)
+
+| Vendor | In cart | Left to do |
+| --- | --- | --- |
+| Amazon | BMS, M3 screws, O-ring cord, Anker power bank | — |
+| SparkFun | GPS antenna, IMU, Qwiic cable kit, 2 × Qwiic jumper cables | — |
+| Adafruit | SMA–U.FL adapter, hall sensor, SPI flash, heat-set inserts | — |
+| Pololu | DRV8835 | — |
+| Voltaic | 2 × P124 panels | — |
+| United Lithium | 2 × 26650 LiFePO4 | — |
+| K&J Magnetics | 5 × D42 | — |
+| Heritage Animal Health | Cow neck strap | — |
+| DigiKey | — | Blocks automated adds. Paste the list below into Cart → Bulk Add |
+| TI | — | Add BQ25798EVM manually ($156.45) |
+| GoPro | — | Buy HERO from GoPro or Amazon (B0DCLRRHSP) |
+| Hologram | — | Order SIM with code FREEPILOTSIM (confirm nano form factor) |
+
+DigiKey Bulk Add (one per line):
+```
+1, 18037
+2, 36-1107-ND
+1, CPT-1495C-300
+1, 1682155
+1, CDM803-04A-FP-R805-67
+1, CDM804-04A-MP-R805-67
+1, VENT-PS2NGY-O8001
+1, NRF-PPK2
+```
+Optional: `1, MAX17260XEVKIT#` ($117).
