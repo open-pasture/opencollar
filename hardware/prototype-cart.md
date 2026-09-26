@@ -98,7 +98,7 @@ The kit's onboard charger defaults to 4.2 V, which overcharges LiFePO4. In the i
 ## Not bought online
 
 - **Ballast, 450–650 g of steel**: a short length of steel flat bar or a stack of large fender washers from a hardware store.
-- **Tools, if you don't have them**: soldering iron and solder, multimeter, flush cutters, a small 1S LiFePO4-capable charger is *not* needed (the BQ25798 board charges the cells).
+- **Tools, if you don't have them**: soldering iron and solder, multimeter, flush cutters. No separate battery charger is needed: the BQ25798 board charges the cells.
 - **Cyanoacrylate glue** to join the O-ring cord into rings.
 - **PPK2 cable**: check the cable the Power Profiler Kit needs on arrival.
 - **Print material**: our fabrication partner's ASA/PA12 and TPU.
