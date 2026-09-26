@@ -37,7 +37,7 @@ A part isn't done until it passes all of these:
 3. **Check it's printable.** Blender's bundled *3D Print Toolbox*: manifold (watertight), no inverted normals, minimum wall thickness, overhangs. Optionally a second check in Python with `trimesh`.
 4. **Check the fit.** Import the real parts as reference bodies (the nRF9151 Connect Kit outline, MAX-M10S breakout, 26650 cells, M8 connectors, O-ring groove dimensions) and check clearances with boolean intersection: anything overlapping is a failure.
 5. **Check mass and balance.** Compute volume × material density per part, plus component masses, and confirm the bottom module lands in the 450–650 g window.
-6. **Export.** STL/3MF for the fabrication partner, with the print orientation and material noted in the file name or a README.
+6. **Export.** STL for the fabrication partner, with the print orientation and material noted in the file name or a README.
 
 ## Caveat: Blender is a mesh tool
 
@@ -45,10 +45,18 @@ Blender is great for shape, ergonomics and renders, but it isn't a parametric CA
 
 For V1-alpha prints, Blender scripts are fine. Before production tooling, consider moving the enclosure to a code-based CAD library (**build123d** or **CadQuery**, both Python), which produces exact STEP files and fits the same agent workflow. The Blender scripts can stay for renders.
 
-## Before tonight's design session
+## Setup (done 2026-09-26)
 
-- [ ] Install Blender 4.x
-- [ ] Install and enable the blender-mcp add-on; `claude mcp add blender uvx blender-mcp`
-- [ ] Gather reference dimensions: nRF9151 Connect Kit, MAX-M10S breakout, patch antennas, 26650 cells, M8 connectors, solar panels, GoPro HERO
-- [ ] Ask the fabrication partner which printers and materials he has (sets wall thickness, tolerances and minimum feature size)
-- [ ] Create `mechanical/` with a script per part and a `renders/` folder for review images
+- Blender 5.2.2 LTS in `/Applications` (checksum verified).
+- MCP for Blender add-on (formerly blender-mcp) installed with `uvx mcp-for-blender install-addon` and enabled. Its server auto-starts on port 9876 when Blender opens. Telemetry is off in the add-on and in the server (`DISABLE_TELEMETRY=true`); the Poly Haven / Hyper3D / Sketchfab asset integrations stay off.
+- Registered with Claude Code at user scope: `claude mcp add blender --scope user -e DISABLE_TELEMETRY=true -- uvx mcp-for-blender`. New Claude sessions pick it up.
+- 3D Print Toolbox installed from extensions.blender.org (in Blender 4.2+ it's an extension, not bundled).
+- `mechanical/` pipeline: part scripts, shared helpers, headless build with checks 1–3 and 6 above automated, plus the fit (clearance) check against reference bodies. See `mechanical/README.md`.
+- Reference dimensions gathered into `mechanical/lib/dims.py`, each marked published, estimated, to measure, or to tune.
+
+## Still open
+
+- [ ] Measure the unpublished dimensions (list in `mechanical/README.md`)
+- [ ] Ask the fabrication partner which printers and materials he has
+- [ ] First print run: `fit_test` and `seal_box`, then put the winning sizes into `lib/dims.py`
+- [ ] Mass and balance check (step 5) once the top unit and bay exist
