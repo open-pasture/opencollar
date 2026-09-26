@@ -38,7 +38,10 @@ Goal: A/B test against the nRF9151's built-in GNSS on the same walk. Prefer Qwii
 | 2 × 0.8–1 W ETFE mini solar panels (~110 × 70 mm) | Solar faces either side of the GNSS patch | $10 each |
 | Solar charger breakout that supports LiFePO4 with MPPT (TI BQ25798 eval board or equivalent) | Proves the solar + LiFePO4 power path before the custom board | $25–40 |
 | 26650 LiFePO4 cells (3.2 V, ~3.5 Ah) + holder | V1 battery chemistry | $6 each |
-| Steel or zinc counterweight blanks, 500–600 g | Bottom of the collar | $10 |
+| Steel or zinc ballast blanks, 450–650 g | Ballast module for the bottom bay | $10 |
+| GoPro HERO (base model), or a cheap action camera for early fit tests | Camera module (see `docs/BOTTOM-BAY.md`) | $200 (GoPro), $50–80 (action cam) |
+| 10,000 mAh USB-C power bank, compact | Powers the camera; doubles as the module's mass | $25 |
+| GoPro two-prong mount buckles + thumbscrews | Mount printed into the camera module | $10 |
 
 ## 5. Field test gear
 

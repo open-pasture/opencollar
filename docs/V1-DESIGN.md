@@ -7,7 +7,7 @@ The best-value virtual fence collar: nothing extra, every part engineered proper
 1. **Delete parts.** No base station, no wires running through the strap, no charging by the farmer, no app needed to set up. Every part we remove is a part that can't fail in a pasture.
 2. **Position is the product.** A fence is only as good as the fix. We spend our engineering there first.
 3. **The fence works with no signal.** Boundary logic runs on the collar. The network is for reporting and updates, never for containment.
-4. **Serviceable, not disposable.** Sealed with gaskets, not potting. The strap, counterweight, battery and electronics can each be replaced on their own.
+4. **Serviceable, not disposable.** Sealed with gaskets, not potting. The strap, bottom module, battery and electronics can each be replaced on their own.
 5. **Open.** Off-the-shelf parts, published design files, open device API. Anyone can build software for it or repair it.
 
 ## What it has to beat
@@ -42,11 +42,11 @@ From FCC teardowns and a published field study (`research/virtual-fence-gnss.md`
    strap  |           50 mm polyester          |  strap, no wires inside
            \                                  /
                   ┌──────────────────┐
-                  │  counterweight   │   bottom: passive steel/zinc weight
-                  └──────────────────┘   keeps the top unit upright
+                  │   bottom bay     │   swappable module: ballast, camera,
+                  └──────────────────┘   later battery (see BOTTOM-BAY.md)
 ```
 
-**One sealed top unit, one passive counterweight, nothing electrical in the strap.** Commercial collars that run wires to a battery in the bottom add a cable that flexes thousands of times a day on a moving animal. We delete it: the battery lives in the top unit, and the counterweight is plain metal. It's heavier up top, so the counterweight has to be heavier to match, but a lump of steel never fails.
+**One sealed top unit, one swappable bottom module, nothing electrical in the strap.** The bottom needs mass to keep the GNSS antenna facing up, so instead of a dead counterweight the bottom is a **bay** that takes interchangeable modules within a fixed mass window: plain ballast by default, a camera on a few collars, an extra battery later. Modules are self-contained and talk to the top unit over Bluetooth LE if they need to, so no cable ever runs through the strap. Commercial collars that wire a bottom battery to the top add a cable that flexes thousands of times a day on a moving animal; we don't. Details in `BOTTOM-BAY.md`.
 
 The GNSS patch sits at the crown of the top unit with nothing over it. The solar panels sit on the two sloped faces either side, like Nofence, so the panels never shade the antenna.
 
@@ -70,10 +70,11 @@ The GNSS patch sits at the crown of the top unit with nothing over it. The solar
 | **Power on** | Hall-effect sensor | Ships asleep. A magnet wakes it: no switch, no hole in the case. |
 | **Status** | One LED behind a light pipe | Confirms power-on, network and GNSS fix at setup |
 | **Service** | Pogo-pin pads under a screw cap | Debug and recovery flashing. Normal updates go over the air. |
+| **Bluetooth LE** (V1-beta) | Small BLE chip, e.g. Nordic nRF54L15 | Controls a camera module (Open GoPro API), identifies the fitted bay module, shelter beacons, phone setup |
 
 ### Electric pulse
 
-Every commercial collar escalates from audio to a mild electric pulse, and containment depends on it. V1 ships **audio-first** while we validate position and behaviour at the pilot farm with his existing fence as the backstop. The shell and board reserve space and connections for a stimulus module (electrodes on the inside of the top unit, isolated high-voltage stage) so it's an add-on board, not a redesign. It goes in once we have the welfare logic and field data to do it responsibly.
+Every commercial collar escalates from audio to a mild electric pulse, and containment depends on it. V1 ships **audio-first** while we validate position and behaviour at the pilot farm with his existing fence as the backstop. The top unit reserves space, electrode openings on its underside (resting on top of the neck) and a connector for a stimulus board, so adding it is fitting a board, not a redesign. It lives in the top unit, not the bottom bay, so every collar can enforce whichever module is fitted. It goes in once we have the welfare logic and field data to do it responsibly.
 
 ## Energy budget
 
@@ -93,7 +94,7 @@ Every commercial collar escalates from audio to a mild electric pulse, and conta
 | | |
 | --- | --- |
 | Top unit (electronics, battery, panels, shell) | ~450–550 g |
-| Counterweight | ~500–600 g |
+| Bottom module (ballast or camera) | ~450–650 g |
 | Strap and buckle | ~100 g |
 | **Total** | **~1.05–1.25 kg** |
 
@@ -122,7 +123,7 @@ Every commercial collar escalates from audio to a mild electric pulse, and conta
 | Solar panels (2) | $15–20 |
 | PCB + assembly | $30–40 |
 | Printed shell, gaskets, vent, hardware | $40–70 |
-| Strap, buckle, counterweight | $20–30 |
+| Strap, buckle, bay cradle, ballast module | $20–30 |
 | **Total** | **~$190–260** per collar at 20 units |
 
 Target at volume: under $120. Plus data: LTE-M at a few KB per report is about $1–2/month.
@@ -130,7 +131,7 @@ Target at volume: under $120. Plus data: LTE-M at a few KB per report is about $
 ## How we get there
 
 1. **V1-alpha: dev boards in a real shell** (now).
-   - nRF9151 Connect Kit + SparkFun MAX-M10S + IMU + solar charger + battery, in a printed top unit with a real counterweight on a real strap.
+   - nRF9151 Connect Kit + SparkFun MAX-M10S + IMU + solar charger + battery, in a printed top unit with a bottom bay (ballast module, plus one GoPro camera module) on a real strap.
    - Validates the layout, GNSS performance against V0, the energy budget and the firmware.
    - 3 units. Walk tests, then worn by a person, then on a cow alongside the pilot farm's fence.
 2. **V1-beta: one custom board.**
