@@ -2,6 +2,11 @@
  * Qwiic Buzzer on I2C2: SDA = P0.30, SCL = P0.31 (header pins 30 and 31).
  * The buzzer board has its own 2.2k pull-ups. VIO must be 3.3V (IFMCU `viosel`).
  */
+
+/* No MCUboot: TF-M at 0x0, app right after. Same layout as Makerdiary's samples. */
+#include <samples/cellular/nrf91_no_bootloader_partitions.dtsi>
+#include <samples/cellular/nrf91_sram_partitions.dtsi>
+
 &pinctrl {
 	i2c2_default: i2c2_default {
 		group1 {

@@ -19,14 +19,17 @@
 
 ## 3. GPS experiments (priority #1 for V1)
 
-Specific receiver and antenna models are pending the competitor research. Categories:
+Goal: A/B test against the nRF9151's built-in GNSS on the same walk. Prefer Qwiic/I2C breakouts so they plug into the same board.
 
-| Item | Why |
-| --- | --- |
-| Multi-constellation GNSS receiver breakout (GPS + Galileo + BeiDou + GLONASS) | The nRF9151's built-in GNSS only tracks GPS + QZSS. A multi-constellation receiver sees roughly 3x the satellites, which matters most under trees and on hillsides. |
-| Dual-band (L1 + L5) receiver breakout and matching antenna | L5 rejects multipath (signals bouncing off the animal, trees, terrain). The main route to sub-2 m without RTK. |
-| Larger active patch antennas (25 mm and 35 mm) | A bigger patch with a bigger ground plane gives more signal. Test against the current antenna. |
-| IMU breakout (Qwiic accelerometer/gyro) | Motion-triggered fixes (save power when the animal is lying down), dead reckoning through short GPS dropouts, and detecting when the collar has rotated. |
+| Item | Why | Approx. |
+| --- | --- | --- |
+| u-blox **MAX-M10S** breakout (SparkFun Qwiic version) | Likely V1 default: L1, GPS + Galileo + BeiDou + GLONASS, < 25 mW. About 3x the satellites of the nRF9151. | $45 |
+| u-blox **MAX-F10S** (or NEO-F10N) L1/L5 breakout | Dual-band accuracy candidate, 1.0 m CEP with SBAS. Tells us whether L5 is worth the extra power. | $60–90 |
+| Dual-band L1/L5 active antenna (stacked patch or small quadrifilar helix), U.FL/SMA | Required for the F10; the helix also tests rotation tolerance | $20–40 |
+| 25×25 mm active L1 patch antenna, U.FL | Bigger than the current patch; test on the nRF9151 and the M10S | $10–15 |
+| 35×35 mm active L1 patch antenna, U.FL | Upper bound on how much a bigger patch helps | $15–20 |
+| Copper-clad board or aluminium plate, ~70×70 mm | Ground plane under the patch, to measure its effect | $5 |
+| Qwiic IMU breakout (e.g. LSM6DSO or ISM330DHCX) | Motion-gated fixes, dead reckoning, rotation logging | $15–30 |
 
 ## 4. Field test gear
 

@@ -29,3 +29,7 @@
   - Qwiic Buzzer register map taken from SparkFun's MIT-licensed library.
 - **Battery connector:** the board's socket (J2) is **MX1.25-2P (1.25 mm pitch)**, not JST-PH 2.0. Check that the LiPo plug physically matches and that red goes to `+` on the silkscreen before connecting.
 - Geofence engine (`firmware/src/geofence.c`) and cue policy (`firmware/src/cue.c`) written as plain C with host tests. All pass (`make -C firmware/tests/host`).
+- nRF Connect SDK v3.4.1 installed via `nrfutil sdk-manager` (in `/opt/nordic/ncs`). Build with `nrfutil sdk-manager toolchain launch --ncs-version v3.4.1`.
+- Factory nRF9151 flash backed up to `~/opencollar-backups/factory-nrf9151-flash.bin` (1 MB, via pyOCD) before flashing.
+- **First flash of our firmware.** Attempt 1 crashed with a BusFault: the factory TF-M/bootloader was still at 0x0 and our image used the board's default MCUboot layout. Fixed by using Nordic's no-bootloader partition layout (same as Makerdiary's samples). Attempt 2 boots: TF-M 2.3.1 → NCS 3.4.1 → `OpenCollar V0 starting` → boundary v1 loaded → GNSS started → tracking satellites. Buzzer reports not found (not wired yet), as expected.
+- Competitor GNSS research written up in `docs/research/virtual-fence-gnss.md`; V1 requirements and shopping list updated from it.
