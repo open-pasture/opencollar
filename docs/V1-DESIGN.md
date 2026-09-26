@@ -127,7 +127,39 @@ Every commercial collar escalates from audio to a mild electric pulse, and conta
 | Strap, buckle, bay cradle, ballast module | $20–30 |
 | **Total** | **~$190–260** per collar at 20 units |
 
-Target at volume: under $120. Plus data: LTE-M at a few KB per report is about $1–2/month.
+Plus data: LTE-M at a few KB per report is about $1–2/month.
+
+## Cost at volume, with the pulse module (estimate, ~5,000 units)
+
+Parts and assembly per collar:
+
+| | Approx. |
+| --- | --- |
+| nRF9151 SiP | $15–18 |
+| MAX-M10S | $8–10 |
+| Antennas (GNSS + LTE) | $4–6 |
+| IMU, flash, fuel gauge, charger, regulators, piezo, eSIM, hall sensor, passives | $10–12 |
+| PCB, assembly, factory test | $8–12 |
+| Battery (2 × LiFePO4 26650) | $6–8 |
+| Solar panels (2, ETFE) | $6–8 |
+| Injection-moulded shell, gaskets, vent, hardware | $6–10 |
+| Wired strap + two IP68 connector pairs | $8–12 |
+| Ballast module | $3–5 |
+| **Pulse module**: boost stage, HV transformer and capacitors, energy-limiting and safety circuit, stainless electrodes | $8–12 |
+| **Bill of materials** | **~$85–115** |
+
+All-in per collar adds:
+
+| | Approx. |
+| --- | --- |
+| Packaging, freight, duties | $5–8 |
+| Warranty and returns reserve (~5 %) | $5 |
+| One-time costs spread over 5,000 units: injection tooling ($30–60k); radio and carrier certification, FCC/ISED/CE plus US carrier approval ($40–80k); stimulus safety and regulatory testing | $15–30 |
+| **All-in per collar** | **~$110–160** |
+
+At 1,000 units, the one-time costs weigh far more ($70–140 per collar), putting all-in at roughly $170–270. Recurring: ~$1–2/month data per collar.
+
+These are estimates, not quotes. Real numbers come from a costed BOM and quotes from an assembler and a moulder once the V1-beta board exists. Using the pre-certified nRF9151 keeps the certification cost toward the low end. Stimulus collars face extra rules in some markets (parts of Europe restrict them), which needs checking before selling outside the US.
 
 ## How we get there
 

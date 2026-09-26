@@ -43,3 +43,4 @@
 - Shopping list rewritten in five stages (bench + GPS, power, V1-alpha shells, camera, field). ~$1,800–2,400 total.
 - Blender tooling plan in `docs/DESIGN-TOOLING.md`: blender-mcp for live sessions, headless scripts in `mechanical/` as the source of truth, and a six-step self-review checklist. Blender not yet installed.
 - Cut to **one collar first**: the built-in GPS and a MAX-M10S log side by side on the same board, so extra kits aren't needed yet. Shopping list down to ~$900–1,200 including the camera.
+- Volume cost estimate with pulse module added to `docs/V1-DESIGN.md`: BOM ~$85–115, all-in ~$110–160 per collar at 5,000 units (~$170–270 at 1,000).
