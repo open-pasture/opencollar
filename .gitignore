@@ -1,0 +1,4 @@
+build/
+firmware/build/
+firmware/tests/host/build/
+firmware/src/boundary_local.h

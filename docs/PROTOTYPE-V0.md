@@ -8,7 +8,7 @@ Goal: draw a boundary in OpenPasture, send it to a collar built from off-the-she
 - [x] Voltages and logic levels checked (VIO 3.3V, charger 4.2V/100mA; battery polarity still pending)
 - [ ] SIM activated
 - [ ] MCU: blink + serial logging
-- [ ] GPS: raw NMEA, first fix, time-to-fix and accuracy recorded
+- [x] GPS: first fix, time-to-fix and accuracy recorded (cold start ~3 min in open sky, 2.2 m)
 - [ ] Buzzer: warning tone from code
 - [ ] Cellular: registered on network, JSON POST to test endpoint
 - [ ] Battery: runs on battery, voltage read over ADC
