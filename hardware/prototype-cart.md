@@ -67,32 +67,18 @@ One collar, as close to V1 as breakout boards allow. Stock and prices checked on
 ## Before connecting a LiFePO4 cell to the kit
 The kit's onboard charger defaults to 4.2 V, which overcharges LiFePO4. In the interface shell: `charger chgdis 1`, `charger vbatreg 3500`, `cfgsync`. Power path: panels → BQ25798EVM (charge 3.60 V) → 2P LiFePO4 pack via BMS; EVM system output (~3.0 V min) → kit battery socket.
 
-## Cart status (2026-09-26, guest carts in the T3 browser panel)
+## Cart status (2026-09-26, in Cody's Aside browser, signed-in sessions where available)
 
-| Vendor | In cart | Left to do |
-| --- | --- | --- |
-| Amazon | BMS, M3 screws, O-ring cord, Anker power bank | — |
-| SparkFun | GPS antenna, IMU, Qwiic cable kit, 2 × Qwiic jumper cables | — |
-| Adafruit | SMA–U.FL adapter, hall sensor, SPI flash, heat-set inserts | — |
-| Pololu | DRV8835 | — |
-| Voltaic | 2 × P124 panels | — |
-| United Lithium | 2 × 26650 LiFePO4 | — |
-| K&J Magnetics | 5 × D42 | — |
-| Heritage Animal Health | Cow neck strap | — |
-| DigiKey | — | Blocks automated adds. Paste the list below into Cart → Bulk Add |
-| TI | — | Add BQ25798EVM manually ($156.45) |
-| GoPro | — | Buy HERO from GoPro or Amazon (B0DCLRRHSP) |
-| Hologram | — | Order SIM with code FREEPILOTSIM (confirm nano form factor) |
-
-DigiKey Bulk Add (one per line):
-```
-1, 18037
-2, 36-1107-ND
-1, CPT-1495C-300
-1, 1682155
-1, CDM803-04A-FP-R805-67
-1, CDM804-04A-MP-R805-67
-1, VENT-PS2NGY-O8001
-1, NRF-PPK2
-```
-Optional: `1, MAX17260XEVKIT#` ($117).
+| Vendor | Status |
+| --- | --- |
+| Amazon (signed in) | BMS, M3 screws, O-ring cord, Anker power bank in cart. **GoPro: click Add to Cart yourself** (the protection-plan popup blocks automation) |
+| DigiKey | All 8 parts in cart, $214.27 |
+| SparkFun | GPS antenna, IMU, Qwiic cable kit, 2 × Qwiic jumper |
+| Voltaic | 2 × P124 panels |
+| United Lithium | 2 × 26650 LiFePO4 |
+| Heritage Animal Health | Cow neck strap |
+| Pololu | DRV8835 |
+| K&J Magnetics | 5 × D42 |
+| Adafruit | **Add by hand**: products 851, 6051, 5643, 4255 (tabs open). Site rejects automated adds |
+| TI | **Log in to order** BQ25798EVM ($156.45) |
+| Hologram | Order SIM (code FREEPILOTSIM, confirm nano size) |
