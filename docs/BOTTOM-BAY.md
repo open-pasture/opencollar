@@ -14,7 +14,7 @@ The collar always works on its own. Everything in the bay is optional.
 | --- | --- | --- |
 | **OpenCollar** (base) | Top unit + wired strap + **ballast module** | Most animals. The cheapest complete virtual fence collar |
 | **+ Battery Extension** (add-on) | Battery module (plugs into the existing strap) | Northern winters, heavy shade, collars running the pulse or a camera hard |
-| **+ Camera** (add-on) | Camera module (GoPro mount + power bank) | A few animals per herd, for footage and research |
+| **+ Camera** (add-on) | Battery + Camera module (a Battery Extension with a GoPro mount) | A few animals per herd, for footage and research |
 
 Every module doubles as the counterweight, so swapping one never changes how the collar balances.
 
@@ -28,29 +28,46 @@ Every module doubles as the counterweight, so swapping one never changes how the
 | Electrical | **Every collar has a wired strap** (below). Modules plug in; the ballast module has a sealed dummy connector |
 | Identification | Each module identifies itself over the wire, so the top unit and app know what's fitted |
 
-### The wired strap
+### The wired strap: a harness that rides on a bought strap
 
-Wiring every collar costs a few dollars and gives one strap for every collar, plug-in modules, collar power for the camera, and module ID and control without Bluetooth.
+The strap itself is a standard cattle neck strap (see `MATERIALS-AND-STRAP.md`). The wiring is a **separate harness** that rides along it, so the open design never needs a custom strap.
 
-- **Where the wires go:** the strap has two sections running from the top unit down to the bay. Conductors run in **one fixed-length section only**; the sizing buckle is on the other, so the collar still adjusts to any neck.
-- **Construction:** high-strand flex-rated wire laid in a zigzag inside the belting, IP68 connectors at both ends.
-- **Connector: 4 pins.** DC power (either direction: a battery module supplies it, a camera module draws it), ground, and two data lines for module ID, fuel gauge and camera control.
-- **The collar never depends on it.** The top unit runs on its internal battery and fence logic whether or not the strap is intact. Its port has short-circuit protection, so a crushed strap or flooded connector gets reported and isolated, never drains the collar.
-- **Wear part:** replaceable without tools.
-- **Prove it early:** V1-alpha straps are wired from day one, so person-wear and cow tests show whether the wiring survives before V1 is frozen.
+- **The harness is an off-the-shelf industrial cable.** An M8 4-pin male-to-female cordset in a high-flex PUR jacket: the same cable used on robot arms and drag chains, rated for millions of bend cycles, IP67/68 at both ends, and sold in fixed lengths by every automation supplier for about $10–20.
+- **The top unit and the bay cradle each have a panel-mount M8 socket.** The cordset plugs into both.
+- **It runs along one side of the strap only**, between the top unit and the bay, held flat with printed TPU clips (or threaded through a sewn webbing sleeve). The top unit and bay clamp to the strap at a fixed spacing on that side, so the cable length never changes. All sizing happens at the buckle on the other side.
+- **Replacing it** takes a minute: unclip, unplug, plug in a new one. Anyone can buy the same cable.
+- **The collar never depends on it.** The top unit runs on its internal battery and fence logic whether or not the harness is intact. Its port has short-circuit protection, so a crushed cable or flooded connector gets reported and isolated, never drains the collar.
+- **Prove it early:** the V1-alpha collar gets a harness from day one, so person-wear and cow tests show how it survives.
+
+### The power bus
+
+Four pins: **power, ground, and two data lines.**
+
+- **Power is a 5 V bus that either end can supply.** The top unit's charger (TI BQ25798) has two inputs and can also output power:
+  - Input 1 is the solar panels.
+  - Input 2 is the strap bus. When a battery module supplies 5 V, the top unit charges from it exactly as it would from a solar panel.
+  - In reverse (the charger's output, or "OTG", mode), the top unit puts 5 V on the bus to charge a battery module or power a camera when it has solar surplus.
+- **Data** (I2C to start): every module carries a small ID chip saying what it is. Battery modules report charge and health; camera modules take start/stop commands. The top unit is always in charge of the bus and decides which direction power flows.
+- **5 V was chosen** because it can charge a GoPro or any USB device directly.
 
 ## Modules
 
 | Module | V1? | What it is | Mass comes from |
 | --- | --- | --- | --- |
-| **Ballast** | Yes, ships with every collar | Sealed shell with a steel or zinc slab | The slab |
-| **Battery Extension** | Designed in V1, built after the first pilot | LiFePO4 pack that plugs into the strap; the top unit draws from it and charges it | The cells |
-| **Camera** | Yes, a few units | GoPro-standard mount, camera, and a power bank | The camera and the power bank |
+| **Ballast** | Yes, ships with every collar | Sealed shell with a steel or zinc slab and a dummy M8 plug | The slab |
+| **Battery Extension** | Designed in V1, built after the first pilot | LiFePO4 pack with its own charger, protection and fuel gauge. Feeds the collar through the bus and refills from solar surplus | The cells |
+| **Battery + Camera** | Yes, one for the pilot | A Battery Extension with a GoPro mount on the front. The pack powers the camera over USB-C inside the module, and the collar refills the pack from solar | The cells and the camera |
 | Sensors | Later | Ideas: water-point proximity, temperature | TBD |
+
+### Why the camera module is a battery module
+
+The bay holds one module at a time, so the camera can't sit next to a separate battery pack. A GoPro recording draws about 4 W, which would drain the top unit's internal battery (~22 Wh) in a few hours and threaten the fence. So the camera brings its own energy: its module is a battery pack with a mount. The pack's mass is the counterweight, the collar's solar tops it up, and the fence's own battery is never touched by the camera.
+
+Budget: in summer, solar surplus of a few Wh/day covers roughly an hour of recording a day, which suits event-triggered clips (fence approaches, scheduled snapshots) rather than all-day recording.
 
 ### Battery Extension
 
-**How it connects:** it plugs into the wired strap every collar already has. Swap the ballast module for the battery module and it's installed.
+**How it connects:** swap the ballast module for the battery module and plug in the harness.
 
 **How it works:**
 - **Pack:** 4 × 26650 LiFePO4 (~45 Wh, ~350 g plus shell), inside the mass window. With the internal ~22 Wh, total autonomy with no sun goes from ~60 days to **~190 days**.
@@ -79,7 +96,7 @@ The fastest useful version needs no custom electronics:
 - **Camera:** a GoPro, for its waterproofing (10 m without a housing), stabilization and ruggedness, and because of its open control API (below). The base GoPro HERO is roughly $200; any action camera fits the mount for cheaper tests.
 - **Power bank as the ballast.** A ~10,000 mAh (~37 Wh, ~200 g) USB-C bank sits in the module and powers the camera through a sealed cable. The mass we needed anyway now runs the camera for many hours of video instead of the camera's own ~1.5 hours.
 - **Top-up ballast** (a small steel plate) brings the module into the 450–650 g window.
-- Later option: power and control the camera through the wired strap, so the camera module doesn't need its own power bank.
+- **The power bank is the prototype battery module.** Pick one with pass-through charging and wire its USB-C input to the bay's M8 socket: the collar tops it up from solar over the harness while it powers the camera. That's the Battery + Camera module built from bought parts; the custom LiFePO4 pack replaces it later.
 - **Capture schedule:** GoPro Labs (GoPro's free official firmware add-on, programmed by showing the camera a QR code) supports delayed starts, scheduled daily captures and long-interval time-lapse. To confirm which Labs modes power the camera down between shots on our model.
 
 ### What the camera sees from the bottom
@@ -109,7 +126,7 @@ With the wired strap, a small bridge chip in the camera module can pass commands
 
 ## First steps
 
-1. **Our fabrication partner prints the bay cradle and two module shells:** ballast, and GoPro + power bank.
+1. **Our fabrication partner prints the bay cradle and two module shells:** ballast, and Battery + Camera (GoPro + pass-through power bank).
 2. **Test on a person first:** balance, rotation (does the top unit stay up?), and camera runtime with the power bank.
 3. **One camera collar on a cow at the pilot farm** alongside a ballast collar, with the physical fence in place. Collect footage and compare how well each stays upright.
 4. **Add BLE and camera triggering** in V1-beta once the footage proves it's worth it.

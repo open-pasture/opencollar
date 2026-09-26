@@ -8,7 +8,7 @@ Don't print the strap. Commercial cattle neck straps (~50 mm woven nylon or poly
 
 - **Top unit**: the strap passes through slots moulded into its underside and is clamped with a printed bar and screws.
 - **Bay cradle**: same slot-and-clamp mount at the bottom of the strap; modules lock into it with thumbscrews.
-- **Strap wires** (prototype): flexible silicone wire in a braided sleeve, fixed along the strap's non-adjusting side with stitched loops or printed TPU clips, ending in the IP68 connectors. Later: a strap with conductors woven or moulded in.
+- **Strap wiring**: an off-the-shelf high-flex M8 4-pin cordset (industrial robot cable, IP67/68) plugs into sockets on the top unit and the bay and runs along the strap's non-adjusting side in printed TPU clips. See `BOTTOM-BAY.md`.
 
 Anyone rebuilding the collar buys a standard strap and prints the rest.
 
