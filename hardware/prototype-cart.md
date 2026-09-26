@@ -67,18 +67,43 @@ One collar, as close to V1 as breakout boards allow. Stock and prices checked on
 ## Before connecting a LiFePO4 cell to the kit
 The kit's onboard charger defaults to 4.2 V, which overcharges LiFePO4. In the interface shell: `charger chgdis 1`, `charger vbatreg 3500`, `cfgsync`. Power path: panels → BQ25798EVM (charge 3.60 V) → 2P LiFePO4 pack via BMS; EVM system output (~3.0 V min) → kit battery socket.
 
-## Cart status (2026-09-26, in Cody's Aside browser, signed-in sessions where available)
+## Cart status (2026-09-26, in the owner's browser)
 
 | Vendor | Status |
 | --- | --- |
-| Amazon (signed in) | BMS, M3 screws, O-ring cord, Anker power bank in cart. **GoPro: click Add to Cart yourself** (the protection-plan popup blocks automation) |
-| DigiKey | All 8 parts in cart, $214.27 |
+| Amazon | BMS, M3 screws, O-ring cord, power bank, **plus the gaps found in review** (below). **Add by hand:** GoPro HERO (protection-plan popup blocks automation) and the SanDisk High Endurance 128 GB microSD (B07NY23WBG) |
+| DigiKey | All 8 parts, $214.27 |
 | SparkFun | GPS antenna, IMU, Qwiic cable kit, 2 × Qwiic jumper |
 | Voltaic | 2 × P124 panels |
 | United Lithium | 2 × 26650 LiFePO4 |
 | Heritage Animal Health | Cow neck strap |
 | Pololu | DRV8835 |
 | K&J Magnetics | 5 × D42 |
-| Adafruit | **Add by hand**: products 851, 6051, 5643, 4255 (tabs open). Site rejects automated adds |
+| Adafruit | **Add by hand**: products 851, 6051, 5643, 4255. Site rejects automated adds |
 | TI | **Log in to order** BQ25798EVM ($156.45) |
 | Hologram | Order SIM (code FREEPILOTSIM, confirm nano size) |
+
+## Gaps found in review (added to the Amazon cart)
+
+| Item | Why it's needed | ASIN |
+| --- | --- | --- |
+| 1.25 mm 2-pin connector pigtails (30 pairs) | Feeds the charger's system output into the nRF9151 kit's MX1.25 battery socket; also battery leads | B013JRWCBU |
+| GoPro quick-release buckle base mount kit | Mount printed into the camera module | B0B9X92VD2 |
+| GoPro thumbscrews (4) | Same | B0FX9RG6ZG |
+| SanDisk High Endurance 128 GB microSD | The GoPro HERO records to microSD; none included (add by hand) | B07NY23WBG |
+| Right-angle USB-C to USB-C, 1 ft (2) | Power bank to GoPro inside the camera module | B07H96FWY9 |
+| 22 AWG silicone wire kit | Solar panel leads, pack wiring, harness sockets | B07G2JWYDW |
+| Adhesive-lined heat shrink kit | Sealed joints for outdoor wiring | B0BVVMCY86 |
+
+## Not bought online
+
+- **Ballast, 450–650 g of steel**: a short length of steel flat bar or a stack of large fender washers from a hardware store.
+- **Tools, if you don't have them**: soldering iron and solder, multimeter, flush cutters, a small 1S LiFePO4-capable charger is *not* needed (the BQ25798 board charges the cells).
+- **Cyanoacrylate glue** to join the O-ring cord into rings.
+- **PPK2 cable**: check the cable the Power Profiler Kit needs on arrival.
+- **Print material**: our fabrication partner's ASA/PA12 and TPU.
+
+## Safety before first power-up
+
+- **nRF9151 kit charger:** `charger chgdis 1`, `charger vbatreg 3500`, `cfgsync` in the interface shell before any LiFePO4 cell is connected.
+- **BQ25798 board:** it defaults to Li-ion charge voltages. Keep charging disabled (its /CE jumper) until the firmware has set LiFePO4 charge voltage (3.60 V) over I2C. Never leave cells connected to it with solar input and charging enabled at default settings.
