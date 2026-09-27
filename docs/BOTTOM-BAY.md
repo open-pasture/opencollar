@@ -53,6 +53,8 @@ The strap itself is a standard cattle neck strap (see `MATERIALS-AND-STRAP.md`).
 
 ### The power bus
 
+> **Superseded 2026-09-26:** with the battery as the counterweight, the harness carries the pack itself on an M8 8-pin cable (BAT+ ×2, GND ×2, SDA, SCL, NTC, INT), not a 5 V bus. See `COLLAR-FIRST-PRINCIPLES.md` section 4. The text below is the earlier plan.
+
 Four pins: **power, ground, and two data lines.**
 
 - **Power is a 5 V bus that either end can supply.** The top unit's charger (TI BQ25798) has two inputs and can also output power:
