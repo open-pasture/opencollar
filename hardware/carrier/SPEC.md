@@ -2,6 +2,8 @@
 
 Draft 2026-09-26, for Cody's review. Nothing is drawn until this is agreed (`docs/DESIGN-PHASE.md`).
 
+> **On hold, same day:** the collar is being redesigned from first principles (`docs/COLLAR-FIRST-PRINCIPLES.md`). If Cody agrees, the carrier stops being shaped to the draft-1 shell and becomes a plain rectangle under 100 × 100 mm; sections 8 and 12 and question 1 change. The circuits (sections 2–7) stand.
+
 The carrier is a 2-layer board inside the V1-alpha top unit. The boards we already own plug into it. On the board itself: the solar charger, the strap-harness port, the connectors and the test pads. It has no radio circuits: the antennas stay on the Connect Kit and the MAX-M10S.
 
 Sources, all kept locally in `mechanical/reference/vendor/` or `/tmp/ds` during the work:
