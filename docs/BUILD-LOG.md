@@ -183,3 +183,9 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - The M10S's two far-corner standoffs double as board mounts (M3 male-female standoffs into the box posts). The carrier goes into the box before the plugged boards.
 - Silkscreen: the panel socket, turned sideways at the edge, gets its A+ / GND / B+ marks beside each pad, placed from the real pad positions.
 - ERC clean; 91 parts, 45 nets. DRC shows only the intended butted Kit sockets, plus 131 unrouted connections. Renders reviewed top and bottom.
+
+### Carrier board to 65 × 58.5 mm; assembled preview
+- Cody still saw white space. Most of it was under the plugged boards, which the renders don't draw. `layout.py` now also writes `build/carrier_assembled.kicad_pcb`, a copy with the Kit, MAX-M10S and ISM330 outlined on the silkscreen, to render how it looks fitted. It's not for manufacture.
+- The real leftover space was the connector band along the bottom edge (10.3 mm, for the PH harness socket) and the column right of the IMU. The harness socket now sits in that column, on the right edge. The panels moved to a JST-SH 3-pin (SM03B-SRSS-TB, C160403; 1 A per contact, both panels ≤ 0.46 A), so the bottom band only needs an SH socket's 6.6 mm.
+- **65 × 58.5 mm**, 47 % less area than the 95 × 75 layout. This is within ~1 mm of the floor for these boards: the Kit's 55.9 mm length sets the height; the Kit, the 4 mm gap its right-hand socket needs from the M10S's socket, and the M10S's 38.1 mm set the width.
+- ERC clean. DRC shows only the intended butted Kit sockets, plus the unrouted connections. Renders reviewed: bare top, assembled top, bottom.

@@ -23,6 +23,7 @@ C0805 = "Capacitor_SMD:C_0805_2012Metric"
 SOCKET = "Connector_PinSocket_2.54mm:PinSocket_1x{n:02d}_P2.54mm_Vertical_SMD_Pin1Left"
 PH_H = "Connector_JST:JST_PH_S{n}B-PH-SM4-TB_1x{n:02d}-1MP_P2.00mm_Horizontal"
 SH_H = "Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal"
+SH3_H = "Connector_JST:JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal"
 TP_FP = "TestPoint:TestPoint_Pad_D1.0mm"
 
 # LCSC numbers, from JLCPCB's parts search on 2026-09-26 (SPEC.md section 10).
@@ -41,6 +42,7 @@ CONN_LCSC = {   # by footprint
     "JST_PH_S3B-PH-SM4-TB_1x03-1MP_P2.00mm_Horizontal": ("C265101", "S3B-PH-SM4-TB(LF)(SN)"),
     "JST_PH_S8B-PH-SM4-TB_1x08-1MP_P2.00mm_Horizontal": ("C265121", "S8B-PH-SM4-TB(LF)(SN)"),
     "JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal": ("C160404", "SM04B-SRSS-TB(LF)(SN)"),
+    "JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal": ("C160403", "SM03B-SRSS-TB(LF)(SN)"),
     # hanxia 8.5 mm SMD sockets; check their pad stagger against KiCad's Pin1Left (SPEC.md 11)
     "PinSocket_1x10_P2.54mm_Vertical_SMD_Pin1Left": ("C46635846", "HX PM2.54-1x10P TP H8.5-YQ"),
     "PinSocket_1x09_P2.54mm_Vertical_SMD_Pin1Left": ("C46635845", "HX PM2.54-1x9P TP H8.5-YQ"),
@@ -203,10 +205,11 @@ def charger():
 
 @block
 def solar_inputs():
-    """Two P124 panels on one 3-pin PH (1 panel A+, 2 GND, 3 panel B+), each through
+    """Two P124 panels on one 3-pin JST SH (1 panel A+, 2 GND, 3 panel B+), each through
     its own Schottky into IN, so a lit panel can't push current into a shaded one.
-    P124: Vmp 6.0 V, Voc <= 7.28 V, Isc <= 0.23 A [P124]."""
-    j = conn(3, PH_H.format(n=3), "Panels A/GND/B", ref="J6")
+    P124: Vmp 6.0 V, Voc <= 7.28 V, Isc <= 0.23 A [P124]. SH is rated 1 A per contact;
+    both panels together are <= 0.46 A on the GND pin."""
+    j = conn(3, SH3_H, "Panels A/GND/B", ref="J6")
     j[2] += GND
     for name, pin, dref in (("A", 1, "D1"), ("B", 3, "D2")):
         sol = N(f"SOLAR_{name}")

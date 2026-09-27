@@ -1,7 +1,7 @@
 # Carrier board, rev A2: spec
 
 Rev A 2026-09-26; **rev A2 the same day**, after the first-principles collar decisions (`docs/COLLAR-FIRST-PRINCIPLES.md`). Rev A2 changes:
-- The board is a plain rectangle, no longer shaped to a shell: **65 × 62 mm** since 2026-09-27 (was 95 × 75), with the plugged boards tiled edge to edge and every carrier part underneath them.
+- The board is a plain rectangle, no longer shaped to a shell: **65 × 58.5 mm** since 2026-09-27 (was 95 × 75), with the plugged boards tiled edge to edge and every carrier part underneath them.
 - The battery lives in the bottom module and reaches the board over the harness.
 - The harness is now M8 8-pin.
 - Two cue ports (left and right ear pods) replace the on-board buzzer socket.
@@ -45,7 +45,7 @@ Sources, all kept locally in `mechanical/reference/vendor/` or `/tmp/ds` during 
 
 | Topic | Recommendation | Why |
 | --- | --- | --- |
-| Board shape | **Rectangle, 65 × 62 mm** | The size is set by the three plugged boards tiled edge to edge (Kit, MAX-M10S, ISM330). Everything the carrier itself carries fits underneath them, because they sit ~11 mm up on their sockets. The battery has left the top box, so nothing has to wrap around it |
+| Board shape | **Rectangle, 65 × 58.5 mm** | The size is set by the three plugged boards tiled edge to edge (Kit, MAX-M10S, ISM330). Everything the carrier itself carries fits underneath them, because they sit ~11 mm up on their sockets. The battery has left the top box, so nothing has to wrap around it |
 | Connect Kit | **Four 1 × 10 SMD female sockets**, two end to end per row (J1–J4), 2.54 mm pitch, 8.5 mm tall | The Kit already has male pins fitted (parts photo). SMD sockets leave no tails under the board, which keeps the bottom flat for test pads and the fixture (section 7). JLCPCB stocks no 1 × 20 SMD socket (3 pieces of one Samtec part), so each row is two 1 × 10s butted together |
 | MAX-M10S | **Female sockets** (8-pin edge row and 4-pin I2C row), not Qwiic | Sockets give us EXTINT (wake from standby), RESET_N, TIMEPULSE and UART, which Qwiic doesn't carry, and hold the board rigidly with no cable |
 | ISM330DHCX | **Female 9-pin socket** | Brings INT1/INT2 to the nRF for wake-on-motion. An IMU should be screwed down, not hanging on a cable |
@@ -200,7 +200,7 @@ Board references in brackets (schematic.py).
 
 | Ref | Connector | Mates with | Pins |
 | --- | --- | --- | --- |
-| J_SOL (J6) | JST-PH 3-pin, right-angle | One pre-crimped PH3 pigtail; each panel's + to its own pin, both − to pin 2 | 1 = panel A +, 2 = GND, 3 = panel B + (marked at each pad) |
+| J_SOL (J6) | JST-SH 3-pin, right-angle (1 A per contact; both panels peak at ≤ 0.46 A) | One pre-crimped SH3 pigtail; each panel's + to its own pin, both − to pin 2 | 1 = panel A +, 2 = GND, 3 = panel B + |
 | J_HBUS (J13) | JST-PH 8-pin, right-angle | Pigtail from the M8 8-pin panel socket; on the bench, a PH8 pigtail to the pack and NTC | Section 5 |
 | J_CUE_L, J_CUE_R (J11, J12) | JST-SH 4-pin | Qwiic cables to the ear-pod buzzers | GND, EXT_3V3, EXT_SDA, EXT_SCL |
 | J_KIT (J5) | 2 plated holes | 1.25 mm pigtail (on order) into Kit J2 | CHG_OUT (+), GND (−), marked at the pads |
@@ -226,7 +226,7 @@ Silkscreen labels are ≤ 5 characters: COUT/CIN = charger OUT/IN, SOLA/SOLB = p
 
 ## 8. Board outline, placement and mounting
 
-**65 × 62 mm, 2 mm corner radius.** Before, the board was 95 × 75 mm with the carrier's parts laid out beside the plugged boards. Now the three plugged boards are tiled edge to edge, and every carrier part sits underneath them. The board isn't shaped to a shell: the V1-alpha test box gets posts to match (section 12).
+**65 × 58.5 mm, 2 mm corner radius.** Before, the board was 95 × 75 mm with the carrier's parts laid out beside the plugged boards. Now the three plugged boards are tiled edge to edge, and every carrier part sits underneath them. The board isn't shaped to a shell: the V1-alpha test box gets posts to match (section 12).
 
 Placement as drawn by `layout.py` (top view, origin top-left, x right, y down; renders in `build/`):
 
@@ -238,10 +238,12 @@ Placement as drawn by `layout.py` (top view, origin top-left, x right, y down; r
 | Under the Kit, between its rows | TCA4307 U2, TPS2553 U3, I2C pull-ups, sense dividers, board mounts H1/H2, Kit feed J5 | 11 mm strip of free board the Kit covers anyway |
 | Under the M10S | bq24074 U1, its passives, D1/D2 | Short IN → bq24074 → BAT loop |
 | Under the ISM330 | ESD U4, U5 and the harness INT resistors | Right behind the bottom-edge ports |
-| Right edge | Panels J6 | |
-| Bottom edge | Cues J11, J12, harness J13 | Every line that leaves the box enters on one edge, next to its ESD part |
+| Right edge, beside the ISM330 | Harness J13 | The one column the plugged boards leave free |
+| Bottom edge | Cues J11, J12 and panels J6, all low JST-SH | The bottom band is only as deep as an SH socket (6.6 mm) |
 | Top edge | Spare Qwiic J7 | |
 | Bottom side | 33 test pads on a 5 × 3.6 mm grid, the title, the harness pinout | One pogo fixture from below |
+
+`build/carrier_assembled_top.png` renders the same board with the three plugged boards outlined. The free board left over is a thin strip under the Kit's antenna end, the harness column and the connector band. The size limit is the three boards: the Kit's length sets the height, and the Kit plus the 4 mm socket gap plus the MAX-M10S sets the width.
 
 **Mounting:**
 - H1, H2 (M3) are under the Kit, on the centre line between its rows.
@@ -291,7 +293,7 @@ From JLCPCB's parts search, 2026-09-26. Stock is JLCPCB assembly stock that day.
 | Kit sockets 1 × 10 (J1–J4) | C46635846 | HX PM2.54-1x10P TP H8.5-YQ | Extended | 425 |
 | M10S sockets 1 × 8, 1 × 4 (J8, J9) | C46635844, C46635840 | HX PM2.54 H8.5 | Extended | 5,136, 5,201 |
 | IMU socket 1 × 9 (J10) | C46635845 | HX PM2.54-1x9P TP H8.5-YQ | Extended | 293 |
-| PH 3-pin R/A (J6) | C265101 | S3B-PH-SM4-TB | Extended | 2,025 |
+| SH 3-pin R/A (J6) | C160403 | SM03B-SRSS-TB | Extended | 24,905 |
 | PH 8-pin R/A (J13) | C265121 | S8B-PH-SM4-TB | Extended | to confirm |
 | SH 4-pin R/A (J7, J11, J12) | C160404 | SM04B-SRSS-TB | Extended | 30,694 |
 | 887 Ω, 3.24 kΩ, 71.5 kΩ 1 % 0603 | C93619, C22994, C23103 | UNI-ROYAL 0603WAF | Extended (no Basic in these values) | |
@@ -310,7 +312,7 @@ Decided 2026-09-26: rectangle board (was question 1); the harness carries the ba
 To buy when you're ready (not ordered):
 1. **A second SparkFun Qwiic Buzzer** (BOB-24474) and **two Qwiic cables, 200–500 mm**, for the ear pods.
 2. **M8 8-pin harness:** a high-flex PUR female-to-male cordset and two panel-mount sockets with leads (one on the box, one on the bottom module). Length once the bottom module is drawn (section 12).
-3. Pre-crimped JST-PH pigtails: 3-pin ×1 (panels), 8-pin ×2 (harness, and a bench lead to the pack and NTC).
+3. Pre-crimped pigtails: JST-SH 3-pin ×1 (panels); JST-PH 8-pin ×2 (harness, and a bench lead to the pack and NTC).
 
 Bench checks when parts arrive:
 4. **Pinouts against silkscreen:** the ISM330's 9-pin order (VIN, 3Vo, GND, SCL, SDA, DO, CS, INT1, INT2); the battery pack's JST-PH polarity; the 1.25 mm pigtail's red wire against the `+` on the Kit's J2.

@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from netlist_to_pcb import child, sexp, val  # noqa: E402
 
 FP_DIR = "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints"
-W, H = 65.0, 62.0
+W, H = 65.0, 58.5
 ORIGIN = (100.0, 100.0)      # where the board sits on the KiCad page
 CORNER_R = 2.0
 
@@ -60,10 +60,10 @@ FIXED = {
     "J9": (M10S_TL[0] + (22.86 + 15.24) / 2, m10s(0, 29.21)[1], -90, "F"),   # M10S 4-pin row
     "J10": (IMU_TL[0] + 25.40 - (2.54 + 22.86) / 2, imu(0, 2.54)[1], -90, "F"),  # IMU 9-pin row
     "J7": (35.5, 3.3, 180, "F"),                                 # spare Qwiic, top edge, under the M10S
-    "J6": (W - 5.2, 42.5, 90, "F"),                              # panels, right edge
-    "J11": (28.9, H - 3.4, 0, "F"),                              # cue L, bottom edge
-    "J12": (37.2, H - 3.4, 0, "F"),                              # cue R
-    "J13": (52.3, H - 5.2, 0, "F"),                              # harness M8 8-pin
+    "J11": (29.6, H - 3.4, 0, "F"),                              # cue L, bottom edge
+    "J12": (38.0, H - 3.4, 0, "F"),                              # cue R
+    "J6": (46.0, H - 3.4, 0, "F"),                               # panels, bottom edge
+    "J13": (W - 5.2, 46.2, 90, "F"),                             # harness M8 8-pin, right edge beside the IMU
     "U1": (52.0, 19.0, 0, "F"),                                  # bq24074, under the M10S
     "D1": (48.0, 29.0, 0, "F"),
     "D2": (54.0, 29.0, 0, "F"),
@@ -81,7 +81,8 @@ FIXED = {
 
 # Where each block's loose parts (passives) go: an anchor they cluster around,
 # and the rectangle they stay inside.
-UNDER_KIT = (7.0, 2.5, 17.8, 59.0)
+UNDER_KIT = (7.0, 2.5, 17.8, H - 1.0)
+SPILL = (31.5, 7.0, 46.0, 30.5)          # free board under the M10S's left half, for overflow
 REGIONS = {
     "charger": ((52.0, 19.0), (32.0, 7.0, 58.0, 30.5)),
     "solar_inputs": ((51.0, 29.0), (32.0, 7.0, 58.0, 30.5)),
@@ -98,10 +99,10 @@ LABELS = [
     ("KIT USB", KIT_MID, 2.0),
     ("J5 KIT BAT", KIT_MID, 10.9),
     ("J7 QWIIC", 35.5, 7.6),
-    ("J6 PANELS", W - 5.2, 35.8),
-    ("J11 CUE L", 28.9, H - 8.0),
-    ("J12 CUE R", 37.2, H - 8.0),
-    ("J13 HARNESS", 52.3, H - 11.3),
+    ("J11 CUE L", 29.6, H - 7.9),
+    ("J12 CUE R", 38.0, H - 7.9),
+    ("J6 A+ G B+", 46.6, H - 7.9),
+    ("J13 HARNESS", W - 5.6, 34.8),
 ]
 LABELLED = {"J5", "J6", "J7", "J11", "J12", "J13"}
 FAB_REF = {"U2"}   # reference on the fab layer only: it sits under the Kit, next to C-parts
@@ -270,6 +271,28 @@ def thermal_vias(board, fp, net, pitch=0.9):
             board.Add(v)
 
 
+PLUGGED = [   # outlines of the boards that plug in, for the assembled preview only
+    ("Connect Kit", (KIT_X - 1.27, KIT_TOP, KIT_X - 1.27 + 20.32, KIT_TOP + 55.88)),
+    ("MAX-M10S", (M10S_TL[0], M10S_TL[1], M10S_TL[0] + 38.10, M10S_TL[1] + 30.48)),
+    ("ISM330", (IMU_TL[0], IMU_TL[1], IMU_TL[0] + 25.40, IMU_TL[1] + 17.78)),
+]
+
+
+def assembled_preview(board, path):
+    """A copy of the board with the plugged boards' outlines on the silkscreen, so a
+    render shows what the carrier looks like with them fitted. Not for manufacture."""
+    for name, (x0, y0, x1, y1) in PLUGGED:
+        for (a, b), (c, d) in [((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)),
+                               ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))]:
+            seg = pcbnew.PCB_SHAPE(board)
+            seg.SetShape(pcbnew.SHAPE_T_SEGMENT)
+            seg.SetStart(at(a, b)); seg.SetEnd(at(c, d))
+            seg.SetLayer(pcbnew.F_SilkS); seg.SetWidth(mm(0.5))
+            board.Add(seg)
+        text(board, name, (x0 + x1) / 2, (y0 + y1) / 2, 1.4)
+    board.Save(path)
+
+
 def main(src, dst):
     comps, nets = parse_netlist(src)
     board = pcbnew.BOARD()
@@ -321,7 +344,8 @@ def main(src, dst):
     failed = []
     for blk, ref in sorted(loose, key=lambda t: (t[0], len(t[1]), t[1])):
         anchor, region = REGIONS.get(blk, ((47.5, 37.5), (0, 0, W, H)))
-        if not pack(fps[ref][0], anchor, region, taken):
+        if not pack(fps[ref][0], anchor, region, taken) and \
+                not pack(fps[ref][0], (38.0, 18.0), SPILL, taken):
             failed.append(ref)
     if failed:
         print("could not place:", failed)
@@ -345,8 +369,7 @@ def main(src, dst):
     for s_, x, y in LABELS:
         text(board, s_, x, y, 0.8)
     # Polarity marks from the real pad positions, so they can't drift from the pads.
-    for ref, marks, (dx, dy) in (("J5", {"1": "+", "2": "-"}, (0, -1.9)),
-                                 ("J6", {"1": "A+", "2": "GND", "3": "B+"}, (-3.4, 0))):
+    for ref, marks, (dx, dy) in (("J5", {"1": "+", "2": "-"}, (0, -1.9)),):
         for pad in fps[ref][0].Pads():
             if pad.GetNumber() in marks:
                 px = pcbnew.ToMM(pad.GetPosition().x) - ORIGIN[0]
@@ -361,6 +384,7 @@ def main(src, dst):
 
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     board.Save(dst)
+    assembled_preview(board, dst.replace(".kicad_pcb", "_assembled.kicad_pcb"))
     print(f"{len(fps)} footprints, {len(nets)} nets -> {dst}")
 
 
