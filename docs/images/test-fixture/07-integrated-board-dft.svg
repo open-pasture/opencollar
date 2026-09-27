@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="860" viewBox="0 0 1600 860"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e2622"/></marker></defs><rect width="100%" height="100%" fill="#f6f4ef"/><text x="60" y="70.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="34" fill="#1e2622" font-weight="600" text-anchor="start">What the integrated board has to include, so it can be tested</text>
+<text x="60" y="108.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#6b726d" font-weight="400" text-anchor="start">Decided before layout. Adding any of these after the boards are made means a new board. Underside shown.</text>
+<rect x="70" y="230" width="800.0" height="352.0" rx="20" fill="#2d6a45" stroke="#1e2622" stroke-width="2" />
+<circle cx="102.0" cy="262.0" r="9.600000000000001" fill="#f6f4ef" stroke="#1e2622" stroke-width="2"/>
+<circle cx="838.0" cy="550.0" r="9.600000000000001" fill="#f6f4ef" stroke="#1e2622" stroke-width="2"/>
+<circle cx="146.8" cy="258.8" r="4.4799999999999995" fill="#d3a13f" stroke="none" stroke-width="2"/>
+<circle cx="793.2" cy="553.2" r="4.4799999999999995" fill="#d3a13f" stroke="none" stroke-width="2"/>
+<circle cx="402.8" cy="319.6" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="402.8" cy="352.11199999999997" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="402.8" cy="384.624" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="435.312" cy="319.6" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="435.312" cy="352.11199999999997" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="435.312" cy="384.624" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="467.824" cy="319.6" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="467.824" cy="352.11199999999997" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="467.824" cy="384.624" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="500.336" cy="319.6" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="500.336" cy="352.11199999999997" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="500.336" cy="384.624" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="532.848" cy="319.6" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="532.848" cy="352.11199999999997" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="532.848" cy="384.624" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="565.3600000000001" cy="319.6" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="565.3600000000001" cy="352.11199999999997" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="565.3600000000001" cy="384.624" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="597.8720000000001" cy="319.6" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="597.8720000000001" cy="352.11199999999997" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="597.8720000000001" cy="384.624" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="630.384" cy="319.6" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="630.384" cy="352.11199999999997" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="630.384" cy="384.624" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="662.8960000000001" cy="319.6" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="662.8960000000001" cy="352.11199999999997" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="662.8960000000001" cy="384.624" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="695.408" cy="319.6" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="695.408" cy="352.11199999999997" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<circle cx="695.408" cy="384.624" r="3.5200000000000005" fill="#d3a13f" stroke="white" stroke-width="1.5"/>
+<rect x="399.6" y="470.00000000000006" width="6.4" height="6.4" rx="0" fill="#d3a13f" stroke="none" stroke-width="2" />
+<rect x="415.85600000000005" y="470.00000000000006" width="6.4" height="6.4" rx="0" fill="#d3a13f" stroke="none" stroke-width="2" />
+<rect x="432.112" y="470.00000000000006" width="6.4" height="6.4" rx="0" fill="#d3a13f" stroke="none" stroke-width="2" />
+<rect x="448.368" y="470.00000000000006" width="6.4" height="6.4" rx="0" fill="#d3a13f" stroke="none" stroke-width="2" />
+<rect x="464.624" y="470.00000000000006" width="6.4" height="6.4" rx="0" fill="#d3a13f" stroke="none" stroke-width="2" />
+<rect x="735.6" y="460.4" width="19.200000000000003" height="32.0" rx="0" fill="#d3a13f" stroke="none" stroke-width="2" />
+<rect x="774.0" y="460.4" width="19.200000000000003" height="32.0" rx="0" fill="#d3a13f" stroke="none" stroke-width="2" />
+<rect x="735.6" y="511.6" width="57.6" height="12.8" rx="0" fill="none" stroke="#d3a13f" stroke-width="2" />
+<rect x="95.6" y="319.6" width="179.20000000000002" height="179.20000000000002" rx="0" fill="none" stroke="#d3a13f" stroke-width="2" stroke-dasharray="8,6"/>
+<text x="185.2" y="415.6" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="white" font-weight="400" text-anchor="middle">GNSS patch</text>
+<rect x="294.0" y="396.4" width="12.8" height="12.8" rx="0" fill="#e8e3d6" stroke="#1e2622" stroke-width="1.5" />
+<rect x="825.2" y="306.8" width="12.8" height="12.8" rx="0" fill="#e8e3d6" stroke="#1e2622" stroke-width="1.5" />
+<circle cx="838.0" cy="550.0" r="4" fill="#1e2622" stroke="none" stroke-width="2"/>
+<line x1="838.0" y1="550.0" x2="920.0" y2="690" stroke="#1e2622" stroke-width="1.5"/>
+<text x="928.0" y="697.7" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">Two tooling holes, far apart, not plated</text>
+<circle cx="793.2" cy="553.2" r="4" fill="#1e2622" stroke="none" stroke-width="2"/>
+<line x1="793.2" y1="553.2" x2="920.0" y2="610" stroke="#1e2622" stroke-width="1.5"/>
+<text x="928.0" y="617.7" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">Fiducials: dots the machines find the board by</text>
+<circle cx="695.2800000000001" cy="319.6" r="4" fill="#1e2622" stroke="none" stroke-width="2"/>
+<line x1="695.2800000000001" y1="319.6" x2="920.0" y2="250" stroke="#1e2622" stroke-width="1.5"/>
+<text x="928.0" y="257.7" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">Test pads: 1 mm, 2.54 mm grid, one side only</text>
+<circle cx="831.6" cy="313.2" r="4" fill="#1e2622" stroke="none" stroke-width="2"/>
+<line x1="831.6" y1="313.2" x2="920.0" y2="330" stroke="#1e2622" stroke-width="1.5"/>
+<text x="928.0" y="337.7" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">RF test connectors on the LTE and GNSS feeds</text>
+<text x="928.0" y="362.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="start">e.g. Murata MM8130: the antenna is cut off</text>
+<text x="928.0" y="386.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="start">while a test cable is plugged in</text>
+<circle cx="793.2" cy="473.20000000000005" r="4" fill="#1e2622" stroke="none" stroke-width="2"/>
+<line x1="793.2" y1="473.20000000000005" x2="920.0" y2="450" stroke="#1e2622" stroke-width="1.5"/>
+<text x="928.0" y="457.7" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">Battery pads the fixture supplies</text>
+<circle cx="764.4000000000001" cy="518.0" r="4" fill="#1e2622" stroke="none" stroke-width="2"/>
+<line x1="764.4000000000001" y1="518.0" x2="920.0" y2="530" stroke="#1e2622" stroke-width="1.5"/>
+<text x="928.0" y="537.7" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">One point all the board current flows through,</text>
+<text x="928.0" y="562.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="start">so the fixture can measure sleep current</text>
+<circle cx="434.8" cy="473.20000000000005" r="4" fill="#1e2622" stroke="none" stroke-width="2"/>
+<line x1="434.8" y1="473.20000000000005" x2="450" y2="670" stroke="#1e2622" stroke-width="1.5"/>
+<text x="442" y="677.7" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="end">Programming (SWD) and serial pads</text>
+<text x="70" y="760.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="start">Not drawn: a test mode in the firmware, and pads for every power rail. Outline: the crest-unit board, ~55 × 125 mm</text>
+<text x="70" y="786.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="start">(COLLAR-FIRST-PRINCIPLES.md). Positions here are illustrative; the real ones come with the layout.</text></svg>

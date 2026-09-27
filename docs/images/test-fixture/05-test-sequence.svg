@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1180" viewBox="0 0 1600 1180"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e2622"/></marker></defs><rect width="100%" height="100%" fill="#f6f4ef"/><text x="60" y="70.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="34" fill="#1e2622" font-weight="600" text-anchor="start">One board through the fixture</text>
+<text x="60" y="108.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#6b726d" font-weight="400" text-anchor="start">The script runs top to bottom. Any failed check stops it and prints why. About a minute a board.</text>
+<text x="150" y="170.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#6b726d" font-weight="600" text-anchor="start">Step</text>
+<text x="470" y="170.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#6b726d" font-weight="600" text-anchor="start">What happens</text>
+<text x="1080" y="170.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#6b726d" font-weight="600" text-anchor="start">Pass if</text>
+<text x="1540" y="170.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#6b726d" font-weight="600" text-anchor="end">Time</text>
+<circle cx="95" cy="240" r="26" fill="#e3ece5" stroke="#2f6f4a" stroke-width="2"/>
+<text x="95" y="248.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#2f6f4a" font-weight="600" text-anchor="middle">1</text>
+<line x1="95" y1="266" x2="95" y2="319" stroke="#2f6f4a" stroke-width="2"/>
+<text x="150" y="248.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#1e2622" font-weight="600" text-anchor="start">Load and close</text>
+<text x="470" y="248.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="start">Operator drops the board on the pins, shuts the lid</text>
+<text x="1080" y="248.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#6b726d" font-weight="400" text-anchor="start">—</text>
+<text x="1540" y="248.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="end">5 s</text>
+<circle cx="95" cy="345" r="26" fill="#e3ece5" stroke="#2f6f4a" stroke-width="2"/>
+<text x="95" y="353.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#2f6f4a" font-weight="600" text-anchor="middle">2</text>
+<line x1="95" y1="371" x2="95" y2="424" stroke="#2f6f4a" stroke-width="2"/>
+<text x="150" y="353.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#1e2622" font-weight="600" text-anchor="start">Power on</text>
+<text x="470" y="353.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="start">Power Profiler supplies 3.3 V through the BAT pads, current-limited</text>
+<text x="1080" y="353.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#6b726d" font-weight="400" text-anchor="start">draws a few mA, not a short</text>
+<text x="1540" y="353.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="end">1 s</text>
+<circle cx="95" cy="450" r="26" fill="#e3ece5" stroke="#2f6f4a" stroke-width="2"/>
+<text x="95" y="458.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#2f6f4a" font-weight="600" text-anchor="middle">3</text>
+<line x1="95" y1="476" x2="95" y2="529" stroke="#2f6f4a" stroke-width="2"/>
+<text x="150" y="458.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#1e2622" font-weight="600" text-anchor="start">Check the rails</text>
+<text x="470" y="458.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="start">ADC reads every rail pad</text>
+<text x="1080" y="458.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#6b726d" font-weight="400" text-anchor="start">3V3 within ±3 %; charger pins at rest</text>
+<text x="1540" y="458.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="end">2 s</text>
+<circle cx="95" cy="555" r="26" fill="#e3ece5" stroke="#2f6f4a" stroke-width="2"/>
+<text x="95" y="563.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#2f6f4a" font-weight="600" text-anchor="middle">4</text>
+<line x1="95" y1="581" x2="95" y2="634" stroke="#2f6f4a" stroke-width="2"/>
+<text x="150" y="563.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#1e2622" font-weight="600" text-anchor="start">Flash test firmware</text>
+<text x="470" y="563.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="start">Programmer writes it through the SWD pads</text>
+<text x="1080" y="563.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#6b726d" font-weight="400" text-anchor="start">verify reads back correctly</text>
+<text x="1540" y="563.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="end">10–20 s</text>
+<circle cx="95" cy="660" r="26" fill="#e3ece5" stroke="#2f6f4a" stroke-width="2"/>
+<text x="95" y="668.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#2f6f4a" font-weight="600" text-anchor="middle">5</text>
+<line x1="95" y1="686" x2="95" y2="739" stroke="#2f6f4a" stroke-width="2"/>
+<text x="150" y="668.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#1e2622" font-weight="600" text-anchor="start">Self-test</text>
+<text x="470" y="668.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="start">Firmware talks to every chip, drives each piezo</text>
+<text x="1080" y="668.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#6b726d" font-weight="400" text-anchor="start">IMU, GNSS, fuel gauge, flash answer;</text>
+<text x="1080" y="692.7" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#6b726d" font-weight="400" text-anchor="start">piezo current seen</text>
+<text x="1540" y="668.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="end">5 s</text>
+<circle cx="95" cy="765" r="26" fill="#e3ece5" stroke="#2f6f4a" stroke-width="2"/>
+<text x="95" y="773.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#2f6f4a" font-weight="600" text-anchor="middle">6</text>
+<line x1="95" y1="791" x2="95" y2="844" stroke="#2f6f4a" stroke-width="2"/>
+<text x="150" y="773.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#1e2622" font-weight="600" text-anchor="start">Charger</text>
+<text x="470" y="773.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="start">Relay applies the 6 V solar stand-in</text>
+<text x="1080" y="773.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#6b726d" font-weight="400" text-anchor="start">“power good” low; charge current flows</text>
+<text x="1540" y="773.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="end">5 s</text>
+<circle cx="95" cy="870" r="26" fill="#e3ece5" stroke="#2f6f4a" stroke-width="2"/>
+<text x="95" y="878.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#2f6f4a" font-weight="600" text-anchor="middle">7</text>
+<line x1="95" y1="896" x2="95" y2="949" stroke="#2f6f4a" stroke-width="2"/>
+<text x="150" y="878.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#1e2622" font-weight="600" text-anchor="start">Radios</text>
+<text x="470" y="878.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="start">Modem registers on LTE; GNSS reads the re-radiated sky</text>
+<text x="1080" y="878.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#6b726d" font-weight="400" text-anchor="start">attached; enough satellites seen</text>
+<text x="1540" y="878.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="end">10–30 s</text>
+<circle cx="95" cy="975" r="26" fill="#e3ece5" stroke="#2f6f4a" stroke-width="2"/>
+<text x="95" y="983.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#2f6f4a" font-weight="600" text-anchor="middle">8</text>
+<line x1="95" y1="1001" x2="95" y2="1054" stroke="#2f6f4a" stroke-width="2"/>
+<text x="150" y="983.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#1e2622" font-weight="600" text-anchor="start">Sleep current</text>
+<text x="470" y="983.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="start">Board goes to its deepest sleep; Power Profiler measures</text>
+<text x="1080" y="983.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#6b726d" font-weight="400" text-anchor="start">under the budget, e.g. &lt; 10 µA</text>
+<text x="1540" y="983.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="end">5 s</text>
+<circle cx="95" cy="1080" r="26" fill="#e3ece5" stroke="#2f6f4a" stroke-width="2"/>
+<text x="95" y="1088.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#2f6f4a" font-weight="600" text-anchor="middle">9</text>
+<text x="150" y="1088.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" fill="#1e2622" font-weight="600" text-anchor="start">Finish</text>
+<text x="470" y="1088.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="start">Flash the real firmware, write the serial number,</text>
+<text x="470" y="1112.7" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="start">print the label, save the results</text>
+<text x="1080" y="1088.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#6b726d" font-weight="400" text-anchor="start">all steps passed</text>
+<text x="1540" y="1088.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" fill="#1e2622" font-weight="400" text-anchor="end">5–10 s</text></svg>

@@ -189,3 +189,17 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - The real leftover space was the connector band along the bottom edge (10.3 mm, for the PH harness socket) and the column right of the IMU. The harness socket now sits in that column, on the right edge. The panels moved to a JST-SH 3-pin (SM03B-SRSS-TB, C160403; 1 A per contact, both panels ≤ 0.46 A), so the bottom band only needs an SH socket's 6.6 mm.
 - **65 × 58.5 mm**, 47 % less area than the 95 × 75 layout. This is within ~1 mm of the floor for these boards: the Kit's 55.9 mm length sets the height; the Kit, the 4 mm gap its right-hand socket needs from the M10S's socket, and the M10S's 38.1 mm set the width.
 - ERC clean. DRC shows only the intended butted Kit sockets, plus the unrouted connections. Renders reviewed: bare top, assembled top, bottom.
+
+### Test fixture guide, with pictures (2026-09-27)
+- Cody asked for the test-fixture idea laid out with example parts, pictures and diagrams, as someone new to hardware. Written up in `docs/TEST-FIXTURE.md`.
+- Pictures, all made from the real board:
+  - Two Blender renders of a bed-of-nails fixture built around the carrier's actual 3D model (`kicad-cli pcb export glb`). The pogo pins sit at the 33 real test-pad positions (`export_pads.py` → `tp.json`); two mounting holes stand in for tooling holes.
+  - Seven diagrams drawn as SVG by `diagrams.py`: how a board gets made, a fixture cross-section, a pogo pin, the test station, the test sequence, the carrier's pad map by instrument, and what the integrated board must include.
+- **Caught in my own review:**
+  - The first render's clear plate hid the pins, and the close-up view was a dark gap.
+  - Labels were cut off in the cross-section and the integrated-board diagram.
+  - An alignment pin collided with a pogo pin.
+  - A price overlapped a title, and one step's text ran into the next column.
+  - All fixed and re-rendered.
+- Example station, parts only, ~$600–1,500: Raspberry Pi 5, Raspberry Pi Debug Probe (or J-Link), Nordic PPK2 as battery stand-in and current meter, USB bench supply as the solar stand-in, ADS1115 ADCs, USB relay board, FTDI cable, label printer, P75-class pogo pins. Prices are typical list prices from memory, not quotes. Nothing ordered.
+- Recorded for the integrated board: tooling holes, a test-pad grid on one side, battery pads with a single current path for the sleep-current check, SWD/serial pads, RF test connectors (e.g. Murata MM8130), and a firmware test mode.
