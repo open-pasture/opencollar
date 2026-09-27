@@ -203,3 +203,15 @@ When the boxes arrive: photograph the parts, check every item against the list, 
   - All fixed and re-rendered.
 - Example station, parts only, ~$600–1,500: Raspberry Pi 5, Raspberry Pi Debug Probe (or J-Link), Nordic PPK2 as battery stand-in and current meter, USB bench supply as the solar stand-in, ADS1115 ADCs, USB relay board, FTDI cable, label printer, P75-class pogo pins. Prices are typical list prices from memory, not quotes. Nothing ordered.
 - Recorded for the integrated board: tooling holes, a test-pad grid on one side, battery pads with a single current path for the sleep-current check, SWD/serial pads, RF test connectors (e.g. Murata MM8130), and a firmware test mode.
+
+### HeyPCB for design, JLCPCB assembly, finishing in the garage (2026-09-27)
+- Cody wants to design boards in **HeyPCB** (heypcb.ai), a browser PCB editor with an AI agent ("Inky"), live multiplayer, a 3D and enclosure view, and a gallery of ~8,800 open boards. Plans are $20–500/month, and there's a free trial for one board.
+- **Checked:**
+  - It edits KiCad-native project files, and you own your designs and exports (terms, section 4).
+  - It runs ERC/DRC and exports Gerbers, drill files, BOM and pick-and-place.
+  - Publishing to its gallery is optional and never automatic.
+  - Agent prompts and design context go to third-party AI model providers. That's fine for an open design; keep it in mind for the proprietary collar later.
+  - It has placed manufacturing orders and shipped to users before (the September "free board week"). Whether it offers ordering permanently is unknown.
+- **Fit with our pipeline:** HeyPCB wants a schematic and a board. We generate the board from SKiDL but have no `.kicad_sch` (the known gap in DESIGN-PHASE.md). So either HeyPCB's agent redraws the schematic from our netlist and spec, or we use HeyPCB for layout and routing only. Routing is our open blocker, and it has autorouting, so Freerouting/Java may not be needed.
+- Package for upload: `hardware/carrier/build/heypcb-carrier.zip`. It holds the `.kicad_pro` (JLCPCB rules), `.kicad_pcb`, netlist, spec and renders. **Caught:** a stub `.kicad_pro` reset the 0.15 mm clearance to KiCad's 0.2 mm default and gave 9 false DRC errors. The package now uses the real project file KiCad writes, so the only findings are the 2 intended socket overlaps and the unrouted connections.
+- Plan: route and review in HeyPCB, export Gerbers/BOM/CPL back into git, then order at JLCPCB: 5 boards, assembled, shipped to Columbia (JLCPCB collects US import duty at checkout). The garage then fits the Kit pigtail, the breakout headers and standoffs, and the harness and panel pigtails, then does bring-up. **A current-limited bench supply is missing from `hardware/tools.md` and is needed before the first power-up.** Nothing ordered; Cody signs up and checks out himself.
