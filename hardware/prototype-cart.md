@@ -25,7 +25,7 @@ Already owned: nRF9151 Connect Kit, LTE antenna, small U.FL GPS patch, SparkFun 
 | STEMMA QT/Qwiic to female sockets 150 mm | [4397](https://www.adafruit.com/product/4397) | 2 | 1.25 |
 | M3 × 4 brass heat-set inserts (50) | [4255](https://www.adafruit.com/product/4255) | 1 | 5.95 |
 
-Adafruit rejects automated cart adds; add these by hand.
+Adafruit drops cart adds from a guest session; sign in first.
 
 ### Amazon
 | Item | ASIN | $ |
@@ -49,7 +49,7 @@ Adafruit rejects automated cart adds; add these by hand.
 ### Hologram
 LTE-M SIM, promo code FREEPILOTSIM (confirm nano size).
 
-**Approximate total: ~$260** plus shipping and tax. Qwiic cable prices are approximate.
+**Total: $260.31** plus shipping and tax.
 
 ## Not bought online
 - About 500 g of steel for the ballast (flat bar or large fender washers).

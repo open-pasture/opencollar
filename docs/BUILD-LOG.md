@@ -98,4 +98,4 @@
 - Amazon: only the 5 collar items are selected for checkout ($61.35). Other items in the cart are unticked, not deleted.
 - Voltaic: re-added 2 × P124 panels ($28.00). Heritage: strap ($23.10).
 - Emptied SparkFun, Pololu, United Lithium and K&J.
-- Adafruit still rejects automated adds; the 9 product tabs are open to add by hand ($99.20).
+- Adafruit: automated adds were silently dropped until Cody created an account and signed in; then all 9 items went in ($98.60).
