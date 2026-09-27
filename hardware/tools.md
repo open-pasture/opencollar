@@ -1,6 +1,6 @@
 # Tools for building a collar
 
-Amazon cart put together 2026-09-26. Prices on that day.
+Ordered on Amazon 2026-09-26 (receipt goes to the other email address). Prices on that day.
 
 | Tool | Pick | ASIN | $ |
 | --- | --- | --- | --- |
