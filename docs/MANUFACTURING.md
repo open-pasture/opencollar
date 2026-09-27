@@ -48,6 +48,16 @@ With that, each collar takes about 15–20 minutes of final assembly instead of 
 
 Start a pre-scan at a test lab as soon as the first custom boards work, so surprises come early.
 
+### Why each is needed
+
+- **FCC** is legal permission to sell a radio in the US. Anything that transmits needs it, so devices don't interfere with other radios and phone networks. Without it we can't sell or market the collar, and stores and customs increasingly check for an FCC ID.
+  - Nordic has already certified the nRF9151. If we follow their antenna and layout rules, we reuse that approval, and the whole collar only needs a smaller test that it doesn't leak radio noise. Departing from their rules (a different antenna, for example) can mean more testing.
+  - A few prototypes for our own development and testing are generally fine. The rule bites when we sell.
+- **Carrier approval** (PTCRB for AT&T and T-Mobile, Verizon's own program) is permission to stay on the cell network. Carriers only allow certified devices long term, to protect the network from devices that misbehave (reconnecting over and over and flooding a tower, for example).
+  - A handful of uncertified collars on a Hologram SIM will likely work. At hundreds or thousands, a carrier can block uncertified devices, and a whole herd's collars would go dark.
+  - The nRF9151 and its modem firmware already carry carrier certifications, so a collar built on it usually needs lighter testing than a phone.
+- Because we build on pre-certified parts, the real cost may land below the ranges above. A lab quote needs the custom board, so nothing is spent here until then.
+
 ## Stages
 
 | Stage | Units | What it proves | Build method |
