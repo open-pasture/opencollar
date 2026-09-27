@@ -150,3 +150,17 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - **Carrier rev A2** (`hardware/carrier/SPEC.md`): 95 × 75 mm with four M3 holes. The battery and NTC arrive over the harness (J_BAT and J_NTC kept for the bench). The LM66100 5 V input is gone. Two Qwiic cue ports feed the ear-pod buzzers (addresses 0x34 and 0x5B, set in software). Everything leaving the box sits behind a TCA4307 buffer plus a TPS2553 current-limited switch (LCSC C55266) on one EXT_EN line, so a chewed cable can't hang the GNSS/IMU bus and the buzzers draw nothing between cues.
 - Alpha test box: board plane raised to z = 20 (a centred board sits over the strap channel), M8 socket, two ear pods, and a bottom module with the pack, a fuse, NTC and ~390 g of steel for ≥ 1.87 : 1.
 - To buy when Cody's ready (not ordered): a second Qwiic Buzzer, two long Qwiic cables, an M8 8-pin cordset plus two panel sockets, JST-PH pigtails.
+
+### Carrier schematic and first placement (2026-09-26)
+- `hardware/carrier/schematic.py` (SKiDL): one function per block, each citing its datasheet section. Blocks: Connect Kit sockets, Kit battery feed, bq24074 charger, solar inputs, bench battery, ADC sensing, main I2C, GNSS sockets, IMU socket, external bus (TCA4307 + TPS2553), cue ports, harness, ESD, expansion, test pads, holes. The TCA4307 and TPS2553 have no KiCad symbols, so they're defined in the script from their datasheet pin tables.
+- **ERC clean.** Netlist checked by hand: 96 parts, 53 nets, no single-pin or duplicated nets. Kit pins land on the right sockets (e.g. PPS on Kit pin 32 = P0.24, both Kit grounds).
+- **Parts from JLCPCB's parts search.** Everything is stocked except a 1 × 20 SMD socket (3 pieces of one Samtec part), so each Kit row is two 1 × 10 hanxia 8.5 mm SMD sockets end to end. The bq24074 has only 816 in stock. 887 Ω, 3.24 kΩ and 71.5 kΩ have no Basic part. Full table in SPEC.md section 10.
+- Changes on the way:
+  - Both panels share one 3-pin PH (the right edge couldn't fit three 2-pin connectors).
+  - The MAX-M10S's two holes beside its 8-pin row sit under the SMD socket, so it gets standoffs only on the far corners.
+  - The IMU gets M2 standoffs to clear the GNSS socket.
+  - The bq24074's thermal-via footprint uses 0.2 mm drills, so it gets four 0.3 mm vias instead (JLCPCB's standard minimum).
+- `hardware/carrier/layout.py` (KiCad Python): places the fixed parts at computed positions (Kit rows 17.78 mm apart; breakout sockets at their board-file positions) and packs passives near their block without overlaps. Test pads go on the bottom with ≤ 5-character labels; GND pours on both layers; design rules set for JLCPCB (0.15 mm clearance and track, 0.3/0.6 mm vias).
+- **DRC:** the only violations left are the intended end-to-end Kit sockets (2 courtyard overlaps and their silkscreen), plus 142 unconnected items because nothing is routed yet.
+- **Caught in my own render review:** the LCSC/MPN fields were printing on the silkscreen over every part (now hidden). The Kit-battery "+ −" label sat over the wrong holes, so the polarity marks are now placed from the real pad positions. The board title covered U5's reference.
+- Open before ordering: route (Freerouting still to install, it needs Java). Check the hanxia sockets' pad stagger against KiCad's Pin1Left and that the body is 25.4 mm long. Confirm the bq24074 RGT0016B land pattern.

@@ -61,6 +61,17 @@ kicad-cli pcb drc --output build/drc.rpt build/smoke.kicad_pcb
 kicad-cli pcb render --side top --output build/top.png build/smoke.kicad_pcb
 ```
 
+The carrier board itself (rev A2):
+
+```sh
+cd hardware/carrier && source env.sh
+uv run python schematic.py                                   # ERC + build/carrier.net
+kicad-python layout.py build/carrier.net build/carrier.kicad_pcb   # placement, pours, silkscreen
+kicad-cli pcb drc --severity-all --format json --output build/drc.json build/carrier.kicad_pcb
+kicad-cli pcb render --side top --output build/top.png build/carrier.kicad_pcb
+kicad-cli pcb render --side bottom --output build/bottom.png build/carrier.kicad_pcb
+```
+
 ## Known gap: a readable schematic
 
 SKiDL writes netlists, not KiCad schematic sheets. That's fine for the carrier board, where agents and diffs do the reviewing. Nordic's review (and most humans) want a schematic PDF. Before the integrated board, either:

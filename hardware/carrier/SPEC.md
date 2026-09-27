@@ -46,7 +46,7 @@ Sources, all kept locally in `mechanical/reference/vendor/` or `/tmp/ds` during 
 | Topic | Recommendation | Why |
 | --- | --- | --- |
 | Board shape | **Rectangle, 95 × 75 mm**, four M3 corner holes | Under 100 × 100 mm, JLCPCB's cheapest tier. The battery has left the top box, so the board no longer has to wrap around it (decided 2026-09-26) |
-| Connect Kit | Two 1 × 20 **SMD** female sockets, 2.54 mm pitch | The Kit already has male pins fitted (parts photo). SMD sockets leave no tails under the board, which keeps the bottom flat for test pads and the fixture (section 7) |
+| Connect Kit | **Four 1 × 10 SMD female sockets**, two end to end per row (J1–J4), 2.54 mm pitch, 8.5 mm tall | The Kit already has male pins fitted (parts photo). SMD sockets leave no tails under the board, which keeps the bottom flat for test pads and the fixture (section 7). JLCPCB stocks no 1 × 20 SMD socket (3 pieces of one Samtec part), so each row is two 1 × 10s butted together |
 | MAX-M10S | **Female sockets** (8-pin edge row and 4-pin I2C row), not Qwiic | Sockets give us EXTINT (wake from standby), RESET_N, TIMEPULSE and UART, which Qwiic doesn't carry, and hold the board rigidly with no cable |
 | ISM330DHCX | **Female 9-pin socket** | Brings INT1/INT2 to the nRF for wake-on-motion. An IMU should be screwed down, not hanging on a cable |
 | Cues | **Two Qwiic Buzzers, one in each ear pod** on the strap, on Qwiic cables to CUE_L and CUE_R | Left/right cues need one sound source on each side of the neck (`docs/COLLAR-FIRST-PRINCIPLES.md` section 1). Qwiic Buzzers because one is owned and its driver is written; the second buzzer's address moves from 0x34 to 0x5B in software (SparkFun's two-buzzer example) |
@@ -167,7 +167,7 @@ Addresses: main bus M10S 0x42, ISM330 0x6A. EXT bus buzzers 0x34 and 0x5B, and t
 
 | Source | Path | Reason |
 | --- | --- | --- |
-| Panel A, panel B | PH 2-pin each → B5819W Schottky → IN | P124: Vmp 6.0 V, Voc 7.07–7.28 V, Isc 0.21–0.23 A [P124]. Diode drop ~0.3 V at 0.2 A is fine against a 6 V panel. A diode per panel stops a sunlit panel pushing current back into a shaded one |
+| Panel A, panel B | J6 pins 1 and 3 → B5819W Schottky each (D1, D2) → IN | P124: Vmp 6.0 V, Voc 7.07–7.28 V, Isc 0.21–0.23 A [P124]. Diode drop ~0.3 V at 0.2 A is fine against a 6 V panel. A diode per panel stops a sunlit panel pushing current back into a shaded one |
 
 **Thermal.** Worst realistic case is both panels at ~6 V and 400 mA into a pack at 3.4 V. That's P = (6 − 4.4) × 0.4 + (4.4 − 3.4) × 0.4 ≈ 1.0 W ([BQ] eq. 11), +45 °C at 44.5 °C/W ([BQ] 8.4). In a 60 °C shell that's ~105 °C, under the 125 °C thermal regulation. Pour copper on both layers under and around the IC.
 
@@ -196,22 +196,26 @@ An 8-pin PH socket for the pigtail from the box's panel-mount M8 8-pin socket. T
 
 ## 6. Wire connectors
 
+Board references in brackets (schematic.py): Kit sockets J1–J4, Kit feed J5, panels J6, bench battery J7, bench NTC J8, spare Qwiic J9, MAX-M10S J10 (8-pin) and J11 (4-pin), IMU J12, cues J13/J14, harness J15, EXP J16.
+
 | Ref | Connector | Mates with | Pins |
 | --- | --- | --- | --- |
-| J_BAT | JST-PH 2-pin, SMD right-angle | Adafruit 353 pack's PH plug, **bench only** | Polarity to match Adafruit's convention; Cody checks with a meter before first plug-in (question 4) |
-| J_SOLA, J_SOLB | JST-PH 2-pin each | Pre-crimped PH pigtails soldered to each P124's pads | 1 = +, 2 = − |
-| J_NTC | JST-PH 2-pin | Pre-crimped PH pigtail on the Adafruit 372, **bench only** | Non-polar |
-| J_HBUS | JST-PH 8-pin | Pigtail from the M8 8-pin panel socket | Section 5 |
-| J_CUE_L, J_CUE_R | JST-SH 4-pin | Qwiic cables to the ear-pod buzzers | GND, EXT_3V3, EXT_SDA, EXT_SCL |
-| J_KIT | 2 plated holes + strain-relief slot | 1.25 mm pigtail (on order) into Kit J2 | CHG_OUT, GND |
-| J_QWIIC | JST-SH 4-pin | Qwiic cable, inside the box | GND, 3V3, SDA, SCL |
-| J_EXP | 1 × 10, 2.54 mm, unpopulated | Stimulus board / experiments | 3V3, GND, P0.00–P0.04, A3, A4, A5 |
+| J_BAT (J7) | JST-PH 2-pin, SMD right-angle | Adafruit 353 pack's PH plug, **bench only** | Polarity to match Adafruit's convention; Cody checks with a meter before first plug-in (question 4) |
+| J6 (panels) | JST-PH 3-pin | One pre-crimped PH3 pigtail; each panel's + to its own pin, both − to pin 2 | 1 = panel A +, 2 = GND, 3 = panel B + |
+| J_NTC (J8) | JST-PH 2-pin | Pre-crimped PH pigtail on the Adafruit 372, **bench only** | Non-polar |
+| J_HBUS (J15) | JST-PH 8-pin | Pigtail from the M8 8-pin panel socket | Section 5 |
+| J_CUE_L, J_CUE_R (J13, J14) | JST-SH 4-pin | Qwiic cables to the ear-pod buzzers | GND, EXT_3V3, EXT_SDA, EXT_SCL |
+| J_KIT (J5) | 2 plated holes + strain-relief slot | 1.25 mm pigtail (on order) into Kit J2 | CHG_OUT, GND |
+| J_QWIIC (J9) | JST-SH 4-pin | Qwiic cable, inside the box | GND, 3V3, SDA, SCL |
+| J_EXP (J16) | 1 × 10, 2.54 mm, unpopulated | Stimulus board / experiments | 3V3, GND, P0.00–P0.04, A3, A4, A5 |
 
 There's no crimp tool in `hardware/tools.md`, so every mating half is a pre-crimped pigtail spliced with solder and heat shrink (both on hand).
 
 ## 7. Test pads
 
 1.0 mm round pads on the **bottom** side, labelled in silkscreen, all on a 2.54 mm grid where the layout allows, so a pogo fixture can reach them. The bottom is otherwise empty.
+
+Silkscreen labels are ≤ 5 characters: COUT/CIN = charger OUT/IN, SOLA/SOLB = panels before the diodes, X… = EXT bus (X3V3, XSDA, XSCL, XEN, XINT), KEN = Kit ENABLE, CHG/PG/CE = charger status and enable, SAFE/GRST/PPS = GNSS safeboot, reset, timepulse.
 
 | Group | Pads |
 | --- | --- |
@@ -225,16 +229,22 @@ There's no crimp tool in `hardware/tools.md`, so every mating half is a pre-crim
 
 **95 × 75 mm, 2 mm corner radius, four M3 holes (Ø3.2) at 3.5 mm from each edge.** The board isn't shaped to a shell: the V1-alpha test box gets posts to match (section 12).
 
-Placement (top view, origin at the bottom-left corner):
+Placement as drawn by `layout.py` (top view, origin top-left, x right, y down; renders in `build/`):
 
 | Block | Where | Why |
 | --- | --- | --- |
-| Connect Kit sockets | Along the left edge, rows vertical; USB end at the bottom edge, antenna end at the top | USB reachable at the edge for flashing; U.FL cables head up to the lid antennas |
-| MAX-M10S | Top right; SMA toward the right edge | Its antenna cable goes to the patch under the crown, away from the Kit's LTE U.FL |
-| ISM330DHCX | Middle, between the Kit and the M10S | Screwed down near the board's centre |
-| Charger, panel and NTC connectors | Bottom right | Short high-current loop IN → bq24074 → BAT; J_SOLA/J_SOLB on the bottom edge |
-| J_HBUS, J_CUE_L, J_CUE_R, TCA4307, TPS2553, ESD | Right edge | Every line that leaves the box enters on one edge, through its ESD part first |
-| J_EXP, J_QWIIC, J_KIT | Top edge | |
+| Connect Kit sockets J1–J4 | Left edge, rows vertical at x = 5.5 and 23.28 (17.78 apart); USB end at the top, 6 mm in | U.FL cables head down the board to the antennas |
+| Kit battery feed J5 | Under the Kit's USB end, where the Kit's own J2 socket is | The 1.25 mm pigtail drops straight down |
+| MAX-M10S J10, J11 | Top right, at the breakout's own header positions; standoffs H5, H6 at its two far corners | The SMA points off the right edge |
+| ISM330 J12 | Middle, standoffs H7, H8 (M2) | Screwed down near the board's centre |
+| Charger U1, D1/D2, panels J6, bench NTC J8 | Right edge, lower half | Short IN → bq24074 → BAT loop; panel leads enter at the right edge |
+| Cue ports J13, J14, harness J15, ESD U4/U5, bench battery J7 | Bottom edge | Every line that leaves the box enters on one edge, next to its ESD part |
+| TCA4307 U2, TPS2553 U3, I2C pull-ups | Lower middle | Between the Kit's I2C pins and the bottom-edge ports |
+| Sense dividers | Beside the Kit's A0–A2 pins | Short high-impedance runs |
+| EXP J16, spare Qwiic J9 | Top edge | |
+| Test pads | Bottom side, 5 × 3.6 mm grid under the lower middle | One pogo fixture from below |
+
+Board holes H1–H4: M3 at 3.5 mm from each corner.
 
 Height above the board: each plugged board sits ~11 mm up (8.5 mm socket + the pins' 2.5 mm plastic spacer), and the tallest part on any of them is ~3.3 mm (the USB-C or SMA). So **~17 mm from the board's top face** (question 7 refines this).
 
@@ -264,9 +274,30 @@ Every unknown mA running all the time adds 24 mAh/day.
 
 **Harvest:** two P124 in parallel give up to ~0.42–0.46 A in full sun [P124 Isc]. In the draft-1 test box the panels face ±18.7° to either side of the spine [SHELL], so assume ~70 % of flat. Allow another 90 % for dirt and heat: ~0.28 A × peak-sun-hours. Middle Tennessee is roughly 2.5 (Dec) to 5 (Jun) peak sun hours: **~700 mAh/day in winter, ~1,400 mAh/day in summer.** That's 2–4 × the known load, before shade, hair and animals lying down. Firmware logs the real harvest from ISET_SENSE and VIN_SENSE.
 
-## 10. Parts (preliminary, JLCPCB/LCSC)
+## 10. Parts (JLCPCB/LCSC)
 
-Checked at LCSC 2026-09-26: **BQ24074RGTR C54313**, **TCA4307DGKR C880333**, **TPS2553DBVR C55266** (extended parts, ~$3 setup fee each at JLCPCB). Schottky B5819W (SOD-123) is a JLCPCB basic part. The LM66100 from rev A is gone with the 5 V harness input. Passives from the basic 0402/0603 range, with the IN capacitor rated 25 V. PH/SH sockets, the SMD female sockets and the TVS array get picked and their LCSC numbers recorded when the schematic is written.
+From JLCPCB's parts search, 2026-09-26. Stock is JLCPCB assembly stock that day. The numbers are also in `schematic.py` and end up as footprint fields for the BOM.
+
+| Part | LCSC | MPN | Class | Stock |
+| --- | --- | --- | --- | --- |
+| bq24074 (U1) | C54313 | BQ24074RGTR | Extended | **816**: enough, but thin |
+| TCA4307 (U2) | C880333 | TCA4307DGKR | Extended | 2,735 |
+| TPS2553 (U3) | C55266 | TPS2553DBVR | Extended | 59,681 |
+| ESD (U4, U5) | C7519 | USBLC6-2SC6 (ST) | Extended | 44,218 |
+| Schottky (D1, D2) | C8598 | B5819W SL | **Basic** | 493,921 |
+| Kit sockets 1 × 10 (J1–J4) | C46635846 | HX PM2.54-1x10P TP H8.5-YQ | Extended | 425 |
+| M10S sockets 1 × 8, 1 × 4 (J10, J11) | C46635844, C46635840 | HX PM2.54 H8.5 | Extended | 5,136, 5,201 |
+| IMU socket 1 × 9 (J12) | C46635845 | HX PM2.54-1x9P TP H8.5-YQ | Extended | 293 |
+| PH 2-pin R/A (J7, J8) | C295747 | S2B-PH-SM4-TB | Extended | 24,190 |
+| PH 3-pin R/A (J6) | C265101 | S3B-PH-SM4-TB | Extended | 2,025 |
+| PH 8-pin vertical (J15) | C495548 | B8B-PH-SM4-TB | Extended | 2,969 |
+| SH 4-pin R/A (J9, J13, J14) | C160404 | SM04B-SRSS-TB | Extended | 30,694 |
+| 887 Ω, 3.24 kΩ, 71.5 kΩ 1 % 0603 | C93619, C22994, C23103 | UNI-ROYAL 0603WAF | Extended (no Basic in these values) | |
+| 100 k, 10 k, 4.7 k, 1 M, 200 k, 1 k 0603 | C25803, C25804, C23162, C22935, C25811, C21190 | UNI-ROYAL 0603WAF | Basic | |
+| 10 µF 25 V 0805 | C15850 | CL21A106KAYNNNE | Basic | |
+| 100 nF, 10 nF, 1 µF (50 V) 0603 | C14663, C57112, C15849 | | Basic | |
+
+Not fitted: J5 and J16 (holes), the 10 kΩ bench TS resistor, the test pads. Every Extended part adds a small setup fee per unique part at JLCPCB; this board has ~16 of them.
 
 The Adafruit 4755 charger board we bought is no longer needed in the collar. It stays a bench reference and a fallback.
 
@@ -277,7 +308,7 @@ Decided 2026-09-26: rectangle board (was question 1); the harness carries the ba
 To buy when you're ready (not ordered):
 1. **A second SparkFun Qwiic Buzzer** (BOB-24474) and **two Qwiic cables, 200–500 mm**, for the ear pods.
 2. **M8 8-pin harness:** a high-flex PUR female-to-male cordset and two panel-mount sockets with leads (one on the box, one on the bottom module). Length once the bottom module is drawn (section 12).
-3. Pre-crimped JST-PH pigtails (2-pin ×4, 8-pin ×1) for the panels, NTC, bench battery and harness.
+3. Pre-crimped JST-PH pigtails: 3-pin ×1 (panels), 2-pin ×2 (bench battery, NTC), 8-pin ×1 (harness).
 
 Bench checks when parts arrive:
 4. **Pinouts against silkscreen:** the ISM330's 9-pin order (VIN, 3Vo, GND, SCL, SDA, DO, CS, INT1, INT2); the battery pack's JST-PH polarity; the 1.25 mm pigtail's red wire against the `+` on the Kit's J2.
@@ -286,8 +317,12 @@ Bench checks when parts arrive:
 7. **Heights with calipers:** the MAX-M10S from PCB to the top of the SMA, the Kit's male pins below its PCB (spacer and pin length), a female socket's height.
 8. **Buzzer loudness from an ear pod:** dB at 1 m with a phone app. It decides piezo or not for the integrated board.
 
+Before ordering (desk checks, no parts needed):
+9. **The hanxia sockets' pad stagger** against KiCad's `Pin1Left` footprint (both conventions exist; if it's mirrored, switch to `Pin1Right`), and that the 1 × 10 body is 25.4 mm long, so two butt together at the Kit's pitch.
+10. **The bq24074's RGT0016B land pattern.** The datasheet copy only draws RGT0016C (1.68 mm pad), which the footprint uses.
+
 Not needed now:
-9. The Kit's USB VBUS could feed the charger for bench charging. Left out: a diode on VBUS leaks back at high temperature and can wake the Kit's own charger. Bench-charge through J_SOLA with the bench supply at 6 V, 0.5 A limit instead.
+11. The Kit's USB VBUS could feed the charger for bench charging. Left out: a diode on VBUS leaks back at high temperature and can wake the Kit's own charger. Bench-charge through J_SOLA with the bench supply at 6 V, 0.5 A limit instead.
 
 ## 12. Test-box changes this implies (for `mechanical/`)
 
