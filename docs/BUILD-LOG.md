@@ -99,3 +99,7 @@
 - Voltaic: re-added 2 × P124 panels ($28.00). Heritage: strap ($23.10).
 - Emptied SparkFun, Pololu, United Lithium and K&J.
 - Adafruit: automated adds were silently dropped until Cody created an account and signed in; then all 9 items went in ($98.60).
+
+### Prototype parts ordered (2026-09-26)
+Cody placed all six orders: DigiKey, Amazon, Adafruit, Voltaic, Heritage, Hologram. Total $260.31 plus shipping and tax (list in `hardware/prototype-cart.md`).
+When the boxes arrive: photograph the parts, check every item against the list, then bench-test power (panels → bq24074 → pack → nRF9151) before anything goes in a shell.
