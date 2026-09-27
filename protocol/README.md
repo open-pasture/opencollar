@@ -143,7 +143,10 @@ shape rules, `slots_full`.
 
 A rejected command is acked `rejected` with a `code`. Every code except
 `slots_full` is permanent: the server doesn't offer that version to that
-collar again.
+collar again. `wrong_herd` is permanent only until the collar's config
+changes: a boundary of the herd a collar was just moved to can reach it
+before the config that moves it, so the server offers a version rejected
+`wrong_herd` again once the collar reports a higher `device.config_version`.
 
 - `bad_sig` · `wrong_herd` (herd_id present and not the collar's) ·
   `wrong_collar` (collar_id present and not the collar's) · `bad_json` ·
@@ -220,6 +223,14 @@ staged version is **dead** when a higher version activates at or before it.
   slots, so the server re-stages schedules above it. A pen (`collar_id`
   command) drops that collar's staged slots; when the escape ends the server
   restages per-collar copies.
+- **Herd change** (a signed config naming another herd): every staged slot
+  whose `herd_id` is not the new herd is dropped, with no ack. The active
+  boundary stays in force until a boundary of the new herd applies, so the
+  collar is never left without a fence. `have` falls to the highest version
+  still held and the next report's `slots` shows what is left, so the server
+  serves the new herd's boundaries by `have` as usual. Slots whose command
+  had no `herd_id` stay (they would be accepted in any herd). Boot drops them
+  too, for a power cut after the config is stored.
 
 ### Persistence
 
@@ -258,7 +269,8 @@ HTTP + JSON, `Authorization: Bearer <collar key>`.
   1. The collar's boundary set: its herd's boundaries, or its own
      `collar_id` boundaries while on an escape, split by the rule above into
      the active one A and the alive staged ones S (ascending).
-  2. Leave out versions this collar rejected with a permanent code.
+  2. Leave out versions this collar rejected with a permanent code
+     (`wrong_herd` only until its config version goes up; see Validation).
   3. If A.version > have, serve A.
   4. Else if `free` > 0 (absent = LEGACY, 1) and the lowest s in S with
      s.version > have fits `free_bytes` (absent = no byte limit), serve s.
@@ -301,7 +313,8 @@ HTTP + JSON, `Authorization: Bearer <collar key>`.
   below the one held), `bad_config` (an interval outside 10–3600 s,
   `fast_until` without both fast intervals, an endpoint that isn't
   `https://…` or is over 256 bytes).
-- `herd_id` replaces the provisioning herd for `wrong_herd` checks.
+- `herd_id` replaces the provisioning herd for `wrong_herd` checks, and a
+  new one drops the old herd's staged slots (see Slots: herd change).
 - `report_s`/`poll_s` are the base cadence. `fast_*` apply until `fast_until`
   (GNSS time), then the collar returns to base without another command, so a
   collar that loses contact mid-sweep doesn't stay in fast mode. With no GNSS
@@ -391,6 +404,11 @@ sides run every case. Signing key: Ed25519 seed bytes `00 01 02 … 1f`.
 | `shapes.json` | each shape code minimal, exact limit passes and limit + 1 fails, both windings, gaps at ±0.1 m |
 | `geofence.json` | margins (1 mm), inside, nearest ring, around and inside holes |
 | `slots.json` | supersede, dead prune, duplicate re-ack, stale, slots_full by count and by bytes, boot without clock, wrong collar |
+
+Cases the shared files don't have yet run from `firmware/tests/host/local/`
+in the same format, until openpasture adds them: `slots.json` there has the
+herd change (step `{"op": "set_herd", "herd_id": …}`, the signed config's
+herd taking effect).
 
 ## Transport
 

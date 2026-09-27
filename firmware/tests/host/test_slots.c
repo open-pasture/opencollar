@@ -1,4 +1,8 @@
-/* Slots: slots.json through the real persistence path (boot reloads from the store) */
+/*
+ * Slots: slots.json through the real persistence path (boot reloads from the
+ * store), then local/slots.json: cases in the same format that the shared
+ * vectors don't have yet (a herd change, step op `set_herd`).
+ */
 #include "../../src/slots.h"
 #include "../../src/store.h"
 #include "json.h"
@@ -111,6 +115,10 @@ static void run_case(const struct jval *k)
 			acks = 1;
 		} else if (strcmp(op, "tick") == 0) {
 			acks = slots_tick(&s, now, &ack) ? 1 : 0;
+		} else if (strcmp(op, "set_herd") == 0) {
+			/* A signed config moved the collar to another herd */
+			id_of(&herd, jstr(st, "herd_id"));
+			slots_set_herd(&s, &herd);
 		} else if (strcmp(op, "boot") == 0) {
 			store_ram_reboot();
 			applied.calls = 0;
@@ -164,6 +172,7 @@ static void run_case(const struct jval *k)
 			uint32_t fb2 = 0;
 
 			slots_init(&again, &lim, scratch, NULL, NULL);
+			slots_set_herd(&again, &herd); /* As app_boot: the herd, then the slots */
 			slots_load(&again);
 			CHECK_CASE(slots_have(&again) == slots_have(&s) &&
 					   slots_free(&again) == slots_free(&s) &&
@@ -174,15 +183,89 @@ static void run_case(const struct jval *k)
 	}
 }
 
-static void test_vectors(void)
+static void run_file(const char *path)
 {
-	struct jval *f = json_load(VECTORS "/slots.json");
+	struct jval *f = json_load(path);
 	const struct jval *cases = jget(f, "cases");
 
 	for (size_t c = 0; c < cases->n; c++) {
 		run_case(&cases->items[c]);
 	}
-	printf("slots.json: %zu cases\n", cases->n);
+	printf("%s: %zu cases\n", path, cases->n);
+}
+
+static void test_vectors(void)
+{
+	run_file(VECTORS "/slots.json");
+	run_file("local/slots.json");
+}
+
+#define T0 1790510400 /* 2026-09-27T12:00:00Z */
+
+static uint32_t insert(struct slots *s, uint32_t version, const char *herd, bool staged,
+		       int64_t eff)
+{
+	static struct boundary_cmd cmd;
+
+	fx_command(&cmd, cmd_buf, version, herd, NULL, staged, eff, 4, &LIMITS_V0);
+	return slots_insert(s, &cmd, true, T0).status;
+}
+
+/* A herd change keeps a staged boundary that names no herd (an older server:
+ * insert takes it in any herd), as insert would */
+static void test_herd_change_keeps_herdless(void)
+{
+	static struct slots s;
+	struct proto_id a, b;
+
+	store_ram_reset();
+	id_of(&a, "herd_A");
+	id_of(&b, "herd_B");
+	slots_init(&s, &LIMITS_V0, scratch, on_apply, NULL);
+	slots_set_herd(&s, &a);
+	CHECK(insert(&s, 1, "herd_A", false, 0) == ACK_APPLIED);
+	CHECK(insert(&s, 2, NULL, true, T0 + 60) == ACK_RECEIVED);
+	CHECK(insert(&s, 3, "herd_A", true, T0 + 120) == ACK_RECEIVED);
+	applied.calls = 0;
+
+	slots_set_herd(&s, &b);
+	CHECK(slots_held(&s) == 2 && slots_have(&s) == 2);
+	CHECK(slots_active(&s) && slots_active(&s)->version == 1);
+	CHECK(applied.calls == 0); /* The fence in force is left alone */
+}
+
+/* A power cut after the config naming herd B was stored, before herd A's
+ * staged records were deleted: boot in herd B drops them (from flash too)
+ * and still enforces herd A's active boundary */
+static void test_boot_drops_other_herds_staged(void)
+{
+	static struct slots s;
+	struct proto_id a, b;
+	struct slot_ack ack;
+
+	store_ram_reset();
+	id_of(&a, "herd_A");
+	id_of(&b, "herd_B");
+	slots_init(&s, &LIMITS_V0, scratch, on_apply, NULL);
+	slots_set_herd(&s, &a);
+	CHECK(insert(&s, 1, "herd_A", false, 0) == ACK_APPLIED);
+	CHECK(insert(&s, 2, "herd_A", true, T0 + 60) == ACK_RECEIVED);
+
+	store_ram_reboot();
+	memset(&applied, 0, sizeof(applied));
+	slots_init(&s, &LIMITS_V0, scratch, on_apply, NULL);
+	slots_set_herd(&s, &b);
+	slots_load(&s);
+	CHECK(slots_held(&s) == 1 && slots_have(&s) == 1);
+	CHECK(applied.calls == 1 && applied.version == 1);
+	CHECK(!slots_tick(&s, T0 + 60, &ack));
+	CHECK(slots_active(&s) && slots_active(&s)->version == 1);
+
+	/* Gone from flash, not just skipped: herd A doesn't get it back */
+	slots_init(&s, &LIMITS_V0, scratch, on_apply, NULL);
+	slots_set_herd(&s, &a);
+	slots_load(&s);
+	CHECK(slots_held(&s) == 1 && slots_have(&s) == 1);
 }
 
 static void test_record_round_trip(void)
@@ -232,6 +315,8 @@ static void test_record_round_trip(void)
 int main(void)
 {
 	test_vectors();
+	test_herd_change_keeps_herdless();
+	test_boot_drops_other_herds_staged();
 	test_record_round_trip();
 	return test_done("slots");
 }

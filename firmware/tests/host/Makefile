@@ -10,7 +10,7 @@ CFLAGS += -ffp-contract=off -D_POSIX_C_SOURCE=200809L -I../../third_party/monocy
 SRC = ../../src
 MONO = ../../third_party/monocypher
 FW = protocol shape geofence cue command config slots acks provision app
-TESTS = geofence shape command config slots store cue provision app
+TESTS = geofence shape command config slots store cue provision app herd
 
 OBJ = $(FW:%=build/fw_%.o) build/monocypher.o build/monocypher-ed25519.o \
       build/store_ram.o build/json.o

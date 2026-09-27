@@ -186,6 +186,8 @@ enum reject_code app_config(struct app *a, const char *wire, size_t len, int64_t
 	code = config_receive(&a->cfg, wire, len, a->prov.server_key, &a->prov.collar_id,
 			      a->prov.endpoint, has_now, now);
 	if (code == REJECT_NONE) {
+		/* A new herd drops the old herd's staged slots. The config is stored
+		 * first; a power cut before the deletes is tidied up at boot. */
 		set_ids(a);
 	}
 	return code;
