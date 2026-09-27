@@ -18,97 +18,96 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from netlist_to_pcb import child, sexp, val  # noqa: E402
 
 FP_DIR = "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints"
-W, H = 95.0, 75.0
+W, H = 65.0, 62.0
 ORIGIN = (100.0, 100.0)      # where the board sits on the KiCad page
 CORNER_R = 2.0
-HOLE_INSET = 3.5
 
-# Connect Kit: top edge of the Kit (USB end) at y = 6. Pins 1/40 are 3.81 mm in
-# from that end, rows 17.78 mm apart [MD dimension drawing].
-KIT_X, KIT_TOP = 5.5, 6.0
+# The board is the three plugged boards tiled edge to edge, with every carrier
+# part underneath them (they sit ~11 mm up on 8.5 mm sockets):
+#   Kit down the left edge, MAX-M10S top right, ISM330 below it.
+
+# Connect Kit: USB end at the top edge. Pins 1/40 are 3.81 mm in from that end,
+# rows 17.78 mm apart [MD dimension drawing]. The left row sits just far enough
+# in for its SMD socket pads.
+KIT_X, KIT_TOP = 3.5, 0.5
 KIT_ROW = 17.78
 KIT_PIN1_Y = KIT_TOP + 3.81
+KIT_MID = KIT_X + KIT_ROW / 2          # centre line between the rows, under the Kit
 
-# Breakouts: (left x, bottom y) of the board outline, Eagle coordinates are
-# measured from the bottom-left corner with y up [SF board files].
-M10S = (54.5, 38.48)          # 38.10 x 30.48
-IMU = (27.0, 38.0)            # 25.40 x 17.78
+# Breakouts, from their board files [SF]. Eagle coordinates run from the board's
+# bottom-left corner with y up.
+M10S_TL = (26.5, 2.5)                   # 38.10 x 30.48; its 8-pin row can't sit closer to the Kit's socket
+IMU_TL = (26.5, 33.5)                   # 25.40 x 17.78, turned 180 deg: pin row on top
 
 
-def eagle(origin, ex, ey):
-    return origin[0] + ex, origin[1] - ey
+def m10s(ex, ey):
+    return M10S_TL[0] + ex, M10S_TL[1] + 30.48 - ey
+
+
+def imu(ex, ey):
+    """ISM330 board point after the 180 deg turn."""
+    return IMU_TL[0] + 25.40 - ex, IMU_TL[1] + ey
 
 
 FIXED = {
     # ref: (x, y, rotation deg, side). Sockets' origin is the middle of the row.
-    "J1": (KIT_X, KIT_PIN1_Y + 11.43, 0, "F"),                 # Kit 1-10
-    "J2": (KIT_X, KIT_PIN1_Y + 25.4 + 11.43, 0, "F"),          # Kit 11-20
-    "J3": (KIT_X + KIT_ROW, KIT_PIN1_Y + 11.43, 0, "F"),       # Kit 40-31
+    "J1": (KIT_X, KIT_PIN1_Y + 11.43, 0, "F"),                   # Kit 1-10
+    "J2": (KIT_X, KIT_PIN1_Y + 25.4 + 11.43, 0, "F"),            # Kit 11-20
+    "J3": (KIT_X + KIT_ROW, KIT_PIN1_Y + 11.43, 0, "F"),         # Kit 40-31
     "J4": (KIT_X + KIT_ROW, KIT_PIN1_Y + 25.4 + 11.43, 0, "F"),  # Kit 30-21
-    "J5": (KIT_X + KIT_ROW / 2 + 1.27, KIT_TOP + 6.0, 90, "F"),  # under the Kit's J2 socket
-    "J10": (eagle(M10S, 1.27, 24.13)[0], eagle(M10S, 1.27, 24.13)[1] + 8.89, 0, "F"),
-    "J11": ((eagle(M10S, 22.86, 29.21)[0] + eagle(M10S, 15.24, 29.21)[0]) / 2,
-            eagle(M10S, 0, 29.21)[1], -90, "F"),
-    "J12": ((eagle(IMU, 2.54, 2.54)[0] + eagle(IMU, 22.86, 2.54)[0]) / 2,
-            eagle(IMU, 0, 2.54)[1], 90, "F"),
-    "J9": (62.0, 3.8, 180, "F"),                                # spare Qwiic, top edge
-    "J16": (30.0, 3.5, 90, "F"),                                # EXP header, top edge
-    "J13": (34.0, 71.4, 0, "F"),                                # cue L, bottom edge
-    "J14": (43.0, 71.4, 0, "F"),                                # cue R
-    "J15": (61.5, 71.0, 0, "F"),                                # harness M8 8-pin
-    "J7": (79.5, 69.6, 0, "F"),                                 # bench battery
-    "J6": (89.6, 46.0, 90, "F"),                                # panels A/GND/B, right edge
-    "J8": (89.6, 58.0, 90, "F"),                                # bench NTC
-    "U1": (78.0, 53.0, 0, "F"),                                 # bq24074
-    "D1": (82.0, 43.0, 0, "F"),
-    "D2": (82.0, 48.5, 0, "F"),
-    "U2": (36.0, 50.0, 0, "F"),                                 # TCA4307
-    "U3": (46.0, 50.0, 0, "F"),                                 # TPS2553
-    "U4": (38.5, 63.5, 0, "F"),                                 # ESD, EXT bus
-    "U5": (61.5, 63.5, 0, "F"),                                 # ESD, harness TS/INT
-    "H1": (HOLE_INSET, HOLE_INSET, 0, "F"),
-    "H2": (W - HOLE_INSET, HOLE_INSET, 0, "F"),
-    "H3": (HOLE_INSET, H - HOLE_INSET, 0, "F"),
-    "H4": (W - HOLE_INSET, H - HOLE_INSET, 0, "F"),
+    "J5": (KIT_MID - 1.27, 8.0, 90, "F"),                        # under the Kit's own J2 socket
+    "J8": (m10s(1.27, 0)[0], m10s(0, 24.13)[1] + 8.89, 0, "F"),  # M10S 8-pin row
+    "J9": (M10S_TL[0] + (22.86 + 15.24) / 2, m10s(0, 29.21)[1], -90, "F"),   # M10S 4-pin row
+    "J10": (IMU_TL[0] + 25.40 - (2.54 + 22.86) / 2, imu(0, 2.54)[1], -90, "F"),  # IMU 9-pin row
+    "J7": (35.5, 3.3, 180, "F"),                                 # spare Qwiic, top edge, under the M10S
+    "J6": (W - 5.2, 42.5, 90, "F"),                              # panels, right edge
+    "J11": (28.9, H - 3.4, 0, "F"),                              # cue L, bottom edge
+    "J12": (37.2, H - 3.4, 0, "F"),                              # cue R
+    "J13": (52.3, H - 5.2, 0, "F"),                              # harness M8 8-pin
+    "U1": (52.0, 19.0, 0, "F"),                                  # bq24074, under the M10S
+    "D1": (48.0, 29.0, 0, "F"),
+    "D2": (54.0, 29.0, 0, "F"),
+    "U2": (KIT_MID, 16.0, 0, "F"),                               # TCA4307, under the Kit
+    "U3": (KIT_MID, 33.0, 0, "F"),                               # TPS2553, under the Kit
+    "U4": (33.5, 45.0, 0, "F"),                                  # ESD, cue ports, under the IMU
+    "U5": (44.0, 45.0, 0, "F"),                                  # ESD, harness TS/INT
+    "H1": (KIT_MID, 24.5, 0, "F"),                               # board mounts under the Kit
+    "H2": (KIT_MID, 47.0, 0, "F"),
+    "H3": m10s(35.56, 27.94) + (0, "F"),                         # M10S standoffs, also board mounts
+    "H4": m10s(35.56, 2.54) + (0, "F"),
+    "H5": imu(2.54, 15.24) + (0, "F"),                           # IMU standoffs (M2)
+    "H6": imu(22.86, 15.24) + (0, "F"),
 }
-for i, (ex, ey) in enumerate([(35.56, 2.54), (35.56, 27.94)]):   # away from the 8-pin row
-    x, y = eagle(M10S, ex, ey)
-    FIXED[f"H{5 + i}"] = (x, y, 0, "F")
-for i, (ex, ey) in enumerate([(2.54, 15.24), (22.86, 15.24)]):
-    x, y = eagle(IMU, ex, ey)
-    FIXED[f"H{7 + i}"] = (x, y, 0, "F")
 
-# Where each block's loose parts (passives) go: anchor point they cluster
-# around, and the rectangle they must stay inside.
+# Where each block's loose parts (passives) go: an anchor they cluster around,
+# and the rectangle they stay inside.
+UNDER_KIT = (7.0, 2.5, 17.8, 59.0)
 REGIONS = {
-    "charger": ((78.0, 52.0), (64.0, 40.0, 87.0, 66.0)),
-    "solar_inputs": ((83.0, 50.0), (64.0, 40.0, 87.0, 66.0)),
-    "sensing": ((30.0, 55.0), (26.5, 40.0, 34.0, 67.0)),
-    "main_i2c": ((36.0, 45.0), (30.0, 40.5, 56.0, 60.0)),
-    "external_bus": ((41.0, 50.0), (30.0, 40.5, 56.0, 60.0)),
-    "harness_port": ((56.0, 63.0), (50.0, 56.0, 72.0, 66.0)),
-    "esd": ((50.0, 63.0), (30.0, 60.0, 72.0, 66.5)),
+    "charger": ((52.0, 19.0), (32.0, 7.0, 58.0, 30.5)),
+    "solar_inputs": ((51.0, 29.0), (32.0, 7.0, 58.0, 30.5)),
+    "sensing": ((KIT_MID, 53.0), UNDER_KIT),
+    "main_i2c": ((KIT_MID, 20.0), UNDER_KIT),
+    "external_bus": ((KIT_MID, 24.0), UNDER_KIT),
+    "harness_port": ((44.0, 42.0), (30.5, 40.0, 51.5, 51.0)),
+    "esd": ((38.0, 45.0), (30.5, 40.0, 51.5, 51.0)),
 }
 
-# Top silkscreen labels: (text, x, y).
-LABELS = [   # connectors labelled here have their own reference hidden
-    ("KIT USB", 14.4, 7.6),
-    ("J5 KIT BAT", 16.9, 15.0),
-    ("J16 EXP 3V3 GND P0-P4 A3-A5", 41.5, 6.2),
-    ("J9 QWIIC", 69.5, 4.0),
-    ("M10S", 58.9, 13.2),
-    ("IMU ISM330", 39.7, 31.2),
-    ("J13 CUE L", 34.0, 67.0),
-    ("J14 CUE R", 43.0, 67.0),
-    ("J15 HARNESS", 55.0, 65.6),
-    ("J7 BAT bench, pin 1 = +", 79.5, 63.6),
-    ("J6 PANELS A+ GND B+", 84.0, 39.0),
-    ("J8 NTC bench", 86.0, 52.3),
+# Top silkscreen labels: (text, x, y). Connectors listed in LABELLED have their
+# own reference hidden, because the label carries it.
+LABELS = [
+    ("KIT USB", KIT_MID, 2.0),
+    ("J5 KIT BAT", KIT_MID, 10.9),
+    ("J7 QWIIC", 35.5, 7.6),
+    ("J6 PANELS", W - 5.2, 35.8),
+    ("J11 CUE L", 28.9, H - 8.0),
+    ("J12 CUE R", 37.2, H - 8.0),
+    ("J13 HARNESS", 52.3, H - 11.3),
 ]
-LABELLED = {"J5", "J6", "J7", "J8", "J9", "J13", "J14", "J15", "J16"}
+LABELLED = {"J5", "J6", "J7", "J11", "J12", "J13"}
+FAB_REF = {"U2"}   # reference on the fab layer only: it sits under the Kit, next to C-parts
 
-# Test pads: bottom side, 3 mm grid, grouped as in SPEC.md section 7.
-TP_GRID = (31.0, 43.0, 5.0, 3.6, 8)    # x0, y0, dx, dy, columns
+# Test pads: bottom side, 5 x 3.6 mm grid, grouped as in SPEC.md section 7.
+TP_GRID = (21.0, 9.5, 5.0, 3.6, 8)     # x0, y0, dx, dy, columns
 TP_LABEL = {   # bottom silkscreen, <= 5 characters; legend in SPEC.md section 7
     "CHG_OUT": "COUT", "CHG_IN": "CIN", "SOLAR_A": "SOLA", "SOLAR_B": "SOLB", "EXT_3V3": "X3V3",
     "KIT_VBUS": "VBUS", "KIT_VSYS": "VSYS", "RESET": "RST", "UART_TX": "TX", "UART_RX": "RX",
@@ -288,7 +287,7 @@ def main(src, dst):
         if c["fields"].get("DNP") == "1":
             f.SetDNP(True)
             f.SetAttributes(f.GetAttributes() | pcbnew.FP_EXCLUDE_FROM_BOM | pcbnew.FP_EXCLUDE_FROM_POS_FILES)
-        if c["ref"][0] in "RCH" or c["ref"].startswith("TP") or c["ref"] in LABELLED:
+        if c["ref"][0] in "RCH" or c["ref"].startswith("TP") or c["ref"] in LABELLED | FAB_REF:
             f.Reference().SetVisible(False)
         else:
             f.Reference().SetTextSize(pcbnew.VECTOR2I(mm(0.8), mm(0.8)))
@@ -343,22 +342,22 @@ def main(src, dst):
     for layer in (pcbnew.F_Cu, pcbnew.B_Cu):
         gnd_pour(board, netinfo["GND"], layer)
     # Top: title in the clear area under the MAX-M10S, and a label at every connector.
-    text(board, "OpenCollar carrier rev A2", 74.0, 20.0, 1.2)
-    text(board, "CERN-OHL-P  2026-09-26", 74.0, 22.2, 0.8)
     for s_, x, y in LABELS:
         text(board, s_, x, y, 0.8)
     # Polarity marks from the real pad positions, so they can't drift from the pads.
-    for ref, marks in (("J5", {"1": "+", "2": "-"}),):
+    for ref, marks, (dx, dy) in (("J5", {"1": "+", "2": "-"}, (0, -1.9)),
+                                 ("J6", {"1": "A+", "2": "GND", "3": "B+"}, (-3.4, 0))):
         for pad in fps[ref][0].Pads():
             if pad.GetNumber() in marks:
                 px = pcbnew.ToMM(pad.GetPosition().x) - ORIGIN[0]
                 py = pcbnew.ToMM(pad.GetPosition().y) - ORIGIN[1]
-                text(board, marks[pad.GetNumber()], px, py - 1.9, 1.0)
-    # Bottom: test-pad title, harness pinout, bench warning.
-    text(board, "OpenCollar carrier rev A2 - test pads", 47.5, 39.5, 0.8, pcbnew.B_SilkS, mirror=True)
-    text(board, "HARNESS M8: 1 SDA 2 BAT+ 3 GND 4 SCL", 61.5, 64.0, 0.8, pcbnew.B_SilkS, mirror=True)
-    text(board, "5 NTC 6 INT 7 GND 8 BAT+", 61.5, 65.3, 0.8, pcbnew.B_SilkS, mirror=True)
-    text(board, "J7 BENCH BATTERY: NEVER WITH A HARNESS PACK", 47.5, 68.5, 0.8, pcbnew.B_SilkS, mirror=True)
+                text(board, marks[pad.GetNumber()], px + dx, py + dy, 0.8)
+    # Bottom: title, test-pad heading, harness pinout (the top is all under boards).
+    text(board, "OpenCollar carrier rev A2", 38.0, 33.5, 1.0, pcbnew.B_SilkS, mirror=True)
+    text(board, "CERN-OHL-P  2026-09-27", 38.0, 35.3, 0.8, pcbnew.B_SilkS, mirror=True)
+    text(board, "TEST PADS", 38.5, 7.3, 0.8, pcbnew.B_SilkS, mirror=True)
+    text(board, "HARNESS M8: 1 SDA 2 BAT+ 3 GND 4 SCL", 38.0, 53.0, 0.8, pcbnew.B_SilkS, mirror=True)
+    text(board, "5 NTC 6 INT 7 GND 8 BAT+  (bench: PH8 pigtail)", 38.0, 54.3, 0.8, pcbnew.B_SilkS, mirror=True)
 
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     board.Save(dst)

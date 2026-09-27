@@ -22,7 +22,6 @@ C0603 = "Capacitor_SMD:C_0603_1608Metric"
 C0805 = "Capacitor_SMD:C_0805_2012Metric"
 SOCKET = "Connector_PinSocket_2.54mm:PinSocket_1x{n:02d}_P2.54mm_Vertical_SMD_Pin1Left"
 PH_H = "Connector_JST:JST_PH_S{n}B-PH-SM4-TB_1x{n:02d}-1MP_P2.00mm_Horizontal"
-PH_V = "Connector_JST:JST_PH_B{n}B-PH-SM4-TB_1x{n:02d}-1MP_P2.00mm_Vertical"
 SH_H = "Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal"
 TP_FP = "TestPoint:TestPoint_Pad_D1.0mm"
 
@@ -40,7 +39,7 @@ LCSC = {
 CONN_LCSC = {   # by footprint
     "JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal": ("C295747", "S2B-PH-SM4-TB(LF)(SN)"),
     "JST_PH_S3B-PH-SM4-TB_1x03-1MP_P2.00mm_Horizontal": ("C265101", "S3B-PH-SM4-TB(LF)(SN)"),
-    "JST_PH_B8B-PH-SM4-TB_1x08-1MP_P2.00mm_Vertical": ("C495548", "B8B-PH-SM4-TB(LF)(SN)"),
+    "JST_PH_S8B-PH-SM4-TB_1x08-1MP_P2.00mm_Horizontal": ("C265121", "S8B-PH-SM4-TB(LF)(SN)"),
     "JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal": ("C160404", "SM04B-SRSS-TB(LF)(SN)"),
     # hanxia 8.5 mm SMD sockets; check their pad stagger against KiCad's Pin1Left (SPEC.md 11)
     "PinSocket_1x10_P2.54mm_Vertical_SMD_Pin1Left": ("C46635846", "HX PM2.54-1x10P TP H8.5-YQ"),
@@ -133,10 +132,10 @@ def connect_kit():
     kit = {
         1: "KIT_VBUS", 2: "KIT_VSYS", 3: GND, 4: "KIT_EN",
         5: "CHG_CE", 6: "EXT_INT", 7: "EXT_EN", 8: "EXT_READY", 9: "EXT_FAULT",
-        10: "EXP_P4", 11: "EXP_P3", 12: "EXP_P2", 13: "EXP_P1", 14: "EXP_P0",
+        10: NC, 11: NC, 12: NC, 13: NC, 14: NC,           # spare P0.04-P0.00
         15: SCL, 16: SDA, 17: "IMU_INT1", 18: "IMU_INT2", 19: "GNSS_EXTINT", 20: "GNSS_RESET_N",
         21: "VBAT_SENSE", 22: "ISET_SENSE", 23: "VIN_SENSE",
-        24: "EXP_A3", 25: "EXP_A4", 26: "EXP_A5", 27: NC, 28: NC,
+        24: NC, 25: NC, 26: NC, 27: NC, 28: NC,           # spare AIN3-AIN7
         29: "CHG_STAT", 30: "GNSS_RXD", 31: "GNSS_TXD", 32: "GNSS_PPS", 33: "CHG_PGOOD",
         34: "UART_TX", 35: "UART_RX", 36: "SWDIO", 37: "SWCLK", 38: "RESET",
         39: GND, 40: V3V3,
@@ -189,7 +188,7 @@ def charger():
     u["ITERM"] += NC
     u["TS"] += TS
     C("10n")[1, 2] += TS, GND            # filters pickup on the ~0.6 m NTC run
-    R("10k", dnp=True)[1, 2] += TS, GND  # bench only, no NTC: [BQ] 10.2.2.3
+    R("10k", dnp=True)[1, 2] += TS, GND  # fit only to charge with no NTC: [BQ] 10.2.2.3
     ce = N("CHG_CE")
     u["~{CE}"] += ce
     R("100k")[1, 2] += ce, GND
@@ -218,18 +217,6 @@ def solar_inputs():
 
 
 @block
-def bench_battery():
-    """Bench-only pack and NTC sockets. In the collar the pack and its NTC arrive over
-    the harness (harness_port). Never connect both packs at once (silkscreen warning)."""
-    jb = conn(2, PH_H.format(n=2), "BAT bench", ref="J7")
-    jb[1] += BAT
-    jb[2] += GND
-    jn = conn(2, PH_H.format(n=2), "NTC bench", ref="J8")
-    jn[1] += TS
-    jn[2] += GND
-
-
-@block
 def sensing():
     """nRF9151 SAADC inputs (AIN0-2). High-value dividers draw ~2 uA; the 100 nF
     holds the sample, with a 40 us acquisition time in firmware."""
@@ -250,7 +237,7 @@ def main_i2c():
     socket inside the box (Qwiic order GND, 3V3, SDA, SCL)."""
     R("4.7k")[1, 2] += SDA, V3V3
     R("4.7k")[1, 2] += SCL, V3V3
-    q = conn(4, SH_H, "Qwiic spare", ref="J9")
+    q = conn(4, SH_H, "Qwiic spare", ref="J7")
     q[1, 2, 3, 4] += GND, V3V3, SDA, SCL
 
 
@@ -259,11 +246,11 @@ def gnss_sockets():
     """SparkFun MAX-M10S breakout (GPS-18037) on its 8-pin edge row and 4-pin I2C row
     [SF board file: mating pinout only]. EXTINT wakes from standby, RESET_N low >= 1 ms
     resets, TIMEPULSE shares SAFEBOOT_N so nothing may pull it low at boot [UBX] Table 10."""
-    a = conn(8, SOCKET.format(n=8), "M10S J5", ref="J10")
+    a = conn(8, SOCKET.format(n=8), "M10S J5", ref="J8")
     a[1, 2, 3, 4, 5, 6, 7, 8] += (GND, V3V3, N("GNSS_SAFEBOOT"), N("GNSS_TXD"),
                                   N("GNSS_RXD"), N("GNSS_PPS"),
                                   N("GNSS_EXTINT"), N("GNSS_RESET_N"))
-    b = conn(4, SOCKET.format(n=4), "M10S J3", ref="J11")
+    b = conn(4, SOCKET.format(n=4), "M10S J3", ref="J9")
     b[1, 2, 3, 4] += GND, V3V3, SDA, SCL
 
 
@@ -272,7 +259,7 @@ def imu_socket():
     """Adafruit ISM330DHCX (4502) 9-pin row: VIN, 3Vo, GND, SCL, SDA, DO, CS, INT1, INT2
     [SF: LSM6DSOX board file, same outline; check the ISM330 silkscreen]. DO open ->
     address 0x6A; CS open (board pull-up) -> I2C mode."""
-    j = conn(9, SOCKET.format(n=9), "ISM330", ref="J12")
+    j = conn(9, SOCKET.format(n=9), "ISM330", ref="J10")
     j[1, 2, 3, 4, 5, 6, 7, 8, 9] += (V3V3, NC, GND, SCL, SDA, NC, NC,
                                      N("IMU_INT1"), N("IMU_INT2"))
 
@@ -340,18 +327,20 @@ def cue_ports():
     """Left and right ear-pod buzzers (SparkFun Qwiic Buzzer, 0x34 left, 0x5B right) on
     the EXT bus: Qwiic order GND, EXT_3V3, EXT_SDA, EXT_SCL. Left/right because cattle
     localise to ~30 deg (docs/COLLAR-FIRST-PRINCIPLES.md section 1)."""
-    for side, ref in (("L", "J13"), ("R", "J14")):
+    for side, ref in (("L", "J11"), ("R", "J12")):
         q = conn(4, SH_H, f"Cue {side}", ref=ref)
         q[1, 2, 3, 4] += GND, EXT_3V3, EXT_SDA, EXT_SCL
 
 
 @block
 def harness_port():
-    """M8 8-pin strap harness to the battery module (SPEC.md section 5; IEC 61076-2-104
+    """The one battery path: M8 8-pin strap harness to the battery module. On the bench,
+    a PH8 pigtail brings the pack and its NTC to the same socket (no second battery
+    connector, so two packs can never be connected at once). Harness (SPEC.md section 5; IEC 61076-2-104
     pin order, DIN 47100 colours): 1 SDA, 2 BAT+, 3 GND, 4 SCL, 5 NTC, 6 INT, 7 GND, 8 BAT+.
     Power doubled so one broken conductor doesn't drop the pack. INT gets 1 k in series
     and a 100 k pull-up to 3V3 before the nRF pin."""
-    j = conn(8, PH_V.format(n=8), "Harness M8", ref="J15")
+    j = conn(8, PH_H.format(n=8), "Harness M8", ref="J13")
     int_raw = N("EXT_INT_RAW")
     j[1, 2, 3, 4, 5, 6, 7, 8] += EXT_SDA, BAT, GND, EXT_SCL, TS, int_raw, GND, BAT
     R("1k")[1, 2] += int_raw, N("EXT_INT")
@@ -376,17 +365,6 @@ def esd():
 
 
 @block
-def expansion():
-    """Unpopulated 1x10 header for a stimulus board or experiments."""
-    j = conn(10, "Connector_PinHeader_2.54mm:PinHeader_1x10_P2.54mm_Vertical", "EXP", ref="J16")
-    j.fields["DNP"] = "1"
-    j[1, 2] += V3V3, GND
-    for i, n in enumerate(("EXP_P0", "EXP_P1", "EXP_P2", "EXP_P3", "EXP_P4",
-                           "EXP_A3", "EXP_A4", "EXP_A5"), start=3):
-        j[i] += N(n)
-
-
-@block
 def test_pads():
     """1.0 mm pads on the bottom for a pogo fixture (SPEC.md section 7). Placed on the
     bottom by layout.py; the value is the silkscreen label."""
@@ -404,13 +382,14 @@ def test_pads():
 
 @block
 def mechanical():
-    """Board M3 holes (4) and standoff holes for the plugged boards [SF]: the MAX-M10S's
-    two corner holes away from its 8-pin row (M3; the two beside the row sit under the
-    SMD socket, which holds that edge), and the ISM330's two Ø2.5 holes (M2 standoffs
-    clear the GNSS socket). Positions in layout.py."""
-    for i in range(1, 7):     # H1-H4 board, H5-H6 MAX-M10S standoffs
+    """Holes [SF]. H1, H2: M3 board mounts under the Kit, between its socket rows.
+    H3, H4: the MAX-M10S's two corner holes away from its 8-pin row; M3 male-female
+    standoffs there hold the M10S and screw the carrier to the box posts (the two holes
+    beside the 8-pin row sit under the SMD socket, which holds that edge). H5, H6: the
+    ISM330's Ø2.5 holes with M2 standoffs. Positions in layout.py."""
+    for i in range(1, 5):
         P("Mechanical", "MountingHole", footprint="MountingHole:MountingHole_3.2mm_M3", ref=f"H{i}")
-    for i in (7, 8):          # ISM330 standoffs
+    for i in (5, 6):
         P("Mechanical", "MountingHole", footprint="MountingHole:MountingHole_2.2mm_M2", ref=f"H{i}")
 
 
@@ -419,7 +398,6 @@ if __name__ == "__main__":
     kit_battery_feed()
     charger()
     solar_inputs()
-    bench_battery()
     sensing()
     main_i2c()
     gnss_sockets()
@@ -428,7 +406,6 @@ if __name__ == "__main__":
     cue_ports()
     harness_port()
     esd()
-    expansion()
     test_pads()
     mechanical()
     ERC()

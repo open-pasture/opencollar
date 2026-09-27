@@ -164,3 +164,22 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - **DRC:** the only violations left are the intended end-to-end Kit sockets (2 courtyard overlaps and their silkscreen), plus 142 unconnected items because nothing is routed yet.
 - **Caught in my own render review:** the LCSC/MPN fields were printing on the silkscreen over every part (now hidden). The Kit-battery "+ −" label sat over the wrong holes, so the polarity marks are now placed from the real pad positions. The board title covered U5's reference.
 - Open before ordering: route (Freerouting still to install, it needs Java). Check the hanxia sockets' pad stagger against KiCad's Pin1Left and that the body is 25.4 mm long. Confirm the bq24074 RGT0016B land pattern.
+
+## 2026-09-27
+
+### Carrier board shrunk to 65 × 62 mm
+- Cody saw a lot of wasted space on the 95 × 75 mm layout. The cause: the carrier's own parts sat beside the plugged boards. The Kit, MAX-M10S and ISM330 ride ~11 mm up on their sockets, so the board under them was empty.
+- Now the three plugged boards are tiled edge to edge, and every carrier part sits underneath them:
+  - Kit down the left edge.
+  - MAX-M10S top right.
+  - ISM330 below it, turned 180° so its standoffs sit clear of the bottom-edge ports.
+  - Under the Kit, between its socket rows: the buffer and switch, pull-ups, dividers, the Kit feed and two board mounts.
+  - Under the M10S: the charger. Under the IMU: the ESD parts.
+- **65 × 62 mm, 43 % less area.** The limit is the three boards' footprints: the M10S's 8-pin socket can't sit closer to the Kit's right-hand socket, which sets the width.
+- Removed to make room:
+  - The bench-only battery and NTC sockets. On the bench, a PH8 pigtail into the harness socket does the same job, and two packs can no longer be connected at once.
+  - The unpopulated expansion header. The stimulus board belongs to the integrated board, and the spare GPIOs are left unconnected.
+- The harness socket is now the right-angle S8B-PH-SM4-TB (LCSC C265121), so the cable enters from the edge.
+- The M10S's two far-corner standoffs double as board mounts (M3 male-female standoffs into the box posts). The carrier goes into the box before the plugged boards.
+- Silkscreen: the panel socket, turned sideways at the edge, gets its A+ / GND / B+ marks beside each pad, placed from the real pad positions.
+- ERC clean; 91 parts, 45 nets. DRC shows only the intended butted Kit sockets, plus 131 unrouted connections. Renders reviewed top and bottom.
