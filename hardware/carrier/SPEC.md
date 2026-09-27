@@ -236,7 +236,7 @@ Placement as drawn by `layout.py` (top view, origin top-left, x right, y down; r
 | MAX-M10S J8, J9 | Top right, outline from (26.5, 2.5); its sockets at the breakout's own header positions | Its 8-pin row can't sit closer to the Kit's right-hand socket. The SMA points off the right edge |
 | ISM330 J10 | Under the M10S, turned 180° so its pin row is on top | Its M2 standoffs sit at the bottom, clear of the connectors |
 | Under the Kit, between its rows | TCA4307 U2, TPS2553 U3, I2C pull-ups, sense dividers, board mounts H1/H2, Kit feed J5 | 11 mm strip of free board the Kit covers anyway |
-| Under the M10S | bq24074 U1, its passives, D1/D2 | Short IN → bq24074 → BAT loop |
+| Under the M10S | bq24074 U1, each passive beside the pin it serves (`finish_routing.py`), D1/D2 | Short IN → bq24074 → BAT loop; nothing has to wrap round the chip |
 | Under the ISM330 | ESD U4, U5 and the harness INT resistors | Right behind the bottom-edge ports |
 | Right edge, beside the ISM330 | Harness J13 | The one column the plugged boards leave free |
 | Bottom edge | Cues J11, J12 and panels J6, all low JST-SH | The bottom band is only as deep as an SH socket (6.6 mm) |
@@ -254,6 +254,8 @@ Placement as drawn by `layout.py` (top view, origin top-left, x right, y down; r
 Height above the board: each plugged board sits ~11 mm up (8.5 mm socket + the pins' 2.5 mm plastic spacer), and the tallest part on any of them is ~3.3 mm (the USB-C or SMA). So **~17 mm from the board's top face** (question 7 refines this).
 
 Board: 2 layers, 1.6 mm FR-4, 1 oz, lead-free HASL, green. Ground pour both sides.
+
+**Routing:** Inky (HeyPCB) routed the board; `finish_routing.py` re-placed the charger passives by pin and rerouted that block. The routed board is `pcb/carrier.kicad_pcb`: KiCad DRC is clean at every severity. Power nets are 0.5 mm (0.25 mm fingers on U1's 0.5 mm-pitch pins), 3V3 rails 0.4 mm, signals 0.25 mm. GND is poured both sides with stitching vias, and vias are tented.
 
 ## 9. Power budget
 

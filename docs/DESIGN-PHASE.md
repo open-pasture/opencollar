@@ -72,6 +72,13 @@ kicad-cli pcb render --side top --output build/top.png build/carrier.kicad_pcb
 kicad-cli pcb render --side bottom --output build/bottom.png build/carrier.kicad_pcb
 ```
 
+Routing (rev A2): Inky routed the board in HeyPCB. Its export is committed as `pcb/heypcb/`, and `finish_routing.py` redoes the charger block from it and writes the routed board:
+
+```sh
+kicad-python finish_routing.py pcb/heypcb/opencollar-carrier.kicad_pcb pcb/carrier.kicad_pcb
+kicad-cli pcb drc --severity-all --refill-zones --format json --output build/drc.json pcb/carrier.kicad_pcb
+```
+
 ## Known gap: a readable schematic
 
 SKiDL writes netlists, not KiCad schematic sheets. That's fine for the carrier board, where agents and diffs do the reviewing. Nordic's review (and most humans) want a schematic PDF. Before the integrated board, either:

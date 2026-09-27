@@ -216,3 +216,34 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - Package for upload: `hardware/carrier/build/heypcb-carrier.zip`. It holds the `.kicad_pro` (JLCPCB rules), `.kicad_pcb`, netlist, spec and renders. **Caught:** a stub `.kicad_pro` reset the 0.15 mm clearance to KiCad's 0.2 mm default and gave 9 false DRC errors. The package now uses the real project file KiCad writes, so the only findings are the 2 intended socket overlaps and the unrouted connections.
 - Plan: route and review in HeyPCB, export Gerbers/BOM/CPL back into git, then order at JLCPCB: 5 boards, assembled, shipped to Columbia (JLCPCB collects US import duty at checkout). The garage then fits the Kit pigtail, the breakout headers and standoffs, and the harness and panel pigtails, then does bring-up. **A current-limited bench supply is missing from `hardware/tools.md` and is needed before the first power-up.** Nothing ordered; Cody signs up and checks out himself.
 - **Carrier imported into HeyPCB** (Cody's account, project `opencollar-carrier`, heypcb.ai/p/d017ac745ca9), through the dashboard's "Import board, schematic, or zip" with a board-only zip (`.kicad_pro` + `.kicad_pcb`, `build/opencollar-carrier.zip`). It opened at 65 × 58.5 mm with every part, label and test pad in place. HeyPCB's own DRC matches ours: 2 errors (the intentional butted Kit sockets), 166 unconnected (unrouted), 12 warnings. No schematic yet: HeyPCB has the board only. Not routed, not published.
+
+### Carrier routed: HeyPCB's Inky, then the charger block redone (2026-09-27)
+- Cody asked for Inky (HeyPCB's agent) to optimise the board and clean up every connection, warning and error. I gave Inky one brief: route everything, keep the fixed parts fixed, JLCPCB rules, track widths per net, GND pours and stitching, 0.5 mm around test pads, short power loops, no changes to footprints, values or nets.
+- **What Inky did:**
+  - It routed 163 of 166 connections in about 6 minutes, and set the power net classes (0.5 mm BAT/CHG_IN/CHG_OUT/SOLAR, 0.4 mm 3V3/EXT_3V3).
+  - It then got stuck on the last 3 connections and 6 clearance errors, all at U1 (bq24074). It said its router "could not merge its result". One more turn went on an unrelated MAX-M10S footprint question.
+  - It used 67 % of the $6 trial ($4). I stopped there.
+- **Checked:** I pulled its board down through HeyPCB's KiCad download (`/api/projects/<id>/download/kicad`). KiCad's DRC on it matched HeyPCB's exactly. No part had moved, and every footprint, value and net matched our own build.
+- **Why it was stuck:**
+  - The placement, not the router. `layout.py` packed the charger's passives by block rather than by pin. The IN capacitor and the TMR resistor sat under U1 while their pins face up. CHG_IN's pin 13 ended up walled in by the TMR track and the ILIM via, with no path out.
+  - Separately, Inky ran 0.5 mm power tracks straight onto the 0.5 mm-pitch pins, 0.125 mm from the neighbouring pins (the rule is 0.15).
+  - Three routers failed in the same place: Inky's, a grid router of mine, and Freerouting 2.4.1 (tried with a portable Java under `build/tools/`, gitignored).
+- **Fix, `hardware/carrier/finish_routing.py`:** it keeps Inky's routing everywhere else and redoes the charger block.
+  - The 11 charger passives go beside the U1 pins they serve (the table in the script). For example, the IN cap sits over pin 13, the TMR resistor over pin 14 (the TMR net went from 30 mm with vias to 0.7 mm), and the OUT cap right of pins 10–11.
+  - Fixed 0.25 mm fingers go on U1's power pins, so the 0.5 mm tracks start clear of the neighbouring pins.
+  - Every GND pad in the block gets its own via.
+  - A two-layer grid router reroutes the block: 0.05 mm grid, 45°, the board's clearances, 0.3 mm to the edge. It keeps signals mostly off the bottom layer so the GND pour under U1 stays whole, and retries route orders until every net routes.
+  - Then GND stitching vias, a refill, and removal of the stubs the rip-up left, each checked with KiCad's DRC.
+  - J1+J2 and J3+J4 (1×10 sockets butted into the Kit's 1×20 rows) get their courtyards pulled back to the joint and the silk at the joint removed. That includes J2's and J4's pin-1 marks, which sat mid-row at Kit pin 11. This clears the "intended" overlaps instead of leaving them as errors.
+  - Vias are tented both sides, so a fixture probe that misses a test pad lands on mask.
+- **I relaxed the test-pad rule I gave Inky:** it is now 0.25 mm for tracks and still 0.5 mm for vias. Tracks beside a pad are under soldermask, and the 0.5 mm keep-out was what boxed TS in.
+- **Result:** `hardware/carrier/pcb/carrier.kicad_pcb`, rebuilt from the committed Inky export `pcb/heypcb/opencollar-carrier.kicad_pcb` in about 5 minutes.
+  - `kicad-cli pcb drc --severity-all`: 0 violations and 0 unconnected, at every severity including warnings.
+  - Power nets are 0.5 mm, apart from 0.25 mm fingers at U1 totalling 1.3 mm per net.
+  - 221 vias, 77 of them GND.
+  - Gerbers, drill and position files export (`build/fab/`, not committed). Renders reviewed top and bottom.
+- **Not done / open:**
+  - The HeyPCB project still holds Inky's version. Re-importing `pcb/carrier.kicad_pcb` there is Cody's call.
+  - `layout.py` still has the old charger placement. Rerunning it regenerates an unrouted board, so the routed board is the source from here on.
+  - The routing outside the charger is Inky's. It's DRC-clean but meandering in places (TS is ~74 mm, much of that the run out to the harness socket). Worth a hand pass in KiCad or HeyPCB before a production rev; fine for 5 alpha boards.
+  - JLCPCB's BOM/CPL format and the rotation check on their preview happen at ordering. Nothing ordered.
