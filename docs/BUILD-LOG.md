@@ -103,3 +103,9 @@
 ### Prototype parts ordered (2026-09-26)
 Cody placed all six orders: DigiKey, Amazon, Adafruit, Voltaic, Heritage, Hologram. Total $260.31 plus shipping and tax (list in `hardware/prototype-cart.md`).
 When the boxes arrive: photograph the parts, check every item against the list, then bench-test power (panels → bq24074 → pack → nRF9151) before anything goes in a shell.
+
+### Board design toolchain installed (2026-09-26)
+- KiCad 10.0.6 in `/Applications/KiCad`; `kicad-cli` and a `kicad-python` wrapper (KiCad's bundled Python with `pcbnew`) in `~/.local/bin`.
+- Chose **SKiDL** (MIT) for schematic-as-code. Tried atopile first: its command-line tool is in maintenance mode and moving to a hosted app that needs an account, so it was uninstalled.
+- `hardware/carrier/` project: a smoke test goes SKiDL → netlist → `.kicad_pcb` → DRC → render, all headless. Works.
+- Method written up in `docs/DESIGN-PHASE.md`. Next: the carrier board spec.

@@ -1,0 +1,5 @@
+build/
+.venv/
+*.log
+*.erc
+*_sklib.py

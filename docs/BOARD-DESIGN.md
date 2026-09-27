@@ -32,7 +32,7 @@ Everything on one 4-layer board: the nRF9151 SiP, the GNSS module and antennas, 
 | Job | How |
 | --- | --- |
 | Part choice | Pick parts in JLCPCB's stocked library ("basic" parts avoid setup fees), check stock and price |
-| Schematic | Write the circuit as code with **atopile** or **SKiDL** (text that compiles to a KiCad netlist). Agents are good at text; every change is a reviewable diff |
+| Schematic | Write the circuit as code with **SKiDL** (Python that compiles to a KiCad netlist). Agents are good at text; every change is a reviewable diff |
 | Checks | `kicad-cli` runs electrical and design-rule checks and exports renders, so agents can check their own work in a loop (like the Blender self-review in `DESIGN-TOOLING.md`) |
 | Layout | Place parts by script; route the simple nets with an autorouter (Freerouting). Radio and power sections are placed by hand, following the reference layouts |
 | Review prep | Assemble datasheet checklists, the power budget and a design-review pack for Nordic DevZone |
@@ -46,7 +46,7 @@ The SparkFun and Adafruit breakout designs are published, but under **CC BY-SA**
 
 ## What Cody can put in (time, not money)
 
-- **Install KiCad** (free) and do one beginner tutorial, so you can read a schematic and a layout when agents produce them. A weekend.
+- **KiCad is installed.** Do one beginner tutorial, so you can read a schematic and a layout when agents produce them. A weekend.
 - **Bring-up.** When the carrier boards arrive: plug in parts, measure with the multimeter, report back. Agents can't hold a probe.
 - **Shell measurements.** The board outline comes from the shell. Once the printed top unit exists, measure the inside space.
 - **Accounts.** A Nordic DevZone account (free), a JLCPCB account.
@@ -55,7 +55,7 @@ The SparkFun and Adafruit breakout designs are published, but under **CC BY-SA**
 
 | Step | Cost |
 | --- | --- |
-| KiCad, atopile, SKiDL, Freerouting | Free |
+| KiCad, SKiDL, Freerouting | Free |
 | Carrier board, 5 assembled | ~$30–100 per spin |
 | Integrated board, 5 assembled | ~$100–300 per spin, 2–3 spins |
 | Nordic / u-blox design review | Free |
@@ -65,7 +65,7 @@ Certification is still the expensive part later, but it only starts once this bo
 
 ## Next steps
 
-1. Install KiCad and atopile.
+1. ~~Install KiCad and SKiDL.~~ Done 2026-09-26; see `DESIGN-PHASE.md`.
 2. Write the carrier-board spec: which headers, which connectors, board size (from the shell design).
 3. Agent drafts the carrier-board schematic in code, runs checks, renders it for review.
 4. Layout, order 5 from JLCPCB, bring them up on the bench.
