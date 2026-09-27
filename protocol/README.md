@@ -2,8 +2,12 @@
 
 How software talks to an OpenCollar: boundaries go down, positions and cues
 come up. Any software that speaks this can run the collars. Openpasture is the
-first. Its side of the same formats is in
-`openpasture-agent-kit/docs/contracts.md`.
+first. Its side of the same formats is
+[`crates/op-protocol`](https://github.com/open-pasture/openpasture/tree/main/crates/op-protocol)
+and the
+[Device endpoints](https://github.com/open-pasture/openpasture/blob/main/docs/API.md#device-endpoints-collars)
+section of `docs/API.md` in open-pasture/openpasture. The server contract they
+grew from is in [`contracts.md`](contracts.md).
 
 Status: draft. V0 firmware compiles its boundary in (`firmware/src/boundary.h`).
 Nothing here is sent over the air yet.

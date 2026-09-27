@@ -133,3 +133,10 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - Shape: one low puck on the neck crest, ≤ 120 × 80 × 18 mm, ≤ 250 g; the panel bonded in as the lid; the patch beside the panel, not under it; sizing at the bottom module like Halter. Our own look: Halter's shape is design-patented.
 - Knock-on: draft 1 becomes the alpha test box; the carrier board becomes a plain rectangle under 100 × 100 mm (spec marked on hold for its outline); the integrated board gets shaped to the puck.
 - Open for Cody: layout A or B, keep the 60-day target, carrier as a rectangle, puck vs side pods. Measurements needed: neck circumference and crest curvature on the pilot animals. Next: a cheap rotation test with 225 g on top and 420 g below, on a person first, then a steer.
+
+### Repo published, collar contract moved in (2026-09-26)
+- Published at https://github.com/open-pasture/opencollar. This backs up the local history and fixes the 404 behind the "The opencollar repo" button on openpasture.dev/collar/build.
+- Checked before pushing: gitleaks 8.30.1 over all 43 commits found nothing, and a manual search for keys, tokens, SIM and Wi-Fi credentials and `.env` files found nothing either. The largest file is the 3.4 MB parts photo (its GPS tags are empty), well under GitHub's limits.
+- The partner names already taken out of the docs were also taken out of the older commits, plus one leftover in `docs/BOTTOM-BAY.md`. Messages and dates are unchanged, but commit hashes differ from the old local history. The pre-publish history is kept as a bundle in `output/backups/`.
+- The collar server contract, `docs/contracts.md` from the retired agent kit (commit c306c5c), is now `protocol/contracts.md`. `protocol/README.md` points at it and at the Rust app's `crates/op-protocol` and the Device endpoints section of its `docs/API.md`.
+- Still missing: licence files. `docs/STRATEGY.md` plans Apache-2.0 for firmware, CERN-OHL-P for hardware and CAD, and CC BY 4.0 for docs. Until those files are added, the repo is all rights reserved by default.
