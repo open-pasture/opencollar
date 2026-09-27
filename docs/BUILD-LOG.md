@@ -92,3 +92,10 @@
   - Quick-look profile: 0.28 mm layers, 2 walls, 0 % infill, grid supports. Tree supports doubled the time: the underside arch and the inside of the roof both need support.
   - Plates: `OC1_top_base` (base + 2 clamp bars) 4 h 45 m, 114 g; `OC2_top_lid` 3 h 49 m, 108 g; `OC3_bay` (cradle on its side + module) 2 h 10 m, 61 g. About 10.7 h and 283 g PLA in total. All toolpaths sit inside the 220 × 220 bed.
   - With the production-like 0.24 mm / 10 % infill / tree supports settings it was about 24 h and 350 g.
+
+### Carts reset to the prototype list (2026-09-26)
+- DigiKey: started a new cart with only the MAX-M10S breakout and the M6 vent ($49.26). The old cart had parts deferred to build two.
+- Amazon: only the 5 collar items are selected for checkout ($61.35). Other items in the cart are unticked, not deleted.
+- Voltaic: re-added 2 × P124 panels ($28.00). Heritage: strap ($23.10).
+- Emptied SparkFun, Pololu, United Lithium and K&J.
+- Adafruit still rejects automated adds; the 9 product tabs are open to add by hand ($99.20).
