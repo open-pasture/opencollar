@@ -194,14 +194,6 @@ void slots_init(struct slots *s, const struct collar_limits *limits, int32_t (*s
 	s->ctx = ctx;
 }
 
-void slots_set_herd(struct slots *s, const struct proto_id *herd)
-{
-	s->has_herd = herd != NULL;
-	if (herd) {
-		s->herd = *herd;
-	}
-}
-
 void slots_set_collar(struct slots *s, const struct proto_id *collar)
 {
 	s->has_collar = collar != NULL;
@@ -263,6 +255,31 @@ static void drop(struct slots *s, int i)
 	}
 	memmove(&s->s[i], &s->s[i + 1], (size_t)(s->n - i - 1) * sizeof(s->s[0]));
 	s->n--;
+}
+
+/* Staged slots that insert would now refuse as wrong_herd go. The active one
+ * stays in force until a boundary of this herd replaces it. */
+static void drop_other_herds_staged(struct slots *s)
+{
+	int first = has_active(s) ? 1 : 0;
+
+	if (!s->has_herd) {
+		return;
+	}
+	for (int i = s->n - 1; i >= first; i--) {
+		if ((s->s[i].flags & SLOT_F_HERD) && !proto_id_eq(&s->s[i].herd_id, &s->herd)) {
+			drop(s, i);
+		}
+	}
+}
+
+void slots_set_herd(struct slots *s, const struct proto_id *herd)
+{
+	s->has_herd = herd != NULL;
+	if (herd) {
+		s->herd = *herd;
+	}
+	drop_other_herds_staged(s);
 }
 
 static uint16_t free_id(const struct slots *s)
@@ -544,6 +561,10 @@ void slots_load(struct slots *s)
 	for (int i = 1; i < s->n; i++) {
 		s->s[i].flags &= (uint8_t)~SLOT_F_APPLIED;
 	}
+
+	/* Another herd's staged slots (a power cut after a herd change's config
+	 * was stored, before they were deleted) */
+	drop_other_herds_staged(s);
 
 	/* Dead staged slots (a power cut before they were pruned) */
 	int first = has_active(s) ? 1 : 0;

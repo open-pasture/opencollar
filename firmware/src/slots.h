@@ -18,6 +18,11 @@
  *   staged slots get no ack), acked `applied` at the fix's time.
  * - Boot: load the records, check format and CRC, enforce the latest active
  *   boundary at once (no clock needed); staged slots wait for the first fix.
+ * - Herd change (a signed config naming another herd): staged slots of any
+ *   other herd go, with no ack (the next report's slots and a lower `have`
+ *   show it); the active boundary stays in force until one of the new herd
+ *   applies. Boot drops them too, for a power cut between the config write
+ *   and the deletes. Slots without a herd_id stay, as insert takes them.
  *
  * Checks on insert, in order: wrong_herd, wrong_collar, re-ack or stale, the
  * shape rules, slots_full (ids and fields were checked by command_parse).
@@ -123,11 +128,13 @@ struct slots {
 
 void slots_init(struct slots *s, const struct collar_limits *limits, int32_t (*scratch)[2],
 		slot_apply_fn apply, void *ctx);
-/* NULL: unknown, the check is skipped */
+/* The herd wrong_herd is checked against; staged slots of another herd go
+ * (from flash too). NULL: unknown, the check is skipped and nothing goes. */
 void slots_set_herd(struct slots *s, const struct proto_id *herd);
 void slots_set_collar(struct slots *s, const struct proto_id *collar);
 
-/* Boot: load and tidy the records, apply the active one. The clock is gone. */
+/* Boot: load and tidy the records, apply the active one. The clock is gone.
+ * Set the herd first: another herd's staged records are dropped. */
 void slots_load(struct slots *s);
 
 /* Offer a command whose signature verified. has_now: the collar's GNSS time
