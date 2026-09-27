@@ -164,3 +164,47 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - **DRC:** the only violations left are the intended end-to-end Kit sockets (2 courtyard overlaps and their silkscreen), plus 142 unconnected items because nothing is routed yet.
 - **Caught in my own render review:** the LCSC/MPN fields were printing on the silkscreen over every part (now hidden). The Kit-battery "+ −" label sat over the wrong holes, so the polarity marks are now placed from the real pad positions. The board title covered U5's reference.
 - Open before ordering: route (Freerouting still to install, it needs Java). Check the hanxia sockets' pad stagger against KiCad's Pin1Left and that the body is 25.4 mm long. Confirm the bq24074 RGT0016B land pattern.
+
+## 2026-09-27
+
+### Firmware 0.2: protocol v1 (branch `fr/ef`)
+- **Scope:** the collar side of protocol v1 as rewritten in `protocol/README.md`: holes (up to 16, 384 vertices), shape rules, signed boundary and config commands, staged boundaries in flash, provisioning from the collar's card over the USB serial port. Boundary download over LTE waits for the SIM; the same code path takes a signed command pasted on the console.
+- **Baseline first:** the unchanged firmware builds at 68 800 B flash, 20 640 B RAM. Run as `nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 -- ./build.sh`, west can't find the SDK outside its workspace ("unknown command build"), so `build.sh` now sets `ZEPHYR_BASE=/opt/nordic/ncs/v3.4.1/zephyr` when it is unset and that directory exists.
+- **Modules** (`firmware/src/`), all plain C except `main.c`, `console.c` and `store_nvs.c`, so they run in host tests:
+  - `shape.c`: the twelve rejection codes in openpasture's order. Crossings and containment exact on e7 integers (int64 products compared, never subtracted); areas and gaps in single precision about the outer ring's first vertex, in the same order of operations as `op_geo::shape`. Built with `-ffp-contract=off`; the ARM build has no fused multiply-add instructions in the app (checked with objdump).
+  - `geofence.c`: outer ring plus holes, distance to the nearest edge of any ring and which ring, box shortcut for far holes. The V0 API and tests are unchanged.
+  - `cue.c`: cue kinds (`warn`, `outside`), track mode (fence runs, nothing sounds), episodes (`turned_back`, `crossed`, `rest`, `boundary_changed`).
+  - `command.c`: records up to 16 top-level spans, sorts them, streams the canonical bytes into SHA-512 and checks Ed25519 with Monocypher 4.0.2 (`third_party/monocypher/`, CC0 or BSD-2-Clause, SHA-512 of the release tarball matches the published one). Coordinates go to e7 integers exactly from the decimal text.
+  - `config.c`: signed config (herd, cadence, fast mode until a GNSS time, endpoint trial with a 24 h fallback), NVS id 3.
+  - `slots.c` + `store.h`/`store_nvs.c`: 16 slots and 24 576 slot bytes on NVS (ids 0x100 + i), 192-byte header + 8 B per vertex with a CRC-32. A new record is always written before the ones it replaces are deleted, and boot tidies up after a cut. `acks.c`: acks waiting to go up, NVS id 2.
+  - `provision.c`: `provision <card payload>` checks each field and stores the payload in NVS id 1; slots, config and pending acks are wiped first.
+  - `app.c`: everything wired together. GNSS UTC from fixes is the only clock for activation, carried forward on the uptime counter between fixes. No boundary means no fence and no cues; the compiled-in example boundary is gone. A bench boundary loads as version 0 only with `CONFIG_OPENCOLLAR_BENCH_BOUNDARY=y` (default n) and `src/boundary_local.h`.
+  - `main.c`: boot from flash, fixes and console lines on the main thread (`k_poll`), so Ed25519 runs on the 8 KB main stack.
+- **Console commands** (115 200 baud): `provision <payload>`, `status`, `boundary <command>`, `config <command>`. No echo, so a pasted 12 KB command isn't slowed down.
+- **Logging is now deferred** (was immediate): immediate mode holds interrupts off while each line prints, which would drop bytes of a long command arriving on the same port.
+
+### Vectors and host tests
+- The five vector files are copied byte-identical from openpasture tag `fr-w0` (`crates/op-protocol/tests/vectors/`, read from the integration worktree) into `firmware/tests/host/vectors/`. SHA-256 prefixes: commands `70aae176bce665a7`, config `51a6789c9a74e28d`, geofence `3bd4cb46e1bc260d`, shapes `6f0fbadbe45a7e29`, slots `4d2018eb54d91794`.
+- `make -C firmware/tests/host` builds one binary per module (`-Wall -Wextra -Werror`) and all pass:
+  - geofence: the V0 tests unchanged; margins around and inside holes, concave hole, nearest ring; `geofence.json` 20 cases within 1 mm; 384 vertices in 9 rings: ~500 ns per fix on the Mac.
+  - shape: `shapes.json` 46 cases, every code covered; exact decimal to e7 (`1e-7`, halves away from zero, 180.00000001 out of range).
+  - command: `commands.json` 36 cases, canonical bytes identical for every valid case; UTF-8, escapes, surrogates.
+  - config: `config.json` 17 cases; fast mode ends at `fast_until` by GNSS time; endpoint kept after a successful report, back to the previous one after 24 h of failures, the trial surviving a reboot.
+  - slots: `slots.json` 12 cases through the real flash path (every step followed by a reload from the store that must give the same state; `boot` steps reload for real); record round trip; every flipped byte of a 3 264-byte record is caught.
+  - store: a power cut after every byte of an immediate insert (3 279 bytes written), a staged insert (298) and a tick applying a staged boundary (266) always leaves the old state or the new one; bad CRC, unknown format and wrong size are ignored; an empty store gives no fence and no cues.
+  - cue: the V0 tests unchanged; kinds, each episode outcome, track mode silent, walking into a hole is a crossing, a hole drawn on an animal stays silent until it is clear.
+  - provision: a valid payload is stored and wipes the slots; each bad field gives its `error <code>`.
+  - app: end to end, including a staged boundary applied by the first fix after a reboot and a collar-scoped track-mode boundary with holes.
+- Changing one expected result in each vector file (a scratch copy) makes the matching test fail, so the tests do compare against the files.
+
+### Build
+- `nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 -- ./build.sh`, clean build, no compiler warnings.
+- **Application image 115 300 B (112.6 KB)**, limit 440 KB. **RAM 73 776 B (72.0 KB) of 211 608 B**, 134.6 KB free. The new RAM: both fences 13.6 KB, e7 scratch 3 KB, slot headers 3.7 KB, receive/line buffer 12.3 KB, record buffer 3.3 KB, pending acks 2.7 KB, config and provisioning 2.8 KB, main stack 4 → 8 KB, deferred log buffer and thread 6 KB.
+- Worst stack on the main thread (GCC `-fstack-usage`, `-Os`): about 2.5 KB for a signature check (`crypto_eddsa_check_equation` 1 088 B), about 1.5 KB for shape checks and applying a boundary.
+- Partition map, printed by `scripts/check_image.py` after every build, every edge on a 32 KB SPU boundary:
+  - `0x00000-0x08000` TF-M (32 KB)
+  - `0x08000-0xF0000` application (928 KB)
+  - `0xF0000-0x100000` storage (64 KB, was 32 KB at 0xF8000)
+- `CONFIG_NVS_INIT_BAD_MEMORY_REGION=y`: the new storage area was part of the application area, so NVS formats it if it finds old bytes there.
+- Not flashed in this step (the board may be in use). On the next flash: paste a card payload, check `status`, and check the boot log says "No boundary: no cues".
+- Open: LTE wiring (report, ack and boundary download over HTTP) once the SIM is in; the position report serializer; the console keeps the UART receiver on, which costs power on battery (the production board should enable it only with USB present).

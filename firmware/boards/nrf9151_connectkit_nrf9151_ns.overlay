@@ -7,6 +7,34 @@
 #include <samples/cellular/nrf91_no_bootloader_partitions.dtsi>
 #include <samples/cellular/nrf91_sram_partitions.dtsi>
 
+/*
+ * Flash (protocol v1 §3.1), every edge on a 32 KB SPU region boundary:
+ *   0x00000-0x08000  TF-M (32 KB)
+ *   0x08000-0xF0000  application (928 KB; the image stays <= 440 KB so an
+ *                    internal-flash MCUboot with two slots fits later)
+ *   0xF0000-0x100000 storage (64 KB, NVS: provisioning, config, slots, acks)
+ */
+&slot0_partition {
+	reg = <0x00000000 0xf0000>;
+	ranges = <0x0 0x00000000 0xf0000>;
+};
+
+&slot0_ns_partition {
+	reg = <0x00008000 0xe8000>;
+};
+
+/delete-node/ &storage_partition;
+
+&flash0 {
+	partitions {
+		storage_partition: partition@f0000 {
+			compatible = "zephyr,mapped-partition";
+			label = "storage";
+			reg = <0x000f0000 0x10000>;
+		};
+	};
+};
+
 &pinctrl {
 	i2c2_default: i2c2_default {
 		group1 {

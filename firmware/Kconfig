@@ -1,0 +1,11 @@
+mainmenu "OpenCollar"
+
+config OPENCOLLAR_BENCH_BOUNDARY
+	bool "Bench boundary from src/boundary_local.h"
+	help
+	  Load the boundary in src/boundary_local.h (gitignored) as version 0,
+	  in RAM only, when no boundary is in force. For trying the fence and
+	  cues on the bench without a server. Off on real collars, which never
+	  invent a fence.
+
+source "Kconfig.zephyr"
