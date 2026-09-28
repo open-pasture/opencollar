@@ -358,6 +358,14 @@
       {
         "netclass": "POWER_400",
         "pattern": "EXT_3V3"
+      },
+      {
+        "netclass": "POWER_500",
+        "pattern": "BAT_PACK"
+      },
+      {
+        "netclass": "POWER_500",
+        "pattern": "BAT_CELL"
       }
     ]
   },

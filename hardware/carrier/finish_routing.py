@@ -1,27 +1,32 @@
-"""Finish the carrier's routing after HeyPCB (rev A2).
+"""Finish the carrier's routing: Inky's HeyPCB board brought up to the current schematic.
 
+    uv run python schematic.py      # build/carrier.net, read below
     kicad-python finish_routing.py pcb/heypcb/opencollar-carrier.kicad_pcb pcb/carrier.kicad_pcb
 
-HeyPCB's agent (Inky) routed 163 of the board's 166 connections. The three it left, and
-the six clearance errors it made, were all at U1, the bq24074 charger: layout.py packed
-the charger's passives by block rather than by pin, so the IN capacitor and the TMR
-resistor sat below the chip with their pins on top, and nothing could get out of pin 13.
+Needs Freerouting 2.4 and a Java 25 runtime in build/tools (gitignored), from
+github.com/freerouting/freerouting/releases and api.adoptium.net (see DESIGN-PHASE.md).
 
-This script keeps Inky's routing everywhere else and redoes the charger block:
-  1. each charger passive goes beside the U1 pin it serves (CHARGER below);
-  2. everything but GND is cleared from the block; fixed copper goes on U1's 0.5 mm-pitch
-     pins (0.25 mm fingers, so 0.5 mm power tracks never pass near a neighbouring pin);
-  3. each GND pad in the block gets its own via, then a two-layer grid router (0.05 mm
-     grid, 45-degree moves) reconnects every net, keeping the board's clearances, 0.3 mm
-     to the edge, and signals mostly off the bottom layer so its GND pour stays whole;
-     route orders are retried until every net routes;
-  4. GND stitching vias, pour refill, and removal of the stubs the rip-up left behind,
-     each checked with KiCad's own DRC.
+HeyPCB's agent (Inky) routed rev A2. Since then the board has changed under it, so this
+brings Inky's board up to the schematic and routes what changed:
+  1. new parts, values, nets and footprints from build/carrier.net (rev A3: fuel gauge,
+     flash, reverse protection, basic-value charger resistors, Pin1Right sockets), new
+     parts placed per A3_PARTS;
+  2. the charger's passives re-placed beside the U1 pins they serve (CHARGER): packed by
+     block, the IN cap and TMR resistor had sat under the chip with their pins on top;
+  3. copper cleared wherever it no longer fits (changed nets, re-footprinted sockets, the
+     charger block, the new parts); fixed copper at the fine-pitch parts (U1 0.5 mm,
+     U6 0.4 mm), so no router has to find its way out of their pins; a GND via at every
+     small part's GND pad, so no decoupling cap depends on the pour reaching it;
+  4. Freerouting routes what's open around the copper that stayed; a two-layer grid
+     router (0.05 mm grid, 45-degree moves, rip-up and reroute) finishes what it can't;
+  5. GND stitching, joining any pour piece the routing cut off, stub cleanup, each
+     checked with KiCad's own DRC.
 It also pulls J1-J4's courtyards and silk back where the sockets butt end to end.
 Result: kicad-cli DRC with every severity reports nothing.
 """
 import heapq
 import math
+import os
 import sys
 
 import numpy as np
@@ -38,7 +43,9 @@ VIA_D, VIA_DRILL = 0.6, 0.3
 VIA_COST = 2.5                # mm-equivalent
 TURN_COST = 0.3
 NECK_W, NECK_R = 0.25, 1.0    # power tracks may narrow to 0.25 mm within 1 mm of U1's pins
-WIDTH = {"BAT": 0.5, "CHG_IN": 0.5, "CHG_OUT": 0.5, "SOLAR_A": 0.5, "SOLAR_B": 0.5,
+NECK = {"U1": 0.25, "U6": 0.2}  # fine-pitch parts and the width tracks may narrow to at their pins
+                                # (U6 is 0.4 mm pitch: 0.2 mm leaves 0.2 mm to the next pin)
+WIDTH = {"BAT": 0.5, "BAT_PACK": 0.5, "BAT_CELL": 0.5, "CHG_IN": 0.5, "CHG_OUT": 0.5, "SOLAR_A": 0.5, "SOLAR_B": 0.5,
          "3V3": 0.4, "EXT_3V3": 0.4}
 LAYERS = (pcbnew.F_Cu, pcbnew.B_Cu)
 
@@ -167,12 +174,15 @@ class Board:
         j1 = min(self.ny, int((box[3] + pad - self.y0) / G) + 2)
         return i0, i1, j0, j1
 
-    def clearance_field(self, net, reach=1.2):
+    def clearance_field(self, net, reach=1.2, ignore=None):
         """Per layer: distance from each grid point to the nearest copper that isn't `net`,
-        shrunk by the extra clearance that copper asks for (test pads, NPTH, the edge)."""
+        shrunk by the extra clearance that copper asks for (test pads, NPTH, the edge).
+        `ignore(shape)` leaves copper out (for rip-up: tracks that may be moved)."""
         D = {L: np.full((self.ny, self.nx), 9.0, np.float32) for L in LAYERS}
         T = np.full((self.ny, self.nx), 9.0, np.float32)      # distance to test pads
         for s in self.shapes:
+            if ignore is not None and ignore(s):
+                continue
             if s.net == net and net != "":
                 continue
             extra = 0.0
@@ -267,10 +277,10 @@ B_PENALTY = None      # (box, factor): bottom-layer steps inside `box` cost more
 DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
 
 
-def route(bm, net, src, dst, w, neck_pts=()):
-    D, H = bm.clearance_field(net)
+def route(bm, net, src, dst, w, neck_pts=(), goal_cells=None, start_cells=None, neck_w=NECK_W, ignore=None):
+    D, H = bm.clearance_field(net, ignore=ignore)
     need = w / 2 + CLR + EPS
-    need_n = NECK_W / 2 + CLR + EPS
+    need_n = neck_w / 2 + CLR + EPS
     ok = {L: D[L] > need for L in LAYERS}
     if B_KEEPOUT and net != "GND":
         i0, i1, j0, j1 = bm.window(B_KEEPOUT, 0.0)
@@ -289,7 +299,11 @@ def route(bm, net, src, dst, w, neck_pts=()):
         return ok[L][j, i] or narrow[L][j, i]
 
     starts = set(c for s in src for c in bm.cells_in(s) if passable(*c))
+    if start_cells:
+        starts |= {c for c in start_cells if passable(*c)}
     goals = set(c for s in dst for c in bm.cells_in(s) if passable(*c))
+    if goal_cells:
+        goals |= {c for c in goal_cells if passable(*c)}
     # a new track may start or end on its net's copper, but not run along on top of it
     for sh in bm.shapes:
         if sh.net == net and net != "":
@@ -367,7 +381,7 @@ def route(bm, net, src, dst, w, neck_pts=()):
     return [(L, j, i, bool(narrow[L][j, i] and not ok[L][j, i])) for (L, j, i) in path]
 
 
-def commit(bm, net, path, w):
+def commit(bm, net, path, w, neck_w=NECK_W):
     """Turn a grid path into tracks and vias: one segment per straight run."""
     b = bm.b
     ni = b.FindNet(net)
@@ -388,16 +402,16 @@ def commit(bm, net, path, w):
     for prev, cur in zip(path, path[1:]):
         if cur[0] != prev[0]:                   # layer change
             if len(run) > 1:
-                emit(run, add_track, xy, w)
+                emit(run, add_track, xy, w, neck_w)
             add_via(xy(cur[1], cur[2]))
             run = [cur]
             continue
         run.append(cur)
     if len(run) > 1:
-        emit(run, add_track, xy, w)
+        emit(run, add_track, xy, w, neck_w)
 
 
-def emit(run, add_track, xy, w):
+def emit(run, add_track, xy, w, neck_w=NECK_W):
     """Split a same-layer run into straight pieces. A piece is narrow if any of its cells
     is; the boundary cell at a width change goes to the narrow piece, so wide pieces
     only cover cells cleared for the full width."""
@@ -415,7 +429,7 @@ def emit(run, add_track, xy, w):
             cuts.add(k)
     cuts = sorted(cuts)
     for a, c in zip(cuts, cuts[1:]):
-        width = NECK_W if any(run[k][3] for k in range(a, c + 1)) else w
+        width = neck_w if any(run[k][3] for k in range(a, c + 1)) else w
         add_track(xy(run[a][1], run[a][2]), xy(run[c][1], run[c][2]), L, width)
 
 
@@ -500,6 +514,9 @@ def split_tees(b):
 def drop_dangling(b):
     """Remove tracks with an end that touches nothing, and vias with copper on only one
     layer (left over from rip-ups). GND vias stay: the pours hold them."""
+    for t in list(b.GetTracks()):                    # zero-length leftovers
+        if t.GetClass() == "PCB_TRACK" and t.GetStart() == t.GetEnd():
+            b.Delete(t)
     split_tees(b)
     uid = lambda o: o.m_Uuid.AsString()      # SWIG hands out a new wrapper each time: `is` won't do
     while True:
@@ -548,21 +565,99 @@ def connect_all(b, nets):
             # join the island holding the most pads to its nearest neighbour
             isl.sort(key=lambda g: -sum(isinstance(s.item, pcbnew.PAD) for s in g))
             main, rest = isl[0], isl[1:]
-            neck = [(s.g["x"], s.g["y"]) for g in isl for s in g
-                    if isinstance(s.item, pcbnew.PAD) and s.item.GetParentFootprint().GetReference() == "U1"]
+            fine = [(s.g["x"], s.g["y"], NECK[r]) for g in isl for s in g if isinstance(s.item, pcbnew.PAD)
+                    for r in [s.item.GetParentFootprint().GetReference()] if r in NECK]
+            neck = [(x, y) for x, y, _ in fine]
+            neck_w = min([n for _, _, n in fine], default=NECK_W)
             path = None
             for width in ([w] + [x for x in (0.4, 0.3, 0.25) if x < w]):
-                path = route(bm, net, main, [s for g in rest for s in g], width, neck)
+                path = route(bm, net, main, [s for g in rest for s in g], width, neck, neck_w=neck_w)
                 if path:
                     break
             if not path:
                 print(f"  {net}: NO PATH for {len(rest)} island(s)")
                 failed.append(net)
                 break
-            commit(bm, net, path, width)
+            commit(bm, net, path, width, neck_w)
             vias = sum(1 for a, c in zip(path, path[1:]) if a[0] != c[0])
             print(f"  {net}: routed {len(path)} steps at {width} mm, {vias} via(s)")
     return failed
+
+
+def movable(net):
+    """Copper a rip-up may move for `net`: other signals' tracks and vias, never GND, pads,
+    or the fixed fan-outs."""
+    return lambda s: (s.item.GetClass() in ("PCB_TRACK", "PCB_VIA", "PCB_ARC") and s.net not in (net, "GND", "")
+                      and not s.item.IsLocked())
+
+
+def rip_for(b, bm, net, path, w):
+    """Delete the movable copper within clearance of `path`; return the nets it belonged to."""
+    need = w / 2 + CLR + EPS
+    by_layer = {}
+    for L, j, i, _ in path:
+        by_layer.setdefault(L, []).append((bm.x0 + i * G, bm.y0 + j * G))
+    hit, uids = set(), set()
+    mov = movable(net)
+    for sh in bm.shapes:
+        if not mov(sh):
+            continue
+        for L in sh.layers:
+            pts = by_layer.get(L)
+            if not pts:
+                continue
+            px = np.array([p[0] for p in pts]); py = np.array([p[1] for p in pts])
+            if float(sh.dist(px, py).min()) < need:
+                hit.add(sh.net)
+                uids.add(sh.item.m_Uuid.AsString())
+                break
+    for t in list(b.GetTracks()):
+        if t.m_Uuid.AsString() in uids:
+            b.Delete(t)
+    return hit
+
+
+def rip_reroute(b, nets, depth=2):
+    """Route nets the plain router couldn't: find each one's path as if other signals'
+    tracks weren't there, rip up what's in the way, route it, then route the ripped nets
+    again (rip-up allowed `depth` levels down). Returns the nets still open."""
+    left = []
+    for net in nets:
+        w = WIDTH.get(net, 0.25)
+        for _ in range(10):
+            bm = Board(b)
+            isl = islands(bm, net)
+            if len(isl) < 2:
+                break
+            isl.sort(key=lambda g: -sum(isinstance(s.item, pcbnew.PAD) for s in g))
+            main, rest = isl[0], [s for g in isl[1:] for s in g]
+            fine = [(s.g["x"], s.g["y"], NECK[r]) for g in isl for s in g if isinstance(s.item, pcbnew.PAD)
+                    for r in [s.item.GetParentFootprint().GetReference()] if r in NECK]
+            neck, neck_w = [(x, y) for x, y, _ in fine], min([n for _, _, n in fine], default=NECK_W)
+            path = None
+            for width in ([w] + [x for x in (0.4, 0.3, 0.25) if x < w]):
+                path = route(bm, net, main, rest, width, neck, neck_w=neck_w, ignore=movable(net))
+                if path:
+                    break
+            if not path:
+                break
+            ripped = rip_for(b, bm, net, path, width)
+            bm = Board(b)
+            path = route(bm, net, main, rest, width, neck, neck_w=neck_w)
+            if not path:
+                break
+            commit(bm, net, path, width, neck_w)
+            print(f"  {net}: routed by ripping up {sorted(ripped)}")
+            if ripped:
+                again = connect_all(b, sorted(ripped))
+                if again and depth > 0:
+                    again = rip_reroute(b, again, depth - 1)
+                left += again
+        else:
+            pass
+        if len(islands(Board(b), net)) > 1:
+            left.append(net)
+    return sorted(set(left))
 
 
 def refill(b):
@@ -652,10 +747,10 @@ def gnd_islands(b):
     return list(groups.values()), pieces
 
 
-def join_gnd(b, step=0.25):
+def join_gnd(b, step=0.25, rounds=200):
     """Add GND vias until every pour piece is joined to the rest."""
     added = 0
-    for _ in range(40):
+    for _ in range(rounds):
         refill(b)
         groups, pieces = gnd_islands(b)
         area = lambda g: sum(pieces[k][1].Outline(pieces[k][2]).Area() for k in g) / 1e12
@@ -703,19 +798,44 @@ def route_stranded_gnd(b, groups, pieces):
     gnd = [s for s in bm.shapes if s.net == "GND"]
     vias = [s for s in gnd if s.item.GetClass() == "PCB_VIA" and
             any(in_group(s.g["x"] + dx, s.g["y"] + dy, main) for dx, dy in ((0.5, 0), (-0.5, 0), (0, 0.5), (0, -0.5)))]
+    def lattice(ks):
+        """Grid cells well inside these pour pieces, on a 0.5 mm lattice."""
+        cells = set()
+        for k in ks:
+            L, f, idx = pieces[k]
+            bb = f.Outline(idx).BBox()
+            for y in np.arange(mm(bb.GetY()), mm(bb.GetY() + bb.GetHeight()), 0.5):
+                for x in np.arange(mm(bb.GetX()), mm(bb.GetX() + bb.GetWidth()), 0.5):
+                    if all(f.Contains(V(x + dx, y + dy), idx) for dx, dy in ((0, 0), (0.3, 0), (-0.3, 0), (0, 0.3), (0, -0.3))):
+                        i, j = bm.cell(x, y)
+                        cells.add((L, j, i))
+        return cells
+
+    main_cells = lattice(main)
     for g in groups[1:]:
-        near = lambda s: any(in_group(s.g["x"] + dx, s.g["y"] + dy, g) for dx, dy in
-                             ((0, 0), (0.6, 0), (-0.6, 0), (0, 0.6), (0, -0.6)))
-        pads = [s for s in gnd if isinstance(s.item, pcbnew.PAD) and near(s)]
-        if not pads:        # a piece held only by vias: route from those
-            pads = [s for s in gnd if s.item.GetClass() == "PCB_VIA" and near(s) and s not in vias]
-        if not pads:
+        # from inside the stranded piece to anywhere well inside the main pour
+        starts = lattice(g)
+        if not starts:
             continue
+        size = sum(pieces[k][1].Outline(pieces[k][2]).Area() for k in g) / 1e12
         for width in (0.4, 0.25):
-            path = route(bm, "GND", pads, vias, width)
+            path = route(bm, "GND", [], [], width, goal_cells=main_cells, start_cells=starts)
             if path:
                 commit(bm, "GND", path, width)
-                print(f"  GND: rejoined {[p.item.GetParentFootprint().GetReference() for p in pads]} at {width} mm")
+                print(f"  GND: joined a {size:.1f} mm2 piece at {width} mm")
+                return True
+        # walled in: rip up the signals in the way, join it, route them again
+        path = route(bm, "GND", [], [], 0.25, goal_cells=main_cells, start_cells=starts, ignore=movable("GND"))
+        if path:
+            ripped = rip_for(b, bm, "GND", path, 0.25)
+            bm2 = Board(b)
+            path = route(bm2, "GND", [], [], 0.25, goal_cells=main_cells, start_cells=starts)
+            if path:
+                commit(bm2, "GND", path, 0.25)
+                again = connect_all(b, sorted(ripped))
+                if again:
+                    again = rip_reroute(b, again)
+                print(f"  GND: joined a {size:.1f} mm2 piece by ripping up {sorted(ripped)}; still open: {again or 'none'}")
                 return True
     return False
 
@@ -730,6 +850,75 @@ def stitch(b, pitch=2.5):
                 gnd_via(b, x, y)
                 placed += 1
     return placed
+
+
+def u6_fingers(b):
+    """Fixed copper at the fuel gauge's 0.4 mm-pitch top row (0.2 mm tracks leave 0.2 mm to
+    the next pin), so no router has to find its way out of it: REG straight up into C10;
+    the CSPH Kelvin line up, over the two GND pins, down the channel along the board edge
+    and into R24's system-side pad; ALRT up and into R25; SDA and SCL out to the left."""
+    u6 = b.FindFootprintByReference("U6")
+    pads = {p.GetNumber(): p for p in u6.Pads()}
+    at = lambda p: (mm(p.GetPosition().x), mm(p.GetPosition().y))
+    c10 = {p.GetNumber(): p for p in b.FindFootprintByReference("C10").Pads()}
+    r24 = {p.GetNumber(): p for p in b.FindFootprintByReference("R24").Pads()}
+
+    def run(pts, net):
+        for p0, p1 in zip(pts, pts[1:]):
+            t = pcbnew.PCB_TRACK(b)
+            t.SetStart(V(*p0)); t.SetEnd(V(*p1)); t.SetWidth(nm(0.2)); t.SetLayer(pcbnew.F_Cu)
+            t.SetNet(b.FindNet(net)); t.SetLocked(True)
+            b.Add(t)
+
+    (rx, ry), (cx, cy) = at(pads["11"]), at(c10["1"])
+    run([(rx, ry), (rx, cy)], "FG_REG")
+    (sx, sy), (kx, ky) = at(pads["10"]), at(r24["2"])
+    tip = ry - mm(pads["10"].GetBoundingBox().GetHeight()) / 2      # top edge of the pin row
+    c10_bottom = cy + mm(c10["1"].GetBoundingBox().GetHeight()) / 2
+    y = (tip + c10_bottom) / 2                                        # midway: clear of both
+    edge_x = at(pads["8"])[0] + 0.6
+    run([(sx, sy), (sx, y), (edge_x, y), (edge_x, ky - 0.4), (kx + 0.3, ky)], "BAT")
+    # ALRT up between SDA and REG, then left into R25; SDA and SCL left under R25
+    r25 = {p.GetNumber(): p for p in b.FindFootprintByReference("R25").Pads()}
+    (ax, ay), (px, py) = at(pads["12"]), at(r25["1"])
+    run([(ax, ay), (ax, py + 0.35), (px + 0.2, py + 0.35)], "FG_ALRT")
+    (dx, dy), (qx, qy) = at(pads["13"]), at(pads["14"])
+    r25_bottom = py + mm(r25["1"].GetBoundingBox().GetHeight()) / 2
+    run([(dx, dy), (dx, r25_bottom + 0.45), (158.9, r25_bottom + 0.45)], "I2C_SDA")
+    run([(qx, qy), (qx, r25_bottom + 0.85), (159.4, r25_bottom + 0.85)], "I2C_SCL")
+
+
+def u6_ground(b):
+    """The fuel gauge's GND and CSPL pins go straight onto its exposed pad, which gets two
+    vias to the bottom pour, so no GND via has to sit in the channel along the board edge
+    that the CSPH sense line uses."""
+    u6 = b.FindFootprintByReference("U6")
+    pads = {p.GetNumber(): p for p in u6.Pads()}
+    ep = pads["15"]
+    ec = ep.GetPosition()
+    ex, ey = mm(ec.x), mm(ec.y)
+    a = math.radians(u6.GetOrientationDegrees())
+    bb = ep.GetBoundingBox()
+    x0, y0 = mm(bb.GetX()), mm(bb.GetY())
+    x1, y1 = x0 + mm(bb.GetWidth()), y0 + mm(bb.GetHeight())
+    for n in ("8", "9"):
+        q = pads[n].GetPosition()
+        qx, qy = mm(q.x), mm(q.y)
+        # straight across onto the pad, square to the pin row, clear of the next pin
+        tx = qx if x0 - 0.15 <= qx <= x1 + 0.15 else min(max(qx, x0 + 0.25), x1 - 0.25)
+        ty = qy if y0 - 0.15 <= qy <= y1 + 0.15 else min(max(qy, y0 + 0.25), y1 - 0.25)
+        t = pcbnew.PCB_TRACK(b)
+        t.SetStart(q)
+        t.SetEnd(V(tx, ty))
+        t.SetWidth(nm(0.2)); t.SetLayer(pcbnew.F_Cu); t.SetNet(ep.GetNet()); t.SetLocked(True)
+        b.Add(t)
+    for d in (-0.5, 0.5):                       # along the pad's long side
+        x, y = ex + d * math.sin(a), ey + d * math.cos(a)
+        v = pcbnew.PCB_VIA(b)
+        v.SetPosition(V(x, y)); v.SetViaType(pcbnew.VIATYPE_THROUGH)
+        v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu); v.SetWidth(nm(VIA_D)); v.SetDrill(nm(VIA_DRILL))
+        v.SetNet(ep.GetNet()); v.SetLocked(True)
+        b.Add(v)
 
 
 def rip_box(b, box, keep=("GND",)):
@@ -771,22 +960,31 @@ def drop_gnd_tracks(b, box):
             b.Delete(t)
 
 
-def reserve_gnd_vias(b, box):
-    """Each GND pad in `box` left with nothing attached gets a via at its edge now, before
-    signals are routed, so they route around it instead of walling the pad in."""
-    x0, y0, x1, y1 = box
+def reserve_gnd_vias(b, box=None, near=1.5):
+    """GND pads of passives and ICs get a via at the pad, placed before signals are routed
+    so they route around it instead of walling the pad in. In `box`: every GND pad left
+    with nothing attached. Board-wide (box None): every such pad with no GND via within
+    `near` mm, so no decoupling cap depends on the pour reaching it."""
     bm = Board(b)
     D, H = bm.clearance_field("GND")
     need = VIA_D / 2 + CLR + 0.05
-    for grp in islands(bm, "GND"):
-        if len(grp) != 1 or not isinstance(grp[0].item, pcbnew.PAD):
+    vias = [(s.g["x"], s.g["y"]) for s in bm.shapes if s.net == "GND" and s.item.GetClass() == "PCB_VIA"]
+    if box is None:
+        cands = [s for s in bm.shapes if s.net == "GND" and isinstance(s.item, pcbnew.PAD) and s.kind != "seg"
+                 and s.item.GetParentFootprint().GetReference()[0] in "RCUQD"
+                 and all(math.hypot(s.g["x"] - x, s.g["y"] - y) > near for x, y in vias)]
+    else:
+        x0, y0, x1, y1 = box
+        cands = [grp[0] for grp in islands(bm, "GND") if len(grp) == 1 and isinstance(grp[0].item, pcbnew.PAD)
+                 and x0 <= grp[0].g["x"] <= x1 and y0 <= grp[0].g["y"] <= y1]
+    for sh in cands:
+        p = sh.item
+        if p.GetParentFootprint().GetReference() in ("U1", "U6") or p.GetDrillSize().x > 0 or \
+                p.GetParentFootprint().IsDNP() and box is None:
             continue
-        p = grp[0].item
-        if p.GetParentFootprint().GetReference() == "U1" or p.GetDrillSize().x > 0:
-            continue
-        g = grp[0].g
-        if not (x0 <= g["x"] <= x1 and y0 <= g["y"] <= y1):
-            continue
+        g = sh.g
+        if sh.kind == "circle":
+            g = dict(g, w=2 * g["r"], h=2 * g["r"], rot=0)
         hw, hh = (g["w"] / 2, g["h"] / 2) if int(round(g["rot"])) % 180 == 0 else (g["h"] / 2, g["w"] / 2)
         for dx, dy in ((0, hh + 0.25), (0, -hh - 0.25), (hw + 0.25, 0), (-hw - 0.25, 0),
                        (hw, hh + 0.2), (-hw, hh + 0.2), (hw, -hh - 0.2), (-hw, -hh - 0.2)):
@@ -804,13 +1002,14 @@ def reserve_gnd_vias(b, box):
                 break
 
 
-POWER = ["CHG_IN", "BAT", "CHG_OUT", "SOLAR_A", "SOLAR_B", "3V3", "EXT_3V3"]
+POWER = ["CHG_IN", "BAT_PACK", "BAT_CELL", "BAT", "CHG_OUT", "SOLAR_A", "SOLAR_B", "3V3", "EXT_3V3"]
 
 
 # The charger's passives, each beside the U1 pin it serves (board mm, degrees). U1's pins:
 # left TS, BAT, BAT, CE; bottom GND, EN1, PGOOD, GND; right STAT, OUT, OUT, ILIM;
 # top IN, TMR, -, ISET.
 CHARGER = {
+    "R5": (147.9, 115.9, 180),   # TS 10 k (not fitted), beside C1: shares its TS and GND
     "C2": (153.8, 115.1, 90),    # IN 10 uF, above pin 13
     "R4": (152.0, 115.3, 90),    # TMR, above pin 14
     "R2": (150.4, 115.3, 90),    # ISET, above pin 16
@@ -824,6 +1023,119 @@ CHARGER = {
     "R7": (155.9, 120.9, 0),     # STAT pull-up, right of pin 9
 }
 CHARGER_BOX = (145.0, 111.0, 158.6, 126.0)
+
+
+# Rev A3 additions (fuel gauge, flash, reverse protection; schematic.py battery_path, flash).
+# Board mm, degrees. The flash sits in the free board under the MAX-M10S; the battery
+# path goes in the edge column between H3 and H4, on the way from the harness to the
+# charger and beside the M10S's I2C socket.
+A3_PARTS = {
+    "U7": (136.0, 125.0, 0),     # W25Q128 flash
+    "C12": (141.5, 123.3, 90),   # its 0.1 uF
+    "R26": (141.5, 126.6, 90),   # /CS pull-up
+    "R25": (160.0, 110.9, 90),   # ALRT pull-up, left: ALRT, SDA, SCL all leave U6 to the left
+    "C10": (162.25, 111.25, 90),  # REG 0.47 uF, straight above REG
+    "U6": (161.8, 115.05, 90),    # MAX17260: I2C, REG, ALRT up; CSN, BATT down to R24; CSPH by the edge
+    "C11": (159.75, 121.3, 90),   # BATT 0.1 uF, beside R24
+    "R24": (161.8, 121.3, 90),   # 10 mOhm sense
+    "Q1": (161.8, 124.95, 0),    # AO3401A
+}
+A3_BOXES = [(131.0, 121.3, 143.0, 128.5), (158.9, 108.9, 164.7, 127.5)]
+FP_DIR = "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints"
+
+
+def read_netlist(path):
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from netlist_to_pcb import child, sexp, val
+    root = sexp(open(path).read())
+    comps = {}
+    for c in child(root, "components")[1:]:
+        if isinstance(c, list) and c[0] == "comp":
+            fields = {}
+            fl = child(c, "fields")
+            for f in (fl[1:] if fl else []):
+                if isinstance(f, list) and f[0] == "field":
+                    fields[val(f, "name")] = f[-1] if isinstance(f[-1], str) else ""
+            comps[val(c, "ref")] = dict(value=val(c, "value"), fp=val(c, "footprint"), fields=fields)
+    nets = []
+    for n in child(root, "nets")[1:]:
+        if isinstance(n, list) and n[0] == "net":
+            nets.append((val(n, "name"), [(val(x, "ref"), val(x, "pin")) for x in n[1:]
+                                          if isinstance(x, list) and x[0] == "node"]))
+    return comps, nets
+
+
+def apply_netlist(b, path):
+    """Bring the board up to the schematic: add parts it lacks (placed per A3_PARTS),
+    update values and BOM fields, and give every pad its net. Returns the nets whose
+    pads changed."""
+    comps, nets = read_netlist(path)
+    have = {f.GetReference(): f for f in b.GetFootprints()}
+    swapped = []
+    for ref, c in comps.items():
+        f = have.get(ref)
+        if f is not None and str(f.GetFPID().GetLibItemName()) != c["fp"].split(":")[1]:
+            # footprint changed in the schematic (the sockets' Pin1Left -> Pin1Right): same
+            # place, same reference, new pads; its copper gets routed again
+            lib, name = c["fp"].split(":")
+            g = pcbnew.FootprintLoad(os.path.join(FP_DIR, lib + ".pretty"), name)
+            g.SetReference(ref)
+            g.SetPosition(f.GetPosition())
+            g.SetOrientationDegrees(f.GetOrientationDegrees())
+            g.Reference().SetVisible(f.Reference().IsVisible())
+            g.Reference().SetTextSize(f.Reference().GetTextSize())
+            g.Reference().SetTextThickness(f.Reference().GetTextThickness())
+            g.Reference().SetPosition(f.Reference().GetPosition())
+            b.Delete(f)
+            b.Add(g)
+            have[ref] = f = g
+            swapped.append(ref)
+        if f is None:
+            lib, name = c["fp"].split(":")
+            f = pcbnew.FootprintLoad(os.path.join(FP_DIR, lib + ".pretty"), name)
+            f.SetReference(ref)
+            b.Add(f)
+            x, y, rot = A3_PARTS[ref]
+            f.SetOrientationDegrees(rot)
+            f.SetPosition(V(x, y))
+            f.Reference().SetVisible(ref == "U7")   # the edge column has no room for labels
+            f.Reference().SetTextSize(pcbnew.VECTOR2I(nm(0.8), nm(0.8)))
+            f.Reference().SetTextThickness(nm(0.12))
+            have[ref] = f
+        f.SetValue(c["value"])
+        for k in ("LCSC", "MPN"):
+            if k in c["fields"]:
+                f.SetField(k, c["fields"][k])
+                f.GetField(k).SetVisible(False)
+    pin_net = {(r, p): n for n, nodes in nets for r, p in nodes}
+    netinfo = {}
+    changed = set()
+    for name in {n for n, _ in nets}:
+        ni = b.FindNet(name)
+        if ni is None:
+            ni = pcbnew.NETINFO_ITEM(b, name)
+            b.Add(ni)
+        netinfo[name] = ni
+    for ref, f in have.items():
+        for pad in f.Pads():
+            if not pad.GetNumber():
+                continue
+            want = pin_net.get((ref, pad.GetNumber()), "")
+            if pad.GetNetname() != want:
+                changed |= {pad.GetNetname(), want}
+                if want:
+                    pad.SetNet(netinfo[want])
+                else:
+                    pad.SetNetCode(0)
+    changed.discard("")
+    return changed, swapped
+
+
+def retitle(b, old="rev A2", new="rev A3"):
+    for d in b.GetDrawings():
+        if d.GetClass() == "PCB_TEXT" and old in d.GetText():
+            d.SetText(d.GetText().replace(old, new))
+
 
 
 def place_charger(b):
@@ -878,6 +1190,7 @@ def drc(path):
 def clear_dangling(b, out):
     """Delete what KiCad's DRC calls dangling (stubs the rip-ups left), one at a time,
     keeping anything whose removal would leave a connection open."""
+    split_tees(b)
     kept = set()
     for _ in range(60):
         pcbnew.SaveBoard(out, b)
@@ -910,20 +1223,74 @@ def clear_dangling(b, out):
             kept.add((x, y))
 
 
+NETLIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build", "carrier.net")
+
+
 def prepare(src):
-    """Inky's board with the charger block re-placed and cleared for routing."""
+    """Inky's board brought up to the current schematic, with the charger block re-placed,
+    and everything that has to be routed again cleared."""
     b = pcbnew.LoadBoard(src)
     EDGES.clear()
     ds = b.GetDesignSettings()
     ds.m_TentViasFront = ds.m_TentViasBack = True    # a probe that misses a test pad lands on mask
+    retitle(b)
+    changed, swapped = apply_netlist(b, NETLIST)
+    for p in b.FindFootprintByReference("J5").Pads():   # the Kit-feed pigtail's GND hole:
+        if p.GetNetname() == "GND":                      # solid to the pour, so routing can't starve it
+            p.SetLocalZoneConnection(pcbnew.ZONE_CONNECTION_FULL)
     butted_sockets(b)
     place_charger(b)
     nets = rip_box(b, CHARGER_BOX)
+    for ref in swapped:                              # re-footprinted parts: clear their column
+        bb = b.FindFootprintByReference(ref).GetCourtyard(pcbnew.F_CrtYd).BBox()
+        box = (mm(bb.GetX()) - 0.8, mm(bb.GetY()) - 0.8,
+               mm(bb.GetX() + bb.GetWidth()) + 0.8, mm(bb.GetY() + bb.GetHeight()) + 0.8)
+        nets |= rip_box(b, box)
+        drop_gnd_tracks(b, box)
+    for t in list(b.GetTracks()):                    # copper of nets whose pads changed
+        if t.GetNetname() in changed:
+            nets.add(t.GetNetname())
+            b.Delete(t)
+    for box in A3_BOXES:
+        nets |= rip_box(b, box)
+        drop_gnd_tracks(b, box)
+        drop_gnd_vias(b, box, keep_near=(0, 0, 0))
+    nets |= changed
+    nets |= {p.GetNetname() for r in A3_PARTS for p in b.FindFootprintByReference(r).Pads()}
+    nets.discard("GND")
+    nets.discard("")
     drop_gnd_tracks(b, CHARGER_BOX)
     drop_gnd_vias(b, CHARGER_BOX)
     u1_fingers(b)
+    u6_ground(b)
+    u6_fingers(b)
     reserve_gnd_vias(b, CHARGER_BOX)
+    for box in A3_BOXES:
+        reserve_gnd_vias(b, box)
+    reserve_gnd_vias(b)                              # and every other GND pad without a via nearby
     return b, nets
+
+
+JAVA = "build/tools/jdk-25.0.4.1+1-jre/Contents/Home/bin/java"
+FREEROUTING = "build/tools/freerouting.jar"
+
+
+def freeroute(b, work, passes=100):
+    """Freerouting routes what's open, around the copper that stays (Specctra DSN out,
+    session back in). Single-threaded: its multi-threaded optimiser is known to leave
+    clearance errors, and single-threaded it gives the same result every run."""
+    import subprocess
+    dsn, ses = f"{work}.dsn", f"{work}.ses"
+    for f in (dsn, ses):
+        if os.path.exists(f):
+            os.remove(f)
+    pcbnew.ExportSpecctraDSN(b, dsn)
+    with open(f"{work}.freerouting.log", "w") as log:
+        subprocess.run([JAVA, "-Djava.awt.headless=true", "-jar", FREEROUTING, "-de", dsn, "-do", ses,
+                        "-mp", str(passes), "-mt", "1"], check=True, stdout=log, stderr=subprocess.STDOUT)
+    if not os.path.getsize(ses):
+        sys.exit(f"freerouting wrote nothing; see {work}.freerouting.log")
+    pcbnew.ImportSpecctraSES(b, ses)
 
 
 def main(src, out):
@@ -932,20 +1299,17 @@ def main(src, out):
     B_PENALTY = (CHARGER_BOX, 4.0)
     B_KEEPOUT = (149.6, 117.3, 154.4, 119.75)    # clear of TP23 and TP31
     shutil.copy(src.replace(".kicad_pcb", ".kicad_pro"), out.replace(".kicad_pcb", ".kicad_pro"))   # rules for DRC
-    print("re-place the charger passives by pin, clear the block, fix U1's fan-out; route")
-    hint, best = [], None
-    for k in range(10):
-        b, nets = prepare(src)
-        order = hint + [n for n in POWER if n in nets and n not in hint]
-        order += sorted(n for n in nets if n not in order)
-        failed = connect_all(b, order)
-        print(f"attempt {k + 1}: failed {failed}")
-        if best is None or len(failed) < len(best[1]):
-            best = (b, failed)
-        if not failed:
-            break
-        hint = failed + [n for n in hint if n not in failed]
-    b, failed = best
+    print("bring the board up to the schematic, re-place the charger, clear what changed")
+    b, nets = prepare(src)
+    print("freerouting")
+    freeroute(b, os.path.join(os.path.dirname(os.path.abspath(out)), "..", "build",
+                              os.path.basename(out).replace(".kicad_pcb", "")))
+    drop_dangling(b)
+    print("grid router: whatever is still open")
+    signals = sorted({p.GetNetname() for f in b.GetFootprints() for p in f.Pads()} - {"", "GND"})
+    failed = connect_all(b, signals)
+    if failed:
+        failed = rip_reroute(b, failed)
     if failed:
         print(f"UNROUTED: {failed}")
     drop_dangling(b)
@@ -953,6 +1317,7 @@ def main(src, out):
     print(f"stitching vias: {stitch(b)}")
     print(f"vias joining GND pour pieces: {join_gnd(b)}")
     refill(b)
+    drop_dangling(b)
     clear_dangling(b, out)
     refill(b)
     pcbnew.SaveBoard(out, b)

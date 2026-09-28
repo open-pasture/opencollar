@@ -248,3 +248,40 @@ When the boxes arrive: photograph the parts, check every item against the list, 
   - The routing outside the charger is Inky's. It's DRC-clean but meandering in places (TS is ~74 mm, much of that the run out to the harness socket). Worth a hand pass in KiCad or HeyPCB before a production rev; fine for 5 alpha boards.
   - JLCPCB's BOM/CPL format and the rotation check on their preview happen at ordering. Nothing ordered.
 - **Routed board imported into HeyPCB** at Cody's request: new project `opencollar-carrier-a2` (heypcb.ai/p/79e09bf517e0), from `pcb/carrier.kicad_pcb` + `.kicad_pro` via the dashboard import. HeyPCB can't swap the board inside an existing project, so Inky's original project `opencollar-carrier` (d017ac745ca9) is still there, untouched. HeyPCB's DRC on the import: clean, 0 airwires. The import used no Inky turns (trial at 75 %); nothing published.
+
+### Rev A3: fuel gauge, flash, reverse protection; socket footprints corrected; fit test and JLCPCB files (2026-09-27)
+- Cody approved the additions proposed earlier. Added from the chip makers' datasheets, fetched with Firecrawl:
+  - **MAX17260 fuel gauge** (U6) in high-side mode: 10 mΩ sense resistor R24 with Kelvin lines, 0.1 µF BATT, 0.47 µF REG, CSPL to GND, TH to BATT. It sits on the main I2C bus at 0x36, with ALRT to P0.00 and a 100 k pull-up.
+  - **W25Q128JV 16 MB flash** (U7) on P0.01–P0.04 over SPI. /WP and /HOLD go to VCC, /CS has a 100 k pull-up, 0.1 µF decoupling.
+  - **AO3401A P-FET** (Q1) for reverse-battery protection, placed before the gauge so a reversed pack never reaches its pins.
+  - **Charger resistors to JLCPCB basic values:** ISET 887 Ω → 1 kΩ, ILIM 3.24 kΩ → 4.7 kΩ, TMR 71.5 kΩ → 68 kΩ.
+  - The battery path is now harness BAT_PACK → Q1 → BAT_CELL → R24 → BAT. ERC is clean: 100 parts, 53 nets. Every existing part keeps its reference.
+- **Stock problem:** the MAX17260 is at **0 at JLCPCB and LCSC** (both listings, C350946 and C5280558). Every other high-side gauge I checked (MAX17262, BQ27220, MAX17055) is also at or near 0. The design keeps the MAX17260. At ordering the choice is JLCPCB Global Sourcing (DigiKey/Mouser), or leaving U6 off: the board runs without it, since R24 carries the current. It's in SPEC.md question 14.
+- **Caught in the datasheet review: the socket footprints were mirrored.**
+  - The hanxia drawing gives no land pattern. JLCPCB's own footprints for all four sockets (1 × 4, 8, 9, 10; EasyEDA library) put pin 1's leg on the other side from KiCad's `Pin1Left`, which the board used.
+  - On the even-length sockets a mirror can't be fixed by turning the part round, so JLCPCB couldn't have soldered J1–J4, J8 or J9 down.
+  - All seven sockets are now `Pin1Right`, which fits JLCPCB's footprints to 0.000 mm. Each pad keeps its row position and net and moves to the other side of the socket.
+  - The drawing confirms the 1 × 10 body is 25.40 mm long, so two butt into a continuous 1 × 20.
+- **Other checks:**
+  - bq24074 pinout against TI's table: all 16 pins match. The land pattern matches TI's RGT0016C example (1.68 mm thermal pad). TI asks for vias in the thermal pad to be filled or tented; ours are open 0.3 mm vias, a minor solder-wicking risk.
+  - AO3401A pins in JLCPCB's symbol: G = 1, S = 2, D = 3, matching ours. B5819W pin 1 is the cathode, matching ours.
+  - Stock: bq24074 795 (816 the day before); S8B harness connector 19,343; flash 59k and FET 884k, both basic parts.
+- **Routing.** Moving every socket pad meant re-routing nearly all the plug-in board connections. My grid router, routing one net at a time and retrying orders, left 16 nets open after a 35-minute attempt. The pipeline in `finish_routing.py` is now:
+  - Inky's board is brought up to the schematic: parts, values, footprints, nets.
+  - The charger stays placed by pin. The new parts are placed: flash under the M10S, gauge column on the right edge.
+  - Fixed copper goes at U6's 0.4 mm-pitch pins: REG into C10, a Kelvin CSPH line along the board edge into R24, and ALRT, SDA and SCL out to the left.
+  - Every small part's GND pad gets its own via before routing. This was caught when U3's input cap C8 was left on a GND sliver between the new flash lines.
+  - **Freerouting** (single-threaded; the same result every run) routes around Inky's surviving copper. The grid router then finishes what it can't, with **rip-up and reroute**: EXT_SDA was walled in by the Kit socket column and routed by moving seven other nets.
+  - Last come GND stitching, joining cut-off pour pieces (also with rip-up), and stub cleanup, all checked against KiCad's DRC.
+  - R5 (the unfitted TS resistor) moved beside C1, and J5's GND hole is solid to the pour.
+- **Result:** `pcb/carrier.kicad_pcb`, rev A3.
+  - `kicad-cli pcb drc --severity-all`: **0 violations, 0 unconnected.**
+  - The board matches the schematic on all 53 nets, and Inky's placement changed only where intended.
+  - 1,323 tracks, 335 vias (140 GND). Power paths are 0.5 mm; the 0.2 mm lengths are the gauge's sense lines.
+  - Renders reviewed top and bottom.
+- **Fit test:** `fit_test.py` writes `build/carrier-fit-test.pdf`, a 1:1 print with every socket contact circled, the three plugged boards outlined and a 50 mm scale bar. Cody prints it at 100 % and lays the Kit, MAX-M10S and ISM330 on it.
+- **JLCPCB files:** `jlc_files.py` writes the BOM (33 lines), the placement file (59 parts) and the Gerbers + drill zip into `build/fab/`. For each part it fetches JLCPCB's own footprint and computes the rotation and offset from the pads. All 59 fit (worst 0.2 mm, land-pattern differences on SOT-23), with no mirrored parts. It still needs checking in JLCPCB's placement preview at quote time.
+- Not done / open:
+  - HeyPCB still has the A2 board. The A3 board isn't uploaded there; that's Cody's call.
+  - The router's work outside the charger meanders in places. It's DRC-clean; a hand pass before production would tidy it.
+  - Nothing ordered or pushed.
