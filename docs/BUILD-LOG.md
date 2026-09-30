@@ -219,3 +219,122 @@ When the boxes arrive: photograph the parts, check every item against the list, 
   - herd: the story above now passes. Herd B's v14, refused `wrong_herd` before the config, is applied when offered again; herd B's v12 is applied; herd A's v13 is `wrong_herd`. With the power cut after every byte of the change (636 bytes written), the result is always the old state (herd A, slots 10 13) or the new one (herd B, slots 10), with v10 enforced: 631 old, 6 new.
   - Taking the prune out of `slots_load` makes the slot boot test fail, so that test depends on it.
 - **Build:** clean, no compiler warnings. Application image 115 396 B (112.7 KB, +96 B) of 440 KB; RAM 73 776 B, unchanged. Not flashed.
+
+### Carrier board shrunk to 65 × 62 mm
+- Cody saw a lot of wasted space on the 95 × 75 mm layout. The cause: the carrier's own parts sat beside the plugged boards. The Kit, MAX-M10S and ISM330 ride ~11 mm up on their sockets, so the board under them was empty.
+- Now the three plugged boards are tiled edge to edge, and every carrier part sits underneath them:
+  - Kit down the left edge.
+  - MAX-M10S top right.
+  - ISM330 below it, turned 180° so its standoffs sit clear of the bottom-edge ports.
+  - Under the Kit, between its socket rows: the buffer and switch, pull-ups, dividers, the Kit feed and two board mounts.
+  - Under the M10S: the charger. Under the IMU: the ESD parts.
+- **65 × 62 mm, 43 % less area.** The limit is the three boards' footprints: the M10S's 8-pin socket can't sit closer to the Kit's right-hand socket, which sets the width.
+- Removed to make room:
+  - The bench-only battery and NTC sockets. On the bench, a PH8 pigtail into the harness socket does the same job, and two packs can no longer be connected at once.
+  - The unpopulated expansion header. The stimulus board belongs to the integrated board, and the spare GPIOs are left unconnected.
+- The harness socket is now the right-angle S8B-PH-SM4-TB (LCSC C265121), so the cable enters from the edge.
+- The M10S's two far-corner standoffs double as board mounts (M3 male-female standoffs into the box posts). The carrier goes into the box before the plugged boards.
+- Silkscreen: the panel socket, turned sideways at the edge, gets its A+ / GND / B+ marks beside each pad, placed from the real pad positions.
+- ERC clean; 91 parts, 45 nets. DRC shows only the intended butted Kit sockets, plus 131 unrouted connections. Renders reviewed top and bottom.
+
+### Carrier board to 65 × 58.5 mm; assembled preview
+- Cody still saw white space. Most of it was under the plugged boards, which the renders don't draw. `layout.py` now also writes `build/carrier_assembled.kicad_pcb`, a copy with the Kit, MAX-M10S and ISM330 outlined on the silkscreen, to render how it looks fitted. It's not for manufacture.
+- The real leftover space was the connector band along the bottom edge (10.3 mm, for the PH harness socket) and the column right of the IMU. The harness socket now sits in that column, on the right edge. The panels moved to a JST-SH 3-pin (SM03B-SRSS-TB, C160403; 1 A per contact, both panels ≤ 0.46 A), so the bottom band only needs an SH socket's 6.6 mm.
+- **65 × 58.5 mm**, 47 % less area than the 95 × 75 layout. This is within ~1 mm of the floor for these boards: the Kit's 55.9 mm length sets the height; the Kit, the 4 mm gap its right-hand socket needs from the M10S's socket, and the M10S's 38.1 mm set the width.
+- ERC clean. DRC shows only the intended butted Kit sockets, plus the unrouted connections. Renders reviewed: bare top, assembled top, bottom.
+
+### Test fixture guide, with pictures (2026-09-27)
+- Cody asked for the test-fixture idea laid out with example parts, pictures and diagrams, as someone new to hardware. Written up in `docs/TEST-FIXTURE.md`.
+- Pictures, all made from the real board:
+  - Two Blender renders of a bed-of-nails fixture built around the carrier's actual 3D model (`kicad-cli pcb export glb`). The pogo pins sit at the 33 real test-pad positions (`export_pads.py` → `tp.json`); two mounting holes stand in for tooling holes.
+  - Seven diagrams drawn as SVG by `diagrams.py`: how a board gets made, a fixture cross-section, a pogo pin, the test station, the test sequence, the carrier's pad map by instrument, and what the integrated board must include.
+- **Caught in my own review:**
+  - The first render's clear plate hid the pins, and the close-up view was a dark gap.
+  - Labels were cut off in the cross-section and the integrated-board diagram.
+  - An alignment pin collided with a pogo pin.
+  - A price overlapped a title, and one step's text ran into the next column.
+  - All fixed and re-rendered.
+- Example station, parts only, ~$600–1,500: Raspberry Pi 5, Raspberry Pi Debug Probe (or J-Link), Nordic PPK2 as battery stand-in and current meter, USB bench supply as the solar stand-in, ADS1115 ADCs, USB relay board, FTDI cable, label printer, P75-class pogo pins. Prices are typical list prices from memory, not quotes. Nothing ordered.
+- Recorded for the integrated board: tooling holes, a test-pad grid on one side, battery pads with a single current path for the sleep-current check, SWD/serial pads, RF test connectors (e.g. Murata MM8130), and a firmware test mode.
+
+### HeyPCB for design, JLCPCB assembly, finishing in the garage (2026-09-27)
+- Cody wants to design boards in **HeyPCB** (heypcb.ai), a browser PCB editor with an AI agent ("Inky"), live multiplayer, a 3D and enclosure view, and a gallery of ~8,800 open boards. Plans are $20–500/month, and there's a free trial for one board.
+- **Checked:**
+  - It edits KiCad-native project files, and you own your designs and exports (terms, section 4).
+  - It runs ERC/DRC and exports Gerbers, drill files, BOM and pick-and-place.
+  - Publishing to its gallery is optional and never automatic.
+  - Agent prompts and design context go to third-party AI model providers. That's fine for an open design; keep it in mind for the proprietary collar later.
+  - It has placed manufacturing orders and shipped to users before (the September "free board week"). Whether it offers ordering permanently is unknown.
+- **Fit with our pipeline:** HeyPCB wants a schematic and a board. We generate the board from SKiDL but have no `.kicad_sch` (the known gap in DESIGN-PHASE.md). So either HeyPCB's agent redraws the schematic from our netlist and spec, or we use HeyPCB for layout and routing only. Routing is our open blocker, and it has autorouting, so Freerouting/Java may not be needed.
+- Package for upload: `hardware/carrier/build/heypcb-carrier.zip`. It holds the `.kicad_pro` (JLCPCB rules), `.kicad_pcb`, netlist, spec and renders. **Caught:** a stub `.kicad_pro` reset the 0.15 mm clearance to KiCad's 0.2 mm default and gave 9 false DRC errors. The package now uses the real project file KiCad writes, so the only findings are the 2 intended socket overlaps and the unrouted connections.
+- Plan: route and review in HeyPCB, export Gerbers/BOM/CPL back into git, then order at JLCPCB: 5 boards, assembled, shipped to Columbia (JLCPCB collects US import duty at checkout). The garage then fits the Kit pigtail, the breakout headers and standoffs, and the harness and panel pigtails, then does bring-up. **A current-limited bench supply is missing from `hardware/tools.md` and is needed before the first power-up.** Nothing ordered; Cody signs up and checks out himself.
+- **Carrier imported into HeyPCB** (Cody's account, project `opencollar-carrier`, heypcb.ai/p/d017ac745ca9), through the dashboard's "Import board, schematic, or zip" with a board-only zip (`.kicad_pro` + `.kicad_pcb`, `build/opencollar-carrier.zip`). It opened at 65 × 58.5 mm with every part, label and test pad in place. HeyPCB's own DRC matches ours: 2 errors (the intentional butted Kit sockets), 166 unconnected (unrouted), 12 warnings. No schematic yet: HeyPCB has the board only. Not routed, not published.
+
+### Carrier routed: HeyPCB's Inky, then the charger block redone (2026-09-27)
+- Cody asked for Inky (HeyPCB's agent) to optimise the board and clean up every connection, warning and error. I gave Inky one brief: route everything, keep the fixed parts fixed, JLCPCB rules, track widths per net, GND pours and stitching, 0.5 mm around test pads, short power loops, no changes to footprints, values or nets.
+- **What Inky did:**
+  - It routed 163 of 166 connections in about 6 minutes, and set the power net classes (0.5 mm BAT/CHG_IN/CHG_OUT/SOLAR, 0.4 mm 3V3/EXT_3V3).
+  - It then got stuck on the last 3 connections and 6 clearance errors, all at U1 (bq24074). It said its router "could not merge its result". One more turn went on an unrelated MAX-M10S footprint question.
+  - It used 67 % of the $6 trial ($4). I stopped there.
+- **Checked:** I pulled its board down through HeyPCB's KiCad download (`/api/projects/<id>/download/kicad`). KiCad's DRC on it matched HeyPCB's exactly. No part had moved, and every footprint, value and net matched our own build.
+- **Why it was stuck:**
+  - The placement, not the router. `layout.py` packed the charger's passives by block rather than by pin. The IN capacitor and the TMR resistor sat under U1 while their pins face up. CHG_IN's pin 13 ended up walled in by the TMR track and the ILIM via, with no path out.
+  - Separately, Inky ran 0.5 mm power tracks straight onto the 0.5 mm-pitch pins, 0.125 mm from the neighbouring pins (the rule is 0.15).
+  - Three routers failed in the same place: Inky's, a grid router of mine, and Freerouting 2.4.1 (tried with a portable Java under `build/tools/`, gitignored).
+- **Fix, `hardware/carrier/finish_routing.py`:** it keeps Inky's routing everywhere else and redoes the charger block.
+  - The 11 charger passives go beside the U1 pins they serve (the table in the script). For example, the IN cap sits over pin 13, the TMR resistor over pin 14 (the TMR net went from 30 mm with vias to 0.7 mm), and the OUT cap right of pins 10–11.
+  - Fixed 0.25 mm fingers go on U1's power pins, so the 0.5 mm tracks start clear of the neighbouring pins.
+  - Every GND pad in the block gets its own via.
+  - A two-layer grid router reroutes the block: 0.05 mm grid, 45°, the board's clearances, 0.3 mm to the edge. It keeps signals mostly off the bottom layer so the GND pour under U1 stays whole, and retries route orders until every net routes.
+  - Then GND stitching vias, a refill, and removal of the stubs the rip-up left, each checked with KiCad's DRC.
+  - J1+J2 and J3+J4 (1×10 sockets butted into the Kit's 1×20 rows) get their courtyards pulled back to the joint and the silk at the joint removed. That includes J2's and J4's pin-1 marks, which sat mid-row at Kit pin 11. This clears the "intended" overlaps instead of leaving them as errors.
+  - Vias are tented both sides, so a fixture probe that misses a test pad lands on mask.
+- **I relaxed the test-pad rule I gave Inky:** it is now 0.25 mm for tracks and still 0.5 mm for vias. Tracks beside a pad are under soldermask, and the 0.5 mm keep-out was what boxed TS in.
+- **Result:** `hardware/carrier/pcb/carrier.kicad_pcb`, rebuilt from the committed Inky export `pcb/heypcb/opencollar-carrier.kicad_pcb` in about 5 minutes.
+  - `kicad-cli pcb drc --severity-all`: 0 violations and 0 unconnected, at every severity including warnings.
+  - Power nets are 0.5 mm, apart from 0.25 mm fingers at U1 totalling 1.3 mm per net.
+  - 221 vias, 77 of them GND.
+  - Gerbers, drill and position files export (`build/fab/`, not committed). Renders reviewed top and bottom.
+- **Not done / open:**
+  - The HeyPCB project still holds Inky's version. Re-importing `pcb/carrier.kicad_pcb` there is Cody's call.
+  - `layout.py` still has the old charger placement. Rerunning it regenerates an unrouted board, so the routed board is the source from here on.
+  - The routing outside the charger is Inky's. It's DRC-clean but meandering in places (TS is ~74 mm, much of that the run out to the harness socket). Worth a hand pass in KiCad or HeyPCB before a production rev; fine for 5 alpha boards.
+  - JLCPCB's BOM/CPL format and the rotation check on their preview happen at ordering. Nothing ordered.
+- **Routed board imported into HeyPCB** at Cody's request: new project `opencollar-carrier-a2` (heypcb.ai/p/79e09bf517e0), from `pcb/carrier.kicad_pcb` + `.kicad_pro` via the dashboard import. HeyPCB can't swap the board inside an existing project, so Inky's original project `opencollar-carrier` (d017ac745ca9) is still there, untouched. HeyPCB's DRC on the import: clean, 0 airwires. The import used no Inky turns (trial at 75 %); nothing published.
+
+### Rev A3: fuel gauge, flash, reverse protection; socket footprints corrected; fit test and JLCPCB files (2026-09-27)
+- Cody approved the additions proposed earlier. Added from the chip makers' datasheets, fetched with Firecrawl:
+  - **MAX17260 fuel gauge** (U6) in high-side mode: 10 mΩ sense resistor R24 with Kelvin lines, 0.1 µF BATT, 0.47 µF REG, CSPL to GND, TH to BATT. It sits on the main I2C bus at 0x36, with ALRT to P0.00 and a 100 k pull-up.
+  - **W25Q128JV 16 MB flash** (U7) on P0.01–P0.04 over SPI. /WP and /HOLD go to VCC, /CS has a 100 k pull-up, 0.1 µF decoupling.
+  - **AO3401A P-FET** (Q1) for reverse-battery protection, placed before the gauge so a reversed pack never reaches its pins.
+  - **Charger resistors to JLCPCB basic values:** ISET 887 Ω → 1 kΩ, ILIM 3.24 kΩ → 4.7 kΩ, TMR 71.5 kΩ → 68 kΩ.
+  - The battery path is now harness BAT_PACK → Q1 → BAT_CELL → R24 → BAT. ERC is clean: 100 parts, 53 nets. Every existing part keeps its reference.
+- **Stock problem:** the MAX17260 is at **0 at JLCPCB and LCSC** (both listings, C350946 and C5280558). Every other high-side gauge I checked (MAX17262, BQ27220, MAX17055) is also at or near 0. The design keeps the MAX17260. At ordering the choice is JLCPCB Global Sourcing (DigiKey/Mouser), or leaving U6 off: the board runs without it, since R24 carries the current. It's in SPEC.md question 14.
+- **Caught in the datasheet review: the socket footprints were mirrored.**
+  - The hanxia drawing gives no land pattern. JLCPCB's own footprints for all four sockets (1 × 4, 8, 9, 10; EasyEDA library) put pin 1's leg on the other side from KiCad's `Pin1Left`, which the board used.
+  - On the even-length sockets a mirror can't be fixed by turning the part round, so JLCPCB couldn't have soldered J1–J4, J8 or J9 down.
+  - All seven sockets are now `Pin1Right`, which fits JLCPCB's footprints to 0.000 mm. Each pad keeps its row position and net and moves to the other side of the socket.
+  - The drawing confirms the 1 × 10 body is 25.40 mm long, so two butt into a continuous 1 × 20.
+- **Other checks:**
+  - bq24074 pinout against TI's table: all 16 pins match. The land pattern matches TI's RGT0016C example (1.68 mm thermal pad). TI asks for vias in the thermal pad to be filled or tented; ours are open 0.3 mm vias, a minor solder-wicking risk.
+  - AO3401A pins in JLCPCB's symbol: G = 1, S = 2, D = 3, matching ours. B5819W pin 1 is the cathode, matching ours.
+  - Stock: bq24074 795 (816 the day before); S8B harness connector 19,343; flash 59k and FET 884k, both basic parts.
+- **Routing.** Moving every socket pad meant re-routing nearly all the plug-in board connections. My grid router, routing one net at a time and retrying orders, left 16 nets open after a 35-minute attempt. The pipeline in `finish_routing.py` is now:
+  - Inky's board is brought up to the schematic: parts, values, footprints, nets.
+  - The charger stays placed by pin. The new parts are placed: flash under the M10S, gauge column on the right edge.
+  - Fixed copper goes at U6's 0.4 mm-pitch pins: REG into C10, a Kelvin CSPH line along the board edge into R24, and ALRT, SDA and SCL out to the left.
+  - Every small part's GND pad gets its own via before routing. This was caught when U3's input cap C8 was left on a GND sliver between the new flash lines.
+  - **Freerouting** (single-threaded; the same result every run) routes around Inky's surviving copper. The grid router then finishes what it can't, with **rip-up and reroute**: EXT_SDA was walled in by the Kit socket column and routed by moving seven other nets.
+  - Last come GND stitching, joining cut-off pour pieces (also with rip-up), and stub cleanup, all checked against KiCad's DRC.
+  - R5 (the unfitted TS resistor) moved beside C1, and J5's GND hole is solid to the pour.
+- **Result:** `pcb/carrier.kicad_pcb`, rev A3.
+  - `kicad-cli pcb drc --severity-all`: **0 violations, 0 unconnected.**
+  - The board matches the schematic on all 53 nets, and Inky's placement changed only where intended.
+  - 1,323 tracks, 335 vias (140 GND). Power paths are 0.5 mm; the 0.2 mm lengths are the gauge's sense lines.
+  - Renders reviewed top and bottom.
+- **Fit test:** `fit_test.py` writes `build/carrier-fit-test.pdf`, a 1:1 print with every socket contact circled, the three plugged boards outlined and a 50 mm scale bar. Cody prints it at 100 % and lays the Kit, MAX-M10S and ISM330 on it.
+- **JLCPCB files:** `jlc_files.py` writes the BOM (33 lines), the placement file (59 parts) and the Gerbers + drill zip into `build/fab/`. For each part it fetches JLCPCB's own footprint and computes the rotation and offset from the pads. All 59 fit (worst 0.2 mm, land-pattern differences on SOT-23), with no mirrored parts. It still needs checking in JLCPCB's placement preview at quote time.
+- Not done / open:
+  - HeyPCB still has the A2 board. The A3 board isn't uploaded there; that's Cody's call.
+  - The router's work outside the charger meanders in places. It's DRC-clean; a hand pass before production would tidy it.
+  - Nothing ordered or pushed.

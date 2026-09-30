@@ -1,7 +1,14 @@
-# Carrier board, rev A2: spec
+# Carrier board, rev A3: spec
+
+**Rev A3, 2026-09-27**, adds three parts and fixes one footprint. Same 65 × 58.5 mm board:
+- A **fuel gauge** (MAX17260, high-side sense) counts the charge in and out of the pack, so the alpha collars log real daily energy (section 5).
+- **16 MB SPI flash** (W25Q128JV) keeps raw GNSS logs through weak LTE, on four of the five spare GPIOs (section 2).
+- **Reverse-battery protection** (AO3401A P-FET) in the harness BAT+ line, so a reversed pack can't destroy the charger, the gauge or the Kit (section 5).
+- The charger's ISET, ILIM and TMR resistors move to JLCPCB basic values (section 4).
+- **All plug-in sockets now use KiCad's `Pin1Right` footprint.** JLCPCB's own footprints for the hanxia sockets put pin 1's leg on the other side from `Pin1Left`, which A2 used; on the even-length sockets that can't be fixed by turning the part round (section 11, question 9).
 
 Rev A 2026-09-26; **rev A2 the same day**, after the first-principles collar decisions (`docs/COLLAR-FIRST-PRINCIPLES.md`). Rev A2 changes:
-- The board is a plain 95 × 75 mm rectangle, no longer shaped to a shell.
+- The board is a plain rectangle, no longer shaped to a shell: **65 × 58.5 mm** since 2026-09-27 (was 95 × 75), with the plugged boards tiled edge to edge and every carrier part underneath them.
 - The battery lives in the bottom module and reaches the board over the harness.
 - The harness is now M8 8-pin.
 - Two cue ports (left and right ear pods) replace the on-board buzzer socket.
@@ -23,6 +30,10 @@ Sources, all kept locally in `mechanical/reference/vendor/` or `/tmp/ds` during 
 | [P124] | Voltaic P124 datasheet, Aug 2026 |
 | [SF] | SparkFun MAX-M10S and Qwiic Buzzer Eagle board files, Adafruit LSM6DSOX/ISM330 board file |
 | [SHELL] | `mechanical/lib/collar.py` and `dims.py` (V1-alpha draft 1) |
+| [MAX] | Analog Devices MAX17260 datasheet (fuel gauge, rev A3) |
+| [W25Q] | Winbond W25Q128JV datasheet, rev F (SPI flash, rev A3) |
+| [AO] | Alpha & Omega AO3401A datasheet (P-FET, rev A3) |
+| [JLC-FP] | JLCPCB/EasyEDA library footprints for each LCSC part (easyeda.com API), checked 2026-09-27 |
 
 **Licence rule:** [SF] boards are CC BY-SA. We read them only for the **mating interface**: where their header pins are and what each pin is called. No circuit on this board comes from them. Every circuit comes from the chip maker's datasheet. The board is CERN-OHL-P.
 
@@ -45,7 +56,7 @@ Sources, all kept locally in `mechanical/reference/vendor/` or `/tmp/ds` during 
 
 | Topic | Recommendation | Why |
 | --- | --- | --- |
-| Board shape | **Rectangle, 95 × 75 mm**, four M3 corner holes | Under 100 × 100 mm, JLCPCB's cheapest tier. The battery has left the top box, so the board no longer has to wrap around it (decided 2026-09-26) |
+| Board shape | **Rectangle, 65 × 58.5 mm** | The size is set by the three plugged boards tiled edge to edge (Kit, MAX-M10S, ISM330). Everything the carrier itself carries fits underneath them, because they sit ~11 mm up on their sockets. The battery has left the top box, so nothing has to wrap around it |
 | Connect Kit | **Four 1 × 10 SMD female sockets**, two end to end per row (J1–J4), 2.54 mm pitch, 8.5 mm tall | The Kit already has male pins fitted (parts photo). SMD sockets leave no tails under the board, which keeps the bottom flat for test pads and the fixture (section 7). JLCPCB stocks no 1 × 20 SMD socket (3 pieces of one Samtec part), so each row is two 1 × 10s butted together |
 | MAX-M10S | **Female sockets** (8-pin edge row and 4-pin I2C row), not Qwiic | Sockets give us EXTINT (wake from standby), RESET_N, TIMEPULSE and UART, which Qwiic doesn't carry, and hold the board rigidly with no cable |
 | ISM330DHCX | **Female 9-pin socket** | Brings INT1/INT2 to the nRF for wake-on-motion. An IMU should be screwed down, not hanging on a cable |
@@ -74,7 +85,11 @@ Pinout [MD front diagram] and what the carrier connects:
 | 7 | P7 | P0.07 | EXT_EN | TCA4307 EN and TPS2553 EN together. 100 kΩ pull-down: external bus off and unpowered |
 | 8 | P6 | P0.06 | EXT_READY | TCA4307 READY, 10 kΩ pull-up to 3V3 [TCA] pin 5 |
 | 9 | P5 | P0.05 | EXT_FAULT | TPS2553 FAULT (open-drain, over-current), 100 kΩ pull-up to 3V3 [TPS25] |
-| 10–14 | P4…P0 | P0.04–P0.00 | EXP header | Spare, to an unpopulated expansion header (stimulus board later) |
+| 10 | P4 | P0.04 | FLASH_CS | W25Q128 /CS, 100 kΩ pull-up so it stays deselected while the nRF boots (rev A3) |
+| 11 | P3 | P0.03 | FLASH_SCK | SPI clock (any nRF SPIM can use these pins) |
+| 12 | P2 | P0.02 | FLASH_MOSI | Flash DI |
+| 13 | P1 | P0.01 | FLASH_MISO | Flash DO |
+| 14 | P0 | P0.00 | FG_ALRT | MAX17260 ALRT, open-drain, 100 kΩ pull-up to 3V3 (rev A3). The last spare GPIO |
 | 15 | P31 | P0.31 | I2C_SCL | Main bus, as in today's firmware (I2C2) |
 | 16 | P30 | P0.30 | I2C_SDA | Main bus |
 | 17 | P29 | P0.29 | IMU_INT1 | |
@@ -84,7 +99,7 @@ Pinout [MD front diagram] and what the carrier connects:
 | 21 | A0 | P0.13 / AIN0 | VBAT_SENSE | 1 MΩ / 1 MΩ divider from BAT, 100 nF at the pin. Sources this high need the SAADC's 40 µs acquisition time |
 | 22 | A1 | P0.14 / AIN1 | ISET_SENSE | 100 kΩ series from ISET. V = ICHG / 400 × RISET [BQ] eq. 3: charge current for telemetry |
 | 23 | A2 | P0.15 / AIN2 | VIN_SENSE | 1 MΩ / 200 kΩ divider from charger IN (8 V → 1.33 V) |
-| 24–26 | A3, A4, A5 | P0.16–P0.18 | EXP header | Spare analog |
+| 24–26 | A3, A4, A5 | P0.16–P0.18 | NC | Spare analog |
 | 27–28 | A6, A7 | P0.19, P0.20 | NC | |
 | 29 | P21 | P0.21 | CHG_STAT | bq24074 CHG, 100 kΩ pull-up to 3V3 [BQ] 10.2.2.4 |
 | 30 | P22 | P0.22 | GNSS_RXD | nRF TX → M10S RX (UARTE1) |
@@ -151,14 +166,14 @@ Addresses: main bus M10S 0x42, ISM330 0x6A. EXT bus buzzers 0x34 and 0x5B, and t
 | --- | --- | --- | --- |
 | IN (13) | Charger input node; 10 µF 25 V to GND at the pin | | 1–10 µF bypass [BQ] Table 7-1. Rated for the ~8 V panel open-circuit voltage when cold, not 5 V |
 | OUT (10, 11) | CHG_OUT → Kit J2 feed; 10 µF to GND at the pins | | 4.7–47 µF [BQ] Table 7-1; system load on OUT [BQ] 10.1 |
-| BAT (2, 3) | Pack + over the harness (two conductors), or J_BAT on the bench; 10 µF to GND | | 4.7–47 µF [BQ] Table 7-1. BAT is also the charger's voltage-sense input, so ~0.6 m of cable adds ~50 mV at 0.5 A: charging slows slightly near full, and the pack still finishes at 4.2 V as the current tapers |
+| BAT (2, 3) | Pack + over the harness (two conductors), through the reverse-protection FET and the gauge's 10 mΩ (section 5); 10 µF to GND | | 4.7–47 µF [BQ] Table 7-1. BAT is also the charger's voltage-sense input, so ~0.6 m of cable adds ~50 mV at 0.5 A: charging slows slightly near full, and the pack still finishes at 4.2 V as the current tapers |
 | EN2 (5) | GND | | USB500 mode [BQ] Table 7-2 |
 | EN1 (6) | 10 kΩ to OUT | | Logic high ≥ 1.4 V [BQ] 8.5; pin rated to 7 V [BQ] 8.1. Tied to OUT, not the Kit's 3.3 V, so the charger runs without the Kit |
-| ILIM (12) | 3.24 kΩ 1 % to GND | ≈ 470 mA if ever switched to resistor mode | Must be fitted: "Leaving ILIM unconnected disables all charging" [BQ] Table 7-1; range 1.1–8 kΩ [BQ] 8.3 |
-| ISET (16) | 887 Ω 1 % to GND | ICHG = 890 / 887 = 1.0 A | [BQ] eq. 2. Input-limited to 500 mA, so the real charge current is ≤ ~480 mA, and the timers slow down to match [BQ] 9.3.5. Pre-charge 88 / 887 = 99 mA [BQ] 8.5 |
+| ILIM (12) | 4.7 kΩ 1 % to GND (A2: 3.24 kΩ) | ≈ 330 mA, only if ever switched to resistor mode (EN2 = 1, EN1 = 0), which we don't use | Must be fitted: "Leaving ILIM unconnected disables all charging" [BQ] Table 7-1; range 1.1–8 kΩ [BQ] 8.3 |
+| ISET (16) | 1 kΩ 1 % to GND (A2: 887 Ω) | ICHG = 890 / 1000 = 0.89 A | [BQ] eq. 2. Input-limited to 500 mA, so the real charge current is ≤ ~480 mA, and the timers slow down to match [BQ] 9.3.5. Pre-charge 88 / 1000 = 88 mA [BQ] 8.5 |
 | ITERM (15) | Open | Terminates at 10 % × ICHG = 100 mA | Default [BQ] 9.3.5.2 |
-| TMR (14) | 72 kΩ to GND | Fast-charge timer 10 × 48 × 72 = 9.6 h at full rate; pre-charge 58 min | [BQ] eq. 6–7. Maximum allowed value: a 6600 mAh pack takes ~14 h at 480 mA, and the timer counts at ~half speed when input-limited ([BQ] 9.3.5.6), so ~20 h in practice. A timer fault clears when the input drops at night or firmware toggles CE [BQ] 9.3.5.6 |
-| TS (1) | 10K NTC at the pack, over the harness NTC pin (or J_NTC on the bench); 10 nF to GND against pickup on the cable; 10 kΩ DNP footprint for bench use without an NTC | Charges between ~3 °C and ~47 °C with a B3950 NTC | ITS = 75 µA; cold trip 2.1 V (28 kΩ), hot trip 0.3 V (4 kΩ) [BQ] 8.5, 9.3.6. The Adafruit 372 is B3950 (to confirm on the bag). With no NTC fitted, TS floats above the cold trip and charging stops: fail-safe |
+| TMR (14) | 68 kΩ to GND (A2: 71.5 kΩ) | Fast-charge timer 10 × 48 × 68 = 9.1 h at full rate; pre-charge 54 min | [BQ] eq. 6–7. Maximum allowed value: a 6600 mAh pack takes ~14 h at 480 mA, and the timer counts at ~half speed when input-limited ([BQ] 9.3.5.6), so ~20 h in practice. A timer fault clears when the input drops at night or firmware toggles CE [BQ] 9.3.5.6 |
+| TS (1) | 10K NTC at the pack, over the harness NTC pin; 10 nF to GND against pickup on the cable; 10 kΩ DNP footprint for bench use without an NTC | Charges between ~3 °C and ~47 °C with a B3950 NTC | ITS = 75 µA; cold trip 2.1 V (28 kΩ), hot trip 0.3 V (4 kΩ) [BQ] 8.5, 9.3.6. The Adafruit 372 is B3950 (to confirm on the bag). With no NTC fitted, TS floats above the cold trip and charging stops: fail-safe |
 | CE (4) | CHG_CE, 100 kΩ to GND | Charging enabled by default | [BQ] Table 7-1 (internal 285 kΩ pull-down, "do not leave unconnected") |
 | CHG (9), PGOOD (7) | 100 kΩ to 3V3, to GPIO | | [BQ] 10.2.2.4. No LEDs: an LED to OUT would pull these nRF inputs above 3.3 V, and nobody sees LEDs inside a sealed shell |
 | VSS (8) + thermal pad | GND, 3 × 3 array of vias in the pad | | [BQ] 12.1 |
@@ -188,26 +203,30 @@ An 8-pin PH socket for the pigtail from the box's panel-mount M8 8-pin socket. T
 | 7 | blue | GND |
 | 8 | red | BAT+ |
 
-- **BAT+ and GND** go straight to the charger's BAT node and ground, each on two conductors. The pack's own protection circuit is the only thing that can stop a short in the cable itself (upstream of this board), so the bottom module also gets a fuse at the cells (section 12).
+- **BAT+ and GND** each come in on two conductors. GND goes straight to ground. BAT+ goes through the reverse-protection FET and the gauge's sense resistor to the charger's BAT node (below). The pack's own protection circuit is the only thing that can stop a short in the cable itself (upstream of this board), so the bottom module also gets a fuse at the cells (section 12).
 - **I2C:** on the EXT bus behind the TCA4307 (section 3). The buffer's pins take 7 V absolute maximum [TCA] 5.1, and it clocks a stuck module free after ~40 ms [TCA] p.1.
 - **ESD:** TVS protection on every line that leaves the box: harness BAT+, SDA, SCL, NTC, INT, and both cue ports' EXT_3V3, SDA, SCL (parts chosen in the schematic).
 - Logic is 3.3 V with pull-ups in the top unit; modules must not pull up to anything higher.
-- **Bench vs field:** J_BAT and J_NTC stay for bench use without a harness. Silkscreen warning: never connect J_BAT and a harness pack at the same time.
+- **Battery path (rev A3):** harness BAT+ (BAT_PACK) → AO3401A P-FET Q1 → BAT_CELL → 10 mΩ R24 → BAT.
+  - **Q1** [AO]: drain to the pack, source to the board, gate to GND. A correct pack turns it on through its body diode (VGS = −VBAT, 47–60 mΩ at 4.5 V) and it then conducts both ways, so charging works. A reversed pack leaves VGS = 0, and the body diode blocks. VGS max ±12 V, VDS −30 V. It drops ~30 mV at 0.5 A.
+  - **Fuel gauge U6, MAX17260** in high-side mode [MAX] Pin Descriptions, Figure 6. CSN and BATT go to the cell side of R24 and CSPH to the system side, both Kelvin-routed. CSPL goes to GND, TH (unused) to BATT, and the exposed pad to GND. BATT has 0.1 µF and REG 0.47 µF. 10 mΩ gives ±5.12 A range, 156 µA and 0.5 mAh resolution [MAX] Table 9. It's on the main I2C bus at 0x36, and ALRT goes to P0.00. The FET comes first, so a reversed pack never reaches the gauge's pins (absolute maximum −0.3 V).
+  - FET plus sense add ~70 mΩ between the pack and the charger's BAT sense. That's ~35 mV at 0.5 A, on top of the cable's ~50 mV. It slows the end of charge slightly, and the pack still finishes at 4.2 V as the current tapers.
+- **Flash (rev A3):** U7, W25Q128JV 16 MB, SOIC-8 208 mil, on SPI (section 2). Standard single-bit SPI, so /WP and /HOLD tie to VCC [W25Q] 4.3–4.4, with 0.1 µF at VCC. It idles at 10 µA typ (60 max) and drops to 1 µA after the Power-down command (B9h) [W25Q] 8.2.36, AC characteristics. Firmware powers it down between writes.
+- **One battery path.** On the bench, a PH8 pigtail brings the Adafruit pack and its NTC to the harness socket. There's no second battery connector, so two packs can never be connected at once. (The bench-only J_BAT and J_NTC sockets were removed on 2026-09-27 to save space.)
 
 ## 6. Wire connectors
 
-Board references in brackets (schematic.py): Kit sockets J1–J4, Kit feed J5, panels J6, bench battery J7, bench NTC J8, spare Qwiic J9, MAX-M10S J10 (8-pin) and J11 (4-pin), IMU J12, cues J13/J14, harness J15, EXP J16.
+Board references in brackets (schematic.py).
 
 | Ref | Connector | Mates with | Pins |
 | --- | --- | --- | --- |
-| J_BAT (J7) | JST-PH 2-pin, SMD right-angle | Adafruit 353 pack's PH plug, **bench only** | Polarity to match Adafruit's convention; Cody checks with a meter before first plug-in (question 4) |
-| J6 (panels) | JST-PH 3-pin | One pre-crimped PH3 pigtail; each panel's + to its own pin, both − to pin 2 | 1 = panel A +, 2 = GND, 3 = panel B + |
-| J_NTC (J8) | JST-PH 2-pin | Pre-crimped PH pigtail on the Adafruit 372, **bench only** | Non-polar |
-| J_HBUS (J15) | JST-PH 8-pin | Pigtail from the M8 8-pin panel socket | Section 5 |
-| J_CUE_L, J_CUE_R (J13, J14) | JST-SH 4-pin | Qwiic cables to the ear-pod buzzers | GND, EXT_3V3, EXT_SDA, EXT_SCL |
-| J_KIT (J5) | 2 plated holes + strain-relief slot | 1.25 mm pigtail (on order) into Kit J2 | CHG_OUT, GND |
-| J_QWIIC (J9) | JST-SH 4-pin | Qwiic cable, inside the box | GND, 3V3, SDA, SCL |
-| J_EXP (J16) | 1 × 10, 2.54 mm, unpopulated | Stimulus board / experiments | 3V3, GND, P0.00–P0.04, A3, A4, A5 |
+| J_SOL (J6) | JST-SH 3-pin, right-angle (1 A per contact; both panels peak at ≤ 0.46 A) | One pre-crimped SH3 pigtail; each panel's + to its own pin, both − to pin 2 | 1 = panel A +, 2 = GND, 3 = panel B + |
+| J_HBUS (J13) | JST-PH 8-pin, right-angle | Pigtail from the M8 8-pin panel socket; on the bench, a PH8 pigtail to the pack and NTC | Section 5 |
+| J_CUE_L, J_CUE_R (J11, J12) | JST-SH 4-pin | Qwiic cables to the ear-pod buzzers | GND, EXT_3V3, EXT_SDA, EXT_SCL |
+| J_KIT (J5) | 2 plated holes | 1.25 mm pigtail (on order) into Kit J2 | CHG_OUT (+), GND (−), marked at the pads |
+| J_QWIIC (J7) | JST-SH 4-pin | Qwiic cable, inside the box | GND, 3V3, SDA, SCL |
+
+Plugged boards: Kit J1–J4, MAX-M10S J8 (8-pin) and J9 (4-pin), ISM330 J10.
 
 There's no crimp tool in `hardware/tools.md`, so every mating half is a pre-crimped pigtail spliced with solder and heat shrink (both on hand).
 
@@ -227,28 +246,38 @@ Silkscreen labels are ≤ 5 characters: COUT/CIN = charger OUT/IN, SOLA/SOLB = p
 
 ## 8. Board outline, placement and mounting
 
-**95 × 75 mm, 2 mm corner radius, four M3 holes (Ø3.2) at 3.5 mm from each edge.** The board isn't shaped to a shell: the V1-alpha test box gets posts to match (section 12).
+**65 × 58.5 mm, 2 mm corner radius.** Before, the board was 95 × 75 mm with the carrier's parts laid out beside the plugged boards. Now the three plugged boards are tiled edge to edge, and every carrier part sits underneath them. The board isn't shaped to a shell: the V1-alpha test box gets posts to match (section 12).
 
 Placement as drawn by `layout.py` (top view, origin top-left, x right, y down; renders in `build/`):
 
 | Block | Where | Why |
 | --- | --- | --- |
-| Connect Kit sockets J1–J4 | Left edge, rows vertical at x = 5.5 and 23.28 (17.78 apart); USB end at the top, 6 mm in | U.FL cables head down the board to the antennas |
-| Kit battery feed J5 | Under the Kit's USB end, where the Kit's own J2 socket is | The 1.25 mm pigtail drops straight down |
-| MAX-M10S J10, J11 | Top right, at the breakout's own header positions; standoffs H5, H6 at its two far corners | The SMA points off the right edge |
-| ISM330 J12 | Middle, standoffs H7, H8 (M2) | Screwed down near the board's centre |
-| Charger U1, D1/D2, panels J6, bench NTC J8 | Right edge, lower half | Short IN → bq24074 → BAT loop; panel leads enter at the right edge |
-| Cue ports J13, J14, harness J15, ESD U4/U5, bench battery J7 | Bottom edge | Every line that leaves the box enters on one edge, next to its ESD part |
-| TCA4307 U2, TPS2553 U3, I2C pull-ups | Lower middle | Between the Kit's I2C pins and the bottom-edge ports |
-| Sense dividers | Beside the Kit's A0–A2 pins | Short high-impedance runs |
-| EXP J16, spare Qwiic J9 | Top edge | |
-| Test pads | Bottom side, 5 × 3.6 mm grid under the lower middle | One pogo fixture from below |
+| Connect Kit J1–J4 | Left edge, rows at x = 3.5 and 21.28 (17.78 apart); USB end at the top edge | U.FL cables head down the board to the antennas |
+| MAX-M10S J8, J9 | Top right, outline from (26.5, 2.5); its sockets at the breakout's own header positions | Its 8-pin row can't sit closer to the Kit's right-hand socket. The SMA points off the right edge |
+| ISM330 J10 | Under the M10S, turned 180° so its pin row is on top | Its M2 standoffs sit at the bottom, clear of the connectors |
+| Under the Kit, between its rows | TCA4307 U2, TPS2553 U3, I2C pull-ups, sense dividers, board mounts H1/H2, Kit feed J5 | 11 mm strip of free board the Kit covers anyway |
+| Under the M10S | bq24074 U1, each passive beside the pin it serves (`finish_routing.py`), D1/D2 | Short IN → bq24074 → BAT loop; nothing has to wrap round the chip |
+| Under the M10S, left | Flash U7 with C12 and R26 (rev A3) | The free board nearest the Kit's spare GPIOs |
+| Right edge, between H3 and H4 | Q1, R24, fuel gauge U6, C10, C11, R25 (rev A3) | On the way from the harness to the charger, beside the M10S's I2C socket |
+| Under the ISM330 | ESD U4, U5 and the harness INT resistors | Right behind the bottom-edge ports |
+| Right edge, beside the ISM330 | Harness J13 | The one column the plugged boards leave free |
+| Bottom edge | Cues J11, J12 and panels J6, all low JST-SH | The bottom band is only as deep as an SH socket (6.6 mm) |
+| Top edge | Spare Qwiic J7 | |
+| Bottom side | 33 test pads on a 5 × 3.6 mm grid, the title, the harness pinout | One pogo fixture from below |
 
-Board holes H1–H4: M3 at 3.5 mm from each corner.
+`build/carrier_assembled_top.png` renders the same board with the three plugged boards outlined. The free board left over is a thin strip under the Kit's antenna end, the harness column and the connector band. The size limit is the three boards: the Kit's length sets the height, and the Kit plus the 4 mm socket gap plus the MAX-M10S sets the width.
+
+**Mounting:**
+- H1, H2 (M3) are under the Kit, on the centre line between its rows.
+- H3, H4 (M3) are the MAX-M10S's two far-corner holes. M3 male-female standoffs there both hold the M10S and screw the carrier down to the box posts.
+- H5, H6 are the ISM330's M2 standoffs.
+- Assembly order: carrier into the box first, then the plugged boards.
 
 Height above the board: each plugged board sits ~11 mm up (8.5 mm socket + the pins' 2.5 mm plastic spacer), and the tallest part on any of them is ~3.3 mm (the USB-C or SMA). So **~17 mm from the board's top face** (question 7 refines this).
 
 Board: 2 layers, 1.6 mm FR-4, 1 oz, lead-free HASL, green. Ground pour both sides.
+
+**Routing:** Inky (HeyPCB) routed the board; `finish_routing.py` re-placed the charger passives by pin and rerouted that block. The routed board is `pcb/carrier.kicad_pcb`: KiCad DRC is clean at every severity. Power nets are 0.5 mm (0.25 mm fingers on U1's 0.5 mm-pitch pins), 3V3 rails 0.4 mm, signals 0.25 mm. GND is poured both sides with stitching vias, and vias are tented.
 
 ## 9. Power budget
 
@@ -266,6 +295,8 @@ Per day, 3.7 V pack side. The Kit's buck-boost is taken as 90 % efficient at the
 | bq24074 | No input (night) | 4.3 µA typ | 0.1 | [BQ] 8.5 IBAT(PDWN) |
 | TCA4307 | Disabled between uses | 10 µA typ | 0.2 | [TCA] 5.5; ~2.5 mA while enabled, so firmware enables it only to cue or read the pack |
 | Dividers | VBAT 2 MΩ | 2.1 µA | 0.05 | |
+| MAX17260 | Active, ModelGauge m5 | 5.1 µA typ | 0.12 | [MAX] (rev A3) |
+| W25Q128JV | Power-down between writes (10 µA if left in standby) | 1 µA typ | 0.02 | [W25Q] ICC2 (rev A3) |
 | **Known total** | GNSS continuous | | **~300** + unknowns | |
 
 Every unknown mA running all the time adds 24 mAh/day.
@@ -276,28 +307,32 @@ Every unknown mA running all the time adds 24 mAh/day.
 
 ## 10. Parts (JLCPCB/LCSC)
 
-From JLCPCB's parts search, 2026-09-26. Stock is JLCPCB assembly stock that day. The numbers are also in `schematic.py` and end up as footprint fields for the BOM.
+From JLCPCB's parts search, 2026-09-26; rev A3 parts and the charger's stock rechecked 2026-09-27. Stock is JLCPCB assembly stock on those days. The numbers are also in `schematic.py` and end up as footprint fields for the BOM.
 
 | Part | LCSC | MPN | Class | Stock |
 | --- | --- | --- | --- | --- |
-| bq24074 (U1) | C54313 | BQ24074RGTR | Extended | **816**: enough, but thin |
+| bq24074 (U1) | C54313 | BQ24074RGTR | Extended | **795** on 2026-09-27 (816 the day before): recheck on order day |
+| MAX17260 fuel gauge (U6) | C5280558 | MAX17260SETD+T | Extended | **0 at JLCPCB and LCSC** (C350946, the non-reel listing, also 0). Order through JLCPCB's Global Sourcing (from DigiKey/Mouser), or leave it unfitted: the board runs without it, since R24 carries the current |
+| W25Q128JV flash (U7) | C97521 | W25Q128JVSIQ | **Basic** | 59,376 |
+| AO3401A P-FET (Q1) | C15127 | AO3401A | **Basic** | 884,323 |
+| 10 mΩ 1 % 0805 sense (R24) | C104574 | RALEC RTT05R010FTP | Extended (no Basic 10 mΩ) | 3,931 |
 | TCA4307 (U2) | C880333 | TCA4307DGKR | Extended | 2,735 |
 | TPS2553 (U3) | C55266 | TPS2553DBVR | Extended | 59,681 |
 | ESD (U4, U5) | C7519 | USBLC6-2SC6 (ST) | Extended | 44,218 |
 | Schottky (D1, D2) | C8598 | B5819W SL | **Basic** | 493,921 |
 | Kit sockets 1 × 10 (J1–J4) | C46635846 | HX PM2.54-1x10P TP H8.5-YQ | Extended | 425 |
-| M10S sockets 1 × 8, 1 × 4 (J10, J11) | C46635844, C46635840 | HX PM2.54 H8.5 | Extended | 5,136, 5,201 |
-| IMU socket 1 × 9 (J12) | C46635845 | HX PM2.54-1x9P TP H8.5-YQ | Extended | 293 |
-| PH 2-pin R/A (J7, J8) | C295747 | S2B-PH-SM4-TB | Extended | 24,190 |
-| PH 3-pin R/A (J6) | C265101 | S3B-PH-SM4-TB | Extended | 2,025 |
-| PH 8-pin vertical (J15) | C495548 | B8B-PH-SM4-TB | Extended | 2,969 |
-| SH 4-pin R/A (J9, J13, J14) | C160404 | SM04B-SRSS-TB | Extended | 30,694 |
-| 887 Ω, 3.24 kΩ, 71.5 kΩ 1 % 0603 | C93619, C22994, C23103 | UNI-ROYAL 0603WAF | Extended (no Basic in these values) | |
-| 100 k, 10 k, 4.7 k, 1 M, 200 k, 1 k 0603 | C25803, C25804, C23162, C22935, C25811, C21190 | UNI-ROYAL 0603WAF | Basic | |
+| M10S sockets 1 × 8, 1 × 4 (J8, J9) | C46635844, C46635840 | HX PM2.54 H8.5 | Extended | 5,136, 5,201 |
+| IMU socket 1 × 9 (J10) | C46635845 | HX PM2.54-1x9P TP H8.5-YQ | Extended | 293 |
+| SH 3-pin R/A (J6) | C160403 | SM03B-SRSS-TB | Extended | 24,905 |
+| PH 8-pin R/A (J13) | C265121 | S8B-PH-SM4-TB | Extended | 19,343 |
+| SH 4-pin R/A (J7, J11, J12) | C160404 | SM04B-SRSS-TB | Extended | 30,694 |
+| 100 k, 10 k, 4.7 k, 1 M, 200 k, 1 k, 68 k 0603 | C25803, C25804, C23162, C22935, C25811, C21190, C23231 | UNI-ROYAL 0603WAF | Basic | |
 | 10 µF 25 V 0805 | C15850 | CL21A106KAYNNNE | Basic | |
-| 100 nF, 10 nF, 1 µF (50 V) 0603 | C14663, C57112, C15849 | | Basic | |
+| 100 nF, 10 nF, 1 µF (50 V), 470 nF 0603 | C14663, C57112, C15849, C1623 | | Basic | |
 
-Not fitted: J5 and J16 (holes), the 10 kΩ bench TS resistor, the test pads. Every Extended part adds a small setup fee per unique part at JLCPCB; this board has ~16 of them.
+Not fitted: J5 (holes), the 10 kΩ TS resistor (fit only to charge with no NTC), the test pads. Every Extended part adds a small setup fee per unique part at JLCPCB; this board has 16 of them (rev A3: three odd resistor values gone, the gauge and its sense resistor added).
+
+`jlc_files.py` writes JLCPCB's BOM and placement files. For every part it fetches JLCPCB's own footprint and computes the rotation from the pads, rather than a rotation table (section 11, question 12).
 
 The Adafruit 4755 charger board we bought is no longer needed in the collar. It stays a bench reference and a fallback.
 
@@ -308,7 +343,7 @@ Decided 2026-09-26: rectangle board (was question 1); the harness carries the ba
 To buy when you're ready (not ordered):
 1. **A second SparkFun Qwiic Buzzer** (BOB-24474) and **two Qwiic cables, 200–500 mm**, for the ear pods.
 2. **M8 8-pin harness:** a high-flex PUR female-to-male cordset and two panel-mount sockets with leads (one on the box, one on the bottom module). Length once the bottom module is drawn (section 12).
-3. Pre-crimped JST-PH pigtails: 3-pin ×1 (panels), 2-pin ×2 (bench battery, NTC), 8-pin ×1 (harness).
+3. Pre-crimped pigtails: JST-SH 3-pin ×1 (panels); JST-PH 8-pin ×2 (harness, and a bench lead to the pack and NTC).
 
 Bench checks when parts arrive:
 4. **Pinouts against silkscreen:** the ISM330's 9-pin order (VIN, 3Vo, GND, SCL, SDA, DO, CS, INT1, INT2); the battery pack's JST-PH polarity; the 1.25 mm pigtail's red wire against the `+` on the Kit's J2.
@@ -317,9 +352,12 @@ Bench checks when parts arrive:
 7. **Heights with calipers:** the MAX-M10S from PCB to the top of the SMA, the Kit's male pins below its PCB (spacer and pin length), a female socket's height.
 8. **Buzzer loudness from an ear pod:** dB at 1 m with a phone app. It decides piezo or not for the integrated board.
 
-Before ordering (desk checks, no parts needed):
-9. **The hanxia sockets' pad stagger** against KiCad's `Pin1Left` footprint (both conventions exist; if it's mirrored, switch to `Pin1Right`), and that the 1 × 10 body is 25.4 mm long, so two butt together at the Kit's pitch.
-10. **The bq24074's RGT0016B land pattern.** The datasheet copy only draws RGT0016C (1.68 mm pad), which the footprint uses.
+Before ordering:
+9. ~~The hanxia sockets' pad stagger~~ **Done 2026-09-27:** the hanxia drawing gives no land pattern. JLCPCB's own footprints for all four sizes (1 × 4, 8, 9, 10) are the mirror of KiCad's `Pin1Left`, so rev A3 uses `Pin1Right`, which matches them exactly. The drawing confirms the 1 × 10 body is 25.40 mm, so two butt into a 1 × 20 at 2.54 mm pitch. When the first boards come back, check that each socket sits flat with every leg on a pad before soldering the Kit on.
+10. ~~The bq24074's land pattern~~ **Done:** TI lists the bq24074 in RGT0016C. Its example land pattern (1.68 mm thermal pad, 0.24 × 0.6 mm pads on 2.8 mm centres) matches the KiCad footprint; KiCad's pads reach a little further out (0.825 mm), the usual IPC toe. TI asks for vias in the thermal pad to be filled or tented. Ours are open 0.3 mm vias: a little solder may wick, which is fine for the alpha.
+12. **Paper fit test** (`fit_test.py` → `build/carrier-fit-test.pdf`): print at 100 %, check the 50 mm bar, and lay the Kit, MAX-M10S and ISM330 on it. Every header pin should land in a circle.
+13. **JLCPCB's placement preview:** upload `build/fab/carrier-gerbers.zip`, `carrier-BOM.csv` and `carrier-CPL.csv` for a quote (uploading orders nothing). In the preview, check that pin 1 of U1, U2, U3, U4, U5, U6, U7 and Q1 sits on the pin-1 pad, and that D1/D2's cathode band faces the CHG_IN side.
+14. **MAX17260 stock:** zero at JLCPCB on 2026-09-27. Choose Global Sourcing (JLCPCB buys it from DigiKey or Mouser, adding days and a fee) or leave U6 off the first order.
 
 Not needed now:
 11. The Kit's USB VBUS could feed the charger for bench charging. Left out: a diode on VBUS leaks back at high temperature and can wake the Kit's own charger. Bench-charge through J_SOLA with the bench supply at 6 V, 0.5 A limit instead.
@@ -327,7 +365,7 @@ Not needed now:
 ## 12. Test-box changes this implies (for `mechanical/`)
 
 The V1-alpha test box is draft 1 of the shell, adapted:
-- Remove the battery locators and the per-board standoffs; add four posts for the carrier's M3 holes. Raise the board plane from z = 18 to **z = 20**, because a centred board sits over the strap channel, where the floor is at 18.8.
+- Remove the battery locators and the per-board standoffs; add four posts under the carrier's H1–H4 (section 8). Raise the board plane from z = 18 to **z = 20**, because a centred board sits over the strap channel, where the floor is at 18.8.
 - Panel-mount M8 8-pin socket in the box wall, below the seal.
 - **Two ear pods** on the strap, one per side, each holding a Qwiic Buzzer behind an ePTFE acoustic membrane, with the Qwiic cable through a sealed gland.
 - **Bottom module** holding the 6600 mAh pack, its NTC, an inline fuse at the pack and the other M8 socket, plus steel to make **bottom ≥ 1.87 × top**. The box and boards without the pack are ~345 g *est*, so the bottom needs ~645 g: pack 155 g + shell ~100 g + ~390 g of steel.

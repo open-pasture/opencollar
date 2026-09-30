@@ -1,6 +1,6 @@
-"""OpenCollar carrier board rev A2: the schematic, as code.
+"""OpenCollar carrier board rev A3: the schematic, as code.
 
-Spec: SPEC.md (rev A2). Every block below cites the datasheet section it follows;
+Spec: SPEC.md (rev A3). Every block below cites the datasheet section it follows;
 the [refs] are the ones in SPEC.md's source table. Breakout boards (SparkFun,
 Adafruit) are used only for their mating pinout, never as a circuit source.
 
@@ -20,10 +20,10 @@ NC = builtins.NC          # SKiDL's no-connect net
 R0603 = "Resistor_SMD:R_0603_1608Metric"
 C0603 = "Capacitor_SMD:C_0603_1608Metric"
 C0805 = "Capacitor_SMD:C_0805_2012Metric"
-SOCKET = "Connector_PinSocket_2.54mm:PinSocket_1x{n:02d}_P2.54mm_Vertical_SMD_Pin1Left"
+SOCKET = "Connector_PinSocket_2.54mm:PinSocket_1x{n:02d}_P2.54mm_Vertical_SMD_Pin1Right"
 PH_H = "Connector_JST:JST_PH_S{n}B-PH-SM4-TB_1x{n:02d}-1MP_P2.00mm_Horizontal"
-PH_V = "Connector_JST:JST_PH_B{n}B-PH-SM4-TB_1x{n:02d}-1MP_P2.00mm_Vertical"
 SH_H = "Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal"
+SH3_H = "Connector_JST:JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal"
 TP_FP = "TestPoint:TestPoint_Pad_D1.0mm"
 
 # LCSC numbers, from JLCPCB's parts search on 2026-09-26 (SPEC.md section 10).
@@ -31,7 +31,8 @@ TP_FP = "TestPoint:TestPoint_Pad_D1.0mm"
 LCSC = {
     "BQ24074RGTR": "C54313", "TCA4307DGKR": "C880333", "TPS2553DBVR": "C55266",
     "USBLC6-2SC6": "C7519", "B5819W": "C8598",
-    "R_887_1608Metric": "C93619", "R_3.24k_1608Metric": "C22994", "R_71.5k_1608Metric": "C23103",
+    "R_68k_1608Metric": "C23231", "R_10m_2012Metric": "C104574", "C_470n_1608Metric": "C1623",
+    "MAX17260SETD+T": "C5280558", "W25Q128JVSIQ": "C97521", "AO3401A": "C15127",
     "R_100k_1608Metric": "C25803", "R_10k_1608Metric": "C25804", "R_4.7k_1608Metric": "C23162",
     "R_1M_1608Metric": "C22935", "R_200k_1608Metric": "C25811", "R_1k_1608Metric": "C21190",
     "C_10u/25V_2012Metric": "C15850", "C_100n_1608Metric": "C14663",
@@ -40,13 +41,16 @@ LCSC = {
 CONN_LCSC = {   # by footprint
     "JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal": ("C295747", "S2B-PH-SM4-TB(LF)(SN)"),
     "JST_PH_S3B-PH-SM4-TB_1x03-1MP_P2.00mm_Horizontal": ("C265101", "S3B-PH-SM4-TB(LF)(SN)"),
-    "JST_PH_B8B-PH-SM4-TB_1x08-1MP_P2.00mm_Vertical": ("C495548", "B8B-PH-SM4-TB(LF)(SN)"),
+    "JST_PH_S8B-PH-SM4-TB_1x08-1MP_P2.00mm_Horizontal": ("C265121", "S8B-PH-SM4-TB(LF)(SN)"),
     "JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal": ("C160404", "SM04B-SRSS-TB(LF)(SN)"),
-    # hanxia 8.5 mm SMD sockets; check their pad stagger against KiCad's Pin1Left (SPEC.md 11)
-    "PinSocket_1x10_P2.54mm_Vertical_SMD_Pin1Left": ("C46635846", "HX PM2.54-1x10P TP H8.5-YQ"),
-    "PinSocket_1x09_P2.54mm_Vertical_SMD_Pin1Left": ("C46635845", "HX PM2.54-1x9P TP H8.5-YQ"),
-    "PinSocket_1x08_P2.54mm_Vertical_SMD_Pin1Left": ("C46635844", "HX PM2.54-1x8P TP H8.5-YQ"),
-    "PinSocket_1x04_P2.54mm_Vertical_SMD_Pin1Left": ("C46635840", "HX PM2.54-1x4P TP H8.5-YQ"),
+    "JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal": ("C160403", "SM03B-SRSS-TB(LF)(SN)"),
+    # hanxia 8.5 mm SMD sockets. Their pad stagger is KiCad's Pin1Right: JLCPCB's own
+    # footprints for all four (EasyEDA library, checked 2026-09-27) put pin 1's leg on the
+    # left of the row walking from pin 1, the mirror of Pin1Left (rev A3; A2 had Pin1Left)
+    "PinSocket_1x10_P2.54mm_Vertical_SMD_Pin1Right": ("C46635846", "HX PM2.54-1x10P TP H8.5-YQ"),
+    "PinSocket_1x09_P2.54mm_Vertical_SMD_Pin1Right": ("C46635845", "HX PM2.54-1x9P TP H8.5-YQ"),
+    "PinSocket_1x08_P2.54mm_Vertical_SMD_Pin1Right": ("C46635844", "HX PM2.54-1x8P TP H8.5-YQ"),
+    "PinSocket_1x04_P2.54mm_Vertical_SMD_Pin1Right": ("C46635840", "HX PM2.54-1x4P TP H8.5-YQ"),
 }
 
 
@@ -110,11 +114,12 @@ def N(name):
 
 GND = N("GND")
 V3V3 = N("3V3")          # the Connect Kit's VIO (TPS63901) [TPS]
-BAT = N("BAT")           # the pack: over the harness, or J_BAT on the bench
+BAT_PACK = N("BAT_PACK")  # the pack as it arrives over the harness
+BAT = N("BAT")           # the pack after reverse protection and the fuel gauge's sense resistor
 CHG_IN = N("CHG_IN")     # bq24074 IN, after the panel diodes
 CHG_OUT = N("CHG_OUT")   # bq24074 OUT -> Kit J2
 EXT_3V3 = N("EXT_3V3")   # switched, current-limited 3.3 V for everything outside the box
-for n in (GND, V3V3, BAT, CHG_IN, CHG_OUT, EXT_3V3):
+for n in (GND, V3V3, BAT_PACK, BAT, CHG_IN, CHG_OUT, EXT_3V3):
     n.drive = POWER
 
 SDA, SCL = N("I2C_SDA"), N("I2C_SCL")          # main bus, nRF TWIM2
@@ -133,10 +138,11 @@ def connect_kit():
     kit = {
         1: "KIT_VBUS", 2: "KIT_VSYS", 3: GND, 4: "KIT_EN",
         5: "CHG_CE", 6: "EXT_INT", 7: "EXT_EN", 8: "EXT_READY", 9: "EXT_FAULT",
-        10: "EXP_P4", 11: "EXP_P3", 12: "EXP_P2", 13: "EXP_P1", 14: "EXP_P0",
+        10: "FLASH_CS", 11: "FLASH_SCK", 12: "FLASH_MOSI", 13: "FLASH_MISO",  # P0.04-P0.01
+        14: "FG_ALRT",                                    # P0.00
         15: SCL, 16: SDA, 17: "IMU_INT1", 18: "IMU_INT2", 19: "GNSS_EXTINT", 20: "GNSS_RESET_N",
         21: "VBAT_SENSE", 22: "ISET_SENSE", 23: "VIN_SENSE",
-        24: "EXP_A3", 25: "EXP_A4", 26: "EXP_A5", 27: NC, 28: NC,
+        24: NC, 25: NC, 26: NC, 27: NC, 28: NC,           # spare AIN3-AIN7
         29: "CHG_STAT", 30: "GNSS_RXD", 31: "GNSS_TXD", 32: "GNSS_PPS", 33: "CHG_PGOOD",
         34: "UART_TX", 35: "UART_RX", 36: "SWDIO", 37: "SWCLK", 38: "RESET",
         39: GND, 40: V3V3,
@@ -166,8 +172,10 @@ def kit_battery_feed():
 def charger():
     """bq24074 standalone, USB500 mode. All from [BQ] (SLUS810N):
     EN2 = 0 / EN1 = 1 -> 500 mA input limit with VIN-DPM, Table 7-2 and 8.5;
-    ISET 887 R -> 1.0 A programmed (input-limited), eq. 2; ILIM 3.24 k must be
-    fitted, Table 7-1; TMR 71.5 k -> 9.5 h fast / 57 min pre-charge, eq. 6-7;
+    ISET 1 k -> 0.89 A programmed (input-limited to 500 mA), eq. 2; ILIM must be
+    fitted, Table 7-1, and only sets the limit with EN2 = 1 / EN1 = 0, which we don't
+    use: 4.7 k; TMR 68 k -> 9.0 h fast / 54 min pre-charge, eq. 6-7. All three are
+    JLCPCB basic values (rev A3; A2 had 887 R, 3.24 k, 71.5 k);
     ITERM open -> 10 %, 9.3.5.2; TS to the pack NTC, 9.3.6; CE low = charge, Table 7-1;
     caps per Table 7-1; thermal pad to VSS with four 0.3 mm vias (layout.py), 12.1."""
     u = lcsc(P("Battery_Management", "BQ24074RGT", ref="U1",
@@ -183,13 +191,13 @@ def charger():
     r_en1[2] += u["EN1"]
     iset = N("ISET")
     u["ISET"] += iset
-    R("887")[1, 2] += iset, GND
-    R("3.24k")[1, 2] += u["ILIM"], GND
-    R("71.5k")[1, 2] += u["TMR"], GND
+    R("1k")[1, 2] += iset, GND
+    R("4.7k")[1, 2] += u["ILIM"], GND
+    R("68k")[1, 2] += u["TMR"], GND
     u["ITERM"] += NC
     u["TS"] += TS
     C("10n")[1, 2] += TS, GND            # filters pickup on the ~0.6 m NTC run
-    R("10k", dnp=True)[1, 2] += TS, GND  # bench only, no NTC: [BQ] 10.2.2.3
+    R("10k", dnp=True)[1, 2] += TS, GND  # fit only to charge with no NTC: [BQ] 10.2.2.3
     ce = N("CHG_CE")
     u["~{CE}"] += ce
     R("100k")[1, 2] += ce, GND
@@ -204,10 +212,11 @@ def charger():
 
 @block
 def solar_inputs():
-    """Two P124 panels on one 3-pin PH (1 panel A+, 2 GND, 3 panel B+), each through
+    """Two P124 panels on one 3-pin JST SH (1 panel A+, 2 GND, 3 panel B+), each through
     its own Schottky into IN, so a lit panel can't push current into a shaded one.
-    P124: Vmp 6.0 V, Voc <= 7.28 V, Isc <= 0.23 A [P124]."""
-    j = conn(3, PH_H.format(n=3), "Panels A/GND/B", ref="J6")
+    P124: Vmp 6.0 V, Voc <= 7.28 V, Isc <= 0.23 A [P124]. SH is rated 1 A per contact;
+    both panels together are <= 0.46 A on the GND pin."""
+    j = conn(3, SH3_H, "Panels A/GND/B", ref="J6")
     j[2] += GND
     for name, pin, dref in (("A", 1, "D1"), ("B", 3, "D2")):
         sol = N(f"SOLAR_{name}")
@@ -215,18 +224,6 @@ def solar_inputs():
         d = lcsc(P("Device", "D_Schottky", value="B5819W", footprint="Diode_SMD:D_SOD-123", ref=dref), "B5819W")
         d["A"] += sol
         d["K"] += CHG_IN
-
-
-@block
-def bench_battery():
-    """Bench-only pack and NTC sockets. In the collar the pack and its NTC arrive over
-    the harness (harness_port). Never connect both packs at once (silkscreen warning)."""
-    jb = conn(2, PH_H.format(n=2), "BAT bench", ref="J7")
-    jb[1] += BAT
-    jb[2] += GND
-    jn = conn(2, PH_H.format(n=2), "NTC bench", ref="J8")
-    jn[1] += TS
-    jn[2] += GND
 
 
 @block
@@ -250,7 +247,7 @@ def main_i2c():
     socket inside the box (Qwiic order GND, 3V3, SDA, SCL)."""
     R("4.7k")[1, 2] += SDA, V3V3
     R("4.7k")[1, 2] += SCL, V3V3
-    q = conn(4, SH_H, "Qwiic spare", ref="J9")
+    q = conn(4, SH_H, "Qwiic spare", ref="J7")
     q[1, 2, 3, 4] += GND, V3V3, SDA, SCL
 
 
@@ -259,11 +256,11 @@ def gnss_sockets():
     """SparkFun MAX-M10S breakout (GPS-18037) on its 8-pin edge row and 4-pin I2C row
     [SF board file: mating pinout only]. EXTINT wakes from standby, RESET_N low >= 1 ms
     resets, TIMEPULSE shares SAFEBOOT_N so nothing may pull it low at boot [UBX] Table 10."""
-    a = conn(8, SOCKET.format(n=8), "M10S J5", ref="J10")
+    a = conn(8, SOCKET.format(n=8), "M10S J5", ref="J8")
     a[1, 2, 3, 4, 5, 6, 7, 8] += (GND, V3V3, N("GNSS_SAFEBOOT"), N("GNSS_TXD"),
                                   N("GNSS_RXD"), N("GNSS_PPS"),
                                   N("GNSS_EXTINT"), N("GNSS_RESET_N"))
-    b = conn(4, SOCKET.format(n=4), "M10S J3", ref="J11")
+    b = conn(4, SOCKET.format(n=4), "M10S J3", ref="J9")
     b[1, 2, 3, 4] += GND, V3V3, SDA, SCL
 
 
@@ -272,7 +269,7 @@ def imu_socket():
     """Adafruit ISM330DHCX (4502) 9-pin row: VIN, 3Vo, GND, SCL, SDA, DO, CS, INT1, INT2
     [SF: LSM6DSOX board file, same outline; check the ISM330 silkscreen]. DO open ->
     address 0x6A; CS open (board pull-up) -> I2C mode."""
-    j = conn(9, SOCKET.format(n=9), "ISM330", ref="J12")
+    j = conn(9, SOCKET.format(n=9), "ISM330", ref="J10")
     j[1, 2, 3, 4, 5, 6, 7, 8, 9] += (V3V3, NC, GND, SCL, SDA, NC, NC,
                                      N("IMU_INT1"), N("IMU_INT2"))
 
@@ -340,20 +337,22 @@ def cue_ports():
     """Left and right ear-pod buzzers (SparkFun Qwiic Buzzer, 0x34 left, 0x5B right) on
     the EXT bus: Qwiic order GND, EXT_3V3, EXT_SDA, EXT_SCL. Left/right because cattle
     localise to ~30 deg (docs/COLLAR-FIRST-PRINCIPLES.md section 1)."""
-    for side, ref in (("L", "J13"), ("R", "J14")):
+    for side, ref in (("L", "J11"), ("R", "J12")):
         q = conn(4, SH_H, f"Cue {side}", ref=ref)
         q[1, 2, 3, 4] += GND, EXT_3V3, EXT_SDA, EXT_SCL
 
 
 @block
 def harness_port():
-    """M8 8-pin strap harness to the battery module (SPEC.md section 5; IEC 61076-2-104
+    """The one battery path: M8 8-pin strap harness to the battery module. On the bench,
+    a PH8 pigtail brings the pack and its NTC to the same socket (no second battery
+    connector, so two packs can never be connected at once). Harness (SPEC.md section 5; IEC 61076-2-104
     pin order, DIN 47100 colours): 1 SDA, 2 BAT+, 3 GND, 4 SCL, 5 NTC, 6 INT, 7 GND, 8 BAT+.
     Power doubled so one broken conductor doesn't drop the pack. INT gets 1 k in series
     and a 100 k pull-up to 3V3 before the nRF pin."""
-    j = conn(8, PH_V.format(n=8), "Harness M8", ref="J15")
+    j = conn(8, PH_H.format(n=8), "Harness M8", ref="J13")
     int_raw = N("EXT_INT_RAW")
-    j[1, 2, 3, 4, 5, 6, 7, 8] += EXT_SDA, BAT, GND, EXT_SCL, TS, int_raw, GND, BAT
+    j[1, 2, 3, 4, 5, 6, 7, 8] += EXT_SDA, BAT_PACK, GND, EXT_SCL, TS, int_raw, GND, BAT_PACK
     R("1k")[1, 2] += int_raw, N("EXT_INT")
     R("100k")[1, 2] += N("EXT_INT"), V3V3
 
@@ -375,15 +374,99 @@ def esd():
     b["GND"] += GND
 
 
+MAX17260 = Part(name="MAX17260", tool=SKIDL, dest=TEMPLATE, ref_prefix="U",
+                footprint="Package_DFN_QFN:TDFN-14-1EP_3x3mm_P0.4mm_EP1.78x2.35mm", pins=[
+                    Pin(num="1", name="TH", func=T.INPUT),
+                    Pin(num="2", name="NC2", func=T.NOCONNECT),
+                    Pin(num="3", name="NC3", func=T.NOCONNECT),
+                    Pin(num="4", name="NC4", func=T.NOCONNECT),
+                    Pin(num="5", name="NC5", func=T.NOCONNECT),
+                    Pin(num="6", name="BATT", func=T.PWRIN),
+                    Pin(num="7", name="CSN", func=T.INPUT),
+                    Pin(num="8", name="GND", func=T.PWRIN),
+                    Pin(num="9", name="CSPL", func=T.INPUT),
+                    Pin(num="10", name="CSPH", func=T.INPUT),
+                    Pin(num="11", name="REG", func=T.PWROUT),
+                    Pin(num="12", name="ALRT", func=T.OPENCOLL),
+                    Pin(num="13", name="SDA", func=T.BIDIR),
+                    Pin(num="14", name="SCL", func=T.INPUT),
+                    Pin(num="15", name="EP", func=T.PWRIN)])  # [MAX] Pin Descriptions, 14 TDFN-EP
+
+W25Q128 = Part(name="W25Q128JVS", tool=SKIDL, dest=TEMPLATE, ref_prefix="U",
+               footprint="Package_SO:SOIC-8_5.3x5.3mm_P1.27mm", pins=[
+                   Pin(num="1", name="~{CS}", func=T.INPUT),
+                   Pin(num="2", name="DO", func=T.OUTPUT),
+                   Pin(num="3", name="~{WP}", func=T.INPUT),
+                   Pin(num="4", name="GND", func=T.PWRIN),
+                   Pin(num="5", name="DI", func=T.INPUT),
+                   Pin(num="6", name="CLK", func=T.INPUT),
+                   Pin(num="7", name="~{HOLD}", func=T.INPUT),
+                   Pin(num="8", name="VCC", func=T.PWRIN)])  # [W25Q] 3.1/3.3, SOIC 208-mil
+
+AO3401 = Part(name="AO3401A", tool=SKIDL, dest=TEMPLATE, ref_prefix="Q",
+              footprint="Package_TO_SOT_SMD:SOT-23", pins=[
+                  Pin(num="1", name="G", func=T.INPUT),
+                  Pin(num="2", name="S", func=T.PASSIVE),
+                  Pin(num="3", name="D", func=T.PASSIVE)])   # [AO] SOT23 pin-out
+
+
 @block
-def expansion():
-    """Unpopulated 1x10 header for a stimulus board or experiments."""
-    j = conn(10, "Connector_PinHeader_2.54mm:PinHeader_1x10_P2.54mm_Vertical", "EXP", ref="J16")
-    j.fields["DNP"] = "1"
-    j[1, 2] += V3V3, GND
-    for i, n in enumerate(("EXP_P0", "EXP_P1", "EXP_P2", "EXP_P3", "EXP_P4",
-                           "EXP_A3", "EXP_A4", "EXP_A5"), start=3):
-        j[i] += N(n)
+def battery_path():
+    """Harness BAT+ -> reverse protection -> fuel-gauge sense resistor -> BAT (rev A3).
+    - AO3401A P-FET, drain to the pack, source to the board, gate to GND [AO]: a correct
+      pack turns it on through its body diode (VGS = -VBAT, 47-60 mOhm at 4.5 V) and it
+      conducts both ways, so charging works; a reversed pack leaves VGS = 0 and the body
+      diode blocks. VGS max +/-12 V, VDS -30 V. It comes before the gauge, so a reversed
+      pack never reaches the gauge's pins (abs. max -0.3 V) [MAX] Absolute Maximum Ratings.
+    - MAX17260 in high-side mode [MAX] Pin Descriptions, Figure 6: 10 mOhm between CSN
+      (cell side) and CSPH (system side), Kelvin-routed; CSPL to GND (high-side use, as the
+      WLP ties it internally); BATT to the cell side with 0.1 uF; REG 0.47 uF; TH unused, so
+      to BATT; EP to GND. 10 mOhm gives +/-5.12 A range and 156 uA resolution [MAX] Table 9.
+      I2C address 0x36 (0x6C write) on the main bus [MAX] Ordering Information. ALRT
+      open-drain, 100 k to 3V3, to P0.00."""
+    cell = N("BAT_CELL")
+    cell.drive = POWER
+    q = lcsc(P(template=AO3401, ref="Q1"), "AO3401A")
+    q["D"] += BAT_PACK
+    q["S"] += cell
+    q["G"] += GND
+    R("10m", fp="Resistor_SMD:R_0805_2012Metric")[1, 2] += cell, BAT
+    g = lcsc(P(template=MAX17260, ref="U6"), "MAX17260SETD+T")
+    g["BATT"] += cell
+    g["CSN"] += cell
+    g["CSPH"] += BAT
+    g["CSPL"] += GND
+    g["TH"] += cell
+    g["GND"] += GND
+    g["EP"] += GND
+    g["SDA"] += SDA
+    g["SCL"] += SCL
+    g["NC2", "NC3", "NC4", "NC5"] += NC
+    reg = N("FG_REG")
+    g["REG"] += reg
+    C("470n")[1, 2] += reg, GND
+    C("100n")[1, 2] += cell, GND
+    alrt = N("FG_ALRT")
+    g["ALRT"] += alrt
+    R("100k")[1, 2] += alrt, V3V3
+
+
+@block
+def flash():
+    """16 MB W25Q128JV on SPI (P0.04 CS, P0.03 SCK, P0.02 MOSI, P0.01 MISO), standard
+    single-bit SPI, so /WP and /HOLD tie to VCC [W25Q] 4.3-4.4; 100 k holds /CS high
+    while the nRF boots; 0.1 uF at VCC. For raw GNSS logs that must outlast weak LTE (rev A3)."""
+    f = lcsc(P(template=W25Q128, ref="U7"), "W25Q128JVSIQ")
+    f["VCC"] += V3V3
+    f["GND"] += GND
+    f["~{CS}"] += N("FLASH_CS")
+    f["CLK"] += N("FLASH_SCK")
+    f["DI"] += N("FLASH_MOSI")
+    f["DO"] += N("FLASH_MISO")
+    f["~{WP}"] += V3V3
+    f["~{HOLD}"] += V3V3
+    R("100k")[1, 2] += N("FLASH_CS"), V3V3
+    C("100n")[1, 2] += V3V3, GND
 
 
 @block
@@ -404,13 +487,14 @@ def test_pads():
 
 @block
 def mechanical():
-    """Board M3 holes (4) and standoff holes for the plugged boards [SF]: the MAX-M10S's
-    two corner holes away from its 8-pin row (M3; the two beside the row sit under the
-    SMD socket, which holds that edge), and the ISM330's two Ø2.5 holes (M2 standoffs
-    clear the GNSS socket). Positions in layout.py."""
-    for i in range(1, 7):     # H1-H4 board, H5-H6 MAX-M10S standoffs
+    """Holes [SF]. H1, H2: M3 board mounts under the Kit, between its socket rows.
+    H3, H4: the MAX-M10S's two corner holes away from its 8-pin row; M3 male-female
+    standoffs there hold the M10S and screw the carrier to the box posts (the two holes
+    beside the 8-pin row sit under the SMD socket, which holds that edge). H5, H6: the
+    ISM330's Ø2.5 holes with M2 standoffs. Positions in layout.py."""
+    for i in range(1, 5):
         P("Mechanical", "MountingHole", footprint="MountingHole:MountingHole_3.2mm_M3", ref=f"H{i}")
-    for i in (7, 8):          # ISM330 standoffs
+    for i in (5, 6):
         P("Mechanical", "MountingHole", footprint="MountingHole:MountingHole_2.2mm_M2", ref=f"H{i}")
 
 
@@ -419,7 +503,6 @@ if __name__ == "__main__":
     kit_battery_feed()
     charger()
     solar_inputs()
-    bench_battery()
     sensing()
     main_i2c()
     gnss_sockets()
@@ -428,7 +511,8 @@ if __name__ == "__main__":
     cue_ports()
     harness_port()
     esd()
-    expansion()
+    battery_path()
+    flash()
     test_pads()
     mechanical()
     ERC()

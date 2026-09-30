@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1110" viewBox="0 0 1600 1110"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e2622"/></marker></defs><rect width="100%" height="100%" fill="#f6f4ef"/><text x="60" y="70.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="34" fill="#1e2622" font-weight="600" text-anchor="start">Our carrier board, seen from below (the fixture’s view)</text>
+<text x="60" y="108.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#6b726d" font-weight="400" text-anchor="start">Its 33 test pads, coloured by which instrument each one goes to. Positions from the real board file.</text>
+<rect x="90" y="170" width="910.0" height="819.0" rx="28.0" fill="#2d6a45" stroke="#1e2622" stroke-width="2" />
+<circle cx="826.54" cy="828.0" r="22.400000000000002" fill="#f6f4ef" stroke="#1e2622" stroke-width="1.5"/>
+<circle cx="308.96000000000004" cy="852.36" r="15.400000000000002" fill="#f6f4ef" stroke="#1e2622" stroke-width="1.5"/>
+<circle cx="593.44" cy="852.36" r="15.400000000000002" fill="#f6f4ef" stroke="#1e2622" stroke-width="1.5"/>
+<circle cx="131.15999999999997" cy="240.56" r="22.400000000000002" fill="#f6f4ef" stroke="#1e2622" stroke-width="1.5"/>
+<circle cx="826.54" cy="513.0" r="22.400000000000002" fill="#f6f4ef" stroke="#1e2622" stroke-width="1.5"/>
+<circle cx="131.15999999999997" cy="596.1600000000001" r="22.400000000000002" fill="#f6f4ef" stroke="#1e2622" stroke-width="1.5"/>
+<circle cx="356.0" cy="403.79999999999995" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="356.0" cy="353.4" r="7.700000000000001" fill="#7d3c98" stroke="white" stroke-width="2"/>
+<circle cx="286.0" cy="403.79999999999995" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="636.0" cy="403.79999999999995" r="7.700000000000001" fill="#148f77" stroke="white" stroke-width="2"/>
+<circle cx="496.0" cy="353.4" r="7.700000000000001" fill="#c0392b" stroke="white" stroke-width="2"/>
+<circle cx="426.0" cy="403.79999999999995" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="496.0" cy="303.0" r="7.700000000000001" fill="#d68910" stroke="white" stroke-width="2"/>
+<circle cx="566.0" cy="303.0" r="7.700000000000001" fill="#2e86c1" stroke="white" stroke-width="2"/>
+<circle cx="426.0" cy="303.0" r="7.700000000000001" fill="#d68910" stroke="white" stroke-width="2"/>
+<circle cx="286.0" cy="454.2" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="356.0" cy="454.2" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="216.0" cy="403.79999999999995" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="636.0" cy="303.0" r="7.700000000000001" fill="#2e86c1" stroke="white" stroke-width="2"/>
+<circle cx="636.0" cy="454.2" r="7.700000000000001" fill="#2e86c1" stroke="white" stroke-width="2"/>
+<circle cx="356.0" cy="303.0" r="7.700000000000001" fill="#2e86c1" stroke="white" stroke-width="2"/>
+<circle cx="566.0" cy="403.79999999999995" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="426.0" cy="454.2" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="706.0" cy="403.79999999999995" r="7.700000000000001" fill="#148f77" stroke="white" stroke-width="2"/>
+<circle cx="566.0" cy="454.2" r="7.700000000000001" fill="#2e86c1" stroke="white" stroke-width="2"/>
+<circle cx="216.0" cy="303.0" r="7.700000000000001" fill="#2e86c1" stroke="white" stroke-width="2"/>
+<circle cx="496.0" cy="454.2" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="286.0" cy="303.0" r="7.700000000000001" fill="#2e86c1" stroke="white" stroke-width="2"/>
+<circle cx="706.0" cy="504.59999999999997" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="496.0" cy="403.79999999999995" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="426.0" cy="353.4" r="7.700000000000001" fill="#c0392b" stroke="white" stroke-width="2"/>
+<circle cx="706.0" cy="303.0" r="7.700000000000001" fill="#c0392b" stroke="white" stroke-width="2"/>
+<circle cx="286.0" cy="353.4" r="7.700000000000001" fill="#7d3c98" stroke="white" stroke-width="2"/>
+<circle cx="566.0" cy="353.4" r="7.700000000000001" fill="#c0392b" stroke="white" stroke-width="2"/>
+<circle cx="706.0" cy="454.2" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="216.0" cy="353.4" r="7.700000000000001" fill="#7d3c98" stroke="white" stroke-width="2"/>
+<circle cx="216.0" cy="454.2" r="7.700000000000001" fill="#566573" stroke="white" stroke-width="2"/>
+<circle cx="636.0" cy="353.4" r="7.700000000000001" fill="#c0392b" stroke="white" stroke-width="2"/>
+<circle cx="706.0" cy="353.4" r="7.700000000000001" fill="#2e86c1" stroke="white" stroke-width="2"/>
+<circle cx="826.54" cy="513.0" r="28.400000000000002" fill="none" stroke="#1a5276" stroke-width="3"/>
+<circle cx="131.15999999999997" cy="596.1600000000001" r="28.400000000000002" fill="none" stroke="#1a5276" stroke-width="3"/>
+<circle cx="131.15999999999997" cy="626.1600000000001" r="4" fill="#1e2622" stroke="none" stroke-width="2"/>
+<line x1="131.15999999999997" y1="626.1600000000001" x2="1060.0" y2="640" stroke="#1e2622" stroke-width="1.5"/>
+<text x="1068.0" y="647.7" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">Mounting holes, used as alignment holes</text>
+<text x="1068.0" y="675.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#6b726d" font-weight="400" text-anchor="start">(the integrated board gets its own tooling holes)</text>
+<text x="1060.0" y="200.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#6b726d" font-weight="600" text-anchor="start">Goes to</text>
+<circle cx="1072.0" cy="238" r="11" fill="#c0392b" stroke="white" stroke-width="2"/>
+<text x="1096.0" y="245.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">Battery stand-in + current meter</text>
+<circle cx="1072.0" cy="288" r="11" fill="#d68910" stroke="white" stroke-width="2"/>
+<text x="1096.0" y="295.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">Solar stand-in</text>
+<circle cx="1072.0" cy="338" r="11" fill="#2e86c1" stroke="white" stroke-width="2"/>
+<text x="1096.0" y="345.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">Voltage checks (ADC)</text>
+<circle cx="1072.0" cy="388" r="11" fill="#7d3c98" stroke="white" stroke-width="2"/>
+<text x="1096.0" y="395.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">Programmer (SWD)</text>
+<circle cx="1072.0" cy="438" r="11" fill="#148f77" stroke="white" stroke-width="2"/>
+<text x="1096.0" y="445.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">Serial console</text>
+<circle cx="1072.0" cy="488" r="11" fill="#566573" stroke="white" stroke-width="2"/>
+<text x="1096.0" y="495.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="400" text-anchor="start">Buses and status (Pi GPIO/I2C)</text>
+<text x="90" y="1049.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#6b726d" font-weight="400" text-anchor="start">On this carrier, the processor lives on the plugged-in Connect Kit, so a carrier test is mostly power, charger</text>
+<text x="90" y="1077.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#6b726d" font-weight="400" text-anchor="start">and bus checks. The full sequence (flash, self-test, radios, sleep current) is for the integrated board.</text></svg>

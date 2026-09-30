@@ -72,6 +72,24 @@ kicad-cli pcb render --side top --output build/top.png build/carrier.kicad_pcb
 kicad-cli pcb render --side bottom --output build/bottom.png build/carrier.kicad_pcb
 ```
 
+Routing (rev A2, A3): Inky routed the board in HeyPCB. Its export is committed as `pcb/heypcb/`, and `finish_routing.py` redoes the charger block from it and writes the routed board:
+
+```sh
+uv run python schematic.py                                   # rev A3 netlist, read by finish_routing.py
+kicad-python finish_routing.py pcb/heypcb/opencollar-carrier.kicad_pcb pcb/carrier.kicad_pcb
+kicad-cli pcb drc --severity-all --refill-zones --format json --output build/drc.json pcb/carrier.kicad_pcb
+kicad-python fit_test.py pcb/carrier.kicad_pcb build/carrier-fit-test.pdf   # 1:1 paper fit test
+kicad-python jlc_files.py pcb/carrier.kicad_pcb build/fab                    # JLCPCB BOM, CPL, Gerbers
+```
+
+`finish_routing.py` brings Inky's board up to the current schematic (new parts, values, footprints, nets), places what's new, and routes everything that changed. It needs Freerouting and a Java runtime in `build/tools` (gitignored; both free, nothing to install system-wide):
+
+```sh
+mkdir -p build/tools && cd build/tools
+curl -sL https://github.com/freerouting/freerouting/releases/download/v2.4.1/freerouting-2.4.1.jar -o freerouting.jar
+curl -sL "https://api.adoptium.net/v3/binary/latest/25/ga/mac/aarch64/jre/hotspot/normal/eclipse" | tar xz
+```
+
 ## Known gap: a readable schematic
 
 SKiDL writes netlists, not KiCad schematic sheets. That's fine for the carrier board, where agents and diffs do the reviewing. Nordic's review (and most humans) want a schematic PDF. Before the integrated board, either:

@@ -1,0 +1,3 @@
+*.kicad_prl
+*.drc.json
+fp-info-cache
