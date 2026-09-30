@@ -10,6 +10,7 @@ Open hardware virtual-fence collar. Off-the-shelf parts, open protocol, works wi
 - `docs/DESIGN-PHASE.md` — board design toolchain and workflow (KiCad + SKiDL)
 - `docs/COLLAR-FIRST-PRINCIPLES.md` — the slim collar worked out from first principles
 - `docs/TEST-FIXTURE.md` — how every board gets tested, explained from zero, with pictures
+- `docs/CARRIER-EXPLAINED.md` — every part on the carrier board, what it does, and where it sits in the collar
 - `docs/STRATEGY.md` — product strategy and licensing
 - `hardware/prototype-cart.md` — parts for the first prototype
 - `hardware/orders-2026-09-26.md` — what was ordered and paid

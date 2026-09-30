@@ -10,3 +10,4 @@ mechanical/print/stl/
 mechanical/print/gcode/
 mechanical/print/*.log
 *.blend1
+.DS_Store

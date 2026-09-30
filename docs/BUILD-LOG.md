@@ -338,3 +338,8 @@ When the boxes arrive: photograph the parts, check every item against the list, 
   - HeyPCB still has the A2 board. The A3 board isn't uploaded there; that's Cody's call.
   - The router's work outside the charger meanders in places. It's DRC-clean; a hand pass before production would tidy it.
   - Nothing ordered or pushed.
+
+### Carrier explained for Cody (2026-09-27)
+- Cody asked for every component explained, and how the board fits the assembled collar. Written up as `docs/CARRIER-EXPLAINED.md`, with the rev A3 top render labelled by function (`docs/images/carrier/carrier-labelled.png`).
+- It covers: the plug-in boards; the power chain (panels, diodes, charger, battery guard, fuel gauge, Kit feed); the flash; everything that leaves the box (harness, cue ports, bus buffer, power switch, ESD); the mounting holes and test pads; and the V1-alpha collar layout (test box on the crest, ear pods, battery module under the throat).
+- Where to pick up next: Cody prints the fit test and gets a JLCPCB quote (SPEC.md questions 12–14), and decides on the MAX17260 sourcing. Nothing ordered or pushed.
