@@ -35,7 +35,7 @@ Sources, all kept locally in `mechanical/reference/vendor/` or `/tmp/ds` during 
 | [AO] | Alpha & Omega AO3401A datasheet (P-FET, rev A3) |
 | [JLC-FP] | JLCPCB/EasyEDA library footprints for each LCSC part (easyeda.com API), checked 2026-09-27 |
 
-**Licence rule:** [SF] boards are CC BY-SA. We read them only for the **mating interface**: where their header pins are and what each pin is called. No circuit on this board comes from them. Every circuit comes from the chip maker's datasheet. The board is CERN-OHL-P.
+**Licence rule:** [SF] boards are CC BY-SA. We read them only for the **mating interface**: where their header pins are and what each pin is called. No circuit on this board comes from them. Every circuit comes from the chip maker's datasheet. The board is CERN-OHL-W-2.0.
 
 ## 1. What plugs in, and the recommendations
 

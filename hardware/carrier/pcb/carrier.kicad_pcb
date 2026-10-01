@@ -21951,7 +21951,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "CERN-OHL-P  2026-09-27"
+	(gr_text "CERN-OHL-W  2026-09-27"
 		(at 138 135.3 0)
 		(layer "B.SilkS")
 		(uuid "ab617b2a-83de-4efc-8f65-61ac1990eed1")

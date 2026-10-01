@@ -343,3 +343,16 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - Cody asked for every component explained, and how the board fits the assembled collar. Written up as `docs/CARRIER-EXPLAINED.md`, with the rev A3 top render labelled by function (`docs/images/carrier/carrier-labelled.png`).
 - It covers: the plug-in boards; the power chain (panels, diodes, charger, battery guard, fuel gauge, Kit feed); the flash; everything that leaves the box (harness, cue ports, bus buffer, power switch, ESD); the mounting holes and test pads; and the V1-alpha collar layout (test box on the crest, ear pods, battery module under the throat).
 - Where to pick up next: Cody prints the fit test and gets a JLCPCB quote (SPEC.md questions 12–14), and decides on the MAX17260 sourcing. Nothing ordered or pushed.
+
+## 2026-10-01
+
+### Licences added
+- **Why now:** a builder asked on LinkedIn when the repo would have licences, because they want to port the firmware to Rust. Until today the repo had no licence files, so it was all rights reserved.
+- **Cody asked for** licences as permissive as possible, with protection against someone taking the collar and keeping it closed. Chosen to match:
+  - Firmware, scripts and the protocol: **Apache-2.0** (`LICENSE`).
+  - Hardware and CAD in `hardware/` and `mechanical/`: **CERN-OHL-W-2.0** (`LICENSES/`), changed from the CERN-OHL-P planned in `STRATEGY.md`. Anyone can build and sell the boards; a shipped modified version must publish its changes to these files. Hardware starts at W because loosening later is possible and tightening a released version isn't.
+  - Docs, photos and renders: **CC BY 4.0**.
+  - `NOTICE`: copyright Cody Menefee (openpasture); the names openpasture and OpenCollar and the logo aren't licensed.
+  - `CONTRIBUTING.md`: contributions take the licence of the files they touch, and contributors grant openpasture the right to relicense them, so outside improvements can go into openpasture's own collars.
+- The carrier's bottom silkscreen now reads `CERN-OHL-W  2026-09-27` (in `layout.py`, `pcb/carrier.kicad_pcb` and the HeyPCB import). Text only; no copper changed. `SPEC.md`, `BOARD-DESIGN.md` and `STRATEGY.md` updated to match.
+- Still open: the trademark search on "OpenCollar" (`STRATEGY.md`, "Check the name").

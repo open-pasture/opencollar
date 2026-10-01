@@ -42,7 +42,7 @@ Community KiCad MCP servers exist and are worth trying so an agent can drive KiC
 
 ## Open-source reference designs: learn from them, don't copy them
 
-The SparkFun and Adafruit breakout designs are published, but under **CC BY-SA** (share-alike). Copying them into our board would force our board under share-alike terms, which clashes with the permissive licence plan in `STRATEGY.md`. Use them to learn and check our work, then draw our own circuits from the **chip makers' datasheets and reference designs**, which carry no such condition. The Makerdiary board files we vendored are Apache-2.0 and fine to reuse.
+The SparkFun and Adafruit breakout designs are published, but under **CC BY-SA** (share-alike). Copying them into our board would force our board under share-alike terms, which clashes with the licence plan in `STRATEGY.md`. Use them to learn and check our work, then draw our own circuits from the **chip makers' datasheets and reference designs**, which carry no such condition. The Makerdiary board files we vendored are Apache-2.0 and fine to reuse.
 
 ## What Cody can put in (time, not money)
 

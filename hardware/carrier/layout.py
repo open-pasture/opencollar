@@ -377,7 +377,7 @@ def main(src, dst):
                 text(board, marks[pad.GetNumber()], px + dx, py + dy, 0.8)
     # Bottom: title, test-pad heading, harness pinout (the top is all under boards).
     text(board, "OpenCollar carrier rev A2", 38.0, 33.5, 1.0, pcbnew.B_SilkS, mirror=True)
-    text(board, "CERN-OHL-P  2026-09-27", 38.0, 35.3, 0.8, pcbnew.B_SilkS, mirror=True)
+    text(board, "CERN-OHL-W  2026-09-27", 38.0, 35.3, 0.8, pcbnew.B_SilkS, mirror=True)
     text(board, "TEST PADS", 38.5, 7.3, 0.8, pcbnew.B_SilkS, mirror=True)
     text(board, "HARNESS M8: 1 SDA 2 BAT+ 3 GND 4 SCL", 38.0, 53.0, 0.8, pcbnew.B_SilkS, mirror=True)
     text(board, "5 NTC 6 INT 7 GND 8 BAT+  (bench: PH8 pigtail)", 38.0, 54.3, 0.8, pcbnew.B_SilkS, mirror=True)

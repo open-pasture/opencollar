@@ -1,0 +1,16 @@
+OpenCollar
+Copyright 2026 Cody Menefee (openpasture)
+
+This repository is open source under several licences:
+  - Firmware, scripts and the device protocol: Apache License 2.0 (LICENSE)
+  - Hardware and CAD in hardware/ and mechanical/: CERN Open Hardware
+    Licence Version 2, Weakly Reciprocal (LICENSES/CERN-OHL-W-2.0.txt)
+  - Docs, photos and renders: Creative Commons Attribution 4.0
+    International (LICENSES/CC-BY-4.0.txt)
+Third-party files keep the licences stated in their own headers and folders.
+
+Names and logo. These licences don't grant rights to the names
+"openpasture" or "OpenCollar" or to the openpasture logo. You may say
+your product is based on or compatible with OpenCollar. Don't name or
+brand your product, kit or service in a way that suggests it comes from,
+or is endorsed by, openpasture.

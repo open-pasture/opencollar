@@ -21,11 +21,13 @@ Decided 2026-09-26.
 
 - **Sell assembled OpenCollars first.** Kits and DIY stay available; assembled is the main product.
 - **The device protocol is the contract** between all three layers. It must be versioned, documented and stable before the proprietary collar exists.
-- **Licensing must allow our own proprietary collar.** Use permissive licences for the open collar so we (and others) can reuse the work:
-  - Firmware: Apache-2.0
-  - Hardware and CAD: CERN-OHL-P (permissive)
-  - Docs: CC BY 4.0
-  - Strongly reciprocal licences (GPL, CERN-OHL-S) would force the proprietary collar to be open if it reused OpenCollar code or designs. Accept outside contributions under a contributor agreement or keep contributions under the same permissive terms.
-  - Already vendored: Makerdiary board files (Apache-2.0), compatible.
+- **Licensing (decided 2026-10-01): permissive for code, weakly reciprocal for hardware.** Files at the repo root (`LICENSE`, `LICENSES/`, `NOTICE`, `CONTRIBUTING.md`):
+  - Firmware, scripts and the protocol: Apache-2.0. Anyone can use them, including in closed products; its patent clause ends the patent licence of anyone who sues over the code.
+  - Hardware and CAD: CERN-OHL-W-2.0. Anyone can build and sell the boards and enclosure, but a shipped modified version must publish its changes to these files. Their own add-ons can stay closed. This stops a larger company copying the collar and keeping its improvements private.
+  - Docs, photos and renders: CC BY 4.0.
+  - Why this still allows our proprietary collar: the licence binds others, not the copyright holder. CONTRIBUTING.md asks contributors to grant openpasture the right to relicense their contributions, so outside improvements can go into our own collars too.
+  - The names and logo aren't licensed (`NOTICE`). That is what stops knockoffs sold as OpenCollar.
+  - Loosening later is easy (W to P for future versions); a version already released permissively can't be taken back. That's why hardware starts at W.
+  - Already vendored: Makerdiary board files (Apache-2.0) and Monocypher (CC0 or BSD-2-Clause), compatible.
 - **Keep the proprietary collar's firmware in a separate private repo** that consumes shared, permissively licensed pieces (geofence engine, protocol library).
 - **Check the name.** "OpenCollar" is already used by other projects (including a long-running Second Life project and some pet products). Do a trademark search before branding anything sold.

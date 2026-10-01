@@ -17,3 +17,23 @@ Open hardware virtual-fence collar. Off-the-shelf parts, open protocol, works wi
 - `hardware/tools.md` — tools for building a collar
 - `hardware/bom.md` — parts list
 - `hardware/photos/` — build photos
+
+## Licence
+
+OpenCollar is open so anyone can build, repair and improve their own collar.
+
+| What | Licence | Folders |
+| --- | --- | --- |
+| Firmware, scripts and the protocol | [Apache-2.0](LICENSE) | `firmware/`, `protocol/`, and code anywhere else |
+| Hardware and CAD (boards, enclosure, print files) | [CERN-OHL-W-2.0](LICENSES/CERN-OHL-W-2.0.txt) | `hardware/`, `mechanical/` |
+| Docs, photos and renders | [CC BY 4.0](LICENSES/CC-BY-4.0.txt) | `docs/`, `hardware/photos/`, `mechanical/renders/` |
+
+In plain terms:
+
+- **Firmware and protocol:** use them for anything, including closed products. Keep the copyright notice and [NOTICE](NOTICE).
+- **Hardware:** build, sell and change the boards and the enclosure. If you ship a modified version of these design files, publish your changes to them under the same licence. Your own add-ons can stay closed.
+- **Docs:** reuse them with credit to openpasture.
+
+Third-party files keep their own licences: `firmware/boards/makerdiary/` (Apache-2.0, plus Nordic's 5-clause licence where its headers say so) and `firmware/third_party/monocypher/` (CC0 or BSD-2-Clause).
+
+The names openpasture and OpenCollar and the openpasture logo aren't covered by these licences; see [NOTICE](NOTICE). Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
