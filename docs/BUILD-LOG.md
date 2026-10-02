@@ -370,3 +370,9 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - **Amazon parts:** seen: M3 hex screw assortment, TUOFENG silicone wire kit, a black bag that looks like the 1.25 mm pigtails. Not seen: the adhesive heat-shrink kit.
 - **Not in these photos yet:** DigiKey (MAX-M10S, M6 vent), Voltaic (2 × P124), Heritage strap, Hologram SIM, O-ring cord (was due Oct 5).
 - **DigiKey (SO 101875374) hasn't arrived:** no MAX-M10S, no M6 vent. The electronics bring-up doesn't wait on it: the firmware uses the nRF9151's own GNSS, which already gave a fix (2.2 m, 2026-09-25). The M10S is for the GPS accuracy comparison. The vent is needed for the seal box submersion test.
+
+### Bench test guide with diagrams
+- Cody wants to test the parts on their own before building the collar, with diagrams. Written up as `docs/BENCH-TESTS.md`, five tests: buzzer on the Kit header, polarity check, charger and pack, charger OUT feeding the Kit's J2, IMU chained off the buzzer.
+- Diagrams in `docs/images/bench/` from `diagrams.py` (reuses the test-fixture SVG helpers; PNGs via headless Chrome). Kit pins from SPEC.md: 3V3 = pin 40, GND = 39, SDA = 16 (P0.30), SCL = 15 (P0.31).
+- **Caught in my own review:** labels under wires (pin 39, USB-C, OUT) and tangled probe leads in the polarity drawing. Fixed and re-rendered.
+- The charger's pad names and J2's place on the Kit's underside are drawn approximately; the guide asks for photos before soldering.

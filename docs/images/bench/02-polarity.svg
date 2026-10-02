@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e2622"/></marker></defs><rect width="100%" height="100%" fill="#f6f4ef"/><text x="40" y="50.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="30" fill="#1e2622" font-weight="700" text-anchor="start">Test 2: which wire is + (multimeter, nothing plugged in)</text>
+<text x="40" y="84.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="start">Do this for the battery pack's plug, then for one 1.25 mm lead plugged into the Kit's J2 socket</text>
+<rect x="40" y="150" width="230" height="330" rx="22" fill="#f08a1c" stroke="#1e2622" stroke-width="2" />
+<rect x="65" y="175" width="180" height="80" rx="6" fill="#c8d6c0" stroke="#1e2622" stroke-width="2" />
+<text x="155" y="232.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="40" fill="#1e2622" font-weight="700" text-anchor="middle">+3.9</text>
+<circle cx="155" cy="330" r="48" fill="#2b2b2b" stroke="#1e2622" stroke-width="2"/>
+<line x1="155" y1="330" x2="155" y2="290" stroke="#fff" stroke-width="5"/>
+<text x="155" y="270.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1e2622" font-weight="700" text-anchor="middle">V ⎓</text>
+<circle cx="110" cy="430" r="14" fill="#1e2622" stroke="#1e2622" stroke-width="2"/>
+<text x="110" y="468.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" fill="#1e2622" font-weight="700" text-anchor="middle">COM</text>
+<circle cx="200" cy="430" r="14" fill="#c0392b" stroke="#1e2622" stroke-width="2"/>
+<text x="200" y="468.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" fill="#1e2622" font-weight="700" text-anchor="middle">VΩ</text>
+<rect x="370" y="420" width="200" height="150" rx="10" fill="#3d6fd6" stroke="#1e2622" stroke-width="2" />
+<text x="470" y="505.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#fff" font-weight="600" text-anchor="middle">6600 mAh</text>
+<text x="470" y="528.4" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#fff" font-weight="600" text-anchor="middle">pack</text>
+<rect x="400" y="200" width="110" height="60" rx="4" fill="#f4f1ea" stroke="#1e2622" stroke-width="2" />
+<rect x="418" y="218" width="26" height="26" rx="0" fill="#c9a24a" stroke="#1e2622" stroke-width="1.5" />
+<rect x="466" y="218" width="26" height="26" rx="0" fill="#c9a24a" stroke="#1e2622" stroke-width="1.5" />
+<path d="M431,260 C431,330 440,380 440,420" fill="none" stroke="#c0392b" stroke-width="6" />
+<path d="M479,260 C479,330 500,380 500,420" fill="none" stroke="#1e2622" stroke-width="6" />
+<path d="M200,430 L330,430 L330,180 L431,180 L431,191" fill="none" stroke="#c0392b" stroke-width="5" stroke-linejoin="round"/>
+<path d="M110,430 L110,510 L292,510 L292,140 L479,140 L479,191" fill="none" stroke="#1e2622" stroke-width="5" stroke-linejoin="round"/>
+<line x1="431" y1="191" x2="431" y2="227" stroke="#c0392b" stroke-width="3"/>
+<circle cx="431" cy="227" r="4" fill="#c0392b" stroke="none" stroke-width="2"/>
+<line x1="479" y1="191" x2="479" y2="227" stroke="#1e2622" stroke-width="3"/>
+<circle cx="479" cy="227" r="4" fill="#1e2622" stroke="none" stroke-width="2"/>
+<text x="40" y="620.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#1e2622" font-weight="700" text-anchor="start">Plus sign: red wire is +. Good.</text>
+<rect x="620" y="150" width="230" height="330" rx="22" fill="#f08a1c" stroke="#1e2622" stroke-width="2" />
+<rect x="645" y="175" width="180" height="80" rx="6" fill="#c8d6c0" stroke="#1e2622" stroke-width="2" />
+<text x="735" y="232.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="40" fill="#c0392b" font-weight="700" text-anchor="middle">–3.9</text>
+<circle cx="735" cy="330" r="48" fill="#2b2b2b" stroke="#1e2622" stroke-width="2"/>
+<line x1="735" y1="330" x2="735" y2="290" stroke="#fff" stroke-width="5"/>
+<text x="735" y="270.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1e2622" font-weight="700" text-anchor="middle">V ⎓</text>
+<circle cx="690" cy="430" r="14" fill="#1e2622" stroke="#1e2622" stroke-width="2"/>
+<text x="690" y="468.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" fill="#1e2622" font-weight="700" text-anchor="middle">COM</text>
+<circle cx="780" cy="430" r="14" fill="#c0392b" stroke="#1e2622" stroke-width="2"/>
+<text x="780" y="468.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" fill="#1e2622" font-weight="700" text-anchor="middle">VΩ</text>
+<rect x="950" y="420" width="200" height="150" rx="10" fill="#3d6fd6" stroke="#1e2622" stroke-width="2" />
+<text x="1050" y="505.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#fff" font-weight="600" text-anchor="middle">6600 mAh</text>
+<text x="1050" y="528.4" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#fff" font-weight="600" text-anchor="middle">pack</text>
+<rect x="980" y="200" width="110" height="60" rx="4" fill="#f4f1ea" stroke="#1e2622" stroke-width="2" />
+<rect x="998" y="218" width="26" height="26" rx="0" fill="#c9a24a" stroke="#1e2622" stroke-width="1.5" />
+<rect x="1046" y="218" width="26" height="26" rx="0" fill="#c9a24a" stroke="#1e2622" stroke-width="1.5" />
+<path d="M1011,260 C1011,330 1020,380 1020,420" fill="none" stroke="#1e2622" stroke-width="6" />
+<path d="M1059,260 C1059,330 1080,380 1080,420" fill="none" stroke="#c0392b" stroke-width="6" />
+<path d="M780,430 L910,430 L910,180 L1059,180 L1059,191" fill="none" stroke="#c0392b" stroke-width="5" stroke-linejoin="round"/>
+<path d="M690,430 L690,510 L872,510 L872,140 L1011,140 L1011,191" fill="none" stroke="#1e2622" stroke-width="5" stroke-linejoin="round"/>
+<line x1="1059" y1="191" x2="1059" y2="227" stroke="#c0392b" stroke-width="3"/>
+<circle cx="1059" cy="227" r="4" fill="#c0392b" stroke="none" stroke-width="2"/>
+<line x1="1011" y1="191" x2="1011" y2="227" stroke="#1e2622" stroke-width="3"/>
+<circle cx="1011" cy="227" r="4" fill="#1e2622" stroke="none" stroke-width="2"/>
+<text x="620" y="620.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#c0392b" font-weight="700" text-anchor="start">Minus sign: wires are swapped. Stop.</text>
+<text x="40" y="662.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="start">Dial on DC volts (V with the straight line). Red probe to the red wire's contact, black probe to the black wire's.</text>
+<text x="40" y="688.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#1e2622" font-weight="600" text-anchor="start">Keep the two probe tips apart: touching them across the pack shorts it. Expect between 3.7 and 4.2 V.</text></svg>

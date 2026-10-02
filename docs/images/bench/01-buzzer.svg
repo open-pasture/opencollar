@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e2622"/></marker></defs><rect width="100%" height="100%" fill="#f6f4ef"/><text x="40" y="50.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="30" fill="#1e2622" font-weight="700" text-anchor="start">Test 1: buzzer onto the Kit (no soldering)</text>
+<text x="40" y="84.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="start">Qwiic-to-female-socket cable (Adafruit 4397): plug the white plug into the buzzer, push the four sockets onto the Kit's pins</text>
+<rect x="470" y="150" width="182.88" height="502.92" rx="8" fill="#2d6a45" stroke="#1e2622" stroke-width="2" />
+<rect x="521.44" y="136" width="80" height="30" rx="5" fill="#c9ccce" stroke="#1e2622" stroke-width="2" />
+<text x="561.44" y="126.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="middle">USB</text>
+<text x="561.44" y="426.60600000000005" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#e8efe9" font-weight="600" text-anchor="middle">nRF9151</text>
+<text x="561.44" y="450.00600000000003" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#e8efe9" font-weight="600" text-anchor="middle">Connect Kit</text>
+<rect x="474.43" y="177.29" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="200.15" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="223.01" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="245.87" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="268.73" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="291.59" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="314.45000000000005" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="337.31" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="360.16999999999996" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="383.03" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="405.89" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="428.75" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="451.61" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="474.47" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="497.33000000000004" width="14" height="14" rx="0" fill="#d3a13f" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="520.19" width="14" height="14" rx="0" fill="#d3a13f" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="543.05" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="565.9100000000001" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="588.77" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="474.43" y="611.63" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="611.63" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="588.77" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="565.9100000000001" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="543.05" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="520.19" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="497.33000000000004" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="474.47" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="451.61" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="428.75" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="405.89" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="383.03" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="360.16999999999996" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="337.31" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="314.45000000000005" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="291.59" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="268.73" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="245.87" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="223.01" width="14" height="14" rx="0" fill="#9aa49d" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="200.15" width="14" height="14" rx="0" fill="#d3a13f" stroke="#1e2622" stroke-width="1" />
+<rect x="634.45" y="177.29" width="14" height="14" rx="0" fill="#d3a13f" stroke="#1e2622" stroke-width="1" />
+<rect x="900" y="300" width="170" height="150" rx="8" fill="#d04040" stroke="#1e2622" stroke-width="2" />
+<text x="985.0" y="480.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1e2622" font-weight="600" text-anchor="middle">Qwiic Buzzer</text>
+<rect x="890" y="336.0" width="24" height="28" rx="2" fill="#f2f2f2" stroke="#1e2622" stroke-width="1.5" />
+<rect x="890" y="386.0" width="24" height="28" rx="2" fill="#f2f2f2" stroke="#1e2622" stroke-width="1.5" />
+<circle cx="995" cy="375" r="40" fill="#222" stroke="#1e2622" stroke-width="2"/>
+<circle cx="995" cy="375" r="8" fill="#555" stroke="none" stroke-width="2"/>
+<path d="M641.45,207.15 C730.58,207.15 730.58,335.0 790,335.0" fill="none" stroke="#1e2622" stroke-width="8" stroke-linecap="round"/>
+<path d="M641.45,207.15 C730.58,207.15 730.58,335.0 790,335.0" fill="none" stroke="#1e2622" stroke-width="5" stroke-linecap="round"/>
+<path d="M641.45,184.29 C730.58,184.29 730.58,345.0 790,345.0" fill="none" stroke="#1e2622" stroke-width="8" stroke-linecap="round"/>
+<path d="M641.45,184.29 C730.58,184.29 730.58,345.0 790,345.0" fill="none" stroke="#c0392b" stroke-width="5" stroke-linecap="round"/>
+<path d="M481.43,527.19 C712.8575000000001,527.19 712.8575000000001,355.0 790,355.0" fill="none" stroke="#1e2622" stroke-width="8" stroke-linecap="round"/>
+<path d="M481.43,527.19 C712.8575000000001,527.19 712.8575000000001,355.0 790,355.0" fill="none" stroke="#2e6fd6" stroke-width="5" stroke-linecap="round"/>
+<path d="M481.43,504.33000000000004 C712.8575000000001,504.33000000000004 712.8575000000001,365.0 790,365.0" fill="none" stroke="#1e2622" stroke-width="8" stroke-linecap="round"/>
+<path d="M481.43,504.33000000000004 C712.8575000000001,504.33000000000004 712.8575000000001,365.0 790,365.0" fill="none" stroke="#e0b000" stroke-width="5" stroke-linecap="round"/>
+<rect x="786" y="330.0" width="104" height="40" rx="6" fill="#2a2a2a" stroke="#1e2622" stroke-width="2" />
+<text x="671.45" y="136.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#c0392b" font-weight="700" text-anchor="start">pin 40  3V3  (red)</text>
+<text x="671.45" y="162.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#1e2622" font-weight="700" text-anchor="start">pin 39  GND  (black)</text>
+<line x1="471.43" y1="527.19" x2="430" y2="527.19" stroke="#2e6fd6" stroke-width="1.5"/>
+<text x="422" y="533.19" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#2e6fd6" font-weight="700" text-anchor="end">pin 16  P0.30 / SDA  (blue)</text>
+<line x1="471.43" y1="504.33000000000004" x2="430" y2="504.33000000000004" stroke="#a07c00" stroke-width="1.5"/>
+<text x="422" y="510.33000000000004" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#a07c00" font-weight="700" text-anchor="end">pin 15  P0.31 / SCL  (yellow)</text>
+<text x="422" y="190.29" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" fill="#6b726d" font-weight="400" text-anchor="end">pin 1 (VBUS)</text>
+<line x1="471.43" y1="184.29" x2="430" y2="184.29" stroke="#6b726d" stroke-width="1"/>
+<text x="40" y="690.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="start">Top view, USB end up. Pins 1–20 run down the left row, 21–40 up the right row.</text>
+<text x="40" y="716.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#1e2622" font-weight="600" text-anchor="start">Check each pin against the name printed beside it on the Kit before plugging in USB.</text>
+<text x="900" y="520.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1e2622" font-weight="600" text-anchor="start">Pass: a short beep</text>
+<text x="900" y="546.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1e2622" font-weight="600" text-anchor="start">every time the Kit</text>
+<text x="900" y="572.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1e2622" font-weight="600" text-anchor="start">starts or is reset</text></svg>

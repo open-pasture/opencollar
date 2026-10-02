@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="830" viewBox="0 0 1200 830"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e2622"/></marker></defs><rect width="100%" height="100%" fill="#f6f4ef"/><text x="40" y="50.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="30" fill="#1e2622" font-weight="700" text-anchor="start">Test 4: the charger powers the Kit (one soldering job)</text>
+<text x="40" y="84.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="start">A 1.25 mm lead goes from the charger's OUT and GND to the Kit's J2. This is the wiring the carrier board will use.</text>
+<rect x="120" y="200" width="300" height="260" rx="10" fill="#1f3a68" stroke="#1e2622" stroke-width="2" />
+<text x="270.0" y="338.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#e6ecf7" font-weight="600" text-anchor="middle">bq24074</text>
+<text x="270.0" y="366.6" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="22" fill="#e6ecf7" font-weight="600" text-anchor="middle">charger</text>
+<rect x="106" y="240" width="40" height="60" rx="6" fill="#c9ccce" stroke="#1e2622" stroke-width="2" />
+<text x="132" y="328.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" fill="#e6ecf7" font-weight="600" text-anchor="start">USB-C in</text>
+<rect x="390" y="370" width="44" height="56" rx="3" fill="#f4f1ea" stroke="#1e2622" stroke-width="2" />
+<text x="442" y="362.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#1e2622" font-weight="600" text-anchor="start">BATT socket</text>
+<circle cx="180" cy="420" r="10" fill="#ffb000" stroke="#1e2622" stroke-width="2"/>
+<text x="200" y="426.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" fill="#e6ecf7" font-weight="400" text-anchor="start">CHG light</text>
+<rect x="560" y="470" width="200" height="130" rx="10" fill="#3d6fd6" stroke="#1e2622" stroke-width="2" />
+<text x="660" y="542.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#fff" font-weight="600" text-anchor="middle">pack</text>
+<path d="M434,390 C520,390 520,470 620,470" fill="none" stroke="#c0392b" stroke-width="6" />
+<path d="M434,406 C500,406 500,490 660,470" fill="none" stroke="#1e2622" stroke-width="6" />
+<circle cx="220" cy="230" r="12" fill="#d3a13f" stroke="#1e2622" stroke-width="2"/>
+<text x="220" y="262.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" fill="#fff" font-weight="700" text-anchor="middle">OUT</text>
+<circle cx="270" cy="230" r="12" fill="#d3a13f" stroke="#1e2622" stroke-width="2"/>
+<text x="270" y="262.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" fill="#fff" font-weight="700" text-anchor="middle">GND</text>
+<rect x="880" y="170" width="182.88" height="502.92" rx="8" fill="#2d6a45" stroke="#1e2622" stroke-width="2" />
+<text x="971" y="150.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="middle">Kit, turned over (underside)</text>
+<rect x="920" y="470" width="100" height="40" rx="3" fill="#f4f1ea" stroke="#1e2622" stroke-width="2" />
+<text x="970" y="496.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#1e2622" font-weight="700" text-anchor="middle">J2</text>
+<text x="900" y="550.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" fill="#e8efe9" font-weight="600" text-anchor="start">+ and – marks</text>
+<text x="900" y="570.8" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" fill="#e8efe9" font-weight="600" text-anchor="start">beside J2</text>
+<path d="M220,218 C220,120 700,120 950,470" fill="none" stroke="#c0392b" stroke-width="5" />
+<path d="M270,218 C270,140 680,150 990,470" fill="none" stroke="#1e2622" stroke-width="5" />
+<text x="470" y="140.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#1e2622" font-weight="700" text-anchor="start">1.25 mm lead: red to OUT, black to GND</text>
+<text x="40" y="726.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#c0392b" font-weight="700" text-anchor="start">Before soldering: send a photo of the charger's pads and of J2 with the lead plugged in.</text>
+<text x="40" y="760.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#1e2622" font-weight="400" text-anchor="start">Pass: with USB only on the charger, the Kit starts and beeps. Unplug USB: it keeps running from the pack.</text>
+<text x="40" y="796.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" fill="#6b726d" font-weight="400" text-anchor="start">J2 position on the underside is approximate; the pad names on both boards are what count.</text></svg>
