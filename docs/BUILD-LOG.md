@@ -356,3 +356,7 @@ When the boxes arrive: photograph the parts, check every item against the list, 
   - `CONTRIBUTING.md`: contributions take the licence of the files they touch, and contributors grant openpasture the right to relicense them, so outside improvements can go into openpasture's own collars.
 - The carrier's bottom silkscreen now reads `CERN-OHL-W  2026-09-27` (in `layout.py`, `pcb/carrier.kicad_pcb` and the HeyPCB import). Text only; no copper changed. `SPEC.md`, `BOARD-DESIGN.md` and `STRATEGY.md` updated to match.
 - Still open: the trademark search on "OpenCollar" (`STRATEGY.md`, "Check the name").
+
+### V1-alpha parts arrived
+- Cody reports every part for the V1-alpha build has arrived (the 2026-09-26 orders in `hardware/orders-2026-09-26.md`, including the tools).
+- Next, in order: check the parts against the orders, photograph them, and check the 6600 mAh pack's polarity against the Kit's J2. Send the fit test and seal box to the print partner. Finish the bench bring-up in `PROTOTYPE-V0.md` (SIM, buzzer, cellular, battery).
