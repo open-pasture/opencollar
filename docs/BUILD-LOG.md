@@ -360,3 +360,12 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 ### V1-alpha parts arrived
 - Cody reports every part for the V1-alpha build has arrived (the 2026-09-26 orders in `hardware/orders-2026-09-26.md`, including the tools).
 - Next, in order: check the parts against the orders, photograph them, and check the 6600 mAh pack's polarity against the Kit's J2. Send the fit test and seal box to the print partner. Finish the bench bring-up in `PROTOTYPE-V0.md` (SIM, buzzer, cellular, battery).
+
+## 2026-10-02
+
+### Parts check, round 1 (photos)
+- Photos: `hardware/photos/2026-10-02-adafruit-slip-p1.jpg`, `-p2.jpg`, `2026-10-02-tools.jpg`.
+- **Adafruit (order 3751847):** the packing slip lists all 9 lines: 4755 bq24074 charger, 851 SMA to U.FL, 353 6600 mAh pack, 960 GPS antenna, 4502 ISM330DHCX, 4210 Qwiic 100 mm ×2, 372 NTC, 4397 Qwiic to sockets ×2, 4255 heat-set inserts. This is the slip, not a photo of the parts themselves.
+- **Tools (Amazon):** seen in the photo: YIHUA 926 III iron, GEARWRENCH hex keys, SEEKONE heat gun, Loctite gel, AstroAI multimeter, solder tube, flush cutters, Klein 11057 stripper, Kapton tape. Not identified: the heat-set insert tips (possibly the orange blister pack, top right).
+- **Amazon parts:** seen: M3 hex screw assortment, TUOFENG silicone wire kit, a black bag that looks like the 1.25 mm pigtails. Not seen: the adhesive heat-shrink kit.
+- **Not in these photos yet:** DigiKey (MAX-M10S, M6 vent), Voltaic (2 × P124), Heritage strap, Hologram SIM, O-ring cord (was due Oct 5).
