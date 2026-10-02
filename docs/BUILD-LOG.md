@@ -369,3 +369,4 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - **Tools (Amazon):** seen in the photo: YIHUA 926 III iron, GEARWRENCH hex keys, SEEKONE heat gun, Loctite gel, AstroAI multimeter, solder tube, flush cutters, Klein 11057 stripper, Kapton tape. Not identified: the heat-set insert tips (possibly the orange blister pack, top right).
 - **Amazon parts:** seen: M3 hex screw assortment, TUOFENG silicone wire kit, a black bag that looks like the 1.25 mm pigtails. Not seen: the adhesive heat-shrink kit.
 - **Not in these photos yet:** DigiKey (MAX-M10S, M6 vent), Voltaic (2 × P124), Heritage strap, Hologram SIM, O-ring cord (was due Oct 5).
+- **DigiKey (SO 101875374) hasn't arrived:** no MAX-M10S, no M6 vent. The electronics bring-up doesn't wait on it: the firmware uses the nRF9151's own GNSS, which already gave a fix (2.2 m, 2026-09-25). The M10S is for the GPS accuracy comparison. The vent is needed for the seal box submersion test.
