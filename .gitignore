@@ -11,3 +11,4 @@ mechanical/print/gcode/
 mechanical/print/*.log
 *.blend1
 .DS_Store
+mechanical/print/bed_views/

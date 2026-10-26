@@ -376,3 +376,12 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - Diagrams in `docs/images/bench/` from `diagrams.py` (reuses the test-fixture SVG helpers; PNGs via headless Chrome). Kit pins from SPEC.md: 3V3 = pin 40, GND = 39, SDA = 16 (P0.30), SCL = 15 (P0.31).
 - **Caught in my own review:** labels under wires (pin 39, USB-C, OUT) and tangled probe leads in the polarity drawing. Fixed and re-rendered.
 - The charger's pad names and J2's place on the Kit's underside are drawn approximately; the guide asks for photos before soldering.
+
+## 2026-10-10
+
+### Print pack for Matt
+- Cody is sending the V1-alpha parts to Matt, who has a print lab (FDM, carbon fibre, resin and more). Wrote the print instructions as a Claude Doc ("OpenCollar V1-alpha: print instructions"): what each file is, print order, fit test rows with sizes, seal box test, orientation and the reason for each, material, hardware, what to send back.
+- **Material call:** ASA on FDM, light grey or white, as before. PA12 (MJF/SLS) if the lab has it, with the test prints in PA12 too. Skip carbon-fibre nylon (absorbs water, dark and hot, carbon can upset the GNSS/LTE antennas) and resin (heat-set inserts can't melt into a thermoset; brittle in UV). Same note added to `mechanical/PRINT-LIST.md`.
+- **Package, reworked the same day:** Cody doesn't know the people printing (Matt passes it on; states apart, slow contact), so they print everything in one go and mail it back, and Cody runs the fit and seal tests himself. `output/opencollar-print-job.zip` (1 MB) holds a one-page `README.md` (print, clean up, box and mail), `what-to-print.png` (each part on a bed, in print orientation, with quantity) and the 8 STLs pre-rotated by `print/orient.py`. Built by `mechanical/print/handoff.sh` (new, with `print/bed_views.py` and `print/handoff/`). Oriented STLs checked against the exports: same volume and size; the seal box lid lost 80 zero-area triangles on re-import. The Claude Doc stays as the detailed version for Cody.
+- Before sending: the README has two blanks for Cody's mailing address and phone or email.
+- Open: who supplies Matt's hardware. Not yet ordered: M6 × 0.75 tap, M3 × 20 thumbscrews, steel bar; the DigiKey vent hadn't arrived as of 2026-10-02.

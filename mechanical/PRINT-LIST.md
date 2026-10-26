@@ -26,7 +26,7 @@ Please send back: the winning size in each fit-test row, whether the box stayed 
 | `bay_cradle.stl` | 1 | On its side (a long edge down) | Strap threads through its tunnel; keeps the tunnel roof a short bridge |
 | `bay_ballast_module.stl` | 1 | Top face down | Holds the steel ballast slab |
 
-MJF/SLS PA12 is also fine and needs no supports.
+MJF/SLS PA12 is also fine and needs no supports; if you use it, print the fit test and seal box in PA12 too, since hole sizes differ by process. Skip carbon-fibre nylon (absorbs water, runs hot, can upset the antennas) and resin (heat-set inserts can't melt into it; brittle in sun).
 
 ### Hardware
 

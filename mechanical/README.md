@@ -22,6 +22,7 @@ Printed parts for the collar. Every part is a Python script run by Blender, so a
 ./build.sh            # every part
 ./build.sh seal_box   # one part
 ./package.sh          # rebuild everything, render the assembly, zip a share package into ../../output/
+print/handoff.sh      # zip the print-lab job: README, parts sheet, pre-rotated STLs
 ```
 
 Needs Blender 5.x at `/Applications/Blender.app` (override with `BLENDER=/path/to/blender`). Takes a few seconds per part.
