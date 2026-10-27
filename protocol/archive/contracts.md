@@ -1,3 +1,9 @@
+> **Archived 2026-10-26. Not the protocol.** This is the server contract of the retired
+> agent kit that the collar protocol grew out of. Its boundary command (`collar_ids`,
+> `exclusions`, `transition`, a GeoJSON `boundary`), its cue `type: "audio"`, its land reports
+> and grazing decisions are not what collars or servers speak. The protocol is
+> [`../README.md`](../README.md) (v1) and [`../v2/`](../v2/README.md) (v2 draft).
+
 # Contracts
 
 > Copied from `docs/contracts.md` in the retired openpasture agent kit (commit

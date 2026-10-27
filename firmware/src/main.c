@@ -182,9 +182,16 @@ static void handle_fix(const struct fix *f)
 		return;
 	}
 
+	/* GNSS UTC on every fix line, so a host reading the log never stamps its own time */
+	char at[24] = "-";
+
+	if (f->has_time) {
+		proto_time_format(f->utc, at, sizeof(at));
+	}
+
 	if (!out.fenced) {
-		LOG_INF("fix %.6f,%.6f acc=%.1fm sats=%u (no boundary)", f->lat, f->lon,
-			(double)f->accuracy, f->sats_in_fix);
+		LOG_INF("fix %.6f,%.6f acc=%.1fm sats=%u (no boundary) at=%s", f->lat, f->lon,
+			(double)f->accuracy, f->sats_in_fix, at);
 		return;
 	}
 
@@ -192,12 +199,13 @@ static void handle_fix(const struct fix *f)
 		buzzer_play(out.cmd.freq_hz, out.cmd.volume, out.cmd.duration_ms);
 	}
 
-	LOG_INF("fix %.6f,%.6f acc=%.1fm sats=%u v%u state=%s margin=%.1fm ring=%d%s%s cue=%s vol=%u",
+	LOG_INF("fix %.6f,%.6f acc=%.1fm sats=%u v%u state=%s margin=%.1fm ring=%d%s%s cue=%s vol=%u "
+		"at=%s",
 		f->lat, f->lon, (double)f->accuracy, f->sats_in_fix, out.version,
 		geofence_state_str(out.r.state), out.r.margin_m, out.r.nearest_ring,
 		out.r.degraded ? " (degraded)" : "",
 		app.cue.mode == CUE_MODE_TRACK ? " (track)" : (app.cue.armed ? "" : " (unarmed)"),
-		out.cmd.active ? cue_kind_str(out.cmd.kind) : "off", out.cmd.volume);
+		out.cmd.active ? cue_kind_str(out.cmd.kind) : "off", out.cmd.volume, at);
 
 	if (out.r.changed) {
 		LOG_INF("event: state -> %s", geofence_state_str(out.r.state));

@@ -1,0 +1,43 @@
+# Firmware host tests, and the protocol's vectors: the firmware's copies must
+# match protocol/vectors/ (the source of truth), the reference decoder must
+# agree with them, and every v2 vector must fit the CDDL schema.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  firmware:
+    name: Firmware host tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - run: make -C firmware/tests/host
+
+  vectors:
+    name: Protocol vectors
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Firmware copies match protocol/vectors
+        run: |
+          fail=0
+          for f in firmware/tests/host/vectors/*.json; do
+            want="protocol/vectors/$(basename "$f")"
+            if ! cmp -s "$f" "$want"; then
+              echo "::error file=$f::differs from $want (copy it over: protocol/vectors/README.md)"
+              fail=1
+            fi
+          done
+          exit "$fail"
+      - name: Reference decoder
+        run: python3 -I protocol/reference/opencollar_decode.py --test protocol/vectors/v2/records.json
+      - name: CDDL schema
+        run: |
+          sudo gem install --no-document cddl -v 0.12.14
+          python3 -I protocol/conformance/check_cddl.py
