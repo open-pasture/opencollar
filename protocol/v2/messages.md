@@ -16,12 +16,22 @@ Every message is **deterministic CBOR** (RFC 8949 §4.2.1):
 - integers, lengths and tags in their shortest form; definite lengths only;
 - map keys sorted by their encoded bytes, never repeated;
 - no floating point, no `undefined`, no tags except 18 (COSE_Sign1) where this spec says so;
+  no payload, record, link section or beacon map holds a tag anywhere;
+- every map's keys are unsigned integers (a reader that merges `0` and `false`, or drops a
+  key it can't read, would read a different message);
 - text is UTF-8;
 - nesting at most 16 deep.
 
 A receiver MUST refuse anything else (`bad_cbor`): decoding and encoding again gives back
 exactly the bytes received, so a message has one encoding and a signature or tag covers one
-thing.
+thing. A sender MUST NOT build what has no deterministic encoding (a repeated key); the
+reference encoder refuses to.
+
+**Known fields are strict.** A field this version knows that is present with the wrong type
+or outside its range (a battery of 255, a cue level of 0, a manifest `min_battery` of
+`"90"`) makes its message or record `bad_cbor`. It is never read as if it were absent: a
+default would silently replace what the sender meant. Unknown keys and unknown registry
+values are a different thing (§8): they are kept or ignored.
 
 Maps have small unsigned integer keys. **Quantities are integers in fixed units**, named in
 each field:
@@ -36,7 +46,8 @@ each field:
 | Battery | percent, 0–100 |
 
 Byte strings in the **JSON view** (logs, tools, vectors, schemas) are lowercase hex, names
-come from the [registry](../registry.md), and an unknown registry value shows as `"other"`.
+come from the [registry](../registry.md), and a registry value the viewer doesn't know shows
+as its number, so a consumer that keeps only JSON keeps the code.
 
 ## 2. Identifiers
 
@@ -53,7 +64,7 @@ Every command and every signed document is a tagged COSE_Sign1 (RFC 9052) with E
 ```
 18([
   protected:   bstr .cbor { 1: -8, 4: kid },    ; alg EdDSA, the signer's 8-byte kid
-  unprotected: {},
+  unprotected: {},                              ; always empty
   payload:     bstr .cbor payload-map,
   signature:   bstr .size 64
 ])
@@ -68,10 +79,12 @@ Sig_structure = [ "Signature1", protected, external_aad = "opencollar/2", payloa
 - Key 0 of every payload is the **message type** ([registry](../registry.md#message-types)),
   inside the signature, so one type can never be taken for another.
 - Receivers MUST refuse another `alg` and a `crit` header (`bad_sig`), and MUST ignore other
-  header labels.
+  protected header labels.
+- The unprotected header MUST be an empty map (`bad_cbor`). Anything there would change the
+  message's bytes, and so its digest and its LoRa message id, without touching the signature.
 
 **Why COSE and not a custom envelope.** The envelope costs 22 bytes beyond the 64-byte
-signature (tag, array, a 14-byte protected header, payload length). A minimal custom one
+signature (tag, array, a 13-byte protected header and its length, payload length). A minimal custom one
 (type, kid, signature) would save about 15 of them: under 10 % of a typical strip command,
 and never a whole LoRa fragment. Commands are rare (a few a day), so the bytes don't matter;
 interoperability does. COSE has libraries in C, Rust, Python, Go and JavaScript, a defined
@@ -90,10 +103,10 @@ key, [§4.4](#44-who-may-sign-what)).
 |---|---|---|---|
 | 0 | `type` | uint | Required. 1–63 |
 | 1 | `herd` | bstr 1–16 | **Required.** The herd it is for. A membership or bind names the herd it moves the collar to |
-| 2 | `device` | bstr 8 | Present: for this collar only. Absent: for every collar in `herd` |
+| 2 | `device` | bstr 8 | Present: for this collar only. Absent: for every collar in `herd`. **Required** for config, membership, bind, resend and release (`bad_cbor` without it): they only ever concern one collar, and a herd-wide one would re-address or release a whole herd |
 | 3 | `version` | uint 1–2³²−1 | Required ([§4.6](#46-versions)) |
 | 4 | `issued_at` | uint | Required. When the server signed it |
-| 5 | `expires_at` | uint | Optional. Refused (`expired`) when the collar's GNSS time has reached it; a staged boundary that expires before it takes effect is dropped |
+| 5 | `expires_at` | uint | Optional. Refused (`expired`) when the collar's GNSS time has reached it; a staged boundary that expires before it takes effect is dropped. A collar with no GNSS time yet holds the command unapplied (`not_now`) until it has, then checks again: no clock never means "not expired" |
 | 6 | `ref` | bstr ≤ 16 | Optional. The server's own id for it, echoed nowhere; for logs |
 | 7 | `effective_at` | uint | Optional. When it takes effect, on the collar's GNSS clock. Absent: at once |
 | 8–15 | | | Reserved for common keys |
@@ -115,6 +128,7 @@ the cue rule are [v1's](../README.md#slots) unchanged.
 | 18 | `cue_mode` | uint | 1 `track` (evaluate, report, no sound). Absent: `audio`. 0 is never sent |
 | 19 | `warn_cm` | uint ≤ 100 000 | Absent: the collar's default (500) |
 | 20 | `hyst_cm` | uint ≤ 100 000 | Absent: the collar's default (100) |
+| 21 | `policy` | uint ≥ 1 | The policy epoch the server checked it against ([§4.7](#47-zones-and-leases-what-the-collar-enforces-itself)) |
 
 A **ring** is one flat integer array: the first vertex's `lon, lat` in e7, then for each
 next vertex its difference from the one before. Unclosed; 3 or more vertices; winding
@@ -150,8 +164,13 @@ active boundary stays in force until one of the new herd applies.
 | 19 | `plan` | uint | Channel plan ([lora.md §2](lora.md#2-radio)). Absent: 1 |
 | 20 | `cycle_s` | uint | Report cycle on LoRa, a whole number of minutes, 60–3600. Absent: 300 |
 | 21 | `rank` | uint | Anchors: takeover order, lowest first |
+| 22 | `groups` | uint | How many groups of 300 short addresses the net uses, 1 to `cycle_s`/60. Absent: 1 ([lora.md §3](lora.md#3-the-minute)) |
+| 23 | `beacon_key` | bstr 24 | The herd's beacon key, wrapped for this collar ([lora.md §9](lora.md#9-security-on-the-air)) |
 
-`bad_config` for a short address of 0 or 65 535, an unknown role or a bad cycle.
+`unsupported` for a channel plan the collar doesn't list in its device record. `bad_config`
+for a short address of 0 or 65 535, an unknown role, a bad cycle, `groups` outside 1 to
+`cycle_s`/60, or a short address whose group is not below `groups` (it would never send).
+Every collar of a net MUST get the same plan, cycle and groups ([server.md §9](server.md#9-herds-on-lora)).
 
 **4 roster**: the herd's collars, for its anchors (herd-wide).
 
@@ -168,6 +187,12 @@ moving it between keys and software. [identity.md](identity.md).
 **10 resend**: send records `from`..`to` (key 16, 17: seq, inclusive) again, if still held
 (`device` required).
 
+**12 zones**, **13 lease**: permanent no-go zones and the lease that lets staged boundaries
+take effect ([§4.7](#47-zones-and-leases-what-the-collar-enforces-itself)).
+
+**14 trust**: key 16 is a trust update (type 68), signed by a firmware key, for the
+bootloader ([firmware.md](firmware.md#trust-updates)).
+
 A type the collar doesn't implement is acked `rejected`, `unsupported`.
 
 ### 4.3 What a collar checks, in order
@@ -175,29 +200,34 @@ A type the collar doesn't implement is acked `rejected`, `unsupported`.
 The first failure is the reject code:
 
 1. More than 12 288 bytes: `too_large`.
-2. The envelope ([§3](#3-signed-messages-cose_sign1)): `bad_cbor`, or `bad_sig` for another
-   algorithm.
+2. The envelope ([§3](#3-signed-messages-cose_sign1)): `bad_cbor` (an unprotected header
+   that isn't empty too), or `bad_sig` for another algorithm or a `crit` header.
 3. The key: a trusted key with that kid (a bind is checked against the key it carries),
    else `unknown_kid`; the signature, else `bad_sig`.
-4. The payload: deterministic CBOR, a command type, `herd`, `version`, `issued_at` and the
-   type's required fields with the right types: `bad_cbor`.
+4. The payload: deterministic CBOR in the profile of §1, a command type, `herd`, `version`,
+   `issued_at`, `device` where required, and every known field present with its type and
+   range: `bad_cbor`.
 5. Who may sign it ([§4.4](#44-who-may-sign-what)).
 6. A bind's claim: `bad_claim` ([identity.md §4](identity.md#4-claim)).
 7. Scope: `device` another collar's (`wrong_collar`); `herd` another herd's, except a
-   membership or bind (`wrong_herd`); `expires_at` reached (`expired`).
-8. The type's own rules: a boundary's shape ([v1's codes and order](../README.md#validation)),
-   `bad_config`, `unsupported`.
-9. Versions ([§4.6](#46-versions)): `stale`; then, for boundaries, the slot store
-   (`slots_full`).
+   membership or bind (`wrong_herd`); `expires_at` reached (`expired`), or present with no
+   GNSS time yet (`not_now`, held and checked again).
+8. Versions ([§4.6](#46-versions)): issued before the collar's claim, or at or below the
+   version held and not the very command held (`stale`).
+9. The type's own rules: a boundary's shape ([v1's codes and order](../README.md#validation)),
+   `bad_config` (a config, membership or handover out of range), `unsupported`.
+10. For boundaries: the slot store (`slots_full`), then zones and lease when it would take
+    effect ([§4.7](#47-zones-and-leases-what-the-collar-enforces-itself)): `in_exclusion`, or
+    it waits.
 
 ### 4.4 Who may sign what
 
 | Command | Signed by |
 |---|---|
 | bind | The new server key it carries, and only while unclaimed (`claimed`) |
-| confirm | The pending handover key, naming the current key in `replaces` (`bad_sig`) |
-| handover, release | The current server key or the owner key |
-| owner | The owner key; the server key only while no owner key is enrolled |
+| confirm | The pending handover key, naming the current key in `replaces` and the digest of the handover that staged it in `handover` (`bad_sig`) |
+| handover, reason rotate | The current server key or the owner key |
+| handover, reason transfer; release; owner | The owner key when one is enrolled; the server key only while none is (`unknown_kid`). A stolen server key can't erase the owner's recovery or sell the collar |
 | everything else | The current server key alone (`unknown_kid`) |
 
 ### 4.5 Acknowledgements
@@ -213,19 +243,66 @@ A collar acknowledges every command it receives with an [ack record](#ack):
 
 An ack carries the command's type, version and digest. When a command is refused before its
 type and version can be read (`too_large`, `bad_cbor`, `bad_sig`), the ack has type 0 and
-version 0 and the server matches it by digest. A repeated command is acked again with its
-current status, as in v1.
+version 0 and the server matches it by digest. A repeated command (the same digest as the one
+held for its type) is acked again with its current status, as in v1, and nothing is done
+twice; another command at or below the held version is `stale`.
 
 ### 4.6 Versions
 
-- Each collar keeps the highest version it holds **of each command type** and reports them
-  in its [device record](#device). A command whose version is at or below the one held for
-  its type is `stale`, except a boundary, which follows v1's slot rules (a version equal to
-  one held is acked again with its current status).
+- Each collar keeps the highest version it holds **of each command type**, with the digest
+  of the command that carried it, and reports them in its [device record](#device). A
+  command whose version is at or below the one held for its type is `stale`, unless it is
+  that very command (same digest), which is acked again; a boundary follows v1's slot rules
+  (a version equal to one held is acked again with its current status).
 - Herd-wide and per-collar commands of one type share the collar's version space, so a
   server MUST allocate versions that increase for every collar they reach. One counter per
   server for all herds is the simple way ([server.md §2](server.md#2-versions)).
-- A claim (bind) starts every version over; a handover doesn't.
+- A claim (bind) starts every version over; a handover doesn't. The collar keeps the bind's
+  `issued_at` as its **claim time** and refuses (`stale`) every later command issued before
+  it, so the commands of an earlier claim can't be replayed after a reclaim, even by the
+  same server key. A server's `issued_at` MUST NOT go backwards for a collar.
+
+### 4.7 Zones and leases: what the collar enforces itself
+
+A server checks every boundary against the farm's permanent no-go zones before it signs it
+([server.md §11](server.md#11-farm-policy-zones-and-leases)). The collar does too, so a
+change on the map reaches even a boundary that was signed and staged before it.
+
+**Zones (type 12)**, herd-wide or for one collar: key 16 `zones`, an array of rings (the
+boundary's ring encoding, 0–16 rings), and key 17 `epoch`, the farm's **policy epoch**, a
+number the server raises with every change to its zones or the rules they encode. A zones
+command is the whole set: it replaces what the collar held, and an empty list clears it.
+Each zone follows v1's ring rules (`too_few_vertices`, `self_intersecting`, `zero_area`,
+`out_of_range`); more zones or vertices than the collar's `zone_limits` is `too_many_holes`
+or `too_many_vertices`, and the zones it held stay.
+
+- The collar enforces every held zone as **a hole of whatever boundary is active**, always,
+  with v1's cue rule (only a crossing is cued). A zone over the active strip takes effect at
+  once.
+- **A boundary may take effect** (on receipt if immediate, at `effective_at` if staged) only
+  when, in order:
+  1. its `policy` is not above the held zones' epoch. Otherwise it **waits**, staged: the
+     collar lacks the newer zones;
+  2. its fenced area (inside the outer ring, outside every hole) doesn't overlap a held zone:
+     some point strictly inside both. Touching edges don't count, nor a zone carved out
+     exactly as a hole. Otherwise it is acked `rejected`, `in_exclusion`, and the boundary in
+     force stays;
+  3. if it is **staged** (`effective_at` more than 600 s after `issued_at`) and names a
+     `policy`, the collar holds a **lease** for the zones it holds that runs past now.
+     Otherwise it waits, and never takes effect late without one; if its `expires_at` passes
+     first it is dropped.
+
+**Lease (type 13)**, herd-wide: key 16 `epoch`, key 17 `until` (GNSS time), key 18 `digest`
+(the first 8 bytes of SHA-256 of the zones' key-16 value as encoded). It says: as of
+`issued_at`, the farm's policy is still that epoch with those zones, until `until`. The
+collar keeps the newest. A server sends one every 15 minutes or so, valid for the farm's
+lease window (owner question 13).
+
+So a no-go added now protects a collar in range at once, and a collar out of range from the
+moment its lease runs out: it stops advancing its schedule and stays on the boundary it
+holds. A boundary with no `policy` skips steps 1 and 3; step 2 always applies. Immediate
+boundaries (an escape pen) need no lease. Collars that can do this list the cap `zones`; a
+server MUST NOT rely on it for one that doesn't.
 
 ## 5. Signed documents (types 64–127)
 
@@ -237,6 +314,7 @@ Signed like commands, never obeyed:
 | 65 | manifest | release or image key | [firmware.md](firmware.md#the-release-manifest) |
 | 66 | batch | the sender's device key | [http.md](http.md#2-the-batch) |
 | 67 | hello | the collar's device key | [lora.md §6](lora.md#6-join), [identity.md §4](identity.md#how-the-bind-reaches-the-collar) |
+| 68 | trust update | a firmware key the bootloader trusts | [firmware.md](firmware.md#trust-updates) |
 
 ## 6. Records (up)
 
@@ -248,15 +326,30 @@ What a collar reports. Each record is a CBOR array:
 
 - `type` from the [registry](../registry.md#record-types).
 - `seq`: the collar's sequence number, uint32. It counts every record the collar makes,
-  of every type, starting at 0, and never goes back or repeats: a collar writes each record
-  to flash before sending it and continues from the last one written after a reboot. A
-  server deduplicates on **(device, seq)** and asks for a gap again with a resend command.
+  of every type, starting at 0, for the life of the device, and never goes back or repeats:
+  not on a reboot or a power cut, a release, a factory reset, a new claim, a handover, or a
+  firmware update or rollback ([§7.1](#71-counters-that-never-repeat)). A server
+  deduplicates on **(device, seq)** and asks for a gap again with a resend command.
 - `t`: GNSS time, Unix seconds: of the fix, the cue, the start of an episode, or when the
   record was made.
 - Fields by position. Optional fields at the end are left off; one in the middle is `null`.
 - A reader MUST ignore elements past those it knows, MUST keep a record of a type it doesn't
-  know (or skip it), and MUST read an unknown registry value as "other". One malformed
-  record costs only itself, never the frame or batch it came in.
+  know (or skip it), and MUST keep an unknown registry value as its number. A known field
+  present with the wrong type or out of range makes the record `bad_cbor` (§1).
+- **One malformed record costs only itself**, never the frame or batch it came in. A
+  reader finds each record of a frame by its extent (a well-formed CBOR item, RFC 8949
+  §5.3.1) and decodes each on its own against this profile, so a record that breaks it (a
+  float, a tag, a long head, a bad field) is dropped and counted while its neighbours are
+  read. Only an item whose extent can't be found (truncated, indefinite length) loses the
+  records after it in that frame.
+- **Every record fits one frame.** A record is at most 109 bytes (plan 1's 128-byte uplink
+  frame, less its 18 bytes and the records array's head). Fix histories hold as many fixes
+  as fit. A **device** record or a **slots** list that would be longer goes in **parts**:
+  each carries `part = [index, count]` (device key 16; slots element 4), all made at the
+  same `t`, together one snapshot. A device snapshot's list keys (caps, versions, image
+  keys, plans) may be cut across parts and are joined; every other key is in one part. A
+  reader takes the snapshot once it has every part of a `t`. Texts in records are at most
+  32 bytes.
 
 | Type | Record | Fields after `type, seq, t` |
 |---|---|---|
@@ -267,7 +360,7 @@ What a collar reports. Each record is a CBOR array:
 | 5 | <a id="ack"></a>**ack** | `type`, `version`, `status`, `code`?, `digest`? (8 bytes) |
 | 6 | **health** | one map ([below](#health)) |
 | 7 | <a id="device"></a>**device** | one map ([below](#device-1)) |
-| 8 | **slots** | `[[version, status, effective_at?], …]`: every boundary held, `applied` (in effect) or `received` (staged) |
+| 8 | **slots** | `[[version, status, effective_at?], …], part?`: every boundary held, `applied` (in effect) or `received` (staged, or due and waiting for zones or a lease) |
 | 9 | **anchor** | one map: 1 `active` (bool), 2 `battery` (%), 3 `rsrp_dbm`, 4 `heard` (collars heard in the last hour), 5 `rank`, 6 `queue` (frames waiting to go up) |
 | 10 | **firmware** | `state`, `version` (semver text), `digest`? (first 8 bytes of the image's), `code`? |
 
@@ -290,8 +383,10 @@ measured.
 `hole_vertices`, 4 `total`, 5 `slots`, 6 `slot_bytes`}, 5 `hw_rev`, 6 `server_kid`, 7
 `pending_kid`, 8 `owner_kid`, 9 `versions` {type: highest version held}, 10 `herd`, 11
 `short`, 12 `claim_nonce` (only while unclaimed), 13 `boot` (bootloader version), 14
-`security_counter`, 15 `image_keys` [kid]. `limits` are v1's ([../README.md](../README.md#limits));
-a server fits shapes to them.
+`security_counter`, 15 `image_keys` [kid], 16 `part` [index, count], 17 `device_key` (bstr 32,
+only while moving from v1, [identity.md §10](identity.md#10-from-v1)), 18 `plans` [channel
+plan ids it can use], 19 `zone_limits` [zones, vertices in all zones]. `limits` are v1's
+([../README.md](../README.md#limits)); a server fits shapes to them.
 
 ## 7. Frames: sealing records
 
@@ -308,8 +403,9 @@ to the LoRa link: [lora.md](lora.md#4-frames).)
 
 - `net`, `src`: the herd's network id and the sender's short address; both 0 for a
   direct collar with no LoRa link.
-- `fcnt`: the frame counter. It MUST never repeat under one frame key: a collar persists a
-  high-water mark at least every 64 frames and resumes 64 above it after a reboot.
+- `fcnt`: the frame counter. It counts every frame the collar ever seals, under every frame
+  key, for the life of the device key, and never repeats ([§7.1](#71-counters-that-never-repeat)),
+  so `(device_id, fcnt)` and the nonce below never repeat under any key.
 - `link`: a CBOR map the anchor reads ([lora.md §7](lora.md#7-delivering-a-message-to-the-herd)):
   1 `got` [message id], 2 `need` [[message id, from, bitmap]]. Empty (`link_len` 0) when
   there is nothing to say.
@@ -319,7 +415,39 @@ to the LoRa link: [lora.md](lora.md#4-frames).)
   fcnt ‖ 0x01`. Associated data: every byte before the ciphertext.
 
 A frame that doesn't authenticate is dropped whole (the server counts it). Records inside
-one that does are read one by one ([§6](#6-records-up)).
+one that does are read one by one ([§6](#6-records-up)). No v2 frame of any kind is longer
+than 255 bytes (a LoRa payload's limit), on any transport: a receiver refuses a longer one
+(`too_large`) before it reads it.
+
+### 7.1 Counters that never repeat
+
+A collar keeps three **lifetime counters**: `seq` (records), `fcnt` (frames) and the batch
+counter (anchors, stations and direct collars, [http.md §2](http.md#2-the-batch)). Each counts
+from 0 for the life of the device key. They survive everything a collar goes through: reboots
+and power cuts, release and factory reset, a new claim, a handover, firmware updates and
+rollbacks. They live in a flash region no firmware image erases, in a layout every image
+reads (it is frozen at manufacture, [README](README.md#frozen-at-manufacture)).
+
+- **Write-ahead reservation.** A counter only hands out values below a reservation that is
+  already durable in flash. When it reaches the reservation it first writes a new one (the
+  reference uses 64 higher) and only then continues. After a reboot it resumes at the
+  durable reservation, skipping whatever of the last block went unused. A power cut at any
+  instant can skip values, never repeat one.
+- **Atomic writes.** Each counter's reservation is two copies, each `[generation, value,
+  CRC-32]`; a write goes to the copy with the older generation, a read takes the valid copy
+  with the newer one, so a torn write leaves the previous reservation in force.
+- **Never wrap.** A counter that would pass 2³² − 1 stops: the collar seals no more frames
+  (or makes no more records) under that device key and reports it on its console. At a
+  frame a minute that is 8 000 years away; it is a rule for broken counters.
+- A **server** keeps, per device, the highest `fcnt` it accepted and which of the 128 below
+  it it has seen, and drops a frame outside that or seen before (a replay); it keeps it for
+  as long as it keeps the device ([server.md §7](server.md#7-acknowledgements-and-reports)).
+  `seq` is the record's identity: a record with a `(device, seq)` already stored is a
+  duplicate when its bytes are the same and a **conflict** when they aren't (kept aside and
+  flagged, never silently dropped).
+
+`op_protocol::v2::counter` is the reference (`Counter`, `Journal`, `ReplayWindow`), with a
+test that cuts the power at every byte of every reservation write.
 
 **Why a symmetric tag and not a signature.** An Ed25519 signature is 64 bytes. On a
 30-byte status record it would nearly double each frame's time on air (46 bytes, 41 ms at
@@ -338,9 +466,9 @@ hellos and batches, and [open question 4](README.md#open-questions), cover what 
 - **Unknown keys** in any map are ignored. **Unknown elements** at the end of a record are
   ignored. Senders never put a field whose meaning matters for safety in front of a
   receiver that hasn't listed it in its `caps`.
-- **Unknown registry values** read as "other" and are kept as received. A whole message is
-  never refused for one: a record with an unknown cue kind is stored with that kind, an ack
-  with an unknown status is taken and set aside.
+- **Unknown registry values** are kept as received, by number. A whole message is never
+  refused for one: a record with an unknown cue kind is stored with that kind, an ack with an
+  unknown status is taken and set aside.
 - **Unknown command types** are acked `unsupported`; **unknown record types** are kept or
   skipped; **unknown frame kinds** are dropped.
 - New keys, record fields, types and registry values are added by the rules in

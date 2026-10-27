@@ -11,8 +11,10 @@ These rules are what let collars and servers of different ages and makers work t
 1. **Unknown fields are ignored**: JSON keys, CBOR map keys, and elements past the end of a
    v2 record.
 2. **Unknown values are kept, never refused.** A value from any table below that the
-   receiver doesn't know is stored as sent (v1) or read as `other` with its number kept
-   (v2). One unknown value never makes a whole report, ack, record, frame or batch invalid.
+   receiver doesn't know is stored as sent (v1) or kept as its number (v2; the JSON view shows
+   the number, not a name). One unknown value never makes a whole report, ack, record, frame
+   or batch invalid. A known field with the wrong type or out of range is not an unknown
+   value: it makes its record or message `bad_cbor`.
    A collar receiving an unknown value in a command does refuse that command (`bad_cbor`,
    `unsupported`): a collar must not guess how to cue.
 3. **Capabilities gate meaning.** A server never sends a field, command type or value whose
@@ -49,6 +51,12 @@ What a collar can do, in `device.caps` (v1) or the device record's `caps` (v2).
 | `handover` | 2 | takes handover and confirm commands |
 | `owner` | 2 | takes an owner key |
 | `imu` | 2 | reports motion (`still_s`, `tilt_deg`) |
+| `zones` | 2 | holds permanent no-go zones, checks boundaries against them and takes staged ones only under a lease ([messages.md §4.7](v2/messages.md#47-zones-and-leases-what-the-collar-enforces-itself)) |
+
+**What a v2.0 collar on an animal must list:** `v2`, `holes`, `slots`, `collar_id`,
+`cue_mode`, `episodes`, `config`, `firmware`, `handover`, `owner`, `zones`. Optional:
+`fixes`, `imu`. A server may refuse to claim a collar for an animal without the required set,
+and MUST NOT rely on a cap it doesn't list.
 
 ## <a id="message-types"></a>Message types (v2, payload key 0)
 
@@ -59,17 +67,21 @@ What a collar can do, in `device.caps` (v1) or the device record's `caps` (v2).
 | 3 | `membership` | command | server | " |
 | 4 | `roster` | command | server | " |
 | 5 | `bind` | command | the new server key | [identity.md](v2/identity.md#4-claim) |
-| 6 | `handover` | command | server or owner | [identity.md](v2/identity.md#6-handover-rotating-the-server-key-or-moving-to-other-software) |
+| 6 | `handover` | command | server or owner; a transfer: owner, or the server while no owner key is enrolled | [identity.md](v2/identity.md#6-handover-rotating-the-server-key-or-moving-to-other-software) |
 | 7 | `confirm` | command | the pending key | " |
 | 8 | `owner` | command | owner (server while none) | " |
 | 9 | `firmware` | command | server | [firmware.md](v2/firmware.md#the-update-command) |
 | 10 | `resend` | command | server | [messages.md](v2/messages.md#42-the-types) |
-| 11 | `release` | command | server or owner | [identity.md](v2/identity.md#7-release-and-factory-reset) |
+| 11 | `release` | command | owner, or the server while no owner key is enrolled | [identity.md](v2/identity.md#7-release-and-factory-reset) |
+| 12 | `zones` | command | server | [messages.md §4.7](v2/messages.md#47-zones-and-leases-what-the-collar-enforces-itself) |
+| 13 | `lease` | command | server | " |
+| 14 | `trust` | command | server (the update inside: a firmware key) | [firmware.md](v2/firmware.md#trust-updates) |
 | 48–63 | | command | | private use |
 | 64 | `factory` | document | maker | [identity.md](v2/identity.md#factory-record) |
 | 65 | `manifest` | document | release or image key | [firmware.md](v2/firmware.md#the-release-manifest) |
 | 66 | `batch` | document | the sender's device key | [http.md](v2/http.md#2-the-batch) |
 | 67 | `hello` | document | the collar's device key | [lora.md](v2/lora.md#6-join) |
+| 68 | `trust_update` | document | a firmware key the bootloader trusts | [firmware.md](v2/firmware.md#trust-updates) |
 | 112–127 | | document | | private use |
 | 128 | `image` | – | – | A firmware image in a LoRa announcement ([lora.md](v2/lora.md#7-delivering-a-message-to-the-herd)); never a payload type |
 
@@ -174,10 +186,11 @@ Permanent unless marked: the server doesn't offer that version to that collar ag
 | 25 | `claimed` | 2 | a bind for a claimed collar |
 | 26 | `bad_claim` | 2 | a bind with the wrong nonce or proof |
 | 27 | `rate_limited` | 2 | **temporary**: too many bad claims this hour |
-| 28 | `not_now` | 2 | **temporary**: valid, waiting for a safe moment (firmware) |
+| 28 | `not_now` | 2 | **temporary**: valid, waiting for a safe moment (firmware), or for GNSS time (a command with `expires_at`) |
 | 29 | `bad_image` | 2 | a firmware image with the wrong digest, size or signature |
 | 30 | `incompatible` | 2 | firmware for other hardware |
 | 31 | `downgrade` | 2 | firmware older than the running image's security counter |
+| 32 | `in_exclusion` | 2 | a boundary whose fenced area overlaps a permanent no-go zone the collar holds |
 | 200–255 | | | private use |
 
 ## Channel plans
@@ -185,3 +198,10 @@ Permanent unless marked: the server doesn't offer that version to that collar ag
 | Id | Name | |
 |---|---|---|
 | 1 | `US915_500` | [lora.md §2](v2/lora.md#2-radio) |
+
+## Device record keys (v2)
+
+1 `class`, 2 `fw`, 3 `caps`, 4 `limits`, 5 `hw_rev`, 6 `server_kid`, 7 `pending_kid`, 8
+`owner_kid`, 9 `versions`, 10 `herd`, 11 `short`, 12 `claim_nonce`, 13 `boot`, 14
+`security_counter`, 15 `image_keys`, 16 `part` (v2 draft 2), 17 `device_key` (draft 2), 18
+`plans` (draft 2), 19 `zone_limits` (draft 2). [messages.md §6](v2/messages.md#6-records-up).

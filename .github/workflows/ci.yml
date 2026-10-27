@@ -1,6 +1,8 @@
 # Firmware host tests, and the protocol's vectors: the firmware's copies must
-# match protocol/vectors/ (the source of truth), the reference decoder must
-# agree with them, and every v2 vector must fit the CDDL schema.
+# match protocol/vectors/ (the source of truth), the independent Python reader
+# must agree with them (records, beacons, the slot schedule), and every v2
+# vector must get the CDDL schema's verdict it declares. The Rust reference,
+# its fuzz test and its copy check run in openpasture's CI.
 name: CI
 
 on:
@@ -35,8 +37,10 @@ jobs:
             fi
           done
           exit "$fail"
-      - name: Reference decoder
-        run: python3 -I protocol/reference/opencollar_decode.py --test protocol/vectors/v2/records.json
+      - name: Reference reader
+        run: |
+          python3 -I protocol/reference/opencollar_decode.py --test protocol/vectors/v2/records.json
+          python3 -I protocol/reference/opencollar_decode.py --test-link protocol/vectors/v2/link.json
       - name: CDDL schema
         run: |
           sudo gem install --no-document cddl -v 0.12.14

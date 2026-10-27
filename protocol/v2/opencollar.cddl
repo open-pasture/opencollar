@@ -3,12 +3,18 @@
 ; Encoding is deterministic CBOR (RFC 8949 §4.2.1): shortest heads, definite
 ; lengths, map keys sorted by their bytes. No floats: every quantity is an
 ; integer in the unit its name gives. `key: value` entries are cuts, so a known
-; key with the wrong type fails. This is what a v2.0 sender emits; a receiver
-; also takes what later versions add (map keys it doesn't know, elements past
-; the end of a record, registry values it doesn't know) and ignores them
-; (messages.md §8). Spec: messages.md, identity.md, lora.md, http.md,
-; firmware.md. Names: ../registry.md. Checked against the vectors with
-; the reference `cddl` tool (../conformance/README.md).
+; key with the wrong type fails. Protocol maps have unsigned integer keys only,
+; and no payload, record or link map carries a tag.
+;
+; This is the SENDER's schema: what a v2.0 sender emits. A receiver also takes
+; what later versions add (map keys it doesn't know, elements past the end of
+; a record, registry values it doesn't know) and ignores them (messages.md §8),
+; so "the schema refuses it" and "a receiver refuses it" differ for those.
+; Three things the schema can't say are checked elsewhere: canonical bytes
+; (the decoder), sizes over a limit, and state (keys, versions, zones).
+; Spec: messages.md, identity.md, lora.md, http.md, firmware.md. Names:
+; ../registry.md. Checked against the vectors with the reference `cddl` tool
+; (../conformance/check_cddl.py).
 
 ; ---------------------------------------------------------------- basics
 
@@ -23,6 +29,7 @@ public-key = bstr .size 32           ; Ed25519
 digest8 = bstr .size 8               ; first 8 bytes of a SHA-256
 short = 1..65534
 extension = (* uint => any)
+text32 = tstr .size (1..32)
 
 ; ---------------------------------------------------------------- signed messages
 
@@ -30,7 +37,7 @@ extension = (* uint => any)
 ; ["Signature1", protected, "opencollar/2", payload].
 signed = #6.18([
   protected: bstr .cbor protected-header,
-  unprotected: { * (int / tstr) => any },
+  unprotected: {},                   ; always empty: nothing unsigned travels
   payload: bstr .cbor signed-payload,
   signature: bstr .size 64,
 ])
@@ -38,19 +45,33 @@ signed = #6.18([
 protected-header = {
   1: -8,                             ; EdDSA
   4: kid,                            ; the signer
-  * (int / tstr) => any,
+  * (header-label .ne 2) => any,     ; other labels ignored; crit (2) refused
 }
+header-label = int / tstr
 
-signed-payload = command / factory-record / manifest / batch / hello
+signed-payload = command / factory-record / manifest / batch / hello / trust-update
 
 ; ---------------------------------------------------------------- commands
 
 command = boundary / config / membership / roster / bind / handover /
-          confirm / owner / firmware-update / resend / release / other-command
+          confirm / owner / firmware-update / resend / release / zones /
+          lease / trust / other-command
 
 common = (
   1: herd-id,
   ? 2: device-id,                    ; for this collar only
+  common-rest,
+)
+
+; Types that only ever concern one collar: config, membership, bind, resend,
+; release. A collar refuses one without `device` (bad_cbor).
+one-collar = (
+  1: herd-id,
+  2: device-id,
+  common-rest,
+)
+
+common-rest = (
   3: version,
   4: utime,                           ; issued_at
   ? 5: utime,                         ; expires_at
@@ -69,12 +90,13 @@ boundary = {
   ? 18: 1,                           ; cue_mode track
   ? 19: 0..100000,                   ; warn_cm
   ? 20: 0..100000,                   ; hyst_cm
+  ? 21: 1..4294967295,               ; policy: the epoch it was checked against
   extension,
 }
 
 config = {
   0: 2,
-  common,
+  one-collar,
   16: 10..3600,                      ; report_s
   ? 17: 1..3600,                     ; fix_s
   ? 18: 10..3600,                    ; fast_report_s
@@ -89,13 +111,15 @@ config = {
 
 membership = {
   0: 3,
-  common,
+  one-collar,
   16: short,
   17: role,
   18: 0..65535,                      ; net
   ? 19: uint,                        ; plan
   ? 20: 60..3600,                    ; cycle_s, a multiple of 60
   ? 21: uint,                        ; rank
+  ? 22: 1..60,                       ; groups, at most cycle_s / 60
+  ? 23: bstr .size 24,               ; beacon_key, wrapped for this collar
   extension,
 }
 
@@ -109,7 +133,7 @@ roster = {
 
 bind = {
   0: 5,
-  common,
+  one-collar,
   16: public-key,                    ; server_key (also the signer)
   17: bstr .size 16,                 ; proof
   18: bstr .size 8,                  ; nonce
@@ -127,10 +151,11 @@ handover = {
   ? 18: tstr .size (1..256),         ; endpoint
   ? 19: bstr .size 32,               ; endpoint_pin
   ? 20: 1 / 2,                       ; reason: rotate, transfer
+  ? 21: public-key,                  ; new_owner (a transfer)
   extension,
 }
 
-confirm = { 0: 7, common, 16: kid, extension }                 ; replaces
+confirm = { 0: 7, common, 16: kid, 17: digest8, extension }    ; replaces, handover
 owner = { 0: 8, common, 16: public-key, extension }            ; owner_key
 
 firmware-update = {
@@ -142,11 +167,30 @@ firmware-update = {
   extension,
 }
 
-resend = { 0: 10, common, 16: seq, 17: seq, extension }        ; from, to
-release = { 0: 11, common, extension }
+resend = { 0: 10, one-collar, 16: seq, 17: seq, extension }    ; from, to
+release = { 0: 11, one-collar, extension }
+
+zones = {
+  0: 12,
+  common,
+  16: [* ring],                      ; the permanent no-go zones, the whole set
+  17: 1..4294967295,                 ; epoch
+  extension,
+}
+
+lease = {
+  0: 13,
+  common,
+  16: 1..4294967295,                 ; epoch
+  17: utime,                         ; until
+  18: digest8,                       ; of the zones (policy::zones_digest)
+  extension,
+}
+
+trust = { 0: 14, common, 16: bstr .cbor signed, extension }    ; a trust update (type 68)
 
 ; A type a collar doesn't know: acked `unsupported`.
-other-command = { 0: (12..63), common, extension }
+other-command = { 0: (15..63), common, extension }
 
 role = uint                          ; 1 node, 2 anchor, 3 station; others read as "other"
 
@@ -171,11 +215,11 @@ factory-record = {
 
 manifest = {
   0: 65,
-  16: tstr .size (1..32),            ; version (semver)
+  16: text32,                        ; version (semver)
   17: bstr .size 32,                 ; digest: SHA-256 of the image file
   18: uint,                          ; size
   19: [* device-class],              ; classes
-  20: [* tstr],                      ; hw_revs
+  20: [* tstr .size (1..16)],        ; hw_revs
   21: uint,                          ; security_counter
   ? 22: 0..100,                      ; min_battery
   ? 23: [* kid],                     ; revoke
@@ -197,10 +241,18 @@ relayed = [frame: bstr, ? (at: utime, rssi_dbm: int, snr_db: int)]   ; radio fie
 hello = {
   0: 67,
   16: device-class,
-  17: tstr .size (1..32),            ; fw
+  17: text32,                        ; fw
   ? 18: bstr .size 8,                ; nonce, while unclaimed
-  19: [* tstr],                      ; caps
+  19: [* text32],                    ; caps
   20: public-key,                    ; device_key (its kid is the signer)
+  extension,
+}
+
+trust-update = {
+  0: 68,
+  16: 1..4294967295,                 ; counter
+  ? 17: [* kid],                     ; revoke
+  ? 18: [* public-key],              ; add
   extension,
 }
 
@@ -252,7 +304,7 @@ health = [6, seq, utime, {
   ? 8: bool,                         ; charging
   ? 9: int,                          ; temp_dc
   ? 10: uint,                        ; uptime_s
-  ? 11: tstr,                        ; reset
+  ? 11: text32,                      ; reset
   ? 12: uint,                        ; still_s
   ? 13: uint,                        ; tilt_deg
   ? 14: { ? 1: int, ? 2: int, ? 3: int, ? 4: tstr, ? 5: uint, ? 6: uint, ? 7: uint, extension },  ; cell
@@ -261,12 +313,16 @@ health = [6, seq, utime, {
   extension,
 }]
 
+; Every record fits one uplink frame of plan 1: at most 109 bytes
+; (messages.md §6). Device and slots records that would be longer go in parts.
+part = [index: uint, count: 2..255]   ; index < count
+
 device = [7, seq, utime, {
   ? 1: device-class,
-  ? 2: tstr,                         ; fw
-  ? 3: [* tstr],                     ; caps
+  ? 2: text32,                       ; fw
+  ? 3: [* text32],                   ; caps
   ? 4: { 1: uint, 2: uint, 3: uint, 4: uint, 5: uint, 6: uint, extension },   ; limits
-  ? 5: tstr,                         ; hw_rev
+  ? 5: tstr .size (1..16),           ; hw_rev
   ? 6: kid,                          ; server_kid
   ? 7: kid,                          ; pending_kid
   ? 8: kid,                          ; owner_kid
@@ -274,13 +330,17 @@ device = [7, seq, utime, {
   ? 10: herd-id,
   ? 11: short,
   ? 12: bstr .size 8,                ; claim_nonce
-  ? 13: tstr,                        ; boot
+  ? 13: text32,                      ; boot
   ? 14: uint,                        ; security_counter
   ? 15: [* kid],                     ; image_keys
+  ? 16: part,
+  ? 17: public-key,                  ; device_key, only while moving from v1
+  ? 18: [* uint],                    ; plans it can use
+  ? 19: [zones: uint, vertices: uint],   ; zone_limits
   extension,
 }]
 
-slots = [8, seq, utime, [* [version: uint, status: ack-status, ? effective_at: utime]]]
+slots = [8, seq, utime, [* [version: uint, status: ack-status, ? effective_at: utime]], ? part]
 
 anchor-state = [9, seq, utime, {
   ? 1: bool,                         ; active
@@ -292,7 +352,7 @@ anchor-state = [9, seq, utime, {
   extension,
 }]
 
-firmware-status = [10, seq, utime, state: firmware-state, version: tstr,
+firmware-status = [10, seq, utime, state: firmware-state, version: text32,
                    ? (digest: digest8 / null, ? code: reject-code)]
 
 other-record = [(11..4294967295), seq, utime, * any]
@@ -303,23 +363,25 @@ cue-kind = uint                      ; 1 warn, 2 outside
 episode-outcome = uint               ; 1 turned_back, 2 crossed, 3 rest, 4 boundary_changed
 ack-status = uint                    ; 1 received, 2 applied, 3 rejected
 firmware-state = uint                ; 0 idle … 6 refused
-reject-code = uint                   ; 1 bad_sig … 31 downgrade
+reject-code = uint                   ; 1 bad_sig … 32 in_exclusion
 
 ; ---------------------------------------------------------------- LoRa link (inside binary frames, lora.md §4)
 
 link = {
   ? 1: [* uint],                     ; got: message ids complete
-  ? 2: [* [msg: uint, from: uint, missing: bstr]],   ; need
+  ? 2: [* [msg: uint, from: uint, missing: bstr .size (0..8)]],   ; need
   ? 3: [battery: 0..100, lte: 0..4],                 ; a standby anchor's state
   extension,
 }
 
+; Between the 9-byte header and the 8-byte tag (lora.md §4).
 beacon-body = {
   ? 1: uint,                         ; bver
-  ? 2: [* short],                    ; pending
-  ? 3: [* [msg: uint, count: uint, dst: uint, type: uint]],   ; msgs
-  ? 4: [first: uint, bits: bstr],    ; heard
+  ? 2: [* (0 / short)],              ; pending; 0 = collars without a short (joining)
+  ? 3: [* [msg: uint, count: 1..65535, dst: uint, type: uint]],   ; msgs
+  ? 4: [first: uint, bits: bstr .size (0..64)],               ; heard
   ? 5: [battery: 0..100, lte: 0..4, rank: uint],              ; state
-  ? 6: short,                        ; next
+  ? 6: [short: short, minute: uint],                          ; handon
+  ? 7: 1..4294967295,                ; term
   extension,
 }

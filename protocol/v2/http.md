@@ -31,14 +31,20 @@ Message type 66, a COSE_Sign1 whose kid is the sender's device id:
 | Key | Name | Type | |
 |---|---|---|---|
 | 0 | `type` | uint | 66 |
-| 16 | `seq` | uint | The sender's batch counter. A retry sends the same batch, same seq |
+| 16 | `seq` | uint | The sender's batch counter: a lifetime counter like `fcnt` ([messages.md §7.1](messages.md#71-counters-that-never-repeat)), never reset. A retry sends the same batch, same seq |
 | 17 | `sent_at` | uint | GNSS time it was made |
 | 18 | `herd` | bstr | The herd it serves; absent for a direct collar |
 | 19 | `have` | uint | The highest downlink id it holds (0 for none) |
 | 20 | `frames` | [[frame] / [frame, at, rssi_dbm, snr_db]] | Uplink and hello frames as heard, with when and how well; its own frames without the radio fields |
 
 A direct collar's own frames have `net` and `src` 0; the server knows whose they are from the
-batch's signer. Batches SHOULD stay under 64 KB; a server MUST accept at least 1 MB.
+batch's signer. Every frame is at most 255 bytes; a longer one is counted and dropped without
+being read. Batches SHOULD stay under 64 KB; a server MUST accept at least 1 MB.
+
+**During a handover** ([identity.md §6](identity.md#6-handover-rotating-the-server-key-or-moving-to-other-software))
+an anchor posts every batch to both endpoints until the handover's deadline, even after its
+own confirm, and keeps each endpoint's `have` and downlink queue apart, relaying both. It
+keeps a frame until both have acknowledged a batch carrying it, or the deadline has passed.
 
 ## 3. What the server does with it
 

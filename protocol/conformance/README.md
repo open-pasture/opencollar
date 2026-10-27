@@ -25,10 +25,10 @@ case. Which ones each role must pass:
 | `slots.json` | all | the activation rule, for what it serves | | |
 | `cue.json` | all | | | |
 | `commands.json`, `config.json` (v1) | all | it signs what passes | | |
-| `v2/messages.json` | `commands`, in the listed order of checks | it produces the same bytes for the same inputs; `documents` | | |
-| `v2/records.json` | it encodes the `ok` cases byte for byte | it decodes every case, keeping what it doesn't know | | every case |
-| `v2/link.json` | frame key, uplinks, beacons, fragments, slots, airtime, hellos | frame key, uplinks, batches | fragments, beacons, batches | uplinks (with a key) |
-| `v2/identity.json` | claim, install rules | claim codes, claim, card | | |
+| `v2/messages.json` | `commands`, in the listed order of checks, with and without a clock | it produces the same bytes for the same inputs; `documents` | | |
+| `v2/records.json` | it encodes the `ok` cases byte for byte, each within `max_record` | it decodes every case, keeping what it doesn't know and refusing what is malformed | | every case |
+| `v2/link.json` | frame key, uplinks, beacons (tag), fragments (bounds), slots, airtime, hellos, joins | frame key, uplinks (a malformed record among valid), batches, joins, replay | fragments, beacons, batches | uplinks (with a key) |
+| `v2/identity.json` | claim, install rules, test boot, trust updates, counters, overlaps, activation | claim codes, claim, card, zones digest, v1 herd ids | | |
 
 ### Running the reference implementations
 
@@ -42,10 +42,32 @@ make -C firmware/tests/host
 # an independent Python reader of v2 records (standard library only)
 python3 protocol/reference/opencollar_decode.py --test protocol/vectors/v2/records.json
 
-# every v2 message against the CDDL schema, with the reference CDDL tool
+# the same Python reader: beacons (their HMAC tags) and the slot schedule, with a collision sweep
+python3 protocol/reference/opencollar_decode.py --test-link protocol/vectors/v2/link.json
+
+# every v2 vector against the CDDL schema, with the reference CDDL tool
 gem install cddl
 python3 protocol/conformance/check_cddl.py
+
+# hostile input for every decoder (openpasture repo; OP_FUZZ_ROUNDS runs longer)
+cargo test -p op-protocol --test fuzz_v2
 ```
+
+### What each check proves
+
+Three kinds of conformance, kept apart because each catches what the others can't:
+
+- **Schema shape** (`check_cddl.py`): the CDDL is the *sender's* schema. Every vector says
+  what the schema must make of it (`schema`: `accept`, `reject`, or `skip` when the question
+  isn't the schema's). A command a collar refuses for its state (a key, a version, a zone) is
+  shape-valid and the schema accepts it; a record with an element a later version added is
+  one a reader takes and the schema rejects.
+- **Canonical bytes and the profile** (the decoders): deterministic CBOR, integer map keys,
+  no tags, lengths and counts within bounds. The schema can't see these; the Rust reference
+  and the Python reader refuse them, and the fuzz test checks nothing panics on them.
+- **State** (the `expect` of commands, `install`, `activation`, `trust_updates`, `counters`,
+  `joins`, `replay`): what a collar or server does given what it holds. Vectors pin single
+  steps; the Level 2 exchange below pins sequences.
 
 opencollar's CI runs the last three, and fails when the firmware's copy of a vector file
 differs from `protocol/vectors/`; openpasture's runs the first, and fails when its copy
@@ -72,10 +94,16 @@ reply against the spec clause named.
 | 6 | Refuses a boundary `wrong_herd` before the move arrives | Offer it again once the move is confirmed | server §5 |
 | 7 | Refuses one `slots_full` | Offer it again when there is room | server §5 |
 | 8 | Reports a cue kind and an ack status from the future | Store both as sent; refuse nothing | registry, server §7 |
-| 9 | (v2) Leaves a gap in its seq | Ask for it once with a resend | server §7 |
-| 10 | (v2) Receives a handover; the new server confirms | Allocate versions above what the collar reports | identity §6, server §2 |
+| 9 | (v2) Leaves a gap in its seq | Ask for it with a resend | server §7 |
+| 10 | (v2) Receives a handover; the new server confirms, naming its digest | Allocate versions above what the collar reports | identity §6, server §2 |
+| 11 | (v2) Misses the handover; its frames go to both endpoints | The old server keeps reading it and re-sends the handover | identity §6, server §10 |
+| 12 | (v2) Sends the same frame twice, and a record with a seq it used before | Drop the replay; flag the conflict | messages §7.1, server §7 |
+| 13 | (v2) Holds zones; a no-go is added over a staged strip | Send zones before boundaries; leases for the current epoch only; restage | messages §4.7, server §11 |
+| 14 | (v2) Is reset and reports unclaimed | Reclaim it from its card, checked against the kept `claim_check` | identity §4, server §12 |
 
-**Status:** this script is specified, not yet runnable. openpasture's `simulation/collar-sim`
+**Status:** this script is specified, not yet runnable. The `joins` vector in `link.json`
+(two collars claimed over LoRa at once, to their first sealed status) is the first piece of
+it in vector form. openpasture's `simulation/collar-sim`
 exercises steps 1–8 against openpasture's own server today but also uses openpasture's app
 API to set things up; splitting it into a protocol-only device emulator, so it can run
 against any server, is the next piece of work here. A collar-side script (a fake server
