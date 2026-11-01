@@ -224,7 +224,14 @@ static void test_bad_records_ignored(void)
 static void test_empty_store_no_cues(void)
 {
 	static struct app a;
-	const struct cue_config cue = {2730, 1000, 300, 20000, 30000, 10000};
+	const struct cue_config cue = {
+		.warn_freq_hz = 2730,
+		.outside_freq_hz = 1000,
+		.beep_ms = 300,
+		.max_active_ms = 20000,
+		.rest_ms = 30000,
+		.outside_max_ms = 10000,
+	};
 	const struct geofence_config gcfg = {5.0, 1.0, 10.0};
 	int cues = 0;
 

@@ -20,8 +20,8 @@
 #define HERD_A "herd_01J7GOLDEN"
 #define HERD_B "herd_01J7OTHER"
 
-#define OLD_STATUS "collar " COLLAR " herd " HERD_A " fw 0.2.0 config - active 10 slots 10 13"
-#define NEW_STATUS "collar " COLLAR " herd " HERD_B " fw 0.2.0 config 1 active 10 slots 10"
+#define OLD_STATUS "collar " COLLAR " herd " HERD_A " fw 0.2.0 config - active 10 slots 10 13 enforcement on"
+#define NEW_STATUS "collar " COLLAR " herd " HERD_B " fw 0.2.0 config 1 active 10 slots 10 enforcement on"
 
 static struct app a;
 static char reply[512];
@@ -30,7 +30,14 @@ static int64_t ms;
 static uint8_t secret[64], public[32];
 static struct store_ram_image before;
 
-static const struct cue_config CUE = {2730, 1000, 300, 20000, 30000, 10000};
+static const struct cue_config CUE = {
+	.warn_freq_hz = 2730,
+	.outside_freq_hz = 1000,
+	.beep_ms = 300,
+	.max_active_ms = 20000,
+	.rest_ms = 30000,
+	.outside_max_ms = 10000,
+};
 static const struct geofence_config GCFG = {5.0, 1.0, 10.0};
 
 static void base64(const uint8_t *in, size_t n, char *out)
