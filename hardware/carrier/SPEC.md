@@ -148,7 +148,7 @@ Pin names and positions come from the [SF] board files (mating interface only).
 
 The aux row (SCX, SDX, OCS, SDO_AUX, GND) is left unsocketed.
 
-**Cue ports CUE_L, CUE_R:** JST-SH 4-pin, Qwiic order (GND, EXT_3V3, EXT_SDA, EXT_SCL). A Qwiic cable runs from each to a Qwiic Buzzer in its ear pod. Buzzer addresses 0x34 (left) and 0x5B (right).
+**Cue ports CUE_L, CUE_R:** JST-SH 4-pin, Qwiic order (GND, EXT_3V3, EXT_SDA, EXT_SCL). A Qwiic cable runs from each to a Qwiic Buzzer in its ear pod. Buzzer addresses 0x34 (left) and 0x5B (right, set in software with `setAddress()` — JP1 is volume only). Mono vs stereo is Cody’s open call.
 
 **Spare Qwiic:** JST-SH 4-pin on the main bus, inside the box: GND, 3V3, SDA, SCL.
 
@@ -341,7 +341,7 @@ The Adafruit 4755 charger board we bought is no longer needed in the collar. It 
 Decided 2026-09-26: rectangle board (was question 1); the harness carries the battery, not 5 V (replaces question 2).
 
 To buy when you're ready (not ordered):
-1. **Adafruit 1781 protected 18650 ×2** (Cody ordering) for the dual-cell pods — plan of record. A second SparkFun Qwiic Buzzer (BOB-24474) and Qwiic cables if stereo cues are chosen; **mono vs stereo is Cody’s open call**. Second-buzzer I2C address is set in software with `setAddress()` (JP1 is volume only).
+1. **Adafruit 1781 protected 18650 ×2** (pending Cody’s purchase approval) for the original dual-cell pods — plan of record. The Adafruit 353 battery-pod / cue-pod redesign is a **PROPOSED ALTERNATIVE, NOT APPROVED** (`exports/alt_pods_unapproved/`). A second SparkFun Qwiic Buzzer (BOB-24474) and Qwiic cables if stereo cues are chosen; **mono vs stereo is Cody’s open call**. Second-buzzer I2C address is set in software with `setAddress()` (JP1 is volume only; see Example_10_Buzz_Multiple.ino).
 2. **M8 8-pin harness:** a high-flex PUR female-to-male cordset and two panel-mount sockets with leads (one on the box, one on the bottom module). Length once the bottom module is drawn (section 12).
 3. Pre-crimped pigtails: JST-SH 3-pin ×1 (panels); JST-PH 8-pin ×2 (harness, and a bench lead to the pack and NTC).
 

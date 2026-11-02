@@ -10,12 +10,12 @@ How to start a print: see `../PRINTING.md`. Throughput notes: `../THROUGHPUT.md`
 | Pod (×2, mirror one) | `exports/node_v1_pod/` — base **92×68×24.5**, lid **92×68×6**, clamp bar | `sliced/p2s_pla/F4_pod_left.gcode.3mf` — **STALE** until re-sliced from the restored dual-cell STLs. | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
 | Counterweight | `exports/node_v1_cw/` | `sliced/p2s_pla/F3_counterweight.gcode.3mf` | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
 
-Unapproved alternative (Adafruit 353 battery pod + cue-only pod): `exports/alt_pods_unapproved/` — not the plan of record.
+**PROPOSED ALTERNATIVE, NOT APPROVED** (Adafruit 353 battery pod 100×90×26 + cue pod 92×68×26; was `node_v1_pod_battery` / `node_v1_pod_cue`): `exports/alt_pods_unapproved/`. Dual-cell `exports/node_v1_pod/` remains the plan of record.
 
 ## Layout
 
 - **Cap:** one P124 pocket 66.6 × 113.6 × 1.2 (VHB); `PANEL_Y = +11` deliberate; channel gable ≥45°.
-- **Pod (plan of record):** 1 × Adafruit 1781 + 1 × Qwiic Buzzer per pod (Cody ordering 2×1781). Identical left/right mirrors. Sound port +Y; crest cable +X.
+- **Pod (plan of record):** 1 × Adafruit 1781 + 1 × Qwiic Buzzer per pod (2×1781 pending Cody’s purchase approval). Identical left/right mirrors. Sound port +Y; crest cable +X. Mono vs stereo buzzer is Cody’s open call.
 - Clamp Y ±29.5 / 70 mm bars / strap channel unchanged across modules. Pod outline fits the P2S 256×256 plate.
 
 ## Offline Orca (earlier cap geometry — re-slice)

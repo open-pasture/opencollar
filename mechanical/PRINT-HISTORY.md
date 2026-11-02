@@ -12,7 +12,7 @@ Printer: Bambu Lab P2S (home, Cody's LAN 192.168.1.248, cloud mode)
 
 **Cap:** **76 × 160 × 41.4 mm** / lid 7 mm; one P124 pocket 66.6 × 113.6 × 1.2; channel gable + spine V; supports off. Print #3 is this geometry.
 
-**Pods (plan of record):** dual-cell **92 × 68 × 24.5** — 1 × Adafruit 1781 + 1 × Qwiic Buzzer per pod (Cody ordering 2×1781). Restored `exports/node_v1_pod/`. Unapproved 353 battery/cue redesign under `exports/alt_pods_unapproved/`. Mono vs stereo buzzer is Cody’s open call.
+**Pods (plan of record):** dual-cell **92 × 68 × 24.5** — 1 × Adafruit 1781 + 1 × Qwiic Buzzer per pod (2×1781 pending Cody’s purchase approval). Restored `exports/node_v1_pod/`. Battery/cue redesign (100×90×26 + 92×68×26): **PROPOSED ALTERNATIVE, NOT APPROVED** under `exports/alt_pods_unapproved/` (was `node_v1_pod_battery` / `node_v1_pod_cue`). Mono vs stereo buzzer is Cody’s open call.
 
 Offline Orca on earlier **76×160×29** STLs: stock PLA supports on 4h41m/140 g, supports off 4h06m/134 g, fast-fit 3h15m/133 g (vs old 62×142 cap 3h32m/93 g).
 
