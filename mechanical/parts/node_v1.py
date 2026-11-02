@@ -4,7 +4,7 @@ lid, 2 clamp bars; print two of each), counterweight casing (tub, lid,
 
 Print: MJF PA12 (no supports), or ASA on FDM (6 perimeters, 40 % infill,
 100 % around bosses and the strap channels).
-  bases and tubs  outside face down (cap spine V + corrugated channel roof are 45° — no supports)
+  bases and tubs  outside face down (cap spine V + channel gable are 45° — no supports)
   lids            mating face down
   bars            flat
 

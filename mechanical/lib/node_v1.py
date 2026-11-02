@@ -46,9 +46,9 @@ STRAP_W = d.STRAP["width"]                  # 44.45
 STRAP_T = d.STRAP["design_thickness"]       # 4.0 (measure)
 CHANNEL_W = STRAP_W + 2.0
 CHANNEL_D = STRAP_T - 0.6                   # 0.6 mm squeeze under the clamp bars
-# Corrugated 45° V roof across the channel (pitch = 2 * rise). No flat ceiling.
-CHANNEL_V_RISE = 3.0
-CHANNEL_V_PITCH = 2 * CHANNEL_V_RISE        # 6 mm; each flank is exactly 45°
+# Single gable across the short axis (Y): ridge along X. Rise is half-width
+# plus 0.3 mm so flanks are slightly steeper than 45° (avoids FP overhang flags).
+CHANNEL_ROOF_H = CHANNEL_W / 2 + 0.3
 INSERT = d.INSERT_M3
 GROOVE = d.ORING_2MM
 CBORE_D, CBORE_DEPTH = 8.0, 4.0             # button head + bonded washer
@@ -72,13 +72,14 @@ STEEL_N = 4
 
 CAP_W, CAP_L = 76.0, 160.0
 CAP_WALL = 5.0
-# Floor clears the 45° spine V (28 mm → 14.5 mm deep) under the 13 mm cavity.
-CAP_FLOOR_Z = 16.0
-CAP_BASE_H = 29.0
+# Floor clears the channel gable peak (CHANNEL_D + CHANNEL_ROOF_H) plus ≥1 mm,
+# and the 45° spine V, under a 13 mm cavity.
+CAP_FLOOR_Z = CHANNEL_D + CHANNEL_ROOF_H + 1.5   # ~28.4
+CAP_BASE_H = CAP_FLOOR_Z + 13.0                  # ~41.4
 CAP_LID_T = 7.0
 SPINE_RELIEF_W = 28.0      # opening across the neck, outside the strap zone
-# Flank height = half-opening + 0.5 boolean pad → true 45° (pad is only at z≤0).
-SPINE_RELIEF_H = SPINE_RELIEF_W / 2 + 0.5
+# Flank height > half-opening so flanks stay steeper than 45° after the ±0.5 pad.
+SPINE_RELIEF_H = SPINE_RELIEF_W / 2 + 1.0
 CAP_COLS = [(sx * 29.5, y) for sx in (-1, 1) for y in (-68.0, -42.0, 42.0, 68.0)]
 CAP_CLAMP = [(sx * 20.0, sy * 28.5) for sx in (-1, 1) for sy in (-1, 1)]
 CAP_BAR = (10.0, 70.0, 4.0)
@@ -114,31 +115,24 @@ def cap_base():
     cols = [oc.cylinder(f"col{i}", 8.0, CAP_BASE_H - CAP_FLOOR_Z + 0.2, at=(x, y, CAP_FLOOR_Z - 0.5), anchor="bottom")
             for i, (x, y) in enumerate(CAP_COLS)]
     oc.union(b, *cols)
-    # Underside strap channel: rectangular cut, then a corrugated 45° V roof
-    # (prism along Y) so every ceiling flank is self-supporting. Peaks stay
-    # under CAP_FLOOR_Z (CHANNEL_D + CHANNEL_V_RISE = 6.4 ≪ 16). Edge
-    # margins (≥ 2 mm) stay flat so the V doesn't knife the outer ±X walls;
-    # those strips are short enough to bridge.
+    # Underside strap channel: rectangular strap pocket, then a single gable
+    # across Y (ridge along X). No flat valleys — every ceiling flank is
+    # steeper than 45° and anchored on the ±Y walls.
+    half_c = CHANNEL_W / 2
     oc.cut(b, oc.box("chan", (CAP_W + 2, CHANNEL_W, CHANNEL_D + 1),
                      at=(0, 0, CHANNEL_D - (CHANNEL_D + 1) / 2)))
-    v = 0
-    x_lo = -CAP_W / 2 + 2.0
-    x_lim = CAP_W / 2 - 2.0
-    while x_lo + CHANNEL_V_PITCH <= x_lim + 1e-6:
-        x_hi = x_lo + CHANNEL_V_PITCH
-        cx = (x_lo + x_hi) / 2
-        oc.cut(b, oc.prism_y(f"chan_v{v}", [
-            (x_lo, CHANNEL_D - 0.1),
-            (x_hi, CHANNEL_D - 0.1),
-            (x_hi, CHANNEL_D),
-            (cx, CHANNEL_D + CHANNEL_V_RISE),
-            (x_lo, CHANNEL_D),
-        ], CHANNEL_W - 0.02, at_y=0.0))
-        v += 1
-        x_lo = x_hi
+    # Gable cutter: vertical risers at the channel lips, then flanks to the ridge
+    # so there is no leftover flat ledge at z = CHANNEL_D.
+    oc.cut(b, oc.prism_x("chan_gable", [
+        (-half_c, CHANNEL_D - 0.2),
+        (half_c, CHANNEL_D - 0.2),
+        (half_c, CHANNEL_D),
+        (0.0, CHANNEL_D + CHANNEL_ROOF_H),
+        (-half_c, CHANNEL_D),
+    ], CAP_W + 4, at_x=0.0))
     zone = (CAP_L - CHANNEL_W) / 2
     half_w = SPINE_RELIEF_W / 2
-    # Opening padded ±0.5 for a clean boolean; ridge height keeps the flanks at 45°.
+    # Opening padded ±0.5; ridge high enough that flanks stay > 45°.
     spine_xz = [
         (-half_w - 0.5, -1.0),
         (half_w + 0.5, -1.0),
@@ -154,10 +148,11 @@ def cap_base():
     for i, (x, y) in enumerate(CAP_COLS):
         oc.cut(b, oc.cylinder(f"h{i}", CLEAR, CAP_BASE_H + 2, at=(x, y, -1), anchor="bottom"))
         oc.cut(b, oc.cone(f"cb{i}", CBORE_D, CLEAR, CBORE_DEPTH, at=(x, y, 0.0)))
-    # Clamp-bar inserts: blind seat with a conical tip (no flat ceiling).
+    # Clamp-bar inserts: cylinder then cone starting at the cylinder top so
+    # there is no annular flat (the old z≈3.2 rings).
     for i, (x, y) in enumerate(CAP_CLAMP):
-        oc.cut(b, oc.cylinder(f"ins{i}", INSERT["hole_d"], 4.2, at=(x, y, -1), anchor="bottom"))
-        oc.cut(b, oc.cone(f"instip{i}", INSERT["hole_d"], 0.2, 2.4, at=(x, y, 3.0)))
+        oc.cut(b, oc.cylinder(f"ins{i}", INSERT["hole_d"], 3.0, at=(x, y, -1), anchor="bottom"))
+        oc.cut(b, oc.cone(f"instip{i}", INSERT["hole_d"], 0.2, 3.0, at=(x, y, 2.0)))
     # O-ring groove in the rim, centred on the wall.
     oc.cut(b, _groove_loop("groove", CAP_W, CAP_L, 10.0, CAP_BASE_H, CAP_WALL / 2))
     # Potted cable entries, one each side, to the pods (mid-cavity height).
