@@ -46,6 +46,9 @@ STRAP_W = d.STRAP["width"]                  # 44.45
 STRAP_T = d.STRAP["design_thickness"]       # 4.0 (measure)
 CHANNEL_W = STRAP_W + 2.0
 CHANNEL_D = STRAP_T - 0.6                   # 0.6 mm squeeze under the clamp bars
+# Corrugated 45° V roof across the channel (pitch = 2 * rise). No flat ceiling.
+CHANNEL_V_RISE = 3.0
+CHANNEL_V_PITCH = 2 * CHANNEL_V_RISE        # 6 mm; each flank is exactly 45°
 INSERT = d.INSERT_M3
 GROOVE = d.ORING_2MM
 CBORE_D, CBORE_DEPTH = 8.0, 4.0             # button head + bonded washer
@@ -69,20 +72,24 @@ STEEL_N = 4
 
 CAP_W, CAP_L = 76.0, 160.0
 CAP_WALL = 5.0
-# Floor is taller than the old 7.5 so a 45° V-groove spine relief (depth =
-# half the 28 mm opening) stays under the cavity and needs no supports.
-CAP_FLOOR_Z = 16.0         # cavity floor (solid below: channel, inserts, spine relief)
-CAP_BASE_H = 29.0          # cavity 13 mm (same as before)
+# Floor clears the 45° spine V (28 mm → 14.5 mm deep) under the 13 mm cavity.
+CAP_FLOOR_Z = 16.0
+CAP_BASE_H = 29.0
 CAP_LID_T = 7.0
 SPINE_RELIEF_W = 28.0      # opening across the neck, outside the strap zone
-SPINE_RELIEF_H = SPINE_RELIEF_W / 2  # 14 mm → 45° flanks meeting at a ridge
+# Flank height = half-opening + 0.5 boolean pad → true 45° (pad is only at z≤0).
+SPINE_RELIEF_H = SPINE_RELIEF_W / 2 + 0.5
 CAP_COLS = [(sx * 29.5, y) for sx in (-1, 1) for y in (-68.0, -42.0, 42.0, 68.0)]
 CAP_CLAMP = [(sx * 20.0, sy * 28.5) for sx in (-1, 1) for sy in (-1, 1)]
 CAP_BAR = (10.0, 70.0, 4.0)
 # Pocket: X across neck (= panel short side), Y along spine (= panel long side).
-PANEL_POCKET = (66.6, 113.6, 1.2)   # P124 66 x 113 + 0.3 mm per side; depth 1.2 (VHB)
-# Pocket shifted +Y so a 25 mm GPS patch fits in the −Y cavity end (cavity
-# half-length is CAP_L/2 − CAP_WALL = 75) without hitting the panel or the rim.
+# Depth is a VHB recess only: dims.P124_PANEL is 3.1 mm thick (drawing 2.8±0.3),
+# but a full-depth pocket would break into the lid insert holes (columns sit
+# under the panel footprint). Panel sits proud on the gasket.
+PANEL_POCKET = (66.6, 113.6, 1.2)
+# Deliberate +Y offset: a centred 113.6 mm pocket on CAP_L=160 leaves only
+# ~23 mm at each end — too short for the 25 mm GPS patch — so the pocket
+# shifts +Y and the patch takes the −Y cavity end (see HARDWARE-FIT.md).
 PANEL_Y = 11.0
 PATCH_Y = -60.0
 
@@ -107,13 +114,31 @@ def cap_base():
     cols = [oc.cylinder(f"col{i}", 8.0, CAP_BASE_H - CAP_FLOOR_Z + 0.2, at=(x, y, CAP_FLOOR_Z - 0.5), anchor="bottom")
             for i, (x, y) in enumerate(CAP_COLS)]
     oc.union(b, *cols)
-    # Underside: strap channel across the neck; spine relief outside it is a
-    # 45° V-groove (no flat ceiling) so the base prints with the outside face
-    # down and needs no supports under the relief.
-    oc.cut(b, oc.box("chan", (CAP_W + 2, CHANNEL_W, CHANNEL_D + 1), at=(0, 0, CHANNEL_D - (CHANNEL_D + 1) / 2)))
+    # Underside strap channel: rectangular cut, then a corrugated 45° V roof
+    # (prism along Y) so every ceiling flank is self-supporting. Peaks stay
+    # under CAP_FLOOR_Z (CHANNEL_D + CHANNEL_V_RISE = 6.4 ≪ 16). Edge
+    # margins (≥ 2 mm) stay flat so the V doesn't knife the outer ±X walls;
+    # those strips are short enough to bridge.
+    oc.cut(b, oc.box("chan", (CAP_W + 2, CHANNEL_W, CHANNEL_D + 1),
+                     at=(0, 0, CHANNEL_D - (CHANNEL_D + 1) / 2)))
+    v = 0
+    x_lo = -CAP_W / 2 + 2.0
+    x_lim = CAP_W / 2 - 2.0
+    while x_lo + CHANNEL_V_PITCH <= x_lim + 1e-6:
+        x_hi = x_lo + CHANNEL_V_PITCH
+        cx = (x_lo + x_hi) / 2
+        oc.cut(b, oc.prism_y(f"chan_v{v}", [
+            (x_lo, CHANNEL_D - 0.1),
+            (x_hi, CHANNEL_D - 0.1),
+            (x_hi, CHANNEL_D),
+            (cx, CHANNEL_D + CHANNEL_V_RISE),
+            (x_lo, CHANNEL_D),
+        ], CHANNEL_W - 0.02, at_y=0.0))
+        v += 1
+        x_lo = x_hi
     zone = (CAP_L - CHANNEL_W) / 2
     half_w = SPINE_RELIEF_W / 2
-    # Triangle in XZ, extruded along Y: opening at z=0, ridge at z=SPINE_RELIEF_H.
+    # Opening padded ±0.5 for a clean boolean; ridge height keeps the flanks at 45°.
     spine_xz = [
         (-half_w - 0.5, -1.0),
         (half_w + 0.5, -1.0),
@@ -124,12 +149,15 @@ def cap_base():
     for sy in (-1, 1):
         yc = sy * (CHANNEL_W / 2 + zone / 2)
         oc.cut(b, oc.prism_y(f"spine{sy}", spine_xz, zone + 0.4, at_y=yc))
-    # Through screws for the lid (from below) with counterbores; clamp-bar inserts.
+    # Through screws for the lid (from below). Counterbore is a cone that meets
+    # the clearance hole (no leftover flat ceiling at z = CBORE_DEPTH).
     for i, (x, y) in enumerate(CAP_COLS):
         oc.cut(b, oc.cylinder(f"h{i}", CLEAR, CAP_BASE_H + 2, at=(x, y, -1), anchor="bottom"))
-        oc.cut(b, oc.cylinder(f"cb{i}", CBORE_D, CBORE_DEPTH + 1, at=(x, y, -1), anchor="bottom"))
+        oc.cut(b, oc.cone(f"cb{i}", CBORE_D, CLEAR, CBORE_DEPTH, at=(x, y, 0.0)))
+    # Clamp-bar inserts: blind seat with a conical tip (no flat ceiling).
     for i, (x, y) in enumerate(CAP_CLAMP):
-        oc.cut(b, oc.cylinder(f"ins{i}", INSERT["hole_d"], INSERT["hole_depth"] + 1, at=(x, y, -1), anchor="bottom"))
+        oc.cut(b, oc.cylinder(f"ins{i}", INSERT["hole_d"], 4.2, at=(x, y, -1), anchor="bottom"))
+        oc.cut(b, oc.cone(f"instip{i}", INSERT["hole_d"], 0.2, 2.4, at=(x, y, 3.0)))
     # O-ring groove in the rim, centred on the wall.
     oc.cut(b, _groove_loop("groove", CAP_W, CAP_L, 10.0, CAP_BASE_H, CAP_WALL / 2))
     # Potted cable entries, one each side, to the pods (mid-cavity height).
@@ -141,12 +169,14 @@ def cap_base():
 
 
 def cap_lid():
-    slab = oc.rounded_rect("cap_lid", (CAP_W, CAP_L, 3.0), 10.0, anchor="bottom")
-    top = oc.rounded_box("lid_top", (CAP_W, CAP_L, CAP_LID_T - 1.0), 2.5, at=(0, 0, 1.0), anchor="bottom")
-    oc.intersect(top, oc.rounded_rect("trim", (CAP_W, CAP_L, CAP_LID_T + 2), 10.0, at=(0, 0, -1), anchor="bottom"))
-    oc.union(slab, top)
+    # Single rounded body (no 3 mm slab step) so the mating-face-down print
+    # has no flat ledge at z = 3.
+    slab = oc.rounded_box("cap_lid", (CAP_W, CAP_L, CAP_LID_T), 2.5, anchor="bottom")
+    oc.intersect(slab, oc.rounded_rect("trim", (CAP_W, CAP_L, CAP_LID_T + 2), 10.0, at=(0, 0, -1), anchor="bottom"))
     for i, (x, y) in enumerate(CAP_COLS):
-        oc.cut(slab, oc.cylinder(f"li{i}", INSERT["hole_d"], 4.5 + 1, at=(x, y, -1), anchor="bottom"))
+        # Blind insert seat: short cylinder then a conical tip (no flat ceiling).
+        oc.cut(slab, oc.cylinder(f"lih{i}", INSERT["hole_d"], 3.2, at=(x, y, -1), anchor="bottom"))
+        oc.cut(slab, oc.cone(f"li{i}", INSERT["hole_d"], 0.2, 2.2, at=(x, y, 2.0)))
     px, py, pz = PANEL_POCKET
     oc.cut(slab, oc.rounded_rect("pocket", (px, py, pz + 1), 1.0, at=(0, PANEL_Y, CAP_LID_T - pz), anchor="bottom"))
     # Panel lead hole near the +Y end of the pocket (away from the GPS patch).
@@ -157,10 +187,12 @@ def cap_lid():
 def cap_bar():
     x, y, z = CAP_BAR
     bar = oc.rounded_box("cap_bar", (x, y, z), 1.5, anchor="bottom")
+    cb_d = d.M3_BUTTON["head_cbore_d"]
+    cb_h = d.M3_BUTTON["head_cbore_depth"]
     for sy in (-1, 1):
         oc.cut(bar, oc.cylinder(f"bh{sy}", CLEAR, z + 2, at=(0, sy * 28.5, -1), anchor="bottom"))
-        oc.cut(bar, oc.cylinder(f"bc{sy}", d.M3_BUTTON["head_cbore_d"], d.M3_BUTTON["head_cbore_depth"] + 1,
-                                at=(0, sy * 28.5, -1), anchor="bottom"))
+        # Conical button-head seat meeting the clearance hole (no flat ceiling).
+        oc.cut(bar, oc.cone(f"bc{sy}", cb_d, CLEAR, cb_h, at=(0, sy * 28.5, 0.0)))
     return bar
 
 

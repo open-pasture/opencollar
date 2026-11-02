@@ -107,6 +107,23 @@ def prism_y(name, profile_xz, length, at_y=0.0):
     return _from_bmesh(name, bm)
 
 
+def prism_x(name, profile_yz, length, at_x=0.0):
+    """Extrude a closed YZ polygon (counter-clockwise seen from +X) along X,
+    centred on `at_x`."""
+    bm = bmesh.new()
+    front = [bm.verts.new((at_x - length / 2, y, z)) for y, z in profile_yz]
+    back = [bm.verts.new((at_x + length / 2, y, z)) for y, z in profile_yz]
+    n = len(profile_yz)
+    bm.faces.new(front)
+    bm.faces.new(list(reversed(back)))
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new((front[i], back[i], back[j], front[j]))
+    bm.normal_update()
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return _from_bmesh(name, bm)
+
+
 def prism_z(name, outline_xy, z0, h):
     """Extrude a closed XY polygon upward from z0 by h."""
     bm = bmesh.new()
