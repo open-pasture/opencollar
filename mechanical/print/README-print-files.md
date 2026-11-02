@@ -6,9 +6,9 @@ How to start a print: see `../PRINTING.md`. Throughput notes: `../THROUGHPUT.md`
 
 | Part | STLs | Sliced P2S/PLA 3mf | Profile |
 | --- | --- | --- | --- |
-| Cap | `exports/node_v1_cap/` — base **76×160×41.4**, lid **76×160×7**, clamp bar 10×70×4 | `sliced/p2s_pla/F2_cap.gcode.3mf` — **STALE**. Re-slice. | Fit: `p2s_pla/` (supports off). Final: `p2s_asa/`. |
-| Battery pod (left) | `exports/node_v1_pod_battery/` — base **100×90×26**, lid **100×90×6**, clamp bar | `F4_pod_left.gcode.3mf` — **STALE** (old dual-18650 pod). Re-slice. | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
-| Cue pod (right) | `exports/node_v1_pod_cue/` — base **92×68×26**, lid **92×68×6**, clamp bar | same F4 — **STALE**. Re-slice. | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
+| Cap | `exports/node_v1_cap/` — base **76×160×41.4**, lid **76×160×7**, clamp bar 10×70×4 | `sliced/p2s_pla/F2_cap.gcode.3mf` — **STALE** (old 62×142 / dual-P122 cap from prints #1/#2; not the v3 76×160 gabled STLs). Re-slice. | Fit: `p2s_pla/` (supports off). Final: `p2s_asa/`. |
+| Battery pod (left) | `exports/node_v1_pod_battery/` — base **100×90×26**, lid **100×90×6**, clamp bar | `sliced/p2s_pla/F4_pod_left.gcode.3mf` — **STALE** (old pod outline / dual-18650 bay; not battery+cue pods). Re-slice. | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
+| Cue pod (right) | `exports/node_v1_pod_cue/` — base **92×68×26**, lid **92×68×6**, clamp bar | same F4 — **STALE** (old pod outline). Re-slice. | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
 | Counterweight | `exports/node_v1_cw/` | `sliced/p2s_pla/F3_counterweight.gcode.3mf` | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
 
 ## Layout
