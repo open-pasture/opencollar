@@ -154,30 +154,30 @@ def build():
     for r in n.cap_refs():
         refs.append(place(r, Mcap))
 
-    # ---- pods: build the left one, then mirror it across the neck's midplane for the right.
-    M = pod_matrix(-1)
-    pb, pl = n.pod_base(), n.pod_lid()
-    oc.move(pl, dz=n.POD_BASE_H)
-    left = {"pod_base": pb, "pod_lid": pl}
-    for sx in (-1, 1):
-        bar = n.pod_bar()
-        oc.move(bar, dx=sx * 32.0, dz=n.POD_BASE_H + n.POD_LID_T)
-        left[f"pod_bar_{sx}"] = bar
-    for o in left.values():
-        place(o, M)
-    for k, o in left.items():
-        parts[k + "_L"] = o
-        r = oc.mirror_copy(o, "X", name=o.name + "_R")
-        oc.bake(r)
-        parts[k + "_R"] = r
-    for r in n.pod_refs():
-        place(r, M)
-        refs.append(r)
-        m = oc.mirror_copy(r, "X", name=r.name + "_R")
-        oc.bake(m)
-        m["oc_reference"] = True
-        refs.append(m)
-    cable_in = M @ Vector((n.POD_L / 2 + 1.0, -2.0, 12.0))
+    # ---- pods: battery (left, −X) and cue (right, +X) — not mirrors of each other.
+    pod_specs = [
+        (-1, "L", n.pod_battery_base, n.pod_battery_lid, n.pod_battery_refs,
+         n.POD_BAT_L, n.POD_BAT_CLAMP[0][0]),
+        (1, "R", n.pod_cue_base, n.pod_cue_lid, n.pod_cue_refs,
+         n.POD_CUE_L, n.POD_CUE_CLAMP[0][0]),
+    ]
+    cable_ins = {}
+    for side, tag, base_fn, lid_fn, refs_fn, pod_l, clamp_x in pod_specs:
+        M = pod_matrix(side)
+        pb, pl = base_fn(), lid_fn()
+        oc.move(pl, dz=n.POD_BASE_H)
+        group = {f"pod_base_{tag}": pb, f"pod_lid_{tag}": pl}
+        for sx in (-1, 1):
+            bar = n.pod_bar()
+            oc.move(bar, dx=sx * abs(clamp_x), dz=n.POD_BASE_H + n.POD_LID_T)
+            group[f"pod_bar_{tag}_{sx}"] = bar
+        for o in group.values():
+            place(o, M)
+        parts.update(group)
+        for r in refs_fn():
+            refs.append(place(r, M))
+        cable_ins[side] = M @ Vector((pod_l / 2 + 1.0, -2.0, 14.0 if side < 0 else 12.0))
+    cable_in = cable_ins[-1]
 
     # ---- counterweight (no rotation: tub to the ground, lid and strap toward the throat)
     c = -(B + n.STRAP_T) - (n.CW_TUB_H + n.CW_LID_T - n.CHANNEL_D)
@@ -195,8 +195,9 @@ def build():
     cables = []
     cable_z = n.CAP_FLOOR_Z + (n.CAP_BASE_H - n.CAP_FLOOR_Z) / 2
     for side in (-1, 1):
+        cin = cable_ins[side]
         p0 = (side * (n.CAP_W / 2 + 1.0), 0.0, z0 + cable_z)
-        p1 = (-side * -cable_in.x if side > 0 else cable_in.x, cable_in.y, cable_in.z)
+        p1 = (cin.x, cin.y, cin.z)
         x, z, _ = neck_pt(side * 0.55, 12.0)
         cables.append(cable(f"cable_{side}", p0, p1, (side * (n.CAP_W / 2 + 24.0), 0, z0 + cable_z - 4), (x, 0, z)))
     nk = neck()
@@ -207,15 +208,20 @@ def mass_budget(parts):
     rho = oc.DENSITY["PA12"]
     g = {k: oc.volume_mm3(o) / 1000 * rho for k, o in parts.items()}
     cap_print = g["cap_base"] + g["cap_lid"] + g["cap_bar_-1"] + g["cap_bar_1"]
-    pod_print = sum(v for k, v in g.items() if k.startswith("pod_") and k.endswith("_L"))
+    bat_print = sum(v for k, v in g.items() if k.startswith("pod_") and "_L" in k)
+    cue_print = sum(v for k, v in g.items() if k.startswith("pod_") and "_R" in k)
     cw_print = g["cw_tub"] + g["cw_lid"]
     kit = d.NRF9151_KIT["mass_g"]
     cap = cap_print + kit + 8 + 2 + 10 + 2 + n.P124["mass_g"] + 15     # kit, bq24074, IMU, patch, LTE flex, P124, screws/inserts/O-ring
-    pod = pod_print + n.CELL["mass_g"] + d.QWIIC_BUZZER["mass_g"] + 8 + 12 + 10   # cell, buzzer, electrodes, screws, half the cable
+    bat = bat_print + n.PACK["mass_g"] + 8 + 12 + 15   # 353 pack, electrodes, screws, cable
+    cue = cue_print + d.QWIIC_BUZZER["mass_g"] + 8 + 12 + 10  # buzzer, electrodes, screws, cable
     cw = cw_print + n.steel_mass_g() + 10 + 2 * 2.5                       # steel, screws/foam, bars
-    return {"cap_g": round(cap), "pod_g_each": round(pod), "counterweight_g": round(cw),
-            "cap_print_g": round(cap_print), "pod_print_g_each": round(pod_print), "cw_print_g": round(cw_print),
-            "steel_g": round(n.steel_mass_g()), "strap_g": 130}
+    return {"cap_g": round(cap), "pod_battery_g": round(bat), "pod_cue_g": round(cue),
+            "pod_g_each": round((bat + cue) / 2),  # legacy key for balance()
+            "counterweight_g": round(cw),
+            "cap_print_g": round(cap_print), "pod_battery_print_g": round(bat_print),
+            "pod_cue_print_g": round(cue_print), "cw_print_g": round(cw_print),
+            "steel_g": round(n.steel_mass_g()), "strap_g": 130, "pack_g": n.PACK["mass_g"]}
 
 
 def balance(m):
@@ -223,14 +229,16 @@ def balance(m):
     z_cap = B + RIDGE + n.STRAP_T + 12.0
     _, z_pod, _ = neck_pt(POD_T, 14.0)
     z_cw = -(B + n.STRAP_T + 15.0)
-    top = m["cap_g"] * z_cap + 2 * m["pod_g_each"] * z_pod
-    total = m["cap_g"] + 2 * m["pod_g_each"] + m["counterweight_g"] + m["strap_g"]
+    top = m["cap_g"] * z_cap + (m["pod_battery_g"] + m["pod_cue_g"]) * z_pod
+    total = m["cap_g"] + m["pod_battery_g"] + m["pod_cue_g"] + m["counterweight_g"] + m["strap_g"]
     com = (top + m["counterweight_g"] * z_cw) / total
     halter = (488 * 215 - 912 * 225) / 1400   # 488 g top, 912 g counterweight (Verdon et al. 2026)
     m0 = total - m["counterweight_g"]
     need = (halter * m0 - top) / (z_cw - halter)  # counterweight whose COM matches Halter's
+    # Lateral imbalance: 353 pack (~155 g) sits only on the battery side.
     return {"collar_g": round(total), "com_mm": round(com, 1), "halter_com_mm": round(halter, 1),
-            "counterweight_needed_g": round(need), "z_pod_mm": round(z_pod, 1)}
+            "counterweight_needed_g": round(need), "z_pod_mm": round(z_pod, 1),
+            "pack_side_asymmetry_g": m.get("pack_g", 155)}
 
 
 if __name__ == "__main__":

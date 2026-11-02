@@ -6,26 +6,20 @@ How to start a print: see `../PRINTING.md`. Throughput notes: `../THROUGHPUT.md`
 
 | Part | STLs | Sliced P2S/PLA 3mf | Profile |
 | --- | --- | --- | --- |
-| Cap | `exports/node_v1_cap/` — `node_cap_base` **76×160×41.4**, `node_cap_lid` **76×160×7**, `node_cap_clamp_bar` 10×70×4 | `sliced/p2s_pla/F2_cap.gcode.3mf` — **STALE** (old 62×142 / dual-P122; prints #1/#2). Re-slice the current STLs (gable channel roof; see below). | Fit: `p2s_pla/` (supports off — spine V + channel gable are ≥45°). Final: `p2s_asa/`. |
-| Counterweight | `exports/node_v1_cw/` — `node_cw_tub`, `node_cw_lid`, `node_cw_clamp_bar` | `sliced/p2s_pla/F3_counterweight.gcode.3mf` (tub + lid + 2 clamp bars) | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
-| Pod | `exports/node_v1_pod/` — `node_pod_base`, `node_pod_lid`, `node_pod_clamp_bar` | `sliced/p2s_pla/F4_pod_left.gcode.3mf` (base + lid + 2 clamp bars; left side) | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
+| Cap | `exports/node_v1_cap/` — base **76×160×41.4**, lid **76×160×7**, clamp bar 10×70×4 | `sliced/p2s_pla/F2_cap.gcode.3mf` — **STALE**. Re-slice. | Fit: `p2s_pla/` (supports off). Final: `p2s_asa/`. |
+| Battery pod (left) | `exports/node_v1_pod_battery/` — base **100×90×26**, lid **100×90×6**, clamp bar | `F4_pod_left.gcode.3mf` — **STALE** (old dual-18650 pod). Re-slice. | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
+| Cue pod (right) | `exports/node_v1_pod_cue/` — base **92×68×26**, lid **92×68×6**, clamp bar | same F4 — **STALE**. Re-slice. | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
+| Counterweight | `exports/node_v1_cw/` | `sliced/p2s_pla/F3_counterweight.gcode.3mf` | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
 
-## Cap pocket and layout
+## Layout
 
-- Lid pocket: one Voltaic P124, **66.6 × 113.6 × 1.2 mm** (XY from `dims.P124_PANEL` 113×66 + 0.3 mm/side).
-- **Pocket depth stays 1.2 mm** (VHB recess). `dims.P124_PANEL` thickness is **3.1 mm** (drawing 2.8±0.3), but a full-depth pocket would break into the lid insert holes under the panel footprint. The panel sits proud on the gasket.
-- **`PANEL_Y = +11 mm` is deliberate:** a centred 113.6 mm pocket on a 160 mm lid leaves only ~23 mm at each end — too short for the 25 mm GPS patch — so the pocket shifts +Y and the patch takes the −Y end.
-- Strap-channel ceiling is a **single 45°+ gable** across Y (ridge along X). Base height is **41.4 mm** so the gable peak clears the cavity floor. Pod battery bay not changed yet (owner decision pending).
+- **Cap:** one P124 pocket 66.6 × 113.6 × 1.2 (VHB); `PANEL_Y = +11` deliberate; channel gable ≥45°.
+- **Battery pod:** owned **Adafruit 353** (69×54×18) in a 71×56×1.2 locator; foam/VHB; vent on −Y; power cable to the cap. **Do not buy 1781 cells.**
+- **Cue pod:** one owned **Qwiic Buzzer** (mono cues for unit #1). No battery bay. A second buzzer (0x5B) is optional later for left/right cues.
+- Clamp Y ±29.5 / 70 mm bars / strap channel unchanged across modules. Both pod outlines fit the P2S 256×256 plate.
 
-## Offline Orca slices (pre-gable 76×160×29)
+## Offline Orca (earlier cap geometry — re-slice)
 
-Cody’s offline Orca results for the **pre-gable** P124 cap (corrugated roof / floating valley lines — superseded). **Re-slice the current STLs.**
+Pre-gable 76×160×29: stock supports on 4h41m/140 g; supports off 4h06m/134 g; fast-fit 3h15m/133 g; old 62×142 cap 3h32m/93 g.
 
-| Profile | Time | Filament | Notes |
-| --- | --- | --- | --- |
-| Stock `p2s_pla`, supports on | 4h41m | 140 g | |
-| Stock `p2s_pla`, supports off | 4h06m | 134 g | Orca warned about floating regions on that geometry |
-| Fast-fit: 0.28 mm layer, 21 mm³/s flow, 10% gyroid, no supports | 3h15m | 133 g | |
-| Old 62×142 cap (for comparison) | 3h32m | 93 g | Prints #1/#2 |
-
-Also in `sliced/p2s_pla/`: `F1_fit_test.gcode.3mf` (`fit_test`), `F5_seal_box.gcode.3mf` (`seal_box_box` + `seal_box_lid`). Re-slice with `./slice_p2s_pla.sh` into the same folder. LAN start-print template (placeholder only): `tools/p2s_lan_start.tpl.py`.
+Also in `sliced/p2s_pla/`: `F1_fit_test.gcode.3mf`, `F5_seal_box.gcode.3mf`. LAN template: `tools/p2s_lan_start.tpl.py`.

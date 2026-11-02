@@ -1,6 +1,5 @@
-"""Node V1 option 1 print files: cap (base, lid, 2 clamp bars), pod (base,
-lid, 2 clamp bars; print two of each), counterweight casing (tub, lid,
-2 clamp bars). Geometry in lib/node_v1.py.
+"""Node V1 option 1 print files: cap, battery pod, cue pod, counterweight.
+Geometry in lib/node_v1.py.
 
 Print: MJF PA12 (no supports), or ASA on FDM (6 perimeters, 40 % infill,
 100 % around bosses and the strap channels).
@@ -8,8 +7,9 @@ Print: MJF PA12 (no supports), or ASA on FDM (6 perimeters, 40 % infill,
   lids            mating face down
   bars            flat
 
-Cap outline is 76 x 160 with one Voltaic P124 pocket (see HARDWARE-FIT.md).
-The older 62 x 142 / dual-P122 STLs and F2_cap.gcode.3mf are stale.
+Cap: 76 x 160 with one Voltaic P124 pocket.
+Battery pod (left): Adafruit 353 6600 mAh pack.
+Cue pod (right): one Qwiic Buzzer; no battery bay.
 """
 
 import os
@@ -38,20 +38,39 @@ if part in ("all", "cap"):
               "4 x M3x8 button head (bars); 12 x M3x4 heat-set inserts. "
               "One Voltaic P124 in the lid pocket; GPS patch at the −Y end.")
 
-if part in ("all", "pod"):
+if part in ("all", "pod", "pod_battery"):
     oc.reset()
-    base, lid, bar = n.pod_base(), n.pod_lid(), n.pod_bar()
-    oc.move(lid, dy=n.POD_W + 20)
-    oc.move(bar, dx=n.POD_L / 2 + 20)
+    base, lid, bar = n.pod_battery_base(), n.pod_battery_lid(), n.pod_bar()
+    oc.move(lid, dy=n.POD_BAT_W + 20)
+    oc.move(bar, dx=n.POD_BAT_L / 2 + 20)
     oc.finish(
-        "node_v1_pod",
-        {"node_pod_base": base, "node_pod_lid": lid, "node_pod_clamp_bar": bar},
-        spec={"node_pod_base": {"size": (n.POD_L, n.POD_W, n.POD_BASE_H)},
-              "node_pod_lid": {"size": (n.POD_L, n.POD_W, n.POD_LID_T)},
+        "node_v1_pod_battery",
+        {"node_pod_battery_base": base, "node_pod_battery_lid": lid, "node_pod_clamp_bar": bar},
+        spec={"node_pod_battery_base": {"size": (n.POD_BAT_L, n.POD_BAT_W, n.POD_BASE_H)},
+              "node_pod_battery_lid": {"size": (n.POD_BAT_L, n.POD_BAT_W, n.POD_LID_T)},
               "node_pod_clamp_bar": {"size": n.POD_BAR}},
-        refs=n.pod_refs(), material="PA12", min_wall=1.0,
-        notes="Per collar: 2 bases and 2 lids (print the second pair mirrored), 4 bars. Per pod: 4 x M3x25 button head + sealing washers, "
-              "4 x M3x6 button head (bars), 8 x M3x4 inserts, 2 x M4x10 A2 pan head + nut + O-ring (electrodes).")
+        refs=n.pod_battery_refs(), material="PA12", min_wall=1.0,
+        notes="Left / battery pod. 1 x Adafruit 353 pack in the locator recess (foam/VHB). "
+              "4 x M3x30 button head + sealing washers, 4 x M3x6 (bars), 8 x M3x4 inserts, "
+              "2 x M4x10 A2 pan head + nut + O-ring (electrodes). ePTFE vent patch on −Y. "
+              "Print 2 clamp bars shared with the cue pod.")
+
+if part in ("all", "pod", "pod_cue"):
+    oc.reset()
+    base, lid, bar = n.pod_cue_base(), n.pod_cue_lid(), n.pod_bar()
+    oc.move(lid, dy=n.POD_CUE_W + 20)
+    oc.move(bar, dx=n.POD_CUE_L / 2 + 20)
+    oc.finish(
+        "node_v1_pod_cue",
+        {"node_pod_cue_base": base, "node_pod_cue_lid": lid, "node_pod_clamp_bar": bar},
+        spec={"node_pod_cue_base": {"size": (n.POD_CUE_L, n.POD_CUE_W, n.POD_BASE_H)},
+              "node_pod_cue_lid": {"size": (n.POD_CUE_L, n.POD_CUE_W, n.POD_LID_T)},
+              "node_pod_clamp_bar": {"size": n.POD_BAR}},
+        refs=n.pod_cue_refs(), material="PA12", min_wall=1.0,
+        notes="Right / cue pod. 1 x Qwiic Buzzer (owned). No battery bay. "
+              "4 x M3x30 button head + sealing washers, 4 x M3x6 (bars), 8 x M3x4 inserts, "
+              "2 x M4x10 electrodes. Acoustic membrane on the +Y sound port. "
+              "Unit #1 uses one buzzer (mono); a second BOB-24474 at 0x5B is optional later.")
 
 if part in ("all", "cw"):
     oc.reset()
