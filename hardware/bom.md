@@ -7,7 +7,8 @@
 | Main board | Makerdiary nRF9151 Connect Kit | 1 | MCU + LTE-M/NB-IoT modem + GNSS | nRF9151 SiP (Cortex-M33). nRF52820 interface MCU gives CMSIS-DAP flashing and USB-UART over USB-C. BQ25180 LiPo charger, TPS63901 buck-boost. Nano-SIM slot. U.FL for LTE and GPS. Onboard GNSS LNA, enabled by nRF9151 `COEX0`. Firmware: nRF Connect SDK / Zephyr. |
 | LTE antenna | Flexible adhesive antenna, U.FL | 1 | Cellular | 3M 300LSE adhesive backing. Connects to the `LTE` U.FL. |
 | GPS antenna | Ceramic patch, 1575R-A, U.FL | 1 | GNSS | Connects to the `GPS` U.FL. Ceramic face points at the sky. |
-| Buzzer | SparkFun Qwiic Buzzer (BOB-24474) | 1 | Audio cue | I2C, default address 0x34, 3.3V. ATtiny84 onboard handles tone, volume, duration. Qwiic (JST-SH 4-pin) connectors; 0.1" through-holes have no headers fitted. |
+| Buzzer | SparkFun Qwiic Buzzer (BOB-24474) | 1 (owned) | Audio cue | I2C default 0x34 (jumper → 0x5B for a second board). Unit #1: one buzzer in the cue pod (mono). |
+| Battery | Adafruit 353 3.7 V 6600 mAh | 1 (owned) | Collar power | Lives in the battery pod; feeds the cap bq24074. Do not buy 1781 cells. |
 | Battery | PKCELL LP503562, 3.7V 1200mAh LiPo | 1 | Power | 2-wire lead with connector. Polarity must be checked against the board before connecting. |
 | Jumper wires | Dupont female-female, ribbon | 1 set | Bench wiring | |
 

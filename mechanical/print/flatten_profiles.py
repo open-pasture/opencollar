@@ -1,13 +1,20 @@
-"""Flatten OrcaSlicer's bundled Ender-3 V3 SE profiles (which inherit from
-base files) into standalone JSON the CLI can load, with our overrides.
+"""Flatten OrcaSlicer's bundled printer profiles (which inherit from base
+files) into standalone JSON the CLI can load, with our overrides.
 
-    python3 flatten_profiles.py   # writes ender3v3se/{machine,process,filament}.json
+    python3 flatten_profiles.py          # Ender-3 V3 SE, PLA quick look -> ender3v3se/{machine,process,filament}.json
+    python3 flatten_profiles.py petg     # Ender-3 V3 SE, PETG working parts -> ender3v3se_petg/
+    python3 flatten_profiles.py p2s_asa  # Bambu Lab P2S, ASA working parts -> p2s_asa/
+    python3 flatten_profiles.py p2s_pla  # Bambu Lab P2S, PLA fit checks -> p2s_pla/
 """
 import json
 import os
+import sys
 
-ORCA = "/Applications/OrcaSlicer.app/Contents/Resources/profiles/Creality"
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ender3v3se")
+PROFILES = "/Applications/OrcaSlicer.app/Contents/Resources/profiles"
+MODE = sys.argv[1] if len(sys.argv) > 1 else ""
+ORCA = os.path.join(PROFILES, "BBL" if MODE.startswith("p2s") else "Creality")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                   {"petg": "ender3v3se_petg", "p2s_asa": "p2s_asa", "p2s_pla": "p2s_pla"}.get(MODE, "ender3v3se"))
 
 SOURCES = {
     "machine": ("machine", "Creality Ender-3 V3 SE 0.4 nozzle"),
@@ -38,6 +45,56 @@ OVERRIDES = {
         "brim_type": "auto_brim",
     },
 }
+
+# Working parts (node V1): thick walls and solid tops seal and take heat-set
+# inserts; tree supports only where the cap's underside relief needs them.
+WORKING = {
+    "process": {
+        "wall_loops": "6",
+        "top_shell_layers": "6",
+        "bottom_shell_layers": "6",
+        "sparse_infill_density": "40%",
+        "sparse_infill_pattern": "gyroid",
+        "enable_support": "1",
+        "support_type": "tree(auto)",
+        "support_threshold_angle": "40",
+        "brim_type": "auto_brim",
+    },
+}
+
+# PETG on the Ender: the V3 SE has no enclosure, so ASA would warp there.
+if MODE == "petg":
+    SOURCES["process"] = ("process", "0.20mm Standard @Creality Ender3V3SE 0.4")
+    SOURCES["filament"] = ("filament", "Creality Generic PETG @Ender-3V3-all")
+    OVERRIDES = WORKING
+
+# ASA on the enclosed P2S: UV- and heat-stable shells for animals outdoors.
+if MODE == "p2s_asa":
+    SOURCES = {
+        "machine": ("machine", "Bambu Lab P2S 0.4 nozzle"),
+        "process": ("process", "0.20mm Standard @BBL P2S"),
+        "filament": ("filament", "Bambu ASA @BBL P2S 0.4 nozzle"),
+    }
+    # ASA won't print on the default Cool Plate; the P2S ships with textured PEI.
+    OVERRIDES = {"process": dict(WORKING["process"], curr_bed_type="Textured PEI Plate")}
+
+# PLA on the P2S while the ASA is in transit: fit and placement only, never
+# on an animal. Standard layers so holes come out true, light walls and
+# infill for speed; hole sizes still differ from ASA.
+if MODE == "p2s_pla":
+    SOURCES = {
+        "machine": ("machine", "Bambu Lab P2S 0.4 nozzle"),
+        "process": ("process", "0.20mm Standard @BBL P2S"),
+        "filament": ("filament", "Generic PLA @BBL P2S"),
+    }
+    OVERRIDES = {"process": {
+        "wall_loops": "3",
+        "sparse_infill_density": "15%",
+        "enable_support": "1",
+        "support_type": "tree(auto)",
+        "support_threshold_angle": "40",
+        "curr_bed_type": "Textured PEI Plate",
+    }}
 
 
 def load(kind, name):

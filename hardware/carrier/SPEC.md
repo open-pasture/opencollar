@@ -341,7 +341,7 @@ The Adafruit 4755 charger board we bought is no longer needed in the collar. It 
 Decided 2026-09-26: rectangle board (was question 1); the harness carries the battery, not 5 V (replaces question 2).
 
 To buy when you're ready (not ordered):
-1. **A second SparkFun Qwiic Buzzer** (BOB-24474) and **two Qwiic cables, 200–500 mm**, for the ear pods.
+1. **A second SparkFun Qwiic Buzzer** (BOB-24474) and **two Qwiic cables, 200–500 mm**, for stereo ear-pod cues (unit #1 ships with one buzzer / mono). Do **not** buy Adafruit 1781 cells — unit #1 uses the owned Adafruit 353 pack in the battery pod.
 2. **M8 8-pin harness:** a high-flex PUR female-to-male cordset and two panel-mount sockets with leads (one on the box, one on the bottom module). Length once the bottom module is drawn (section 12).
 3. Pre-crimped pigtails: JST-SH 3-pin ×1 (panels); JST-PH 8-pin ×2 (harness, and a bench lead to the pack and NTC).
 
