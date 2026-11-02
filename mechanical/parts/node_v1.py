@@ -4,9 +4,12 @@ lid, 2 clamp bars; print two of each), counterweight casing (tub, lid,
 
 Print: MJF PA12 (no supports), or ASA on FDM (6 perimeters, 40 % infill,
 100 % around bosses and the strap channels).
-  bases and tubs  outside face down (tree supports in the cap's underside relief on FDM)
+  bases and tubs  outside face down (cap spine relief is a 45° V-groove — no supports)
   lids            mating face down
   bars            flat
+
+Cap outline is 76 x 160 with one Voltaic P124 pocket (see HARDWARE-FIT.md).
+The older 62 x 142 / dual-P122 STLs and F2_cap.gcode.3mf are stale.
 """
 
 import os
@@ -32,7 +35,8 @@ if part in ("all", "cap"):
               "node_cap_clamp_bar": {"size": n.CAP_BAR}},
         refs=refs, material="PA12", min_wall=1.0,
         notes="Print 2 clamp bars. 8 x M3x20 button head + bonded M3 sealing washers (lid, from below), "
-              "4 x M3x8 button head (bars); 12 x M3x4 heat-set inserts.")
+              "4 x M3x8 button head (bars); 12 x M3x4 heat-set inserts. "
+              "One Voltaic P124 in the lid pocket; GPS patch at the −Y end.")
 
 if part in ("all", "pod"):
     oc.reset()

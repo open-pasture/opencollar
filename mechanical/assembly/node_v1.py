@@ -193,11 +193,12 @@ def build():
     # ---- strap, cables, neck
     strap = nc.band("strap", strap_points(), -n.STRAP_W / 2, n.STRAP_W / 2, n.STRAP_T)
     cables = []
+    cable_z = n.CAP_FLOOR_Z + (n.CAP_BASE_H - n.CAP_FLOOR_Z) / 2
     for side in (-1, 1):
-        p0 = (side * (n.CAP_W / 2 + 1.0), 0.0, z0 + 14.0)
+        p0 = (side * (n.CAP_W / 2 + 1.0), 0.0, z0 + cable_z)
         p1 = (-side * -cable_in.x if side > 0 else cable_in.x, cable_in.y, cable_in.z)
         x, z, _ = neck_pt(side * 0.55, 12.0)
-        cables.append(cable(f"cable_{side}", p0, p1, (side * 62.0, 0, z0 + 10), (x, 0, z)))
+        cables.append(cable(f"cable_{side}", p0, p1, (side * (n.CAP_W / 2 + 24.0), 0, z0 + cable_z - 4), (x, 0, z)))
     nk = neck()
     return parts, refs, strap, cables, nk
 
@@ -209,7 +210,7 @@ def mass_budget(parts):
     pod_print = sum(v for k, v in g.items() if k.startswith("pod_") and k.endswith("_L"))
     cw_print = g["cw_tub"] + g["cw_lid"]
     kit = d.NRF9151_KIT["mass_g"]
-    cap = cap_print + kit + 8 + 2 + 10 + 2 + 2 * n.P122["mass_g"] + 15     # kit, bq24074, IMU, patch, LTE flex, panels, screws/inserts/O-ring
+    cap = cap_print + kit + 8 + 2 + 10 + 2 + n.P124["mass_g"] + 15     # kit, bq24074, IMU, patch, LTE flex, P124, screws/inserts/O-ring
     pod = pod_print + n.CELL["mass_g"] + d.QWIIC_BUZZER["mass_g"] + 8 + 12 + 10   # cell, buzzer, electrodes, screws, half the cable
     cw = cw_print + n.steel_mass_g() + 10 + 2 * 2.5                       # steel, screws/foam, bars
     return {"cap_g": round(cap), "pod_g_each": round(pod), "counterweight_g": round(cw),
@@ -247,7 +248,8 @@ if __name__ == "__main__":
         nc.dress(o, "bar" if "bar" in k else "pa12")
     for r in refs:
         nm = r.name
-        mat = ("solar" if "p122" in nm else "cell" if "cell" in nm else "steel" if "steel" in nm or "electrode" in nm
+        mat = ("solar" if "p124" in nm or "p122" in nm else "cell" if "cell" in nm
+               else "steel" if "steel" in nm or "electrode" in nm
                else "gnss" if "gps" in nm else "antenna" if "lte" in nm else "pcb")
         nc.dress(r, mat, smooth=False)
     nc.dress(strap, "strap", smooth=False)
@@ -272,7 +274,7 @@ if __name__ == "__main__":
         for k in ("cap_lid", "pod_lid_L", "pod_lid_R", "cw_lid"):
             parts[k].hide_render = True
         for o in bpy.data.objects:
-            if o.name.startswith("ref_p122"):
+            if o.name.startswith("ref_p12"):
                 o.hide_render = True
         strap.hide_render = True
         shot(nc.camera((260, -330, top + 220), (0, 0, top - 10), lens=50), "cap_inside")

@@ -4,7 +4,8 @@ docs/concepts/side-pod-options.html and docs/NODE-V1-BUILD.md.
 
 Unit #1 is built from parts already on hand plus a small order:
   cap   nRF9151 Connect Kit (MCU, LTE-M, GNSS), bq24074 charger, ISM330 IMU,
-        GPS patch, LTE flex antenna, 2 x Voltaic P122 panels on the lid
+        GPS patch, LTE flex antenna, 1 x Voltaic P124 panel on the lid
+        (113 x 66; the earlier P122 pocket was a CAD mistake — see HARDWARE-FIT.md)
   pods  one protected 18650 (Adafruit 1781) and one Qwiic Buzzer each,
         two electrode studs through the neck-side floor (not wired on unit #1)
   cw    four 3 in pieces of 2 x 1/4 in steel flat bar in a printed casing
@@ -54,26 +55,36 @@ CABLE_D = 6.0                               # potted cable entry, cable OD <= 5.
 # ---------------------------------------------------------------- bought parts (unit #1)
 
 CELL = {"d": 18.4, "l": 69.0, "mass_g": 46}          # Adafruit 1781, pub
-P122 = {"size": (52.0, 52.0, 3.0), "mass_g": 12.1}    # Voltaic P122, pub (Adafruit 5855: 52x52x3)
+# Voltaic P124 from dims.py (owned); pocket below adds clearance around the ETFE laminate.
+P124 = d.P124_PANEL
 BQ_H = 11.0                                           # est: tallest part on the bq24074 board; measure
 PATCH_H = 6.0                                         # est: ceramic 4 + board/LNA; measure
 STEEL_PIECE = (76.2, 50.8, 6.35)                      # 3 in of 2 x 1/4 in flat bar
 STEEL_N = 4
 
 # ---------------------------------------------------------------- cap
+# Option A (HARDWARE-FIT.md): one owned P124. Outline ~76 x 160; pocket is the
+# panel plus 0.3 mm per side. GPS patch sits at the free (−Y) end of the lid;
+# the pocket is shifted a few mm toward +Y so a 25 mm patch fits in that end.
 
-CAP_W, CAP_L = 62.0, 142.0
+CAP_W, CAP_L = 76.0, 160.0
 CAP_WALL = 5.0
-CAP_FLOOR_Z = 7.5          # cavity floor (solid below: channel, inserts, spine relief)
-CAP_BASE_H = 20.5          # cavity 13 mm
+# Floor is taller than the old 7.5 so a 45° V-groove spine relief (depth =
+# half the 28 mm opening) stays under the cavity and needs no supports.
+CAP_FLOOR_Z = 16.0         # cavity floor (solid below: channel, inserts, spine relief)
+CAP_BASE_H = 29.0          # cavity 13 mm (same as before)
 CAP_LID_T = 7.0
-SPINE_RELIEF = (28.0, 5.0)  # width across the neck, depth, outside the strap zone
-CAP_COLS = [(sx * 22.5, y) for sx in (-1, 1) for y in (-60.0, -37.0, 37.0, 60.0)]
+SPINE_RELIEF_W = 28.0      # opening across the neck, outside the strap zone
+SPINE_RELIEF_H = SPINE_RELIEF_W / 2  # 14 mm → 45° flanks meeting at a ridge
+CAP_COLS = [(sx * 29.5, y) for sx in (-1, 1) for y in (-68.0, -42.0, 42.0, 68.0)]
 CAP_CLAMP = [(sx * 20.0, sy * 28.5) for sx in (-1, 1) for sy in (-1, 1)]
 CAP_BAR = (10.0, 70.0, 4.0)
-PANEL_Y = (-12.3, 41.7)    # panel pocket centres on the lid
-PANEL_POCKET = (52.6, 52.6, 1.2)
-PATCH_Y = -52.0
+# Pocket: X across neck (= panel short side), Y along spine (= panel long side).
+PANEL_POCKET = (66.6, 113.6, 1.2)   # P124 66 x 113 + 0.3 mm per side; depth 1.2 (VHB)
+# Pocket shifted +Y so a 25 mm GPS patch fits in the −Y cavity end (cavity
+# half-length is CAP_L/2 − CAP_WALL = 75) without hitting the panel or the rim.
+PANEL_Y = 11.0
+PATCH_Y = -60.0
 
 
 def _groove_loop(name, w, l, r, z_top, inset):
@@ -96,13 +107,23 @@ def cap_base():
     cols = [oc.cylinder(f"col{i}", 8.0, CAP_BASE_H - CAP_FLOOR_Z + 0.2, at=(x, y, CAP_FLOOR_Z - 0.5), anchor="bottom")
             for i, (x, y) in enumerate(CAP_COLS)]
     oc.union(b, *cols)
-    # Underside: strap channel across the neck, spine relief outside it, a gentle concave.
+    # Underside: strap channel across the neck; spine relief outside it is a
+    # 45° V-groove (no flat ceiling) so the base prints with the outside face
+    # down and needs no supports under the relief.
     oc.cut(b, oc.box("chan", (CAP_W + 2, CHANNEL_W, CHANNEL_D + 1), at=(0, 0, CHANNEL_D - (CHANNEL_D + 1) / 2)))
     zone = (CAP_L - CHANNEL_W) / 2
+    half_w = SPINE_RELIEF_W / 2
+    # Triangle in XZ, extruded along Y: opening at z=0, ridge at z=SPINE_RELIEF_H.
+    spine_xz = [
+        (-half_w - 0.5, -1.0),
+        (half_w + 0.5, -1.0),
+        (half_w + 0.5, 0.0),
+        (0.0, SPINE_RELIEF_H),
+        (-half_w - 0.5, 0.0),
+    ]
     for sy in (-1, 1):
         yc = sy * (CHANNEL_W / 2 + zone / 2)
-        oc.cut(b, oc.box("spine", (SPINE_RELIEF[0], zone + 0.2, SPINE_RELIEF[1] + 1),
-                         at=(0, yc, SPINE_RELIEF[1] - (SPINE_RELIEF[1] + 1) / 2)))
+        oc.cut(b, oc.prism_y(f"spine{sy}", spine_xz, zone + 0.4, at_y=yc))
     # Through screws for the lid (from below) with counterbores; clamp-bar inserts.
     for i, (x, y) in enumerate(CAP_COLS):
         oc.cut(b, oc.cylinder(f"h{i}", CLEAR, CAP_BASE_H + 2, at=(x, y, -1), anchor="bottom"))
@@ -111,9 +132,11 @@ def cap_base():
         oc.cut(b, oc.cylinder(f"ins{i}", INSERT["hole_d"], INSERT["hole_depth"] + 1, at=(x, y, -1), anchor="bottom"))
     # O-ring groove in the rim, centred on the wall.
     oc.cut(b, _groove_loop("groove", CAP_W, CAP_L, 10.0, CAP_BASE_H, CAP_WALL / 2))
-    # Potted cable entries, one each side, to the pods.
+    # Potted cable entries, one each side, to the pods (mid-cavity height).
+    cable_z = CAP_FLOOR_Z + (CAP_BASE_H - CAP_FLOOR_Z) / 2
     for sx in (-1, 1):
-        oc.cut(b, oc.cylinder(f"cable{sx}", CABLE_D, CAP_WALL + 4, at=(sx * (CAP_W / 2 - CAP_WALL / 2), 0, 14.0), axis="X"))
+        oc.cut(b, oc.cylinder(f"cable{sx}", CABLE_D, CAP_WALL + 4,
+                              at=(sx * (CAP_W / 2 - CAP_WALL / 2), 0, cable_z), axis="X"))
     return clean(b)
 
 
@@ -124,10 +147,10 @@ def cap_lid():
     oc.union(slab, top)
     for i, (x, y) in enumerate(CAP_COLS):
         oc.cut(slab, oc.cylinder(f"li{i}", INSERT["hole_d"], 4.5 + 1, at=(x, y, -1), anchor="bottom"))
-    for i, y in enumerate(PANEL_Y):
-        px, py, pz = PANEL_POCKET
-        oc.cut(slab, oc.rounded_rect(f"pocket{i}", (px, py, pz + 1), 1.0, at=(0, y, CAP_LID_T - pz), anchor="bottom"))
-        oc.cut(slab, oc.cylinder(f"wire{i}", 4.0, CAP_LID_T + 2, at=(0, y, -1), anchor="bottom"))
+    px, py, pz = PANEL_POCKET
+    oc.cut(slab, oc.rounded_rect("pocket", (px, py, pz + 1), 1.0, at=(0, PANEL_Y, CAP_LID_T - pz), anchor="bottom"))
+    # Panel lead hole near the +Y end of the pocket (away from the GPS patch).
+    oc.cut(slab, oc.cylinder("wire", 4.0, CAP_LID_T + 2, at=(0, PANEL_Y + py / 2 - 8.0, -1), anchor="bottom"))
     return slab
 
 
@@ -145,16 +168,22 @@ def cap_refs(z_lid=CAP_BASE_H):
     """Bought parts inside the cap, in cap coordinates."""
     k = d.NRF9151_KIT
     kb = k["board"]
+    # P124 short side across the neck (X), long side along the spine (Y).
+    p124_x, p124_y, p124_z = P124["size"][1], P124["size"][0], P124["size"][2]
+    cable_z = CAP_FLOOR_Z + (CAP_BASE_H - CAP_FLOOR_Z) / 2
     refs = [
         oc.box("ref_kit", (kb[1], kb[0], kb[2] + k["above_pcb"]), at=(-6.0, -6.0, CAP_FLOOR_Z + 2.0), anchor="bottom"),
-        oc.box("ref_bq24074", (d.BQ24074["board"][1], d.BQ24074["board"][0], BQ_H), at=(0.0, 45.5, CAP_FLOOR_Z + 0.3), anchor="bottom"),
-        oc.box("ref_ism330", (d.ISM330["board"][1], d.ISM330["board"][0], 3.2), at=(13.5, -8.0, CAP_FLOOR_Z + 2.0), anchor="bottom"),
-        oc.box("ref_gps_patch", (25.0, 25.0, PATCH_H), at=(0, PATCH_Y, CAP_BASE_H - PATCH_H - 0.6), anchor="bottom"),
-        oc.box("ref_lte_flex", (0.4, 44.0, 10.0), at=(CAP_W / 2 - CAP_WALL - 0.6, 10.0, 9.0), anchor="bottom"),
+        oc.box("ref_bq24074", (d.BQ24074["board"][1], d.BQ24074["board"][0], BQ_H),
+               at=(0.0, 52.0, CAP_FLOOR_Z + 0.3), anchor="bottom"),
+        oc.box("ref_ism330", (d.ISM330["board"][1], d.ISM330["board"][0], 3.2),
+               at=(18.0, -8.0, CAP_FLOOR_Z + 2.0), anchor="bottom"),
+        oc.box("ref_gps_patch", (25.0, 25.0, PATCH_H),
+               at=(0, PATCH_Y, CAP_BASE_H - PATCH_H - 0.6), anchor="bottom"),
+        oc.box("ref_lte_flex", (0.4, 44.0, 10.0),
+               at=(CAP_W / 2 - CAP_WALL - 0.6, 10.0, cable_z - 5.0), anchor="bottom"),
+        oc.box("ref_p124", (p124_x, p124_y, p124_z),
+               at=(0, PANEL_Y, z_lid + CAP_LID_T - PANEL_POCKET[2] + 0.05), anchor="bottom"),
     ]
-    for i, y in enumerate(PANEL_Y):
-        px, py, pz = P122["size"]
-        refs.append(oc.box(f"ref_p122_{i}", (px, py, pz), at=(0, y, z_lid + CAP_LID_T - PANEL_POCKET[2] + 0.05), anchor="bottom"))
     return [oc.reference(r) for r in refs]
 
 

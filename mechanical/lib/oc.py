@@ -377,8 +377,13 @@ def export_stl(obj, path):
         o.select_set(False)
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
-    bpy.ops.wm.stl_export(filepath=path, export_selected_objects=True,
-                          global_scale=1.0, apply_modifiers=True, ascii_format=False)
+    # Blender 4.2+ uses wm.stl_export; 3.x/4.0 keep export_mesh.stl.
+    try:
+        bpy.ops.wm.stl_export(filepath=path, export_selected_objects=True,
+                              global_scale=1.0, apply_modifiers=True, ascii_format=False)
+    except AttributeError:
+        bpy.ops.export_mesh.stl(filepath=path, use_selection=True,
+                                global_scale=1.0, use_mesh_modifiers=True, ascii=False)
 
 
 # ---------------------------------------------------------------- rendering
