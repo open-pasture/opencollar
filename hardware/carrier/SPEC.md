@@ -60,7 +60,7 @@ Sources, all kept locally in `mechanical/reference/vendor/` or `/tmp/ds` during 
 | Connect Kit | **Four 1 × 10 SMD female sockets**, two end to end per row (J1–J4), 2.54 mm pitch, 8.5 mm tall | The Kit already has male pins fitted (parts photo). SMD sockets leave no tails under the board, which keeps the bottom flat for test pads and the fixture (section 7). JLCPCB stocks no 1 × 20 SMD socket (3 pieces of one Samtec part), so each row is two 1 × 10s butted together |
 | MAX-M10S | **Female sockets** (8-pin edge row and 4-pin I2C row), not Qwiic | Sockets give us EXTINT (wake from standby), RESET_N, TIMEPULSE and UART, which Qwiic doesn't carry, and hold the board rigidly with no cable |
 | ISM330DHCX | **Female 9-pin socket** | Brings INT1/INT2 to the nRF for wake-on-motion. An IMU should be screwed down, not hanging on a cable |
-| Cues | **Two Qwiic Buzzers, one in each ear pod** on the strap, on Qwiic cables to CUE_L and CUE_R | Left/right cues need one sound source on each side of the neck (`docs/COLLAR-FIRST-PRINCIPLES.md` section 1). Qwiic Buzzers because one is owned and its driver is written; the second buzzer's address moves from 0x34 to 0x5B in software (SparkFun's two-buzzer example) |
+| Cues | **Two Qwiic Buzzers, one in each ear pod** on the strap, on Qwiic cables to CUE_L and CUE_R | Left/right cues need one sound source on each side of the neck (`docs/COLLAR-FIRST-PRINCIPLES.md` section 1). One buzzer is owned; **mono vs stereo is Cody’s open call**. A second board’s address moves from 0x34 to 0x5B in software via `setAddress()` (JP1 is volume only; see SparkFun Example_10_Buzz_Multiple.ino) |
 | Spare Qwiic | One JST-SH 4-pin socket on the main I2C bus | For bench add-ons, or for a breakout that won't fit its socket |
 | Charger | bq24074, **USB500 mode** (EN2 = 0, EN1 = 1), 1 A programmed charge, 500 mA input limit | USB500 is the only mode with input-voltage regulation (VIN-DPM 4.5 V), which stops the charger from dragging a panel down and collapsing it. The ILIM-resistor mode has no VIN-DPM ([BQ] 8.5, VIN-DPM: "EN2 = LO") |
 | Kit power | bq24074 **OUT → Kit J2** (battery input) | This is how TI wires the system load ([BQ] 9.3.4, 10.1). Charge termination and the safety timers only see battery current. OUT has short-circuit protection, and the Kit boots from sun even with a flat pack. OUT is 4.3–4.5 V when there's input ([BQ] 8.5 VO(REG)), inside J2's 3.6–4.65 V range [MD] |
@@ -148,7 +148,7 @@ Pin names and positions come from the [SF] board files (mating interface only).
 
 The aux row (SCX, SDX, OCS, SDO_AUX, GND) is left unsocketed.
 
-**Cue ports CUE_L, CUE_R:** JST-SH 4-pin, Qwiic order (GND, EXT_3V3, EXT_SDA, EXT_SCL). A Qwiic cable runs from each to a Qwiic Buzzer in its ear pod. Buzzer addresses 0x34 (left) and 0x5B (right).
+**Cue ports CUE_L, CUE_R:** JST-SH 4-pin, Qwiic order (GND, EXT_3V3, EXT_SDA, EXT_SCL). A Qwiic cable runs from each to a Qwiic Buzzer in its ear pod. Buzzer addresses 0x34 (left) and 0x5B (right, set in software with `setAddress()` — JP1 is volume only). Mono vs stereo is Cody’s open call.
 
 **Spare Qwiic:** JST-SH 4-pin on the main bus, inside the box: GND, 3V3, SDA, SCL.
 
@@ -341,7 +341,7 @@ The Adafruit 4755 charger board we bought is no longer needed in the collar. It 
 Decided 2026-09-26: rectangle board (was question 1); the harness carries the battery, not 5 V (replaces question 2).
 
 To buy when you're ready (not ordered):
-1. **A second SparkFun Qwiic Buzzer** (BOB-24474) and **two Qwiic cables, 200–500 mm**, for stereo ear-pod cues (unit #1 ships with one buzzer / mono). Do **not** buy Adafruit 1781 cells — unit #1 uses the owned Adafruit 353 pack in the battery pod.
+1. **Adafruit 1781 protected 18650 ×2** (pending Cody’s purchase approval) for the original dual-cell pods — plan of record. The Adafruit 353 battery-pod / cue-pod redesign is a **PROPOSED ALTERNATIVE, NOT APPROVED** (`exports/alt_pods_unapproved/`). A second SparkFun Qwiic Buzzer (BOB-24474) and Qwiic cables if stereo cues are chosen; **mono vs stereo is Cody’s open call**. Second-buzzer I2C address is set in software with `setAddress()` (JP1 is volume only; see Example_10_Buzz_Multiple.ino).
 2. **M8 8-pin harness:** a high-flex PUR female-to-male cordset and two panel-mount sockets with leads (one on the box, one on the bottom module). Length once the bottom module is drawn (section 12).
 3. Pre-crimped pigtails: JST-SH 3-pin ×1 (panels); JST-PH 8-pin ×2 (harness, and a bench lead to the pack and NTC).
 

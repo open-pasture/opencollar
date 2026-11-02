@@ -2,22 +2,22 @@
 
 ## Bottom line
 
-**Solar:** resize the cap for **one owned Voltaic P124** (done on this branch). Do not buy P122s.
+**Solar:** resize the cap for **one owned Voltaic P124** (done). Do not buy P122s.
 
-**Battery:** do **not** buy Adafruit 1781 cells. Unit #1 uses the **one owned Adafruit 353 6600 mAh pack** in a dedicated **battery pod** (left). The pack feeds the cap’s bq24074 / kit battery socket over the potted cable. The **cue pod** (right) has no battery bay.
+**Battery (plan of record):** unit #1 uses **2 × Adafruit 1781** protected 18650 cells with the original dual-cell pods (pending Cody’s purchase approval). The battery-pod / cue-pod redesign (100×90×26 with the Adafruit 353 + 92×68×26 cue) is a **PROPOSED ALTERNATIVE, NOT APPROVED**, awaiting Cody’s decision; the as-drawn dual-cell pods remain the plan of record. Those unapproved STLs (formerly `exports/node_v1_pod_battery` and `exports/node_v1_pod_cue`) live under `exports/alt_pods_unapproved/`.
 
-**Buzzer:** only **one** SparkFun Qwiic Buzzer (BOB-24474) is owned. **Unit #1 recommendation: one buzzer is enough** (mono fence cues). Put it in the **cue pod**. The longer-term left/right spatial-cue design wants two (addresses **0x34** and **0x5B** via the board jumper); firmware today only talks to `0x34`. Buy a second BOB-24474 later if stereo cues are required — not blocking for unit #1.
+**Buzzer:** one SparkFun Qwiic Buzzer (BOB-24474) is owned; the dual-cell CAD draws one buzzer per pod. **Mono vs stereo is still Cody’s open call** — do not assert that one buzzer is enough. I2C default **0x34**; a second board’s address is set in software with the SparkFun library’s `setAddress()` (see Example_10_Buzz_Multiple.ino). The board’s only documented jumper, **JP1, is for volume**, not address. Firmware (`buzzer.c`) hardcodes `0x34` today.
 
-## Where the pack lives
+## Where the cells live
 
 | Module | Role |
 | --- | --- |
 | Cap | MCU, LTE, GNSS, IMU, bq24074, P124, cables to both pods |
-| Battery pod (left) | Adafruit 353 pack + electrodes (unwired) + ePTFE vent; power cable to cap |
-| Cue pod (right) | One Qwiic Buzzer + electrodes (unwired); Qwiic/cue cable to cap |
+| Left pod | 1 × Adafruit 1781 + 1 × Qwiic Buzzer + electrodes (unwired) |
+| Right pod | 1 × Adafruit 1781 + 1 × Qwiic Buzzer + electrodes (unwired) |
 | Counterweight | Steel only (no battery) |
 
-Both pods still have electrode studs for later pulse work. They do **not** each need a local cell: the charger and load live in the cap, so one pack is the correct power split for the owned hardware. Mass is asymmetric (~155 g on the left) — accept for the prototype; bias the counterweight later if needed.
+Both pods are identical mirrors (92 × 68 × 24.5). Electrode studs stay for later pulse work.
 
 ## Assumed — verify with calipers
 
@@ -27,31 +27,32 @@ Both pods still have electrode studs for later pulse work. They do **not** each 
 | bq24074 tallest part (`BQ_H`) | **11.0 mm** | **Assumed, verify with calipers** |
 | GPS patch total height (`PATCH_H`) | **6.0 mm** | **Assumed, verify with calipers** |
 | P124 outline / thickness | **113 × 66 × 3.1** from `dims.P124_PANEL` | Assumed from drawing (2.8±0.3); confirm labels are P124 |
-| Adafruit 353 pack | **69 × 54 × 18 mm, 155 g** | From Adafruit / `dims.LIION_6600` |
+| Adafruit 1781 cell | **Ø18.4 × 69 mm, ~46 g** | Protected 18650; 2× pending Cody’s purchase approval |
 
 ## CAD status (this branch)
 
-- **Cap:** 76 × 160 × 41.4 mm; one P124 pocket 66.6 × 113.6 × 1.2 (VHB — full 3.1 mm depth would hit lid inserts); `PANEL_Y = +11` deliberate for GPS; channel gable + spine V ≥45°.
-- **Battery pod:** **100 × 90 × 26 mm**; pack locator 71 × 56 × 1.2; columns (±42, ±32); vent on −Y; crest cable +X.
-- **Cue pod:** **92 × 68 × 26 mm**; buzzer at (0, 10); sound port +Y; no battery bay.
+- **Cap:** 76 × 160 × 41.4 mm; one P124 pocket 66.6 × 113.6 × 1.2 (VHB — full 3.1 mm depth would hit lid inserts); `PANEL_Y = +11` deliberate for GPS; channel gable + spine V ≥45°. Cap CAD unchanged in this follow-up.
+- **Pod (plan of record):** **92 × 68 × 24.5 mm** base / lid 6 mm; cell at (−2, −13); buzzer at (20, 15); columns (±37, ±27); sound port +Y; crest cable +X. Export: `exports/node_v1_pod/`.
+- **PROPOSED ALTERNATIVE, NOT APPROVED:** battery pod 100×90×26 (Adafruit 353) + cue pod 92×68×26 under `exports/alt_pods_unapproved/` (was `node_v1_pod_battery` / `node_v1_pod_cue`); dual-cell `exports/node_v1_pod/` remains the plan of record.
 - **Clamp / strap:** shared 70 mm bars, clamp Y ±29.5, channel follows strap (fits P2S 256×256 easily).
-- Clearances PASS vs pack / buzzer / electrodes in the part builds.
+- Clearances PASS vs cell / buzzer / electrodes in the part builds (rebuild and report bounding boxes on this branch).
 
 ## Parts list (battery)
 
 | Item | Qty | Notes |
 | --- | --- | --- |
-| Adafruit 353 3.7 V 6600 mAh | **1 (owned)** | Battery pod |
-| Adafruit 1781 protected 18650 | **0 — do not buy** | Superseded by the 353 |
+| Adafruit 1781 protected 18650 | **2 (pending Cody’s purchase approval)** | One per dual-cell pod — plan of record |
+| Adafruit 353 3.7 V 6600 mAh | **1 (owned)** | Spare; only for the PROPOSED ALTERNATIVE (not approved) alt-pod layout |
 
 ## Buzzer (plain)
 
 - **What each buzzer is for:** left/right audio fence cues on the neck (~30° cattle MAA; BUILD-LOG / carrier SPEC).
-- **I2C:** default **0x34**; a second board remaps to **0x5B** with the address jumper. Firmware (`buzzer.c`) hardcodes `0x34` only.
-- **Owned:** 1. **Unit #1: one buzzer in the cue pod is enough.** Optional later: second BOB-24474 for stereo.
+- **I2C:** default **0x34**; second board → **0x5B** via `setAddress()` in software (not a board jumper). **JP1 is volume only.**
+- **Owned:** 1. CAD draws one per pod. **Mono vs stereo: Cody’s open call.**
 
 ## Ask Cody
 
 1. Confirm panels are P124s (photo of backs/labels).
 2. Calipers: strap thickness, bq24074 height, GPS patch height.
-3. Accept left-side ~155 g pack asymmetry for unit #1, or say if the pack should move.
+3. Mono vs stereo buzzer for unit #1 (one owned vs buy a second BOB-24474).
+4. Confirm 1781 purchase / delivery so pods can be fitted.

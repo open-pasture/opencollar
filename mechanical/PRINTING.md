@@ -7,11 +7,12 @@ Last verified: 2026-11-02 (print #2, the Node V1 cap). Total hands-on time once 
 Bambu Connect on the owner's Mac, which is already signed in and shows the printer. Needs the Mac on and awake.
 
 1. Find the sliced file in the repo (see "Where files live"). It must be a `.gcode.3mf` that already contains `Metadata/plate_1.gcode`. Do not re-slice just to print again.
-2. Open it in Bambu Connect with the deep link (URL-encode the full path):
+2. **If the `.gcode.3mf` came from the Orca CLI / repo slice scripts**, run `uv run print/fix_bbl_3mf.py job.gcode.3mf N7 <stls>` first (from `mechanical/`). Without that fix, Bambu Connect's **Import Gcode 3MF** button silently does nothing.
+3. Open it in Bambu Connect with the deep link (URL-encode the full path):
    `open "bambu-connect://import-file?path=<url-encoded path>&name=<job name>&version=1.0.0"`
-3. In Bambu Connect click **Import Gcode 3MF**, then **Print** (top right), then **Send** in the "Send to print" box. Check the printer name and that the filament maps to the right AMS slot (PLA to the PLA slot).
-4. The printer shows "Downloading", then "Homing toolhead, 0/N layers". That is the confirmation it started.
-5. Log it in `mechanical/PRINT-HISTORY.md` (file, material, layers, estimated time, route).
+4. In Bambu Connect click **Import Gcode 3MF**, then **Print** (top right), then **Send** in the "Send to print" box. Check the printer name and that the filament maps to the right AMS slot (PLA to the PLA slot).
+5. The printer shows "Downloading", then "Homing toolhead, 0/N layers". That is the confirmation it started.
+6. Log it in `mechanical/PRINT-HISTORY.md` (file, material, layers, estimated time, route).
 
 Driving the Mac from an assistant needs macOS Accessibility permission for the assistant app (System Settings > Privacy & Security > Accessibility). Menu-style scripting clicks do not work in this app; use a real mouse click (a tiny Swift `CGEvent` helper compiled on the Mac), and activate the app first. Screen coordinates are global points; the Mac has a very wide screen, so take a full-width screenshot and scale coordinates.
 
