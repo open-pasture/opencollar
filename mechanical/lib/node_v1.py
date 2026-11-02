@@ -2,15 +2,13 @@
 each side of the neck, plus an encased steel counterweight. See
 docs/concepts/side-pod-options.html and docs/NODE-V1-BUILD.md.
 
-Unit #1 is built from parts already on hand:
-  cap      nRF9151 Connect Kit (MCU, LTE-M, GNSS), bq24074 charger, ISM330 IMU,
-           GPS patch, LTE flex antenna, 1 x Voltaic P124 on the lid
-           (see HARDWARE-FIT.md)
-  battery  left pod: owned Adafruit 353 6600 mAh pack (power to the cap).
-           Do not buy Adafruit 1781 cells.
-  cue      right pod: the one owned Qwiic Buzzer (mono cues for unit #1).
-           Both pods keep two electrode studs (not wired on unit #1).
-  cw       four 3 in pieces of 2 x 1/4 in steel flat bar in a printed casing
+Unit #1 is built from parts already on hand plus a small order:
+  cap   nRF9151 Connect Kit (MCU, LTE-M, GNSS), bq24074 charger, ISM330 IMU,
+        GPS patch, LTE flex antenna, 1 x Voltaic P124 panel on the lid
+        (113 x 66; see HARDWARE-FIT.md)
+  pods  one protected 18650 (Adafruit 1781) and one Qwiic Buzzer each,
+        two electrode studs through the neck-side floor (not wired on unit #1)
+  cw    four 3 in pieces of 2 x 1/4 in steel flat bar in a printed casing
 
 Each part is modelled in its own print frame: X along its long axis, Z up.
   cap: X across the neck, Y along the spine, Z up from the strap.
@@ -59,9 +57,7 @@ CABLE_D = 6.0                               # potted cable entry, cable OD <= 5.
 
 # ---------------------------------------------------------------- bought parts (unit #1)
 
-# Owned Adafruit 353 pack (dims.LIION_6600). Not the never-bought 1781 cells.
-PACK = d.LIION_6600
-PACK_CLEAR = 1.0                                      # ~1 mm air per side around the pack
+CELL = {"d": 18.4, "l": 69.0, "mass_g": 46}          # Adafruit 1781, pub (Cody ordering 2×)
 # Voltaic P124 from dims.py (owned); pocket below adds clearance around the ETFE laminate.
 P124 = d.P124_PANEL
 BQ_H = 11.0                                           # assumed, verify with calipers
@@ -218,166 +214,82 @@ def cap_refs(z_lid=CAP_BASE_H):
     return [oc.reference(r) for r in refs]
 
 
-# ---------------------------------------------------------------- pods
-# One battery pod (Adafruit 353) + one cue pod (Qwiic Buzzer). Cap holds the
-# bq24074; the pack feeds it over the battery-pod cable. Cue pod has no cell.
-# Strap channel / clamp Y (±29.5) / 70 mm bar match the other modules.
+# ---------------------------------------------------------------- pod
+# Plan of record: two identical pods, each with one Adafruit 1781 cell and one
+# Qwiic Buzzer (Cody ordering 2×1781). An unapproved 353-pack alternative lives
+# under exports/alt_pods_unapproved/.
 
+POD_L, POD_W = 92.0, 68.0
 POD_WALL = 5.0
 POD_FLOOR = 3.0
+POD_BASE_H = 24.5          # cavity 21.5 for the 18.4 mm cell; lid screws are M3 x 25
 POD_LID_T = 6.0
-POD_BASE_H = 26.0          # cavity 23 mm; lid screws M3×30 from the skin side
+POD_COLS = [(sx * 37.0, sy * 27.0) for sx in (-1, 1) for sy in (-1, 1)]
+POD_CLAMP = [(sx * 32.0, sy * 29.5) for sx in (-1, 1) for sy in (-1, 1)]
 POD_BAR = (10.0, 70.0, 4.0)
-POD_CLAMP_Y = 29.5         # shared with the 70 mm clamp bar
-
-# Battery pod: pack 69×54×18 + 1 mm/side → 71×56 locator; columns clear the pack
-# (pack half 34.5×27; column r=4 + 1 mm → centres beyond ≈40.5, 32). Outline
-# is roomy enough that the O-ring groove stays clear of the column bosses.
-POD_BAT_L, POD_BAT_W = 100.0, 90.0
-POD_BAT_COLS = [(sx * 42.0, sy * 32.0) for sx in (-1, 1) for sy in (-1, 1)]
-POD_BAT_CLAMP = [(sx * 36.0, sy * POD_CLAMP_Y) for sx in (-1, 1) for sy in (-1, 1)]
-PACK_AT = (0.0, 0.0)
-PACK_POCKET = (PACK["size"][0] + 2 * PACK_CLEAR, PACK["size"][1] + 2 * PACK_CLEAR, 1.2)
-ELECTRODES_BAT = [(-20.0, -36.0), (20.0, -36.0)]  # −Y edge, clear of pack and side wall
-
-# Cue pod: no battery bay; one buzzer + electrodes. Outline stays near the old 92×68.
-POD_CUE_L, POD_CUE_W = 92.0, 68.0
-POD_CUE_COLS = [(sx * 37.0, sy * 27.0) for sx in (-1, 1) for sy in (-1, 1)]
-POD_CUE_CLAMP = [(sx * 32.0, sy * POD_CLAMP_Y) for sx in (-1, 1) for sy in (-1, 1)]
-BUZZER_AT = (0.0, 10.0)
-ELECTRODES_CUE = [(-28.0, -12.0), (28.0, -12.0)]
-
-# Aliases so older call sites that expect a single outline still resolve.
-POD_L, POD_W = POD_BAT_L, POD_BAT_W
-POD_COLS = POD_BAT_COLS
-POD_CLAMP = POD_BAT_CLAMP
+CELL_AT = (-2.0, -13.0)
+BUZZER_AT = (20.0, 15.0)   # board centre
+ELECTRODES = [(-30.0, 15.0), (-8.0, 15.0)]
 
 
-def _pod_shell(name, length, width, cols):
-    """Shared sealed shell: cavity, screw columns, conical counterbores, O-ring."""
-    b = oc.rounded_box(name, (length, width, POD_BASE_H), 4.0, anchor="bottom")
-    oc.union(b, oc.rounded_rect(name + "_rim", (length, width, 10.0), 9.0,
-                                at=(0, 0, POD_BASE_H - 10.0), anchor="bottom"))
-    oc.intersect(b, oc.rounded_rect(name + "_trim", (length, width, POD_BASE_H + 2), 9.0,
-                                    at=(0, 0, -1), anchor="bottom"))
-    cav = oc.rounded_rect(name + "_cav", (length - 2 * POD_WALL, width - 2 * POD_WALL, POD_BASE_H), 4.0,
+def pod_base():
+    b = oc.rounded_box("pod_base", (POD_L, POD_W, POD_BASE_H), 4.0, anchor="bottom")
+    oc.union(b, oc.rounded_rect("rim", (POD_L, POD_W, 10.0), 9.0, at=(0, 0, POD_BASE_H - 10.0), anchor="bottom"))
+    oc.intersect(b, oc.rounded_rect("trim", (POD_L, POD_W, POD_BASE_H + 2), 9.0, at=(0, 0, -1), anchor="bottom"))
+    cav = oc.rounded_rect("pcav", (POD_L - 2 * POD_WALL, POD_W - 2 * POD_WALL, POD_BASE_H), 4.0,
                           at=(0, 0, POD_FLOOR), anchor="bottom")
     oc.cut(b, cav)
-    bosses = [oc.cylinder(f"{name}_col{i}", 8.0, POD_BASE_H - POD_FLOOR + 0.5,
-                          at=(x, y, POD_FLOOR - 0.5), anchor="bottom")
-              for i, (x, y) in enumerate(cols)]
-    oc.union(b, *bosses)
-    for i, (x, y) in enumerate(cols):
-        oc.cut(b, oc.cylinder(f"{name}_h{i}", CLEAR, POD_BASE_H + 2, at=(x, y, -1), anchor="bottom"))
-        oc.cut(b, oc.cone(f"{name}_cb{i}", CBORE_D, CLEAR, CBORE_DEPTH, at=(x, y, 0.0)))
-    oc.cut(b, _groove_loop(name + "_groove", length, width, 9.0, POD_BASE_H, POD_WALL / 2))
+    cols = [oc.cylinder(f"pcol{i}", 8.0, POD_BASE_H - POD_FLOOR + 0.5, at=(x, y, POD_FLOOR - 0.5), anchor="bottom")
+            for i, (x, y) in enumerate(POD_COLS)]
+    oc.union(b, *cols)
+    for i, (x, y) in enumerate(POD_COLS):
+        oc.cut(b, oc.cylinder(f"ph{i}", CLEAR, POD_BASE_H + 2, at=(x, y, -1), anchor="bottom"))
+        oc.cut(b, oc.cylinder(f"pcb{i}", CBORE_D, CBORE_DEPTH + 1, at=(x, y, -1), anchor="bottom"))
+    oc.cut(b, _groove_loop("pgroove", POD_L, POD_W, 9.0, POD_BASE_H, POD_WALL / 2))
+    # Electrode studs (M4 pan head from the skin side, O-ring seat under the head).
+    for i, (x, y) in enumerate(ELECTRODES):
+        oc.cut(b, oc.cylinder(f"el{i}", 4.3, POD_FLOOR + 2, at=(x, y, -1), anchor="bottom"))
+        oc.cut(b, oc.cylinder(f"elc{i}", 10.0, 1.0 + 1, at=(x, y, -1), anchor="bottom"))
+    # Sound port toward the head (+Y wall), at the buzzer; an acoustic membrane is bonded inside.
+    oc.cut(b, oc.cylinder("port", 8.0, POD_WALL + 4, at=(BUZZER_AT[0], POD_W / 2 - POD_WALL / 2, 11.0), axis="Y"))
+    # Potted cable entry on the end toward the crest (+X).
+    oc.cut(b, oc.cylinder("pcable", CABLE_D, POD_WALL + 4, at=(POD_L / 2 - POD_WALL / 2, -2.0, 12.0), axis="X"))
     return b
 
 
-def _pod_electrodes(b, electrodes):
-    for i, (x, y) in enumerate(electrodes):
-        oc.cut(b, oc.cylinder(f"el{i}", 4.3, POD_FLOOR + 2, at=(x, y, -1), anchor="bottom"))
-        oc.cut(b, oc.cylinder(f"elc{i}", 10.0, 2.0, at=(x, y, -1), anchor="bottom"))
-
-
-def _pod_lid(name, length, width, cols, clamps):
-    # Single rounded body (no slab step) so mating-face-down has no flat ledge.
-    slab = oc.rounded_box(name, (length, width, POD_LID_T), 2.5, anchor="bottom")
-    oc.intersect(slab, oc.rounded_rect(name + "_trim", (length, width, POD_LID_T + 2), 9.0,
-                                       at=(0, 0, -1), anchor="bottom"))
-    oc.cut(slab, oc.box(name + "_chan", (length + 2, CHANNEL_W, CHANNEL_D + 1),
-                        at=(0, 0, POD_LID_T - CHANNEL_D + (CHANNEL_D + 1) / 2)))
-    for i, (x, y) in enumerate(cols):
-        # Blind insert from the mating face: cylinder then conical tip.
-        oc.cut(slab, oc.cylinder(f"{name}_ih{i}", INSERT["hole_d"], 3.0, at=(x, y, -1), anchor="bottom"))
-        oc.cut(slab, oc.cone(f"{name}_it{i}", INSERT["hole_d"], 0.2, 2.2, at=(x, y, 2.0)))
-    for i, (x, y) in enumerate(clamps):
-        # Clamp inserts from the outer face (open upward when printing mating-down).
-        oc.cut(slab, oc.cylinder(f"{name}_ci{i}", INSERT["hole_d"], 4.5 + 1,
-                                 at=(x, y, POD_LID_T - 4.5), anchor="bottom"))
+def pod_lid():
+    slab = oc.rounded_rect("pod_lid", (POD_L, POD_W, 3.0), 9.0, anchor="bottom")
+    top = oc.rounded_box("plid_top", (POD_L, POD_W, POD_LID_T - 1.0), 2.5, at=(0, 0, 1.0), anchor="bottom")
+    oc.intersect(top, oc.rounded_rect("ptrim", (POD_L, POD_W, POD_LID_T + 2), 9.0, at=(0, 0, -1), anchor="bottom"))
+    oc.union(slab, top)
+    oc.cut(slab, oc.box("pchan", (POD_L + 2, CHANNEL_W, CHANNEL_D + 1), at=(0, 0, POD_LID_T - CHANNEL_D + (CHANNEL_D + 1) / 2)))
+    for i, (x, y) in enumerate(POD_COLS):
+        oc.cut(slab, oc.cylinder(f"pli{i}", INSERT["hole_d"], 4.8 + 1, at=(x, y, -1), anchor="bottom"))
+    for i, (x, y) in enumerate(POD_CLAMP):
+        oc.cut(slab, oc.cylinder(f"pci{i}", INSERT["hole_d"], 4.8 + 1, at=(x, y, POD_LID_T - 4.8), anchor="bottom"))
     return slab
-
-
-def pod_battery_base():
-    """Left / battery pod: Adafruit 353 pack bay, electrodes, vent, crest cable."""
-    b = _pod_shell("pod_bat", POD_BAT_L, POD_BAT_W, POD_BAT_COLS)
-    _pod_electrodes(b, ELECTRODES_BAT)
-    # 1.2 mm locator recess for the pack (foam / VHB fills the rest of the height).
-    px, py, pz = PACK_POCKET
-    oc.cut(b, oc.rounded_rect("pack_pocket", (px, py, pz + 1), 2.0,
-                              at=(PACK_AT[0], PACK_AT[1], POD_FLOOR - 0.05), anchor="bottom"))
-    # ePTFE vent patch seat (no sealed-battery pressure); −Y wall.
-    oc.cut(b, oc.cylinder("pvent", 8.0, POD_WALL + 4,
-                          at=(0.0, -(POD_BAT_W / 2 - POD_WALL / 2), 14.0), axis="Y"))
-    # Potted cable to the cap (power + optional sense), crest end (+X).
-    oc.cut(b, oc.cylinder("pcable", CABLE_D, POD_WALL + 4,
-                          at=(POD_BAT_L / 2 - POD_WALL / 2, -2.0, 14.0), axis="X"))
-    return clean(b)
-
-
-def pod_battery_lid():
-    return _pod_lid("pod_bat_lid", POD_BAT_L, POD_BAT_W, POD_BAT_COLS, POD_BAT_CLAMP)
-
-
-def pod_cue_base():
-    """Right / cue pod: one Qwiic Buzzer, electrodes, no battery bay."""
-    b = _pod_shell("pod_cue", POD_CUE_L, POD_CUE_W, POD_CUE_COLS)
-    _pod_electrodes(b, ELECTRODES_CUE)
-    # Sound port toward the head (+Y), at the buzzer; acoustic membrane inside.
-    oc.cut(b, oc.cylinder("port", 8.0, POD_WALL + 4,
-                          at=(BUZZER_AT[0], POD_CUE_W / 2 - POD_WALL / 2, 12.0), axis="Y"))
-    oc.cut(b, oc.cylinder("pcable", CABLE_D, POD_WALL + 4,
-                          at=(POD_CUE_L / 2 - POD_WALL / 2, -2.0, 12.0), axis="X"))
-    return clean(b)
-
-
-def pod_cue_lid():
-    return _pod_lid("pod_cue_lid", POD_CUE_L, POD_CUE_W, POD_CUE_COLS, POD_CUE_CLAMP)
 
 
 def pod_bar():
     x, y, z = POD_BAR
     bar = oc.rounded_box("pod_bar", (x, y, z), 1.5, anchor="bottom")
-    cb_d, cb_h = d.M3_BUTTON["head_cbore_d"], d.M3_BUTTON["head_cbore_depth"]
     for sy in (-1, 1):
-        oc.cut(bar, oc.cylinder(f"pbh{sy}", CLEAR, z + 2, at=(0, sy * POD_CLAMP_Y, -1), anchor="bottom"))
-        oc.cut(bar, oc.cone(f"pbc{sy}", cb_d, CLEAR, cb_h, at=(0, sy * POD_CLAMP_Y, 0.0)))
+        oc.cut(bar, oc.cylinder(f"pbh{sy}", CLEAR, z + 2, at=(0, sy * 29.5, -1), anchor="bottom"))
+        oc.cut(bar, oc.cylinder(f"pbc{sy}", d.M3_BUTTON["head_cbore_d"], d.M3_BUTTON["head_cbore_depth"] + 1,
+                                at=(0, sy * 29.5, z - d.M3_BUTTON["head_cbore_depth"]), anchor="bottom"))
     return bar
 
 
-def pod_battery_refs():
-    px, py, pz = PACK["size"]
-    refs = [
-        oc.box("ref_pack", (px, py, pz),
-               at=(PACK_AT[0], PACK_AT[1], POD_FLOOR + PACK_POCKET[2] + 0.05), anchor="bottom"),
-    ]
-    for i, (x, y) in enumerate(ELECTRODES_BAT):
-        refs.append(oc.cylinder(f"ref_electrode_bat{i}", 7.0, 2.2, at=(x, y, -2.2), anchor="bottom"))
-    return [oc.reference(r) for r in refs]
-
-
-def pod_cue_refs():
+def pod_refs():
     qb = d.QWIIC_BUZZER
     refs = [
+        oc.cylinder("ref_cell", CELL["d"], CELL["l"], at=(CELL_AT[0], CELL_AT[1], POD_FLOOR + CELL["d"] / 2 + 0.4), axis="X"),
         oc.box("ref_buzzer", (qb["board"][0], qb["board"][1], qb["board"][2] + qb["buzzer"]["size"][2]),
-               at=(BUZZER_AT[0], BUZZER_AT[1], POD_FLOOR + 2.0), anchor="bottom"),
+               at=(BUZZER_AT[0], BUZZER_AT[1], POD_FLOOR + 3.0), anchor="bottom"),
     ]
-    for i, (x, y) in enumerate(ELECTRODES_CUE):
-        refs.append(oc.cylinder(f"ref_electrode_cue{i}", 7.0, 2.2, at=(x, y, -2.2), anchor="bottom"))
+    for i, (x, y) in enumerate(ELECTRODES):
+        refs.append(oc.cylinder(f"ref_electrode{i}", 7.0, 2.2, at=(x, y, -2.2), anchor="bottom"))
     return [oc.reference(r) for r in refs]
-
-
-# Back-compat names used by older scripts (battery pod geometry).
-def pod_base():
-    return pod_battery_base()
-
-
-def pod_lid():
-    return pod_battery_lid()
-
-
-def pod_refs():
-    return pod_battery_refs() + pod_cue_refs()
 
 
 # ---------------------------------------------------------------- counterweight

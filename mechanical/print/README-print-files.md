@@ -7,16 +7,16 @@ How to start a print: see `../PRINTING.md`. Throughput notes: `../THROUGHPUT.md`
 | Part | STLs | Sliced P2S/PLA 3mf | Profile |
 | --- | --- | --- | --- |
 | Cap | `exports/node_v1_cap/` — base **76×160×41.4**, lid **76×160×7**, clamp bar 10×70×4 | `sliced/p2s_pla/F2_cap.gcode.3mf` — **STALE** (old 62×142 / dual-P122 cap from prints #1/#2; not the v3 76×160 gabled STLs). Re-slice. | Fit: `p2s_pla/` (supports off). Final: `p2s_asa/`. |
-| Battery pod (left) | `exports/node_v1_pod_battery/` — base **100×90×26**, lid **100×90×6**, clamp bar | `sliced/p2s_pla/F4_pod_left.gcode.3mf` — **STALE** (old pod outline / dual-18650 bay; not battery+cue pods). Re-slice. | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
-| Cue pod (right) | `exports/node_v1_pod_cue/` — base **92×68×26**, lid **92×68×6**, clamp bar | same F4 — **STALE** (old pod outline). Re-slice. | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
+| Pod (×2, mirror one) | `exports/node_v1_pod/` — base **92×68×24.5**, lid **92×68×6**, clamp bar | `sliced/p2s_pla/F4_pod_left.gcode.3mf` — **STALE** until re-sliced from the restored dual-cell STLs. | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
 | Counterweight | `exports/node_v1_cw/` | `sliced/p2s_pla/F3_counterweight.gcode.3mf` | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
+
+Unapproved alternative (Adafruit 353 battery pod + cue-only pod): `exports/alt_pods_unapproved/` — not the plan of record.
 
 ## Layout
 
 - **Cap:** one P124 pocket 66.6 × 113.6 × 1.2 (VHB); `PANEL_Y = +11` deliberate; channel gable ≥45°.
-- **Battery pod:** owned **Adafruit 353** (69×54×18) in a 71×56×1.2 locator; foam/VHB; vent on −Y; power cable to the cap. **Do not buy 1781 cells.**
-- **Cue pod:** one owned **Qwiic Buzzer** (mono cues for unit #1). No battery bay. A second buzzer (0x5B) is optional later for left/right cues.
-- Clamp Y ±29.5 / 70 mm bars / strap channel unchanged across modules. Both pod outlines fit the P2S 256×256 plate.
+- **Pod (plan of record):** 1 × Adafruit 1781 + 1 × Qwiic Buzzer per pod (Cody ordering 2×1781). Identical left/right mirrors. Sound port +Y; crest cable +X.
+- Clamp Y ±29.5 / 70 mm bars / strap channel unchanged across modules. Pod outline fits the P2S 256×256 plate.
 
 ## Offline Orca (earlier cap geometry — re-slice)
 
