@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+mainmenu "OpenCollar radio ping/pong"
+
+config RADIO_PINGPONG_INITIATOR
+	bool "This node initiates pings (both roles still receive)"
+	default y
+	help
+	  Symmetric link test: both sides can initiate. Enable on one
+	  board, disable on the other, or enable on both for dual-init.
+
+config RADIO_PINGPONG_INTERVAL_MS
+	int "Ping interval when initiator (ms)"
+	default 2000
+	range 200 60000
+
+config RADIO_LOG_LEVEL
+	int "Radio HAL log level (0-4)"
+	default 3
+
+config RADIO_RX_PERIOD_MS
+	int "RX window period (ms)"
+	default 1000
+
+config RADIO_RX_WINDOW_MS
+	int "RX window duration (ms)"
+	default 200
+
+config RADIO_BEACON_PERIOD_MS
+	int "Freshness-beacon period (ms); 0 disables in this sample"
+	default 0
+
+config RADIO_BEACON_JITTER_MS
+	int "Beacon jitter ±ms"
+	default 500
+
+config RADIO_TX_CAP_DBM
+	int "TX power cap (dBm)"
+	default 14
+	range -9 22
+
+config RADIO_SF
+	int "Spreading factor (7..10 for US915 125 kHz bring-up)"
+	default 8
+	range 7 10
+
+config RADIO_FREQ_HZ
+	int "Center frequency (Hz)"
+	default 903900000
+
+source "Kconfig.zephyr"

@@ -1,0 +1,50 @@
+/*
+ * Seeed Wio-SX1262 for XIAO — in-repo shield (NOT in Zephyr/NCS).
+ *
+ * Verified against NCS v3.4.1: zephyr/boards/seeed/xiao_ble exists;
+ * zephyr/boards/shields/ has no seeed_wio_sx1262 (only semtech_sx1262mb2das
+ * and semtech_sx1261mb2bas). This overlay is therefore ours.
+ *
+ * Pin map (Seeed Wio-SX1262 for XIAO / Meshtastic kit SKU 102010710):
+ *   CS/NSS  D4  (P0.04)   SCK D8 (P1.13)  MOSI D10 (P1.15)  MISO D9 (P1.14)
+ *   DIO1    D1  (P0.03)   RESET D2 (P0.28)  BUSY D3 (P0.29)
+ *   RXEN    D5  (P0.05)   — external LNA gate, host-driven HIGH on RX
+ *   DIO2    — module RF/TX switch via dio2-tx-enable
+ *   DIO3    — TCXO 1.8 V
+ *
+ * Sources: Seeed wiki "XIAO nRF52840 & Wio-SX1262 Kit"; Meshtastic
+ * variants/nrf52840/seeed_xiao_nrf52840_kit/variant.h; Seeed schematic
+ * "Wio-SX1262 for XIAO V1.0_SCH.pdf".
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+#include <zephyr/dt-bindings/lora/sx126x.h>
+
+/* D4/D5 are NSS/RXEN; board enables i2c1 on those pins by default. */
+&i2c1 {
+	status = "disabled";
+};
+
+&xiao_spi {
+	status = "okay";
+	cs-gpios = <&xiao_d 4 GPIO_ACTIVE_LOW>;
+
+	lora0: sx1262@0 {
+		compatible = "semtech,sx1262";
+		reg = <0>;
+		spi-max-frequency = <DT_FREQ_M(4)>;
+		reset-gpios = <&xiao_d 2 GPIO_ACTIVE_LOW>;
+		busy-gpios = <&xiao_d 3 GPIO_ACTIVE_HIGH>;
+		dio1-gpios = <&xiao_d 1 GPIO_ACTIVE_HIGH>;
+		rx-enable-gpios = <&xiao_d 5 GPIO_ACTIVE_HIGH>;
+		dio2-tx-enable;
+		dio3-tcxo-voltage = <SX126X_DIO3_TCXO_1V8>;
+		tcxo-power-startup-delay-ms = <5>;
+	};
+};
+
+/ {
+	aliases {
+		lora0 = &lora0;
+	};
+};
