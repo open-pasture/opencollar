@@ -1,0 +1,11 @@
+/*
+ * Flash layout with MCUboot (NCS 3.4.1 nrf91_bootloader_partitions.dtsi
+ * layout), every edge on a 32 KB SPU region boundary:
+ *   0x00000-0x10000  MCUboot (64 KB)
+ *   0x10000-0x80000  slot0 / primary (448 KB): TF-M 32 KB + app 416 KB
+ *   0x80000-0xF0000  slot1 / secondary (448 KB), for future FOTA
+ *   0xF0000-0x100000 storage (64 KB, NVS; same place as firmware 0.2)
+ * Included by the app board overlay AND sysbuild/mcuboot.overlay so the
+ * bootloader and the application agree on the map.
+ */
+#include <samples/cellular/nrf91_bootloader_partitions.dtsi>
