@@ -35,7 +35,7 @@ Driving the Mac from an assistant needs macOS Accessibility permission for the a
 ## Where files live (GitHub is the source of truth)
 
 Repo: open-pasture/opencollar, under `hardware/rook/`.
-- STLs: `stl/node_v1_cap`, `stl/node_v1_pod`, `stl/node_v1_cw`
+- STLs: `stl/node_v1_cap` (gable v3), `stl/node_v1_cap_saddle` (slim + saddle), `stl/node_v1_pod`, `stl/node_v1_cw`
 - Sliced P2S PLA projects (F1 to F5, e.g. `F2_cap.gcode.3mf`): `print/sliced/p2s_pla/` (see also `print/README-print-files.md`)
 - Orca profiles: `print/p2s_pla`, `print/p2s_asa` (`p2s_pla_v21` not in repo yet)
 - Scripts: `print/slice_p2s_pla.sh`, `print/fix_bbl_3mf.py`, `print/flatten_profiles.py`
