@@ -13,86 +13,90 @@ OC_CAP_STYLE=saddle ./build.sh node_v1 -- cap saddle
 ```
 
 STLs: `stl/node_v1_cap_saddle/`, `stl/node_v1_pod/` (includes `node_pod_base_R`),
-`stl/test_coupon/` (`test_coupon.stl`, `scale_bar_100.stl`).
+`stl/test_coupon/` (`test_coupon.stl`, `scale_bar_xyz.stl`).
+
+## Part numbers + orientation
+
+| # | Part | Label face | Print orientation |
+| --- | --- | --- | --- |
+| #1 | Cap base (slim) | Inside floor | Outside / bed face down, cavity up |
+| #2 | Pod base L | Outer −Y wall | Outside face down, cavity up |
+| #3 | Pod base R | Outer −Y wall | Outside face down, cavity up |
+| #4 | Test coupon | Ladder top | Flat on bed |
+| #5 | Scale bar (XYZ) | X-arm top | Flat on bed (Z post up) |
+
+## Board clearances (`dims.py`)
+
+| Board | dims.py size | Locator / rail clear | Notes |
+| --- | --- | --- | --- |
+| Qwiic Buzzer | 25.4 × 25.4 × 1.6 | **0.3 mm**/side (`BUZZER_CLEAR`); slot = 1.6+0.3 | L-corners outside footprint; ±Y 45° slot rails |
+| Adafruit 4755 bq24074 | 38.10 × 33.02 × 1.6 | **0.3 mm**/side (`BQ_CLEAR`) | L-corners + Ø5×1 standoffs at hole pattern; rot=True at (0,52) |
+| nRF9151 Connect Kit | 55.88 × 20.32 × 1.0 | Collar `kit_fence` inner = board+**0.3**/side | **Slim node_v1 cap has no kit_fence solid** (ref only at (−6,−6)). Collar fence clearance is 0.3 mm/side from dims. |
+| XIAO nRF52840 / Wio-SX1262 | — | — | **Starling-only — skipped** (no Starling part in this repo yet) |
+
+## Boss → screw (slim saddle)
+
+| Boss | Stack | Screw |
+| --- | --- | --- |
+| Cap lid columns (through base → lid insert) | seat z=4 → through 15 + insert 4 | **M3×16** (~3 mm insert grip; M3×18 can bottom in 5 mm lid pocket) |
+| Cap clamp inserts (bar → saddle → blind z=4 pocket) | 4+5.9+0.6=10.5 to mouth + 4 pocket | **M3×14** (M3×16 risks seal breach) |
+| Pod lid columns | through pod → lid insert | **M3×25** |
+| Heat-set inserts (all) | Adafruit 4255 M3×4 | hole Ø4.0 × 6 deep (`INSERT_M3`) |
+
+Floor/wall labels: `M3x16` / `M3x14` on the cap floor near bosses; `M3x25` on the pod −Y wall.
 
 ## Cap base (slim)
 
 | Aid | Use |
 | --- | --- |
-| bq24074 L-corner fence + Ø5×1 mm standoffs on the 2.54 hole pattern at (0, 52) | Drop the Adafruit 4755 in; pilots Ø2.1. No overhanging kit_fence ledge (would need supports cavity-up) |
-| Inside-floor `CAP BASE`, `REV AID1` (5 × 0.8) | Identify the part during assembly |
-| `M3x14 CLAMP`, `M3x16 LID`, `M3x4 INSERT` | Grab the right fasteners without the BOM |
-| `PIN` | Match the saddle roof pins |
+| `#1 CAP` + bq24074 L-corners + Ø5×1 standoffs at (0, 52) | ID + drop Adafruit 4755 |
+| Inside-floor labels (5 × 0.8 bitmap) | Fastener / pin callouts |
 | Floor arrow → +Y (south of bq seat) | Orient GPS / free end of the spine |
-| Ø1 × 0.4 dimples on the bed face by lid columns | Visual / finger registration when starting inserts |
+| Ø1 × 0.4 bed dimples by lid columns | Insert start cues |
 
-Bed face stays planar (dimples only — glyph cuts into z=0 left STL slivers).
-Inside-floor glyphs are 5 mm × 0.8 mm 5×7 box-bitmap stamps (manifold without
-font remesh) so letterforms stay ≥0.6 mm deep. Print outside-face down, cavity
-up, no supports.
+Print outside-face down, cavity up, no supports. Bed face stays planar (no glyph cuts into z=0).
 
 ## Pod base (L and R)
 
 | Aid | Use |
 | --- | --- |
-| Cell cradle (2× R9.4 arc ribs, 2.5 mm) | Drop the Ø18.4 1781 in (no roll); leads toward the crest cable entry |
-| Buzzer L-corners (1.2 × 1.5, +0.3 clear; +X/+Y trimmed) | XY seat for the 25.4 Qwiic board; ≥0.5 mm clear of column (37,27) |
-| Buzzer ±Y slot rails (1.6+0.3 slot, 1.5 mm 45° lip, 16 mm long) | Board slides in along X; lip holds PCB down; no supports |
-| Floor cable grooves (3 × 1.2) | Route cell and buzzer leads to the Ø6 crest entry before potting |
-| Floor box-stamps at cell / buzzer / stud / port | Tactile cues without font slivers |
-| Floor arrow → crest cable (±X) | Orient the pod before potting |
-| Outer −Y wall (separate rows, z 21 / 16 / 11 / 5.5): `POD BASE`, `L`/`R`+rev, port+`BUZZER`, `M3x25 LID`+`M3x4 INSERT` | Readable callouts into the wall (bed face left flat) |
+| `#2 POD L` / `#3 POD R` on −Y wall | Identify L vs R |
+| Cell cradle (2× R9.4 arc ribs, 2.5 mm) | Seat Ø18.4 1781 |
+| Buzzer L-corners + ±Y slot rails | Seat / hold 25.4 Qwiic board; ≥0.5 mm to column (37,27) |
+| Floor grooves + arrow | Route leads; orient crest cable |
 
-`node_pod_base.stl` is the left pod; `node_pod_base_R.stl` is a dedicated right
-(asymmetric features + label). You can still mirror L if preferred.
-
-## Test coupon + scale bar
+## Test coupon + tri-axis scale
 
 | Feature | Use |
 | --- | --- |
-| Insert Ø3.9 / 4.0 / 4.1 | Pick the iron-fit hole for Adafruit 4255 on this filament |
-| Blind Ø2.8 tap + Ø3.2 clear at 4 / 5 / 6 mm | Confirm tip clearance vs pocket depth |
-| Pin sockets Ø4.2 / 4.35 / 4.5 × 2 mm | Match saddle pin fit |
-| Sample pins Ø4.0 × 1.5 on plinth | Press into the winning socket |
-| 20 mm bridge (2 mm roof) | Spot bridging before the real saddle |
-| Stepped M3×14 / ×16 / ×18 Ø2.8 blind pilots (1 mm floor) | Drop screw in — head flush on the matching step |
-| Free 1×1×0.8 mm elephant-foot pad (off the block) | Measure first-layer spread vs 1 mm |
-| `scale_bar_100.stl` | 100 mm bar with a 20 mm step — measure shrink |
+| Insert ladder Ø4.0 / 4.2 / 4.4 / 4.6 / 4.8 × 6 mm deep | Iron-fit for Adafruit 4255 (`INSERT_M3`) |
+| Lid / clamp gap pads 0.1 / 0.2 / 0.3 / 0.4 mm proud | Mating-face clearance feel |
+| Blind Ø2.8 tap + Ø3.2 clear at 4 / 5 / 6 mm | Tip clearance vs pocket depth |
+| Pin sockets Ø4.2 / 4.35 / 4.5 × 2 + sample pins | Saddle pin fit |
+| 20 mm bridge (2 mm roof) | Bridging check |
+| Stepped M3×14 / ×16 / ×18 Ø2.8 blind gauge | Screw-length feel |
+| Free 1×1×0.8 e-foot pad | First-layer spread |
+| O-ring groove sample + ANT stamp | Cheap extras |
+| `scale_bar_xyz.stl` | 100 X × 50 Y × 20 Z, 10 mm ticks |
 
-## Lid screw (slim cap)
+## Plate footprint (246 × 246 usable)
 
-CAD seat z=4.0, through base 15.0, lid pocket 5.0. **M3×16** — about 3 mm
-insert engagement with ~2 mm spare in the pocket. M3×18 can bottom on the
-pocket floor. Clamp stays **M3×14**. See `SADDLE.md`.
+Conservative pack of cap + 2 pods + coupon + scale: about **170 × 214 mm**
+(`bases_plate_footprint_mm()` → 170.5 × 213.5), inside the P2S **246 × 246**
+usable bed.
 
 ## Mass (solid PLA @ 1.24 g/cm³)
 
 | Feature | Approx |
 | --- | --- |
-| Pod cell cradle (2 ribs) | +0.21 g each base |
-| Pod buzzer L-locators ×4 | +0.07 g each base |
-| Pod cable grooves | −0.5 g each base (cut) |
-| Cap / pod engraving + dimples | −0.05 g each base |
-| Net on bases plate (cap + 2 pods) | ≈ 0 g before PCB rails (cuts ≈ adds) |
-| Pod buzzer slot rails ×2 | ≈ +0.4 g each base |
-| Cap bq24074 L-corners + standoffs | ≈ +0.8 g |
-| Orientation arrows (cuts) | ≈ 0 g (removed) |
-| Coupon gauge strip + e-foot pad | ≈ +1.6 g on the coupon |
-| `test_coupon.stl` | ~11.5 g solid (~6–8 g @ typical infill) |
-| `scale_bar_100.stl` | ~2.2 g solid |
-
-PCB rails add ≈ +0.3 g/cap and ≈ +0.2 g/pod (under the ~3 g/base budget).
-Earlier floor/wall aids still net ≈ 0 g. Coupon is an optional side print.
+| Pod cell cradle + buzzer L + rails − grooves | ≈ 0 g net each pod |
+| Cap bq24074 seat + engraving | ≈ +0.3 g |
+| Coupon + scale | side print (~12 g + ~4 g solid) |
 
 ## Intentional omissions
 
-- **Bed-face glyph engraving: dropped.** Font cuts into z=0 left multi-face STL
-  slivers and could not be made reliable quickly. IDs live on the cap inside
-  floor and the pod outer −Y wall (5 mm × 0.8 mm 5×7 box-bitmap stamps).
-- Raised nest lip on saddle: still deferred (knife edges in earlier try).
-- Pod electrode polarity beyond `STUD`: studs are unwired on unit #1.
-- Coupon hole-size callouts are bar stamps (not font glyphs) so the top face
-  stays watertight; sizes are documented here and in the build notes.
-- Pod column dimples removed (read as buried 1 mm cubes; cbore is enough).
-- Cap lid-screw length engraved as `M3x16` (not M3×18): tip spare in the 5 mm
-  lid pocket; see § Lid screw above.
+- **Bed-face glyph engraving: dropped** (z≈0 STL slivers).
+- **Slim cap kit_fence solid: not present** — collar reference uses 0.3 mm/side; add later if Cody wants kit L-rails.
+- **Starling XIAO / Wio boards: skipped** (no Starling CAD yet).
+- Raised nest lip on saddle: deferred.
+- Pod column dimples removed.

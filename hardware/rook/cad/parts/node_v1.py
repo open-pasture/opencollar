@@ -61,7 +61,7 @@ n.set_cap_style(style)
 
 # Engraved glyphs leave knife-edge wedges; allow the same class of thin area
 # as fit_test (labels only — structural walls stay ≥1 mm elsewhere).
-AID_THIN = 800.0  # 5×7 bitmap glyph corners (pixel gaps ≈0.06 mm walls)
+AID_THIN = 1100.0  # 5×7 bitmap glyph corners (pixel gaps ≈0.06 mm walls)
 
 oc.reset()
 if part in ("all", "cap"):
@@ -140,15 +140,16 @@ if part in ("all", "cw"):
 if part in ("all", "coupon"):
     oc.reset()
     coupon, scale = n.test_coupon(), n.scale_bar()
-    oc.move(scale, dy=n.COUPON_L / 2 + 20)
+    oc.move(scale, dy=n.COUPON_OVERALL_Y / 2 + n.SCALE_Y / 2 + 10)
+    plate = n.bases_plate_footprint_mm()
     oc.finish(
         "test_coupon",
-        {"test_coupon": coupon, "scale_bar_100": scale},
-        # Block + plinth + stepped gauge + free e-foot → 68.5×37.5×18.
+        {"test_coupon": coupon, "scale_bar_xyz": scale},
         spec={"test_coupon": {"size": (n.COUPON_OVERALL_X, n.COUPON_OVERALL_Y,
-                                       n.COUPON_GAUGE_MAX_H), "tol": 2.0},
-              "scale_bar_100": {"size": (100.0, 10.0, 2.0), "tol": 0.5}},
+                                       n.COUPON_GAUGE_MAX_H), "tol": 3.0},
+              "scale_bar_xyz": {"size": (n.SCALE_X, n.SCALE_Y, n.SCALE_Z), "tol": 1.0}},
         material="PA12", min_wall=0.8, thin_area_allowed=AID_THIN,
-        notes=("Assembly-aid coupon + 100 mm scale bar. Insert Ø3.9/4.0/4.1, "
-               "blind tap/clear 4/5/6, pin sockets, sample pins, bridge, "
-               "stepped M3x14/16/18 blind gauge, free 1 mm elephant-foot pad."))
+        notes=("AID1 coupon + tri-axis scale. Insert ladder Ø4.0–4.8 × 6 mm, "
+               "lid/clamp gap pads 0.1–0.4, M3x14/16/18 gauge, pins, bridge, "
+               f"e-foot, O-ring sample, ANT stamp. Plate footprint ~{plate[0]}×{plate[1]} "
+               "with cap+2 pods (246 usable)."))

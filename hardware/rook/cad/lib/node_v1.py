@@ -265,6 +265,7 @@ _FONT_5X7 = {
     "+": ["00000", "00100", "00100", "11111", "00100", "00100", "00000"],
     "x": ["00000", "10001", "01010", "00100", "01010", "10001", "00000"],
     "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
+    "#": ["01010", "01010", "11111", "01010", "11111", "01010", "01010"],
     " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
 }
 
@@ -577,12 +578,18 @@ def _cap_assembly_aids(b):
     floor = CAP_FLOOR_Z
     # Mid-field away from clamp inserts / pin sockets / columns / bq seat.
     labels = [
+        _engrave_cut("cap_num", "#1 CAP", ENGRAVE_SIZE, (0, 28), floor),
         _engrave_cut("cap_name", "CAP BASE", ENGRAVE_SIZE, (0, 20), floor),
         _engrave_cut("cap_rev", f"REV {AID_REV}", ENGRAVE_SIZE, (0, 12), floor),
         _engrave_cut("cap_clamp", f"M3x{clamp_screw:.0f} CLAMP", ENGRAVE_SIZE, (0, -12), floor),
         _engrave_cut("cap_lid", f"M3x{lid_screw:.0f} LID", ENGRAVE_SIZE, (0, -20), floor),
         _engrave_cut("cap_ins", "M3x4 INSERT", ENGRAVE_SIZE, (0, -28), floor),
         _engrave_cut("cap_pins", "PIN", ENGRAVE_SIZE, (0, 0), floor),
+        # Boss callouts next to a lid column / clamp (floor side of bosses).
+        _engrave_cut("cap_b16", f"M3x{lid_screw:.0f}", ENGRAVE_SIZE - 1.0,
+                     (18.0, 40.0), floor),  # south of bq24074 seat / near lid col
+        _engrave_cut("cap_b14", f"M3x{clamp_screw:.0f}", ENGRAVE_SIZE - 1.0,
+                     (12.0, -36.0), floor),  # near clamp insert Y
     ]
     oc.cut(b, *labels)
     # Arrow toward +Y / GPS end — keep south of the bq24074 seat (board −Y ≈ 33).
@@ -824,21 +831,23 @@ def _pod_assembly_aids(b, side="L"):
     # Outer −Y wall labels: separate rows inside z∈[3, 22] (POD_BASE_H=24.5).
     # at=(x, wall_y, z_center); cutter grows +Y into the wall.
     wall_y = -(POD_W / 2)
+    pod_num = "#2 POD L" if side == "L" else "#3 POD R"
     wall = [
-        _engrave_cut(f"pname{side}", "POD BASE", ENGRAVE_SIZE,
+        _engrave_cut(f"pnum{side}", pod_num, ENGRAVE_SIZE,
                      (0, wall_y, 21.0), 21.0, into="-Y"),
+        _engrave_cut(f"pname{side}", "POD BASE", ENGRAVE_SIZE,
+                     (sx * -22.0, wall_y, 16.0), 16.0, into="-Y"),
         _engrave_cut(f"pside{side}", side, ENGRAVE_SIZE + 1.0,
                      (sx * 30.0, wall_y, 16.0), 16.0, into="-Y"),
         _engrave_cut(f"prev{side}", f"REV {AID_REV}", ENGRAVE_SIZE,
-                     (0, wall_y, 16.0), 16.0, into="-Y"),
+                     (0, wall_y, 11.0), 11.0, into="-Y"),
         _engrave_cut(f"pportw{side}", "+X PORT" if side == "L" else "-X PORT",
-                     ENGRAVE_SIZE, (sx * 22.0, wall_y, 11.0), 11.0, into="-Y"),
+                     ENGRAVE_SIZE, (sx * 22.0, wall_y, 5.5), 5.5, into="-Y"),
         _engrave_cut(f"pbuzzw{side}", "BUZZER", ENGRAVE_SIZE,
-                     (sx * -22.0, wall_y, 11.0), 11.0, into="-Y"),
-        _engrave_cut(f"plid{side}", f"M3x{POD_LID_SCREW:.0f} LID", ENGRAVE_SIZE,
-                     (sx * 18.0, wall_y, 5.5), 5.5, into="-Y"),
-        _engrave_cut(f"pins{side}", "M3x4 INSERT", ENGRAVE_SIZE,
-                     (sx * -18.0, wall_y, 5.5), 5.5, into="-Y"),
+                     (sx * -22.0, wall_y, 5.5), 5.5, into="-Y"),
+        # Lid-boss screw (M3×25 into lid inserts) — wall has room at mid height.
+        _engrave_cut(f"plid{side}", f"M3x{POD_LID_SCREW:.0f}", ENGRAVE_SIZE - 1.0,
+                     (sx * 28.0, wall_y, 21.0), 21.0, into="-Y"),
     ]
     oc.cut(b, *wall)
     # Dimples omitted — short Ø1 bosses inside the columns read as buried
@@ -969,23 +978,29 @@ def steel_mass_g():
 
 COUPON_W, COUPON_L, COUPON_H = 40.0, 34.0, 6.0
 
-
-# Coupon overall: block + pin plinth (+X) + stepped screw gauge (−X) + free e-foot.
-# Gauge outer x = −(W/2 + GAUGE_W); e-foot outer = W/2 + 9 + 9 + 0.5.
+# Coupon overall: block + pin plinth (+X) + screw gauge (−X) + insert ladder (+Y)
+# + free e-foot. Ladder plinth is 8 mm tall so INSERT hole_depth 6 stays blind.
 COUPON_GAUGE_W = 10.0
-COUPON_GAUGE_MAX_H = 18.0   # tallest step (M3×18)
+COUPON_GAUGE_MAX_H = 18.0   # tallest screw-gauge step (M3×18)
+COUPON_LADDER_H = 8.0
+COUPON_LADDER_Y = COUPON_L / 2 + 8.0   # centre of +Y insert-ladder plinth
 COUPON_OVERALL_X = (COUPON_W / 2 + COUPON_GAUGE_W) + (COUPON_W / 2 + 18.5)  # 68.5
-COUPON_OVERALL_Y = COUPON_L + 3.5  # e-foot at −(L/2+3) ±0.5 → 37.5
+COUPON_OVERALL_Y = COUPON_LADDER_Y + 6.0 + (COUPON_L / 2 + 3.5)  # ladder + e-foot
+SCALE_X, SCALE_Y, SCALE_Z = 100.0, 50.0, 20.0
+SCALE_ARM_W = 8.0
 
 
 def test_coupon():
-    """~40×34×6 block + pin plinth + stepped M3 screw-depth gauge + free e-foot.
+    """Fit coupon: insert ladder, mating-face gaps, screw gauge, pins, bridge.
 
-    Gauge: three steps of height 14 / 16 / 18 mm with Ø2.8 blind pilots
-    (1 mm floor). Drop the screw in from the top — head flush ⇒ that length.
+    - M3 heat-set ladder Ø4.0/4.2/4.4/4.6/4.8 × INSERT.hole_depth (6 mm) on an
+      8 mm plinth (blind).
+    - Lid / clamp mating-face gap pads 0.1–0.4 mm proud of the block top.
+    - Stepped M3×14/16/18 Ø2.8 blind screw-length gauge (−X).
+    - Legacy pin sockets / sample pins / bridge / e-foot retained.
+    - Cheap extras: O-ring groove sample + ANT keep-out stamp.
     """
     p = oc.rounded_rect("test_coupon", (COUPON_W, COUPON_L, COUPON_H), 2.0, anchor="bottom")
-    # Sample pins first: sink into the plinth, remesh, then join.
     px = COUPON_W / 2 + 9.0
     plinth = oc.box("pin_plinth", (14.0, 12.0, 2.0), at=(px, 2.0, 0), anchor="bottom")
     for i in range(3):
@@ -999,7 +1014,11 @@ def test_coupon():
     oc.apply_modifiers(plinth)
     oc.union(p, plinth)
 
-    # Stepped screw-depth gauge (−X): heights = screw lengths.
+    # +Y insert-ladder plinth (tall enough for blind Ø holes at real depth).
+    ly = COUPON_LADDER_Y
+    oc.union(p, oc.box("ins_plinth", (48.0, 12.0, COUPON_LADDER_H),
+                       at=(0, ly, 0), anchor="bottom"))
+
     gx = -(COUPON_W / 2 + COUPON_GAUGE_W / 2)
     tools, labels = [], []
     for i, length in enumerate((14.0, 16.0, 18.0)):
@@ -1007,25 +1026,42 @@ def test_coupon():
         step = oc.box(f"gstep{i}", (COUPON_GAUGE_W, 10.0, length),
                       at=(gx, y, 0), anchor="bottom")
         oc.union(p, step)
-        # Blind pilot: leave 1 mm floor → engagement depth = length − 1.
         tools.append(oc.cylinder(f"gpilot{i}", 2.8, length - 1.0 + ENGRAVE_OVER,
                                  at=(gx, y, 1.0 - ENGRAVE_OVER), anchor="bottom"))
         labels.append(oc.box(f"glen{i}", (length / 4.0, 1.0, ENGRAVE_D + ENGRAVE_OVER),
                              at=(gx, y + 4.0, length - ENGRAVE_D), anchor="bottom"))
 
-    # Free-standing 1 mm elephant-foot pad past the pin plinth (+X, −Y).
     oc.union(p, oc.box("efoot", (1.0, 1.0, 0.8),
                        at=(px + 9.0, -(COUPON_L / 2 + 3.0), 0),
                        anchor="bottom"))
 
-    for i, dia in enumerate((3.9, 4.0, 4.1)):
-        x = -12.0 + i * 12.0
-        tools.append(oc.cylinder(f"ins{i}", dia, 5.0 + ENGRAVE_OVER,
-                                 at=(x, 12.0, COUPON_H - 5.0), anchor="bottom"))
-        labels.append(oc.box(f"insl{i}", (6.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
-                             at=(x, 7.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
-    labels.append(oc.box("insrow", (14.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
-                         at=(0, 15.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
+    # M3 heat-set insert ladder (dims.INSERT_M3 hole_depth = 6).
+    ins_depth = INSERT["hole_depth"]
+    for i, dia in enumerate((4.0, 4.2, 4.4, 4.6, 4.8)):
+        x = -16.0 + i * 8.0
+        tools.append(oc.cylinder(f"ins{i}", dia, ins_depth + ENGRAVE_OVER,
+                                 at=(x, ly, COUPON_LADDER_H - ins_depth),
+                                 anchor="bottom"))
+        labels.append(oc.box(f"insl{i}", (5.0, 1.0, ENGRAVE_D + ENGRAVE_OVER),
+                             at=(x, ly - 4.5, COUPON_LADDER_H - ENGRAVE_D),
+                             anchor="bottom"))
+    labels.append(oc.box("insrow", (16.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
+                         at=(0, ly + 4.5, COUPON_LADDER_H - ENGRAVE_D),
+                         anchor="bottom"))
+
+    # Mating-face clearance pads (proud of block top) — lid row / clamp row.
+    for i, gap in enumerate((0.1, 0.2, 0.3, 0.4)):
+        x = -12.0 + i * 8.0
+        oc.union(p, oc.box(f"lidgap{i}", (6.0, 6.0, gap),
+                           at=(x, 10.0, COUPON_H), anchor="bottom"))
+        oc.union(p, oc.box(f"clgap{i}", (6.0, 6.0, gap),
+                           at=(x, -14.0, COUPON_H), anchor="bottom"))
+    labels.append(oc.box("lidgaplbl", (10.0, 1.0, ENGRAVE_D + ENGRAVE_OVER),
+                         at=(0, 14.0, COUPON_H - ENGRAVE_D), anchor="bottom"))
+    labels.append(oc.box("clgaplbl", (10.0, 1.0, ENGRAVE_D + ENGRAVE_OVER),
+                         at=(0, -10.0, COUPON_H - ENGRAVE_D), anchor="bottom"))
+
+    # Legacy tap/clear depth + pin sockets on the main block.
     for i, depth in enumerate((4.0, 5.0, 6.0)):
         x = -12.0 + i * 12.0
         tools.append(oc.cylinder(f"tap{i}", 2.8, depth + ENGRAVE_OVER,
@@ -1044,29 +1080,61 @@ def test_coupon():
                          at=(px, 10.0, 2.0 - ENGRAVE_D), anchor="bottom"))
     tools.append(oc.box("bridge", (18.0, 6.0, 4.0 + ENGRAVE_OVER),
                         at=(0, -10.0, -ENGRAVE_OVER), anchor="bottom"))
-    labels.append(oc.box("brl", (8.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
-                         at=(0, COUPON_L / 2 - 2.2, COUPON_H - ENGRAVE_D), anchor="bottom"))
+
+    # O-ring groove sample (dims.ORING_2MM) on the ladder +Y edge — cheap.
+    gw, gd = GROOVE["groove_w"], GROOVE["groove_d"]
+    tools.append(oc.box("oring", (20.0, gw, gd + ENGRAVE_OVER),
+                        at=(0, ly + 6.0 - gw / 2,
+                            COUPON_LADDER_H - gd), anchor="bottom"))
+    # Antenna keep-out stamp (box cue, not a tuned RF mark).
+    labels.append(oc.box("ant", (8.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
+                         at=(16.0, 0.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
     labels.append(oc.box("title", (8.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
                          at=(0, 0.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
+    # Part number on ladder wall (+Y face) via floor stamp on plinth top.
+    oc.cut(p, _engrave_cut("cnum", "#4 COUPON", ENGRAVE_SIZE - 1.0,
+                           (0, ly), COUPON_LADDER_H))
     oc.cut(p, *tools)
     oc.cut(p, *labels)
     return p
 
 
 def scale_bar():
-    """100 × 10 × 2 mm flat bar with a 20 mm step for shrink measurement."""
-    bar = oc.box("scale_bar", (100.0, 10.0, 2.0), anchor="bottom")
-    # 20 mm step: drop a 20 mm span by 1 mm (starts at world x=0 → local +40).
-    step = oc.box("step", (20.0, 10.2, 1.0 + ENGRAVE_OVER),
-                  at=(40.0, 0, 2.0 - 1.0), anchor="bottom")
-    oc.cut(bar, step)
+    """Tri-axis L-bar: 100 X × 50 Y × 20 Z with 10 mm ticks (low print height)."""
+    w = SCALE_ARM_W
+    # Corner at origin; arms along +X / +Y; Z post at the corner.
+    xarm = oc.box("sx", (SCALE_X, w, 3.0), at=(SCALE_X / 2, w / 2, 0), anchor="bottom")
+    yarm = oc.box("sy", (w, SCALE_Y, 3.0), at=(w / 2, SCALE_Y / 2, 0), anchor="bottom")
+    zpost = oc.box("sz", (w, w, SCALE_Z), at=(w / 2, w / 2, 0), anchor="bottom")
+    oc.union(xarm, yarm, zpost)
     ticks = []
-    for x in range(0, 101, 20):
-        ticks.append(oc.box(f"tick{x}", (0.4, 4.0, ENGRAVE_D + ENGRAVE_OVER),
-                            at=(x - 50.0, -3.0, 2.0 - ENGRAVE_D), anchor="bottom"))
-        # Bar stamps instead of font glyphs (watertight).
-        ticks.append(oc.box(f"tl{x}", (3.0 if x < 100 else 4.0, 1.0, ENGRAVE_D + ENGRAVE_OVER),
-                            at=(x - 50.0, 2.5, 2.0 - ENGRAVE_D), anchor="bottom"))
-    bar = clean(bar)
-    oc.cut(bar, *ticks)
-    return bar
+    for x in range(0, int(SCALE_X) + 1, 10):
+        ticks.append(oc.box(f"tx{x}", (0.4, 3.0, ENGRAVE_D + ENGRAVE_OVER),
+                            at=(x, w - 1.5, 3.0 - ENGRAVE_D), anchor="bottom"))
+    for y in range(0, int(SCALE_Y) + 1, 10):
+        ticks.append(oc.box(f"ty{y}", (3.0, 0.4, ENGRAVE_D + ENGRAVE_OVER),
+                            at=(w - 1.5, y, 3.0 - ENGRAVE_D), anchor="bottom"))
+    for z in range(0, int(SCALE_Z) + 1, 10):
+        # Tick on +X face of the Z post (vertical face — cut as thin horizontal kerf).
+        ticks.append(oc.box(f"tz{z}", (ENGRAVE_D + ENGRAVE_OVER, 3.0, 0.4),
+                            at=(w - ENGRAVE_D / 2, w / 2, z), anchor="bottom"))
+    oc.cut(xarm, *ticks)
+    oc.cut(xarm, _engrave_cut("snum", "#5 SCALE", ENGRAVE_SIZE - 1.0,
+                              (SCALE_X / 2, w / 2), 3.0))
+    return xarm
+
+
+def bases_plate_footprint_mm():
+    """Conservative AABB if cap + 2 pods + coupon + scale share one 246 plate.
+
+    Layout assumed (mm gaps ≥2): cap at origin; pods stacked +X of cap;
+    coupon + scale along −Y of the pods. Returns (width, depth).
+    """
+    gap = 2.0
+    # Cap 76×160; pods 92×68 stacked in Y beside cap.
+    w = CAP_W + gap + POD_L                     # 76+2+92 = 170
+    d = max(CAP_L, 2 * POD_W + gap)              # max(160, 138) = 160
+    # Coupon + scale along −Y of the pack.
+    d += gap + max(COUPON_OVERALL_Y, SCALE_Y)    # +~54
+    w = max(w, COUPON_OVERALL_X + gap + SCALE_X)  # coupon+scale side by side
+    return (round(w, 1), round(d, 1))

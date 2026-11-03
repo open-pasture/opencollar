@@ -57,6 +57,11 @@ strap protrusion below rails     0.6   (= STRAP_T − CHANNEL_D)
 =                               32.5 mm   (gable v3 was ~48.4)
 ```
 
+### Boss → screw (one line)
+
+**Lid columns → M3×16**; **clamp inserts → M3×14**; inserts are M3×4 heat-set
+(`INSERT_M3` length 4 / hole Ø4.0×6). Detail below; labels on the cap floor.
+
 ### Clamp screws (through bar → saddle → cap insert) — round DOWN
 
 Bar rides on the 0.6 mm strap protrusion, so the screw crosses an air gap at
