@@ -101,6 +101,7 @@ int main(void)
 	memset(&cr, 0, sizeof(cr));
 	cr.node_id = 1;
 	cr.is_rook = 1;
+	cr.accept_local_air = 1; /* pilot: air MANIFEST_LOCAL allowed */
 	memcpy(cr.farm_id, farm, 8);
 	cr.frag_data_max = 40;
 	cr.trickle_imin_ms = 30;

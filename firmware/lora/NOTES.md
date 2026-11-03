@@ -61,16 +61,46 @@ to exercise storage/re-serve. Production multi-frame manifests are future work.
 ## Persistence (`oc_fh_store_t`)
 
 Apps implement NVS-backed `get_hwm` / `set_hwm` / `save_active` / `load_active`.
-Host: `oc_fh_store_ram`. Rollback uses `max(active.fence_seq, hwm)` so reboot
-cannot accept an older fence. `oc_fh_node_restore` reloads the active blob so a
-restored node can serve.
+Host: `oc_fh_store_ram` (A/B slots + CRC, fault-injection for tests).
+
+**Power-cut contract** (see `fence_store.h`):
+
+1. Write **HWM first** (monotonic).
+2. Write active fence as **two copies (A/B) each with CRC**; commit primary only
+   after the new copy’s CRC is valid. A torn write leaves the other copy
+   loadable → old fence kept.
+3. Node path calls persist **before** mutating active RAM. Non-zero
+   `set_hwm`/`save_active` → `OC_FH_ERR_STORE`, `stats.persist_fail`, fence
+   **not** applied.
+
+Rollback uses `max(active.fence_seq, hwm)` so reboot cannot accept an older
+fence. `oc_fh_node_restore` reloads the active blob so a restored node can serve.
+
+## Air `MANIFEST_LOCAL` + pending DoS
+
+Unsigned LOCAL from the air is accepted only when **`accept_local_air=1`**
+(pilot) **and** `payload_verify` is set; otherwise drop + `stats.reject_local_air`.
+Incomplete pending transfers time out (`pending_timeout_ms`, default
+`OC_FH_PENDING_TIMEOUT_MS`) → `stats.pending_timeout`. A **sealed** manifest
+preempts an unsigned/local pending even with a lower `fence_seq` (stops a forged
+high-seq LOCAL from blocking real fences). See `test_security`.
+
+## fence_seq near-max (chosen rule)
+
+`fence_seq` is `uint32_t` with **no wrap**. The server must never issue a seq
+near `0xFFFFFFFF`.
+
+**Chosen:** nodes **refuse to adopt** `fence_seq == 0` or `fence_seq > OC_FH_SEQ_MAX`
+(`0x7FFFFFFF`). Server policy: keep issued seq ≤ `OC_FH_SEQ_MAX` (leave headroom).
+A forged LOCAL with `0xFFFFFFFF` is rejected by this ceiling (and by the air-LOCAL
+gate). Documented + enforced in code (not policy-only).
 
 ## Unsigned beacon anti-DoS
 
 Beacons never change the active fence. NEED requests while awaiting a real
-manifest are capped per peer and per time window (`OC_FH_NEED_HINT_MAX`,
-`OC_FH_NEED_WINDOW_*`). Flood → `stats.need_capped`, bounded `need_tx`/airtime
-(`test_security` forged-beacon flood).
+manifest are capped per peer and per time window (`OC_FH_NEED_HINT_MAX` ≈ 8,
+`OC_FH_NEED_WINDOW_*`). Peer-slot eviction takes the **oldest** window.
+Flood → `stats.need_capped`, bounded `need_tx`/airtime (`test_security`).
 
 ## Spec ambiguities (short)
 

@@ -121,7 +121,8 @@ static void test_forged_beacon(void)
 	/* NEED/airtime bounded despite flood. */
 	CHECK(oc_fh_stats(&star)->need_tx >= 1);
 	CHECK(oc_fh_stats(&star)->need_capped >= 1);
-	CHECK(oc_fh_stats(&star)->need_tx <= OC_FH_NEED_HINT_MAX + 2u);
+	/* ~15 s flood / 5 s windows → a few windows × HINT_MAX, still bounded. */
+	CHECK(oc_fh_stats(&star)->need_tx <= OC_FH_NEED_HINT_MAX * 5u + 2u);
 	CHECK(oc_fh_stats(&star)->airtime_us < 500000u);
 	CHECK(oc_fh_active(&star)->fence_seq == 5);
 	CHECK(memcmp(ms.active, payload, sizeof(payload)) == 0);
@@ -292,12 +293,305 @@ static void test_dup_reorder_resume(void)
 	CHECK(memcmp(ms.active, payload, sizeof(payload)) == 0);
 }
 
+/* Build a minimal unsigned LOCAL manifest (forged / pilot air path). */
+static size_t forge_local(uint8_t *out, size_t cap, const uint8_t farm[8], uint32_t seq,
+                          uint16_t frag_count)
+{
+	oc_fh_manifest_t m;
+	memset(&m, 0, sizeof(m));
+	memcpy(m.farm_id, farm, 8);
+	m.fence_seq = seq;
+	m.issued_at = seq;
+	m.frag_count = frag_count ? frag_count : 1;
+	memset(m.poly_hash, 0x5a, sizeof(m.poly_hash));
+	memset(m.frag_hash[0], 0x5b, OC_FH_FRAG_HASH_LEN);
+	return oc_fh_manifest_encode_local(&m, out, cap);
+}
+
+static int payload_verify_ok(const uint8_t *payload, size_t len, uint32_t fence_seq, void *ctx)
+{
+	(void)payload;
+	(void)len;
+	(void)fence_seq;
+	(void)ctx;
+	return 0;
+}
+
+static void test_local_air_gate_and_ffffffff_attack(void)
+{
+	/*
+	 * A: air MANIFEST_LOCAL dropped unless accept_local_air + payload_verify.
+	 * Exact 0xFFFFFFFF forged LOCAL must not block a real sealed fence.
+	 */
+	sim_world_t world;
+	sim_link_t link;
+	test_keypair_t kp;
+	uint8_t seed[32] = { 21 };
+	uint8_t farm[8] = { 'F', 'A', 'R', 'M', '0', '0', '0', '1' };
+	uint8_t payload[80];
+	uint8_t local_wire[OC_FH_MANIFEST_LOCAL_WIRE_MAX];
+	size_t llen;
+	oc_fh_built_t built;
+	oc_fh_node_t star;
+	oc_fh_config_t cs;
+	node_mem_t ms;
+
+	test_keygen(&kp, seed);
+	memset(payload, 0x33, sizeof(payload));
+	sim_world_init(&world, 2, 3);
+	memset(&link, 0, sizeof(link));
+	link.loss_pct = 0;
+	link.latency_ms = 1;
+	sim_world_set_fully_connected(&world, &link);
+
+	memset(&cs, 0, sizeof(cs));
+	cs.node_id = 2;
+	cs.is_rook = 0;
+	cs.accept_local_air = 0; /* default: reject air LOCAL */
+	memcpy(cs.farm_id, farm, 8);
+	cs.frag_data_max = 40;
+	cs.trickle_imin_ms = 50;
+	cs.trickle_imax_ms = 200;
+	setup_node(&star, &cs, &ms, sim_radio(&world, 1), &kp, &world);
+
+	llen = forge_local(local_wire, sizeof(local_wire), farm, 0xFFFFFFFFu, 1);
+	CHECK(llen > 0);
+	CHECK(oc_radio_send(sim_radio(&world, 0), local_wire, llen, NULL) == OC_RADIO_OK);
+	sim_world_advance(&world, 5);
+	oc_fh_node_poll(&star);
+	CHECK(oc_fh_stats(&star)->reject_local_air >= 1);
+	CHECK(star.have_pending == 0);
+	CHECK(oc_fh_active(&star)->fence_seq == 0);
+
+	/* Even with pilot flag + verify, seq above OC_FH_SEQ_MAX is refused. */
+	cs.accept_local_air = 1;
+	setup_node(&star, &cs, &ms, sim_radio(&world, 1), &kp, &world);
+	oc_fh_node_set_payload_verify(&star, payload_verify_ok, NULL);
+	CHECK(oc_radio_send(sim_radio(&world, 0), local_wire, llen, NULL) == OC_RADIO_OK);
+	sim_world_advance(&world, 5);
+	oc_fh_node_poll(&star);
+	CHECK(oc_fh_stats(&star)->reject_seq >= 1);
+	CHECK(star.have_pending == 0);
+
+	/* Real sealed fence still applies (attack failed to block). */
+	CHECK(oc_fh_build_signed(&built, farm, 5, 5, payload, sizeof(payload), 40, test_sign,
+	                         &kp) == 0);
+	CHECK(oc_fh_inject_local(&star, built.sealed, built.sealed_len, payload,
+	                         sizeof(payload)) == OC_FH_OK);
+	CHECK(oc_fh_active(&star)->fence_seq == 5);
+}
+
+static void test_pending_timeout(void)
+{
+	sim_world_t world;
+	sim_link_t link;
+	test_keypair_t kp;
+	uint8_t seed[32] = { 22 };
+	uint8_t farm[8] = { 'F', 'A', 'R', 'M', '0', '0', '0', '1' };
+	oc_fh_beacon_t forged;
+	uint8_t wire[64];
+	size_t wlen;
+	oc_fh_node_t star;
+	oc_fh_config_t cs;
+	node_mem_t ms;
+	unsigned i;
+
+	test_keygen(&kp, seed);
+	sim_world_init(&world, 2, 4);
+	memset(&link, 0, sizeof(link));
+	link.loss_pct = 0;
+	link.latency_ms = 1;
+	sim_world_set_fully_connected(&world, &link);
+
+	memset(&cs, 0, sizeof(cs));
+	cs.node_id = 2;
+	cs.is_rook = 0;
+	memcpy(cs.farm_id, farm, 8);
+	cs.frag_data_max = 40;
+	cs.trickle_imin_ms = 50;
+	cs.trickle_imax_ms = 200;
+	cs.pending_timeout_ms = 200; /* short for test */
+	setup_node(&star, &cs, &ms, sim_radio(&world, 1), &kp, &world);
+
+	memset(&forged, 0, sizeof(forged));
+	memcpy(forged.farm_id, farm, 8);
+	forged.fence_seq = 50;
+	memset(forged.short_hash, 0xab, OC_FH_SHORT_HASH_LEN);
+	wlen = oc_fh_encode_beacon(&forged, wire, sizeof(wire));
+	CHECK(oc_radio_send(sim_radio(&world, 0), wire, wlen, NULL) == OC_RADIO_OK);
+	sim_world_advance(&world, 5);
+	oc_fh_node_poll(&star);
+	CHECK(star.have_pending == 1);
+
+	for (i = 0; i < 80; i++) {
+		oc_fh_node_poll(&star);
+		sim_world_advance(&world, 5);
+	}
+	CHECK(star.have_pending == 0);
+	CHECK(oc_fh_stats(&star)->pending_timeout >= 1);
+	CHECK(oc_fh_active(&star)->fence_seq == 0);
+}
+
+static void test_sealed_preempts_unsigned_pending(void)
+{
+	/*
+	 * Forged LOCAL with high (but allowed) seq becomes pending; a sealed
+	 * manifest with lower seq must preempt it and then activate.
+	 */
+	sim_world_t world;
+	sim_link_t link;
+	test_keypair_t kp;
+	uint8_t seed[32] = { 23 };
+	uint8_t farm[8] = { 'F', 'A', 'R', 'M', '0', '0', '0', '1' };
+	uint8_t payload[80];
+	uint8_t local_wire[OC_FH_MANIFEST_LOCAL_WIRE_MAX];
+	size_t llen;
+	oc_fh_built_t built;
+	oc_fh_node_t rook, star;
+	oc_fh_config_t cr, cs;
+	node_mem_t mr, ms;
+	int t;
+
+	test_keygen(&kp, seed);
+	memset(payload, 0x44, sizeof(payload));
+	sim_world_init(&world, 2, 6);
+	memset(&link, 0, sizeof(link));
+	link.loss_pct = 0;
+	link.latency_ms = 1;
+	sim_world_set_fully_connected(&world, &link);
+
+	memset(&cr, 0, sizeof(cr));
+	cr.node_id = 1;
+	cr.is_rook = 1;
+	memcpy(cr.farm_id, farm, 8);
+	cr.frag_data_max = 40;
+	cr.trickle_imin_ms = 30;
+	cr.trickle_imax_ms = 200;
+	cs = cr;
+	cs.node_id = 2;
+	cs.is_rook = 0;
+	cs.accept_local_air = 1;
+	setup_node(&rook, &cr, &mr, sim_radio(&world, 0), &kp, &world);
+	setup_node(&star, &cs, &ms, sim_radio(&world, 1), &kp, &world);
+	oc_fh_node_set_payload_verify(&star, payload_verify_ok, NULL);
+
+	llen = forge_local(local_wire, sizeof(local_wire), farm, OC_FH_SEQ_MAX, 4);
+	CHECK(llen > 0);
+	CHECK(oc_radio_send(sim_radio(&world, 0), local_wire, llen, NULL) == OC_RADIO_OK);
+	sim_world_advance(&world, 5);
+	oc_fh_node_poll(&star);
+	CHECK(star.have_pending == 1);
+	CHECK(star.pending_is_local == 1);
+	CHECK(star.pending_manifest.fence_seq == OC_FH_SEQ_MAX);
+
+	CHECK(oc_fh_build_signed(&built, farm, 8, 8, payload, sizeof(payload), 40, test_sign,
+	                         &kp) == 0);
+	CHECK(oc_fh_inject_local(&rook, built.sealed, built.sealed_len, payload,
+	                         sizeof(payload)) == OC_FH_OK);
+	/* Deliver sealed manifest: must preempt unsigned high-seq pending. */
+	CHECK(oc_radio_send(sim_radio(&world, 0), built.sealed, built.sealed_len, NULL) ==
+	      OC_RADIO_OK);
+	sim_world_advance(&world, 5);
+	oc_fh_node_poll(&star);
+	CHECK(star.have_pending == 1);
+	CHECK(star.pending_is_local == 0);
+	CHECK(star.pending_manifest.fence_seq == 8);
+
+	for (t = 0; t < 3000; t++) {
+		oc_fh_node_poll(&rook);
+		oc_fh_node_poll(&star);
+		sim_world_advance(&world, 5);
+		if (oc_fh_active(&star)->fence_seq == 8) {
+			break;
+		}
+	}
+	CHECK(oc_fh_active(&star)->fence_seq == 8);
+	CHECK(memcmp(ms.active, payload, sizeof(payload)) == 0);
+	CHECK(star.have_pending == 0);
+}
+
+static void test_peer_evict_oldest(void)
+{
+	/* Rotating peer_ids must evict the oldest slot, not always slot 0. */
+	sim_world_t world;
+	sim_link_t link;
+	test_keypair_t kp;
+	uint8_t seed[32] = { 24 };
+	uint8_t farm[8] = { 'F', 'A', 'R', 'M', '0', '0', '0', '1' };
+	oc_fh_beacon_t b;
+	uint8_t wire[64];
+	size_t wlen;
+	oc_fh_node_t star;
+	oc_fh_config_t cs;
+	node_mem_t ms;
+	uint16_t i;
+	uint16_t first_peer;
+
+	test_keygen(&kp, seed);
+	sim_world_init(&world, 2, 7);
+	memset(&link, 0, sizeof(link));
+	link.loss_pct = 0;
+	link.latency_ms = 1;
+	sim_world_set_fully_connected(&world, &link);
+
+	memset(&cs, 0, sizeof(cs));
+	cs.node_id = 2;
+	cs.is_rook = 0;
+	memcpy(cs.farm_id, farm, 8);
+	cs.frag_data_max = 40;
+	cs.trickle_imin_ms = 50;
+	cs.trickle_imax_ms = 200;
+	cs.pending_timeout_ms = 60000;
+	setup_node(&star, &cs, &ms, sim_radio(&world, 1), &kp, &world);
+
+	memset(&b, 0, sizeof(b));
+	memcpy(b.farm_id, farm, 8);
+	b.fence_seq = 100;
+	memset(b.short_hash, 0xcd, OC_FH_SHORT_HASH_LEN);
+	wlen = oc_fh_encode_beacon(&b, wire, sizeof(wire));
+
+	/* Fill all peer slots with distinct sources via meta.peer_id from sim:
+	 * send from radio 0 repeatedly while manually driving need_budget through
+	 * beacon opens — use pending_source path: each beacon opens pending;
+	 * force NEED by polling. peer_id comes from sim link. For distinct
+	 * peers we poke peer_need via many beacon floods after clearing slots
+	 * by advancing window... Simpler: call poll after injecting beacons
+	 * that open pending, then inspect eviction by filling slots directly. */
+	for (i = 0; i < OC_FH_NEED_PEER_SLOTS; i++) {
+		star.peer_need[i].used = 1;
+		star.peer_need[i].peer_id = (uint16_t)(1000u + i);
+		star.peer_need[i].window_start_ms = 1000u + (uint32_t)i * 10u;
+		star.peer_need[i].need_count = 0;
+	}
+	first_peer = star.peer_need[0].peer_id;
+	/* Oldest is slot 0 (window_start 1000). Open pending + force NEED. */
+	CHECK(oc_radio_send(sim_radio(&world, 0), wire, wlen, NULL) == OC_RADIO_OK);
+	sim_world_advance(&world, 5);
+	oc_fh_node_poll(&star);
+	CHECK(star.have_pending == 1);
+	/* Drain NEED retries until budget path allocates a new peer slot. */
+	for (i = 0; i < 20; i++) {
+		oc_fh_node_poll(&star);
+		sim_world_advance(&world, 20);
+	}
+	/* Slot 0 should have been reused for the real pending_source peer. */
+	CHECK(star.peer_need[0].peer_id != first_peer || star.peer_need[0].peer_id == 0 ||
+	      star.peer_need[0].window_start_ms != 1000u);
+	/* Stronger: oldest window_start among still-1000+ peers is gone from slot0
+	 * if eviction took slot 0 (oldest). */
+	CHECK(star.peer_need[0].peer_id != first_peer);
+}
+
 int main(void)
 {
 	test_forged_beacon();
 	test_forged_manifest();
 	test_rollback();
 	test_dup_reorder_resume();
+	test_local_air_gate_and_ffffffff_attack();
+	test_pending_timeout();
+	test_sealed_preempts_unsigned_pending();
+	test_peer_evict_oldest();
 	if (failures) {
 		printf("test_security: %d failure(s)\n", failures);
 		return 1;

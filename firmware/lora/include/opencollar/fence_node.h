@@ -51,7 +51,10 @@ typedef enum oc_fh_event {
 	OC_FH_EV_NEED_TX,
 	OC_FH_EV_MANIFEST_WIRE_OVF,
 	OC_FH_EV_NEED_CAPPED,
-	OC_FH_EV_REJECT_PAYLOAD
+	OC_FH_EV_REJECT_PAYLOAD,
+	OC_FH_EV_REJECT_LOCAL_AIR, /* MANIFEST_LOCAL dropped (flag/verify) */
+	OC_FH_EV_PENDING_TIMEOUT,
+	OC_FH_EV_PERSIST_FAIL
 } oc_fh_event_t;
 
 typedef struct oc_fh_stats {
@@ -67,17 +70,28 @@ typedef struct oc_fh_stats {
 	uint32_t manifest_wire_ovf; /* sealed/local wire would not fit buffer */
 	uint32_t need_capped;       /* beacon-hint NEED suppressed by budget */
 	uint32_t need_tx;           /* NEED frames actually sent */
+	uint32_t reject_local_air;  /* air LOCAL dropped (no flag / no verify) */
+	uint32_t pending_timeout;   /* incomplete pending cleared by timeout */
+	uint32_t persist_fail;      /* set_hwm/save_active failed; not applied */
 } oc_fh_stats_t;
 
 typedef struct oc_fh_config {
 	uint16_t node_id;
 	uint8_t is_rook;
 	uint8_t starling_serve;
+	/*
+	 * Pilot only: accept OC_FH_MSG_MANIFEST_LOCAL from the air.
+	 * Also requires payload_verify to be set; otherwise LOCAL is dropped
+	 * and counted (stale-pending DoS defense). Default 0.
+	 */
+	uint8_t accept_local_air;
 	uint8_t farm_id[OC_FH_FARM_ID_LEN];
 	uint16_t frag_data_max;
 	uint32_t trickle_imin_ms;
 	uint32_t trickle_imax_ms;
 	uint8_t trickle_k;
+	/* 0 → OC_FH_PENDING_TIMEOUT_MS. Clears stuck pending transfers. */
+	uint32_t pending_timeout_ms;
 } oc_fh_config_t;
 
 typedef struct oc_fh_buffers {
@@ -137,6 +151,7 @@ struct oc_fh_node {
 	size_t pending_len;
 	uint16_t pending_source;
 	uint8_t pending_from_hint; /* opened by beacon; subject to NEED cap */
+	uint32_t pending_started_ms; /* for pending_timeout */
 
 	uint32_t trickle_I;
 	uint32_t trickle_t;

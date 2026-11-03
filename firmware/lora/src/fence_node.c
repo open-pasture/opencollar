@@ -89,16 +89,34 @@ static uint32_t effective_hwm(const oc_fh_node_t *n)
 	return h;
 }
 
-static void persist_active(oc_fh_node_t *n)
+/*
+ * Persist HWM then active (A/B+CRC contract in fence_store.h). On failure do
+ * not advance fence_seq_hwm in RAM beyond what store already holds.
+ */
+static int persist_fence(oc_fh_node_t *n, const oc_fh_freshness_t *fr, const uint8_t *payload,
+                         size_t plen, const uint8_t *wire, size_t mlen,
+                         const oc_fh_manifest_t *manifest)
 {
 	if (!n->store) {
-		return;
+		if (fr->fence_seq > n->fence_seq_hwm) {
+			n->fence_seq_hwm = fr->fence_seq;
+		}
+		return OC_FH_OK;
 	}
-	(void)n->store->set_hwm(n->store, n->active.fence_seq);
-	(void)n->store->save_active(n->store, &n->active, n->buf.active_payload, n->active_len,
-	                            n->active_manifest_wire, n->active_manifest_wire_len,
-	                            &n->active_manifest);
-	n->fence_seq_hwm = effective_hwm(n);
+	if (n->store->set_hwm(n->store, fr->fence_seq) != 0) {
+		n->stats.persist_fail++;
+		n->last_event = OC_FH_EV_PERSIST_FAIL;
+		return OC_FH_ERR_STORE;
+	}
+	if (n->store->save_active(n->store, fr, payload, plen, wire, mlen, manifest) != 0) {
+		n->stats.persist_fail++;
+		n->last_event = OC_FH_EV_PERSIST_FAIL;
+		return OC_FH_ERR_STORE;
+	}
+	if (fr->fence_seq > n->fence_seq_hwm) {
+		n->fence_seq_hwm = fr->fence_seq;
+	}
+	return OC_FH_OK;
 }
 
 int oc_fh_node_restore(oc_fh_node_t *n)
@@ -316,23 +334,31 @@ static int activate_pending(oc_fh_node_t *n)
 		clear_pending(n);
 		return OC_FH_ERR_MANIFEST_WIRE;
 	}
-	memcpy(n->buf.active_payload, n->buf.pending_payload, n->pending_len);
-	n->active_len = n->pending_len;
-	n->active_manifest = n->pending_manifest;
-	memcpy(n->active_manifest_wire, n->pending_manifest_wire, n->pending_manifest_wire_len);
-	n->active_manifest_wire_len = n->pending_manifest_wire_len;
-	n->active_is_local = n->pending_is_local;
-	memcpy(n->active.farm_id, n->pending_manifest.farm_id, OC_FH_FARM_ID_LEN);
-	n->active.fence_seq = n->pending_manifest.fence_seq;
-	memcpy(n->active.poly_hash, n->pending_manifest.poly_hash, OC_FH_POLY_HASH_LEN);
-	n->active.received_at_ms = now(n);
-	n->active.source_id = n->pending_source;
-	if (n->active.fence_seq > n->fence_seq_hwm) {
-		n->fence_seq_hwm = n->active.fence_seq;
+	{
+		oc_fh_freshness_t fr;
+		memcpy(fr.farm_id, n->pending_manifest.farm_id, OC_FH_FARM_ID_LEN);
+		fr.fence_seq = n->pending_manifest.fence_seq;
+		memcpy(fr.poly_hash, n->pending_manifest.poly_hash, OC_FH_POLY_HASH_LEN);
+		fr.received_at_ms = now(n);
+		fr.source_id = n->pending_source;
+		/* Persist before mutating active RAM. */
+		if (persist_fence(n, &fr, n->buf.pending_payload, n->pending_len,
+		                  n->pending_manifest_wire, n->pending_manifest_wire_len,
+		                  &n->pending_manifest) != OC_FH_OK) {
+			clear_pending(n);
+			return OC_FH_ERR_STORE;
+		}
+		memcpy(n->buf.active_payload, n->buf.pending_payload, n->pending_len);
+		n->active_len = n->pending_len;
+		n->active_manifest = n->pending_manifest;
+		memcpy(n->active_manifest_wire, n->pending_manifest_wire,
+		       n->pending_manifest_wire_len);
+		n->active_manifest_wire_len = n->pending_manifest_wire_len;
+		n->active_is_local = n->pending_is_local;
+		n->active = fr;
 	}
 	n->stats.applied++;
 	n->last_event = OC_FH_EV_APPLIED;
-	persist_active(n);
 	clear_pending(n);
 	trickle_reset(n);
 	return 0;
@@ -371,8 +397,15 @@ static int need_budget_allow(oc_fh_node_t *n, uint16_t peer_id)
 		}
 	}
 	if (!slot) {
-		/* Evict oldest window. */
-		slot = &n->peer_need[0];
+		/* Evict the oldest window (smallest window_start_ms). */
+		unsigned oldest = 0;
+		for (i = 1; i < OC_FH_NEED_PEER_SLOTS; i++) {
+			if ((int32_t)(n->peer_need[i].window_start_ms -
+			              n->peer_need[oldest].window_start_ms) < 0) {
+				oldest = i;
+			}
+		}
+		slot = &n->peer_need[oldest];
 		slot->peer_id = peer_id;
 		slot->window_start_ms = t;
 		slot->need_count = 0;
@@ -396,17 +429,35 @@ static int begin_pending_from_manifest(oc_fh_node_t *n, const oc_fh_manifest_t *
 {
 	uint16_t i;
 	size_t total = 0;
+	int was_pending = n->have_pending;
+	uint32_t old_seq = n->pending_manifest.fence_seq;
 
+	if (m->fence_seq == 0 || m->fence_seq > OC_FH_SEQ_MAX) {
+		n->stats.reject_seq++;
+		n->last_event = OC_FH_EV_REJECT_SEQ;
+		return OC_FH_ERR_SEQ;
+	}
 	if (m->fence_seq <= effective_hwm(n)) {
 		n->stats.reject_seq++;
 		n->last_event = OC_FH_EV_REJECT_SEQ;
 		return OC_FH_ERR_SEQ;
 	}
+	/*
+	 * Higher pending seq normally wins. Exception: a sealed (signed)
+	 * manifest preempts an unsigned/local pending even with a lower seq,
+	 * so a forged LOCAL 0xFFFFFFFF (or any high local) cannot block a real
+	 * farm-signed fence.
+	 */
 	if (n->have_pending && n->pending_manifest.fence_seq > m->fence_seq) {
-		return OC_FH_OK;
+		if (!(n->pending_is_local && !is_local)) {
+			return OC_FH_OK;
+		}
+		clear_pending(n);
+		was_pending = 0;
 	}
 	if (n->have_pending && n->pending_manifest.fence_seq < m->fence_seq) {
 		clear_pending(n);
+		was_pending = 0;
 	}
 	for (i = 0; i < m->frag_count; i++) {
 		total += n->cfg.frag_data_max;
@@ -445,6 +496,9 @@ static int begin_pending_from_manifest(oc_fh_node_t *n, const oc_fh_manifest_t *
 		n->pending_from_hint = from_hint ? 1 : 0;
 	}
 	n->pending_source = source;
+	if (!was_pending || old_seq != m->fence_seq) {
+		n->pending_started_ms = now(n);
+	}
 	n->need_pending = 1;
 	n->need_at_ms = now(n) + oc_radio_backoff_ms(n->radio, OC_FH_NEED_BACKOFF_LO_MS,
 	                                             OC_FH_NEED_BACKOFF_HI_MS);
@@ -460,10 +514,12 @@ static void send_need(oc_fh_node_t *n)
 	if (!n->have_pending) {
 		return;
 	}
-	/* Cap NEEDs while still waiting for any manifest (forged-beacon DoS). */
+	/* Cap NEEDs while still waiting for any manifest (forged-beacon DoS).
+	 * Budget is per peer / per window (OC_FH_NEED_HINT_MAX); do not use a
+	 * lifetime need_retries ceiling or loss recovery never resumes. */
 	if (n->pending_from_hint && n->pending_manifest_wire_len == 0) {
 		uint16_t peer = n->pending_source ? n->pending_source : n->last_rx_peer;
-		if (n->need_retries >= OC_FH_NEED_HINT_MAX || !need_budget_allow(n, peer)) {
+		if (!need_budget_allow(n, peer)) {
 			n->stats.need_capped++;
 			n->last_event = OC_FH_EV_NEED_CAPPED;
 			n->need_pending = 1;
@@ -545,6 +601,11 @@ static void on_manifest_sealed(oc_fh_node_t *n, const uint8_t *msg, size_t len, 
 	if (!oc_fh_farm_eq(m.farm_id, n->cfg.farm_id)) {
 		return;
 	}
+	if (m.fence_seq == 0 || m.fence_seq > OC_FH_SEQ_MAX) {
+		n->stats.reject_seq++;
+		n->last_event = OC_FH_EV_REJECT_SEQ;
+		return;
+	}
 	if (m.fence_seq <= effective_hwm(n)) {
 		n->stats.reject_seq++;
 		n->last_event = OC_FH_EV_REJECT_SEQ;
@@ -561,10 +622,25 @@ static void on_manifest_local(oc_fh_node_t *n, const uint8_t *msg, size_t len, u
 {
 	oc_fh_manifest_t m;
 
+	/*
+	 * Air LOCAL is pilot-only: require accept_local_air AND payload_verify.
+	 * Otherwise a forged unsigned LOCAL (e.g. seq=0xFFFFFFFF) can become
+	 * pending and starve every real lower-seq fence.
+	 */
+	if (!n->cfg.accept_local_air || !n->payload_verify) {
+		n->stats.reject_local_air++;
+		n->last_event = OC_FH_EV_REJECT_LOCAL_AIR;
+		return;
+	}
 	if (oc_fh_manifest_open_local(msg, len, &m) != 0) {
 		return;
 	}
 	if (!oc_fh_farm_eq(m.farm_id, n->cfg.farm_id)) {
+		return;
+	}
+	if (m.fence_seq == 0 || m.fence_seq > OC_FH_SEQ_MAX) {
+		n->stats.reject_seq++;
+		n->last_event = OC_FH_EV_REJECT_SEQ;
 		return;
 	}
 	if (m.fence_seq <= effective_hwm(n)) {
@@ -741,6 +817,15 @@ void oc_fh_node_poll(oc_fh_node_t *n)
 		handle_rx(n, n->buf.rx_scratch, got, meta.peer_id);
 	}
 	t = now(n);
+	if (n->have_pending) {
+		uint32_t pto = n->cfg.pending_timeout_ms ? n->cfg.pending_timeout_ms
+		                                         : OC_FH_PENDING_TIMEOUT_MS;
+		if (pto > 0 && (t - n->pending_started_ms) >= pto) {
+			clear_pending(n);
+			n->stats.pending_timeout++;
+			n->last_event = OC_FH_EV_PENDING_TIMEOUT;
+		}
+	}
 	if (n->need_pending && t >= n->need_at_ms) {
 		n->need_pending = 0;
 		if (n->have_pending &&
@@ -764,7 +849,7 @@ static int activate_from_parts(oc_fh_node_t *n, const oc_fh_manifest_t *m, const
 	size_t off;
 	uint16_t dlen;
 
-	if (m->fence_seq <= effective_hwm(n)) {
+	if (m->fence_seq == 0 || m->fence_seq > OC_FH_SEQ_MAX || m->fence_seq <= effective_hwm(n)) {
 		n->stats.reject_seq++;
 		n->last_event = OC_FH_EV_REJECT_SEQ;
 		return OC_FH_ERR_SEQ;
@@ -802,25 +887,34 @@ static int activate_from_parts(oc_fh_node_t *n, const oc_fh_manifest_t *m, const
 			return OC_FH_ERR_PAYLOAD;
 		}
 	}
-	if (store_manifest_wire(n, n->active_manifest_wire, sizeof(n->active_manifest_wire),
-	                        &n->active_manifest_wire_len, wire, mlen) != OC_FH_OK) {
-		return OC_FH_ERR_MANIFEST_WIRE;
-	}
-	memcpy(n->buf.active_payload, payload, plen);
-	n->active_len = plen;
-	n->active_manifest = *m;
-	n->active_is_local = is_local ? 1 : 0;
-	memcpy(n->active.farm_id, m->farm_id, OC_FH_FARM_ID_LEN);
-	n->active.fence_seq = m->fence_seq;
-	memcpy(n->active.poly_hash, m->poly_hash, OC_FH_POLY_HASH_LEN);
-	n->active.received_at_ms = now(n);
-	n->active.source_id = n->cfg.node_id;
-	if (n->active.fence_seq > n->fence_seq_hwm) {
-		n->fence_seq_hwm = n->active.fence_seq;
+	{
+		uint8_t wire_tmp[OC_FH_MANIFEST_WIRE_MAX];
+		size_t wire_tmp_len = 0;
+		oc_fh_freshness_t fr;
+
+		if (store_manifest_wire(n, wire_tmp, sizeof(wire_tmp), &wire_tmp_len, wire,
+		                        mlen) != OC_FH_OK) {
+			return OC_FH_ERR_MANIFEST_WIRE;
+		}
+		memcpy(fr.farm_id, m->farm_id, OC_FH_FARM_ID_LEN);
+		fr.fence_seq = m->fence_seq;
+		memcpy(fr.poly_hash, m->poly_hash, OC_FH_POLY_HASH_LEN);
+		fr.received_at_ms = now(n);
+		fr.source_id = n->cfg.node_id;
+		/* Persist before mutating active RAM. */
+		if (persist_fence(n, &fr, payload, plen, wire_tmp, wire_tmp_len, m) != OC_FH_OK) {
+			return OC_FH_ERR_STORE;
+		}
+		memcpy(n->buf.active_payload, payload, plen);
+		n->active_len = plen;
+		n->active_manifest = *m;
+		memcpy(n->active_manifest_wire, wire_tmp, wire_tmp_len);
+		n->active_manifest_wire_len = wire_tmp_len;
+		n->active_is_local = is_local ? 1 : 0;
+		n->active = fr;
 	}
 	n->stats.applied++;
 	n->last_event = OC_FH_EV_APPLIED;
-	persist_active(n);
 	clear_pending(n);
 	trickle_reset(n);
 	return OC_FH_OK;

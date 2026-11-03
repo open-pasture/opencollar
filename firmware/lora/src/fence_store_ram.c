@@ -2,6 +2,55 @@
 
 #include <string.h>
 
+/* Simple CRC-32 (IEEE); used only for A/B integrity in the RAM backend. */
+static uint32_t crc32_update(uint32_t crc, const uint8_t *data, size_t len)
+{
+	size_t i;
+	unsigned b;
+
+	crc = ~crc;
+	for (i = 0; i < len; i++) {
+		crc ^= data[i];
+		for (b = 0; b < 8; b++) {
+			uint32_t mask = -(crc & 1u);
+			crc = (crc >> 1) ^ (0xEDB88320u & mask);
+		}
+	}
+	return ~crc;
+}
+
+static uint32_t slot_crc(const oc_fh_store_ram_slot_t *sl)
+{
+	uint32_t c = 0;
+	c = crc32_update(c, (const uint8_t *)&sl->fr, sizeof(sl->fr));
+	c = crc32_update(c, (const uint8_t *)&sl->manifest, sizeof(sl->manifest));
+	c = crc32_update(c, (const uint8_t *)&sl->plen, sizeof(sl->plen));
+	c = crc32_update(c, (const uint8_t *)&sl->mlen, sizeof(sl->mlen));
+	if (sl->plen) {
+		c = crc32_update(c, sl->payload, sl->plen);
+	}
+	if (sl->mlen) {
+		c = crc32_update(c, sl->wire, sl->mlen);
+	}
+	return c;
+}
+
+static int slot_ok(const oc_fh_store_ram_slot_t *sl)
+{
+	return sl->occupied && sl->crc == slot_crc(sl);
+}
+
+int oc_fh_store_ram_have_active(const oc_fh_store_ram_t *ram)
+{
+	if (!ram) {
+		return 0;
+	}
+	if (slot_ok(&ram->slot[ram->primary & 1u])) {
+		return 1;
+	}
+	return slot_ok(&ram->slot[(ram->primary ^ 1u) & 1u]);
+}
+
 static int ram_get_hwm(oc_fh_store_t *s, uint32_t *out_seq)
 {
 	oc_fh_store_ram_t *r = (oc_fh_store_ram_t *)s->ctx;
@@ -29,22 +78,69 @@ static int ram_save(oc_fh_store_t *s, const oc_fh_freshness_t *fr, const uint8_t
                     const oc_fh_manifest_t *manifest)
 {
 	oc_fh_store_ram_t *r = (oc_fh_store_ram_t *)s->ctx;
+	uint8_t idx;
+	oc_fh_store_ram_slot_t *sl;
+
 	if (!r || !fr || !payload || !manifest_wire || !manifest) {
 		return -1;
 	}
-	if (plen > sizeof(r->payload) || mlen > sizeof(r->wire)) {
+	if (plen > sizeof(r->slot[0].payload) || mlen > sizeof(r->slot[0].wire)) {
 		return -1;
 	}
-	r->fr = *fr;
-	r->manifest = *manifest;
-	memcpy(r->payload, payload, plen);
-	r->plen = plen;
-	memcpy(r->wire, manifest_wire, mlen);
-	r->mlen = mlen;
-	r->have_active = 1;
+	if (r->fail_next_save) {
+		r->fail_next_save = 0;
+		return -1;
+	}
+
+	/* Alternate into the non-primary slot (A/B). */
+	idx = (uint8_t)((r->primary ^ 1u) & 1u);
+	sl = &r->slot[idx];
+	memset(sl, 0, sizeof(*sl));
+	sl->fr = *fr;
+	sl->manifest = *manifest;
+	memcpy(sl->payload, payload, plen);
+	sl->plen = plen;
+	memcpy(sl->wire, manifest_wire, mlen);
+	sl->mlen = mlen;
+	sl->occupied = 1;
+	sl->crc = slot_crc(sl);
+
+	if (r->tear_next_save) {
+		/*
+		 * Torn write: primary advanced to the new slot but CRC is bad
+		 * (power cut mid-commit). load_active must fall back to the
+		 * other copy.
+		 */
+		r->tear_next_save = 0;
+		sl->crc ^= 0xFFFFFFFFu;
+		r->primary = idx;
+		return 0;
+	}
+
+	r->primary = idx;
 	if (fr->fence_seq > r->hwm) {
 		r->hwm = fr->fence_seq;
 	}
+	return 0;
+}
+
+static int load_from_slot(const oc_fh_store_ram_slot_t *sl, oc_fh_freshness_t *fr,
+                          uint8_t *payload, size_t payload_cap, size_t *out_plen,
+                          uint8_t *manifest_wire, size_t wire_cap, size_t *out_mlen,
+                          oc_fh_manifest_t *manifest)
+{
+	if (!slot_ok(sl)) {
+		return -1;
+	}
+	if (sl->plen > payload_cap || sl->mlen > wire_cap) {
+		return -1;
+	}
+	*fr = sl->fr;
+	*manifest = sl->manifest;
+	memcpy(payload, sl->payload, sl->plen);
+	*out_plen = sl->plen;
+	memcpy(manifest_wire, sl->wire, sl->mlen);
+	*out_mlen = sl->mlen;
 	return 0;
 }
 
@@ -53,22 +149,21 @@ static int ram_load(oc_fh_store_t *s, oc_fh_freshness_t *fr, uint8_t *payload,
                     size_t wire_cap, size_t *out_mlen, oc_fh_manifest_t *manifest)
 {
 	oc_fh_store_ram_t *r = (oc_fh_store_ram_t *)s->ctx;
+	uint8_t pri;
+	uint8_t alt;
+
 	if (!r || !fr || !payload || !out_plen || !manifest_wire || !out_mlen || !manifest) {
 		return -1;
 	}
-	if (!r->have_active) {
-		return -1;
+	pri = (uint8_t)(r->primary & 1u);
+	alt = (uint8_t)(pri ^ 1u);
+	if (load_from_slot(&r->slot[pri], fr, payload, payload_cap, out_plen, manifest_wire,
+	                   wire_cap, out_mlen, manifest) == 0) {
+		return 0;
 	}
-	if (r->plen > payload_cap || r->mlen > wire_cap) {
-		return -1;
-	}
-	*fr = r->fr;
-	*manifest = r->manifest;
-	memcpy(payload, r->payload, r->plen);
-	*out_plen = r->plen;
-	memcpy(manifest_wire, r->wire, r->mlen);
-	*out_mlen = r->mlen;
-	return 0;
+	/* Torn primary → fall back to the other copy. */
+	return load_from_slot(&r->slot[alt], fr, payload, payload_cap, out_plen, manifest_wire,
+	                      wire_cap, out_mlen, manifest);
 }
 
 void oc_fh_store_ram_init(oc_fh_store_ram_t *ram)

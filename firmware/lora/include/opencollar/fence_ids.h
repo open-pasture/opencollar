@@ -59,9 +59,22 @@
  * Applies only while awaiting a real manifest (wire_len == 0). Once a
  * verified/local manifest arrives, loss-recovery NEEDs are uncapped here. */
 #define OC_FH_NEED_PEER_SLOTS 8u
-#define OC_FH_NEED_HINT_MAX 48u /* max NEEDs awaiting manifest before pause */
+#define OC_FH_NEED_HINT_MAX 8u /* max NEEDs/peer/window awaiting manifest */
 #define OC_FH_NEED_WINDOW_MS 5000u
 #define OC_FH_NEED_WINDOW_GLOBAL_MAX 64u
+
+/*
+ * Pending transfer that never completes (no fragments / stuck) is cleared
+ * after this many ms (overridable via cfg.pending_timeout_ms).
+ */
+#define OC_FH_PENDING_TIMEOUT_MS 30000u
+
+/*
+ * fence_seq ceiling: server must never issue near UINT32_MAX. Nodes refuse
+ * to adopt seq > OC_FH_SEQ_MAX (blocks wrap / forged 0xFFFFFFFF pending DoS).
+ * See NOTES.md § fence_seq near-max.
+ */
+#define OC_FH_SEQ_MAX 0x7FFFFFFFu
 
 /* Trickle defaults (ms), RFC 6206-inspired; tunable via node config. */
 #define OC_FH_TRICKLE_IMIN_MS 1000u
