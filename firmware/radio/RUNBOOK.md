@@ -97,8 +97,9 @@ act as RF-switch ctrl (HIGH in TX). Overlay sets `dio2-tx-enable` and
 - Bring-up preset is **125 kHz SF8 CR4/5**, not protocol Plan 1 (500 kHz).
 - TX capped at **+14 dBm** until conducted power is measured.
 - Hourly airtime budget ~1 %; min TX gap 100 ms; CAD before every TX.
-- `radio_hal.h` here is the proposed shape until `firmware/lora/radio_hal.h`
-  lands on a `proto-*` branch (none present when this PR opened).
+- HAL header is `firmware/lora/include/opencollar/radio_hal.h` (PR #6 /
+  `proto-fence-gossip`). Radio implements it; sleep/now live as
+  `oc_radio_sx1262_*` extras until the header gains them.
 
 ## Measurement plans (hardware-dependent — do not guess)
 

@@ -1,9 +1,8 @@
 /*
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "radio_hal.h"
-#include "radio_us915.h"
-#include "rhal_mock.h"
+#include "opencollar/radio_hal.h"
+#include "opencollar/radio_sx1262.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -18,73 +17,73 @@ static void check(int cond, const char *msg)
 	}
 }
 
-static void setup(struct rhal *h, struct rhal_platform *plat,
-		  struct rhal_limits *lim_out, uint32_t budget_us)
+static void setup(oc_radio_t *r, uint32_t duty_limit_us)
 {
-	struct rhal_cfg cfg;
-	struct rhal_limits lim;
+	oc_radio_cfg_t cfg;
+	oc_radio_hw_ops_t ops;
 
-	rhal_mock_reset();
-	rhal_mock_platform(plat);
-	rhal_us915_default_cfg(&cfg);
-	rhal_us915_default_limits(&lim);
-	lim.airtime_budget_us_per_h = budget_us;
-	lim.min_tx_gap_ms = 50;
-	lim.max_frame_airtime_us = 400000;
-	if (lim_out) {
-		*lim_out = lim;
-	}
-	check(rhal_init(h, &cfg, &lim, plat) == RHAL_OK, "init");
+	oc_radio_mock_reset();
+	oc_radio_mock_ops(&ops);
+	oc_radio_cfg_us915_defaults(&cfg);
+	cfg.duty_limit_us = duty_limit_us;
+	cfg.min_tx_gap_ms = 50;
+	check(oc_radio_sx1262_open(r, &cfg, &ops) == OC_RADIO_OK, "open");
 }
 
 int main(void)
 {
-	struct rhal h;
-	struct rhal_limits lim;
-	struct rhal_platform plat;
-	struct rhal_rx rx;
+	oc_radio_t r;
+	oc_radio_rx_meta_t meta;
 	uint8_t payload[16];
-	int rc;
+	uint8_t buf[32];
+	size_t n = 0;
 	uint32_t air;
+	oc_radio_cad_result_t cad;
+	oc_radio_tx_opts_t opts = oc_radio_tx_opts_default();
 
 	memset(payload, 0xA5, sizeof(payload));
 
-	setup(&h, &plat, &lim, 5u * 1000u * 1000u);
-	air = rhal_airtime_us(&h, 16);
+	setup(&r, 5u * 1000u * 1000u);
+	air = oc_radio_airtime_us(&r, 16);
 	check(air > 0, "airtime");
+	check(oc_radio_send(&r, payload, 16, &opts) == OC_RADIO_OK, "send1");
+	check(oc_radio_mock_tx_count() == 1, "tx count");
+	check(oc_radio_send(&r, payload, 16, &opts) == OC_RADIO_ERR_DUTY,
+	      "min gap");
 
-	rc = rhal_send(&h, payload, 16, 0);
-	check(rc == RHAL_OK, "first send");
-	check(rhal_mock_tx_count() == 1, "tx count");
+	oc_radio_mock_advance_ms(60);
+	check(oc_radio_send(&r, payload, 16, &opts) == OC_RADIO_OK, "send2");
 
-	rc = rhal_send(&h, payload, 16, 0);
-	check(rc == RHAL_E_BUDGET, "min gap");
+	oc_radio_sx1262_close(&r);
+	setup(&r, 5u * 1000u * 1000u);
+	oc_radio_mock_set_cad_busy(1);
+	check(oc_radio_send(&r, payload, 16, &opts) == OC_RADIO_ERR_BUSY,
+	      "cad busy");
+	oc_radio_mock_set_cad_busy(0);
 
-	rhal_mock_advance_us(60000);
-	rc = rhal_send(&h, payload, 16, 0);
-	check(rc == RHAL_OK, "second send after gap");
+	oc_radio_sx1262_close(&r);
+	setup(&r, air);
+	check(oc_radio_send(&r, payload, 16, &opts) == OC_RADIO_OK, "budget ok");
+	oc_radio_mock_advance_ms(100);
+	check(oc_radio_send(&r, payload, 16, &opts) == OC_RADIO_ERR_DUTY,
+	      "budget refuse");
+	check(oc_radio_duty_budget_us(&r) == 0, "left zero");
 
-	rhal_deinit(&h);
-	setup(&h, &plat, NULL, 5u * 1000u * 1000u);
-	rhal_mock_set_cad_busy(1);
-	rc = rhal_send(&h, payload, 16, 0);
-	check(rc == RHAL_E_BUSY, "cad busy");
-	rhal_mock_set_cad_busy(0);
+	oc_radio_mock_queue_rx(payload, 16, -95, 7);
+	check(oc_radio_recv(&r, buf, sizeof(buf), &n, &meta, 100) == OC_RADIO_OK,
+	      "recv");
+	check(n == 16 && meta.rssi_dbm == -95 && meta.snr_db == 7, "meta");
 
-	rhal_deinit(&h);
-	setup(&h, &plat, NULL, air); /* exactly one packet */
-	check(rhal_send(&h, payload, 16, 0) == RHAL_OK, "budget send");
-	rhal_mock_advance_us(100000);
-	check(rhal_send(&h, payload, 16, 0) == RHAL_E_BUDGET, "budget refuse");
-	check(rhal_airtime_left_us(&h) == 0, "left zero");
+	check(oc_radio_set_power(&r, 30) == OC_RADIO_ERR_PARAM, "power cap");
+	check(oc_radio_cad(&r, &cad) == OC_RADIO_OK && cad == OC_RADIO_CAD_FREE,
+	      "cad free");
+	check(oc_radio_backoff_ms(&r, 10, 20) >= 10, "backoff");
+	check(oc_radio_trickle_t_ms(&r, 1000) >= 500, "trickle");
+	check(oc_radio_sx1262_sleep(&r) == OC_RADIO_OK, "sleep");
 
-	rhal_mock_queue_rx(payload, 16, -95, 7);
-	check(rhal_recv(&h, &rx, 100) == RHAL_OK, "recv");
-	check(rx.len == 16 && rx.rssi_dbm == -95 && rx.snr_db == 7, "meta");
-
-	check(rhal_set_power(&h, 30) == RHAL_E_POWER, "power cap");
-	check(rhal_cad(&h, 10) == 0, "cad clear");
-	check(rhal_sleep(&h) == RHAL_OK, "sleep");
+	/* MTU */
+	check(oc_radio_send(&r, payload, 300, &opts) == OC_RADIO_ERR_TOO_LARGE,
+	      "too large");
 
 	if (fails) {
 		return 1;
