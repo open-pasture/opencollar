@@ -14,8 +14,9 @@ Not a wire version bump: welfare events are serial / local today. Cue rule and
   (default **3**), then silent until clear inside the geofence; still bounded
   by `outside_max_ms` (10 s).
 - **Auto shut-off:** `escape_cycle_limit` escape→return cycles
-  (default **3**) inside `escape_cycle_window_ms` (default **24 h**) turns
-  enforcement off until a new boundary / `cue_rearm`.
+  (default **3**) inside a fixed `escape_cycle_window_ms` (default **24 h**,
+  starts at the first escape and resets after that window) turns enforcement
+  off until a new boundary / `cue_rearm`.
 - **`cue.json`:** config carries the three welfare fields; cases
   `pulse_cutoff_after_three_outside_cues` and
   `auto_shutoff_after_three_escape_cycles`. Optional `expect.welfare` is

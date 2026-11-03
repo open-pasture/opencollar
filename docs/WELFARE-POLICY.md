@@ -35,8 +35,8 @@ should be re-checked after field data from the pilot farm.
 | Outside/pulse cues per boundary crossing | **3** | `max_outside_cues` |
 | Then suspend until clear inside (`GEOFENCE_INSIDE`) | always | (state: `pulse_cutoff`) |
 | Escape→return cycles before auto shut-off | **3** | `escape_cycle_limit` |
-| Rolling window for those cycles | **24 hours** | `escape_cycle_window_ms` |
-| Clear shut-off | new boundary / `cue_rearm` | — |
+| Fixed window for those cycles (starts at first escape; resets after 24 h) | **24 hours** | `escape_cycle_window_ms` |
+| Clear shut-off (provisional; see OPEN DECISION) | new boundary / `cue_rearm` | — |
 
 Existing caps still apply: warning cues at most 20 s continuous then 30 s
 rest; outside cues also stop after `outside_max_ms` (10 s) if the count
@@ -65,8 +65,11 @@ Queued like episodes; drained by `cue_take_welfare`, logged as
   right defaults for cattle (and later sheep/goats)? See *Basis for the
   defaults*; they still need sign-off from an animal-welfare expert, and no
   collar goes on an animal before that review.
-- Should shut-off clear only on a new boundary, or also after a long quiet
-  period / explicit caretaker command?
+- **OPEN DECISION (Cody):** Should a fence move (new boundary / `cue_rearm`)
+  undo shut-off? Current firmware clears shut-off on rearm so a caretaker
+  boundary change restores enforcement; whether that is the right policy is
+  not decided. Related: clear also after a long quiet period / explicit
+  caretaker command?
 - When the pulse board ships, should warning **audio** share the same count
   budget as the pulse, or stay on the existing time/rest caps only?
 - Should welfare events be a separate report array, or folded into episodes /
@@ -90,11 +93,12 @@ No vendor publishes a full threshold set; these are the published anchors.
   inferred).** Halter states it has time-bound limits and daily maximums on
   pulses, after which the collar is disabled and the farmer alerted, but
   does not publish the numbers
-  (https://www.halterhq.com/animal-welfare-charter/system-overview). Early
-  Nofence sheep trials capped corrections at four per day before
-  deactivating (http://hdl.handle.net/11250/2447492). A 24 h window is
-  stricter than the old 1 h placeholder: three escapes spread across a day
-  now also trigger shut-off.
+  (https://www.halterhq.com/animal-welfare-charter/system-overview). The
+  2012 Nofence sheep trial: **4 pulses a day, audio continued**
+  (http://hdl.handle.net/11250/2447492). Counting escapes (rather than
+  pulses) for shut-off is **our own design choice**, not taken from that
+  trial. A fixed 24 h window is stricter than the old 1 h placeholder:
+  three escapes spread across a day now also trigger shut-off.
 - **Re-arm only by new boundary or explicit `cue_rearm` (conservative,
   inference).** Halter reactivates only once the animal shows it responds to
   cues; we have no such test yet, so a person decides.

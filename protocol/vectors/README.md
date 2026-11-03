@@ -59,7 +59,7 @@ Expect: `{ acks: [{ version, status, code?, at? }], active, have, free, free_byt
 
 ### cue.json
 
-`{ config, cases: [{ name, warn_m, steps, expect }] }`: the cue policy ("only cue a crossing", warning levels, the 20 s cap and 30 s rest, outside tone with pulse cutoff, auto shut-off, episodes, track mode). `config` is the cue configuration (`warn_freq_hz`, `outside_freq_hz`, `beep_ms`, `max_active_ms`, `rest_ms`, `outside_max_ms`, plus welfare: `max_outside_cues`, `escape_cycle_limit`, `escape_cycle_window_ms`). Zero welfare fields mean the firmware's safe defaults (2 / 3 / 1 h). Each case starts from boot: unarmed, audio mode, enforcement on.
+`{ config, cases: [{ name, warn_m, steps, expect }] }`: the cue policy ("only cue a crossing", warning levels, the 20 s cap and 30 s rest, outside tone with pulse cutoff, auto shut-off, episodes, track mode). `config` is the cue configuration (`warn_freq_hz`, `outside_freq_hz`, `beep_ms`, `max_active_ms`, `rest_ms`, `outside_max_ms`, plus welfare: `max_outside_cues`, `escape_cycle_limit`, `escape_cycle_window_ms`). Zero welfare fields mean the firmware's safe defaults (3 / 3 / 24 h). Each case starts from boot: unarmed, audio mode, enforcement on.
 
 Steps:
 - `{ op: "fix", t_ms, state, margin_m, ring }`: a geofence result (`inside`, `warning`, `outside` or `unknown`, the signed margin, the nearest ring) at `t_ms` on the collar's clock.

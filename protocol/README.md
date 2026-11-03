@@ -57,14 +57,15 @@ warning zone) to outside under the boundary it holds.
   animal.
 - While unarmed and outside, the collar is silent and reports state `outside`.
   A boundary that leaves an animal outside never cues it.
-- A crossing cues the outside tone for up to **2 cues** (and never longer than
+- A crossing cues the outside tone for up to **3 cues** (and never longer than
   10 s), then **pulse cutoff**: silent until a fix clear inside the geofence
   (`GEOFENCE_INSIDE`), not merely in the warning zone. Walking back through
   the warning zone is silent; that clear-inside fix arms the fence again.
-- **Auto shut-off:** after **3** escape→return cycles within a rolling **24 hours**
-  window, enforcement turns off for that animal (fence still evaluates; no
-  warn or outside cue). A new boundary / `cue_rearm` resumes it. Thresholds
-  are conservative defaults and need animal-welfare review
+- **Auto shut-off:** after **3** escape→return cycles within a fixed **24 hours**
+  window (starts at the first escape; resets after 24 h), enforcement turns
+  off for that animal (fence still evaluates; no warn or outside cue). A new
+  boundary / `cue_rearm` resumes it. Thresholds are conservative defaults and
+  need animal-welfare review
   ([`docs/WELFARE-POLICY.md`](../docs/WELFARE-POLICY.md)).
 - Warning-zone cues are otherwise unchanged: louder toward the edge, at most
   20 s of continuous cueing, then 30 s of rest.
@@ -228,9 +229,10 @@ server accepted.
   inside), `crossed`, `rest` (the 20 s cap) or `boundary_changed`.
 - Welfare (audio V0; same counters will gate a future pulse): outside cues
   per crossing are count-capped (`max_outside_cues`, default 3), then
-  suspended until clear inside; escape→return cycles in
-  `escape_cycle_window_ms` (default 24 h) hit `escape_cycle_limit` (default 3)
-  and auto-shut off enforcement. Events
+  suspended until clear inside; escape→return cycles in a fixed
+  `escape_cycle_window_ms` (default 24 h, starts at the first escape and
+  resets after that window) hit `escape_cycle_limit` (default 3) and
+  auto-shut off enforcement. Events
   `pulse_cutoff` / `returned` / `auto_shutoff` / `enforcement_resumed` are
   queued like episodes and logged on serial today; report uplink is TBD
   ([`registry.md`](registry.md#welfare-event-kinds)).

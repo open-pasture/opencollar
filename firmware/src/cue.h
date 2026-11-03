@@ -55,7 +55,7 @@ struct cue_config {
 	 */
 	uint8_t max_outside_cues;        /* Outside/pulse cues per crossing; default 3 */
 	uint8_t escape_cycle_limit;      /* Escape→return cycles before shut-off; default 3 */
-	uint32_t escape_cycle_window_ms; /* Rolling window for those cycles; default 24 h */
+	uint32_t escape_cycle_window_ms; /* Fixed window (from first escape); default 24 h */
 };
 
 enum cue_kind {
