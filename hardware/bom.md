@@ -12,6 +12,9 @@
 | Battery | Adafruit 353 3.7 V 6600 mAh | 1 (owned) | Spare | PROPOSED ALTERNATIVE, NOT APPROVED (battery/cue pods under `exports/alt_pods_unapproved/`); dual-cell pods remain the plan of record. |
 | Battery | PKCELL LP503562, 3.7V 1200mAh LiPo | 1 | Power | 2-wire lead with connector. Polarity must be checked against the board before connecting. |
 | Jumper wires | Dupont female-female, ribbon | 1 set | Bench wiring | |
+| Cap lid screws | M3×40 button head ISO 7380 A2/304 + M3 bonded sealing washer | 8 | Through the 41.4 mm base columns into lid inserts |
+| Cap clamp screws | M3×8 button head | 4 | Cap clamp bars |
+| Heat-set inserts | Adafruit 4255 M3×4 brass | 36 of 50 owned | Cap 12 (8 lid + 4 clamp), pods 16, CW 8. Iron ~220 °C PLA / ~245 °C ASA; press flush. |
 
 ## Still needed
 
@@ -20,3 +23,4 @@
 | Nano-SIM with LTE-M data | Board can't reach the network without one. Hologram, Onomondo, Soracom, or 1NCE. |
 | Qwiic to female-jumper cable (SparkFun PRT-14988) or 4-pin 0.1" header + soldering iron | Dupont jumpers can't plug into the buzzer as-is. |
 | USB-C data cable | Flashing, serial logs, charging. |
+| 8 × M3×40 button head (ISO 7380) + M3 bonded sealing washers | Cap lid screws; M3×20 cannot reach the lid inserts through the 41.4 mm base. |

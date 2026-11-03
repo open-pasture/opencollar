@@ -210,7 +210,7 @@ def mass_budget(parts):
     pod_print = sum(v for k, v in g.items() if k.startswith("pod_") and k.endswith("_L"))
     cw_print = g["cw_tub"] + g["cw_lid"]
     kit = d.NRF9151_KIT["mass_g"]
-    cap = cap_print + kit + 8 + 2 + 10 + 2 + n.P124["mass_g"] + 15     # kit, bq24074, IMU, patch, LTE flex, P124, screws/inserts/O-ring
+    cap = cap_print + kit + 8 + 2 + 10 + 2 + n.P124["mass_g"] + 18     # kit, bq24074, IMU, patch, LTE flex, P124, 8×M3x40+inserts/O-ring
     pod = pod_print + n.CELL["mass_g"] + d.QWIIC_BUZZER["mass_g"] + 8 + 12 + 10   # cell, buzzer, electrodes, screws, half the cable
     cw = cw_print + n.steel_mass_g() + 10 + 2 * 2.5                       # steel, screws/foam, bars
     return {"cap_g": round(cap), "pod_g_each": round(pod), "counterweight_g": round(cw),

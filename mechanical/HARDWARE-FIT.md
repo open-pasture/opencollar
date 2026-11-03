@@ -31,7 +31,7 @@ Both pods are identical mirrors (92 × 68 × 24.5). Electrode studs stay for lat
 
 ## CAD status (this branch)
 
-- **Cap:** 76 × 160 × 41.4 mm; one P124 pocket 66.6 × 113.6 × 1.2 (VHB — full 3.1 mm depth would hit lid inserts); `PANEL_Y = +11` deliberate for GPS; channel gable + spine V ≥45°. Cap CAD unchanged in this follow-up.
+- **Cap:** 76 × 160 × 41.4 mm; one P124 pocket 66.6 × 113.6 × 1.2 (VHB — full 3.1 mm depth would hit lid inserts); `PANEL_Y = +11` deliberate for GPS; channel gable + spine V ≥45°. Lid-screw counterbore deepened for **M3×40** button heads; insert pockets Ø4.0 × ~5 mm deep (8 lid + 4 clamp-bar).
 - **Pod (plan of record):** **92 × 68 × 24.5 mm** base / lid 6 mm; cell at (−2, −13); buzzer at (20, 15); columns (±37, ±27); sound port +Y; crest cable +X. Export: `exports/node_v1_pod/`.
 - **PROPOSED ALTERNATIVE, NOT APPROVED:** battery pod 100×90×26 (Adafruit 353) + cue pod 92×68×26 under `exports/alt_pods_unapproved/` (was `node_v1_pod_battery` / `node_v1_pod_cue`); dual-cell `exports/node_v1_pod/` remains the plan of record.
 - **Clamp / strap:** shared 70 mm bars, clamp Y ±29.5, channel follows strap (fits P2S 256×256 easily).
@@ -43,6 +43,16 @@ Both pods are identical mirrors (92 × 68 × 24.5). Electrode studs stay for lat
 | --- | --- | --- |
 | Adafruit 1781 protected 18650 | **2 (pending Cody’s purchase approval)** | One per dual-cell pod — plan of record |
 | Adafruit 353 3.7 V 6600 mAh | **1 (owned)** | Spare; only for the PROPOSED ALTERNATIVE (not approved) alt-pod layout |
+
+## Fasteners (cap / pods / CW)
+
+| Item | Qty | Notes |
+| --- | --- | --- |
+| M3×40 button head (ISO 7380, A2/304) + M3 bonded sealing washer | **8** | Cap lid through-screws (from below into lid inserts) |
+| M3×8 button head | **4** | Cap clamp bars |
+| M3×4 brass heat-set inserts (Adafruit 4255) | **36 of 50 owned** | Cap 12 (8 lid + 4 clamp), pods 16 (8 each ×2), CW 8 |
+
+**Insert install:** iron ~220 °C for PLA, ~245 °C for ASA; press until flush with the pocket mouth.
 
 ## Buzzer (plain)
 

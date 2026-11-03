@@ -143,16 +143,17 @@ def cap_base():
     for sy in (-1, 1):
         yc = sy * (CHANNEL_W / 2 + zone / 2)
         oc.cut(b, oc.prism_y(f"spine{sy}", spine_xz, zone + 0.4, at_y=yc))
-    # Through screws for the lid (from below). Counterbore is a cone that meets
-    # the clearance hole (no leftover flat ceiling at z = CBORE_DEPTH).
+    # Through screws for the lid (from below). Cylinder counterbore then a 45°
+    # cone into the clearance hole (no flat ceiling; base prints face-down).
+    # Head seats ~z=6; M3×40 reaches ~4.6 mm into the lid insert.
     for i, (x, y) in enumerate(CAP_COLS):
         oc.cut(b, oc.cylinder(f"h{i}", CLEAR, CAP_BASE_H + 2, at=(x, y, -1), anchor="bottom"))
-        oc.cut(b, oc.cone(f"cb{i}", CBORE_D, CLEAR, CBORE_DEPTH, at=(x, y, 0.0)))
-    # Clamp-bar inserts: cylinder then cone starting at the cylinder top so
-    # there is no annular flat (the old z≈3.2 rings).
+        oc.cut(b, oc.cylinder(f"cbc{i}", CBORE_D, 5.0, at=(x, y, -1), anchor="bottom"))
+        oc.cut(b, oc.cone(f"cb{i}", CBORE_D, CLEAR, 4.0, at=(x, y, 4.0)))
+    # Clamp-bar inserts: Ø4.0 × 5 mm deep (cylinder from z=-1 height 6) then tip.
     for i, (x, y) in enumerate(CAP_CLAMP):
-        oc.cut(b, oc.cylinder(f"ins{i}", INSERT["hole_d"], 3.0, at=(x, y, -1), anchor="bottom"))
-        oc.cut(b, oc.cone(f"instip{i}", INSERT["hole_d"], 0.2, 3.0, at=(x, y, 2.0)))
+        oc.cut(b, oc.cylinder(f"ins{i}", INSERT["hole_d"], 6.0, at=(x, y, -1), anchor="bottom"))
+        oc.cut(b, oc.cone(f"instip{i}", INSERT["hole_d"], 0.2, 2.0, at=(x, y, 5.0)))
     # O-ring groove in the rim, centred on the wall.
     oc.cut(b, _groove_loop("groove", CAP_W, CAP_L, 10.0, CAP_BASE_H, CAP_WALL / 2))
     # Potted cable entries, one each side, to the pods (mid-cavity height).
@@ -169,9 +170,11 @@ def cap_lid():
     slab = oc.rounded_box("cap_lid", (CAP_W, CAP_L, CAP_LID_T), 2.5, anchor="bottom")
     oc.intersect(slab, oc.rounded_rect("trim", (CAP_W, CAP_L, CAP_LID_T + 2), 10.0, at=(0, 0, -1), anchor="bottom"))
     for i, (x, y) in enumerate(CAP_COLS):
-        # Blind insert seat: short cylinder then a conical tip (no flat ceiling).
-        oc.cut(slab, oc.cylinder(f"lih{i}", INSERT["hole_d"], 3.2, at=(x, y, -1), anchor="bottom"))
-        oc.cut(slab, oc.cone(f"li{i}", INSERT["hole_d"], 0.2, 2.2, at=(x, y, 2.0)))
+        # Blind insert seat Ø4.0 × 5 mm deep (from z=-1 height 6 → top z=5).
+        # No cone tip: panel pocket floor is at z=CAP_LID_T−1.2=5.8, so a tip
+        # above z=5 would break the ≥0.8 mm keep-out under the panel pocket.
+        # Flat 4 mm bridge is acceptable (lid prints mating-face-down).
+        oc.cut(slab, oc.cylinder(f"lih{i}", INSERT["hole_d"], 6.0, at=(x, y, -1), anchor="bottom"))
     px, py, pz = PANEL_POCKET
     oc.cut(slab, oc.rounded_rect("pocket", (px, py, pz + 1), 1.0, at=(0, PANEL_Y, CAP_LID_T - pz), anchor="bottom"))
     # Panel lead hole near the +Y end of the pocket (away from the GPS patch).
