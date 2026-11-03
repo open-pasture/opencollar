@@ -109,24 +109,26 @@ CAP_BASE_H_GABLE = CAP_FLOOR_Z_GABLE + CAP_CAVITY_H    # ~41.4
 CAP_FLOOR_Z_SADDLE = 6.0
 CAP_BASE_H_SADDLE = CAP_FLOOR_Z_SADDLE + CAP_CAVITY_H  # 19.0
 
-# Strap saddle (CAP_STYLE=saddle only). Print roof-down: flat roof on the bed,
-# rails up. Roof mates against the cap floor; clamp bars squeeze the strap
-# against the saddle roof. Same CAP_CLAMP / CAP_BAR interface as gable.
+# Strap saddle (CAP_STYLE=saddle only). STL is exported in print orientation:
+# flank/rail face on the bed, roof + locating pins UP (toward the cap). Channel
+# opens toward the bed as a pocket — no bridge. Same CAP_CLAMP / CAP_BAR interface.
 SADDLE_ROOF_T = 2.5
 SADDLE_H = SADDLE_ROOF_T + CHANNEL_D          # ~5.9
 SADDLE_L = 80.0                               # covers clamp Y ±28.5 with margin
 SADDLE_W = CAP_W                              # 76 — same width as the cap footprint
-# Locating: 4 pins on the cap underside (top of a face-down print) into blind
-# holes in the saddle roof. No nest pocket — a full-width recess left knife
-# edges against the outer wall (see build log). Optional grit gasket is a
-# note / shallow groove on the saddle roof only.
 SADDLE_NEST_D = 0.0                           # flat mate (no nest); kept for stack math
-SADDLE_GASKET_D = 0.4                         # optional TPU/EPDM grit gasket recess
-SADDLE_GASKET_INSET = 4.0
 SADDLE_LEAD_IN = 3.0                          # chamfer length at strap entries (±X)
+# Locating: pins on the saddle roof (print face-up) into blind holes in the
+# flat cap underside. Cap base must sit fully flat on the bed.
 SADDLE_PIN_D = 4.0
-SADDLE_PIN_H = 1.5                            # protrudes below cap z=0 into the saddle
+SADDLE_PIN_H = 1.5
+SADDLE_PIN_HOLE_D = SADDLE_PIN_D + 0.35       # ~Ø4.35 clearance in the cap
+SADDLE_PIN_HOLE_DEPTH = 2.0                   # blind; keep-out under CAP_FLOOR_Z=6
 SADDLE_PINS = [(sx * 28.0, sy * 32.0) for sx in (-1, 1) for sy in (-1, 1)]
+# Lid through-screw: Ø8 cbore cylinder ends / cone starts at this z (washer seat).
+LID_SCREW_SEAT_Z = 4.0
+# Lid insert pocket: cylinder from z=-1 height 6 → blind depth 5.0 from face.
+LID_INSERT_POCKET_DEPTH = 5.0
 
 # Active style (mutable via set_cap_style). Default preserves v3 exports.
 CAP_STYLE = "gable"
@@ -150,28 +152,42 @@ def set_cap_style(style):
 
 
 def clamp_screw_stack_mm(style=None):
-    """Clamp screw stack (bar + path into insert). Returns (stack_mm, recommend_mm)."""
+    """Clamp screw path and recommended length. Returns (to_insert_mouth_mm, recommend_mm).
+
+    Saddle: the bar rides on the 0.6 mm strap protrusion, so the screw crosses
+    bar + saddle + strap gap before the insert mouth. Pocket is blind at z=4.0
+    under a 6.0 mm floor — round the screw DOWN so the tip stays in the pocket.
+    """
     s = style or CAP_STYLE
     bar = CAP_BAR[2]
-    insert = INSERT["length"]
     if s == "saddle":
-        # Bar flush on saddle flank; screw through full saddle height into
-        # the heat-set insert in the cap floor (nest does not shorten the
-        # plastic path — the insert mouth is at the nest floor).
-        stack = bar + SADDLE_H + insert  # 4 + 5.9 + 4 = 13.9
-        return stack, 16.0  # M3×16
-    stack = bar + insert  # gable: bar flush on underside into insert
-    return stack, 8.0     # M3×8
+        strap_gap = STRAP_T - CHANNEL_D          # 0.6
+        to_mouth = bar + SADDLE_H + strap_gap    # 4 + 5.9 + 0.6 = 10.5
+        pocket = 4.0                             # insert seat depth in slim floor
+        # Max screw that bottoms at pocket floor; round DOWN to stock length.
+        max_screw = to_mouth + pocket            # 14.5 → M3×14
+        recommend = 14.0
+        return to_mouth, recommend
+    return bar + INSERT["length"], 8.0           # gable: bar flush into insert
 
 
 def lid_screw_stack_mm(style=None):
-    """Lid through-screw from head seat to lid-insert engagement."""
+    """Lid through-screw path and recommended length.
+
+    Seat = LID_SCREW_SEAT_Z (Ø8 cbore cylinder top / cone start). Lid pocket is
+    LID_INSERT_POCKET_DEPTH from the mating face; insert is 4.0 mm. Pick a stock
+    length that engages the insert without bottoming the tip on the pocket floor.
+    """
     s = style or CAP_STYLE
     h = CAP_BASE_H_SADDLE if s == "saddle" else CAP_BASE_H_GABLE
-    seat = 5.0            # Ø8 cbore + cone; head seats ~z=5
-    engage = INSERT["length"]
-    stack = (h - seat) + engage
-    return stack, (20.0 if s == "saddle" else 40.0)
+    seat = LID_SCREW_SEAT_Z
+    through_base = h - seat
+    if s == "saddle":
+        # M3×18: tip into lid = 18 − 15 = 3.0 (insert 4.0, pocket 5.0) — engages,
+        # does not bottom. M3×20 would put the tip at 5.0 (pocket floor).
+        return through_base + INSERT["length"], 18.0
+    # Gable: long base; M3×40 with ~4.6 mm into the lid insert (historical).
+    return through_base + INSERT["length"], 40.0
 
 
 def stack_height_strap_to_lid_mm(style=None):
@@ -250,15 +266,14 @@ def _cap_base_gable_underside(b):
 
 
 def _cap_base_saddle_underside(b):
-    """Slim underside: flat floor, locating pins into the saddle roof, clamp
+    """Slim underside: completely flat bed face, blind pin sockets, clamp
     inserts that stop ≥1 mm short of the cavity (no seal breach)."""
-    # Pins hang from z=0 into the saddle (top of a face-down print — no overhang).
+    # Locating pin sockets (blind). Pins live on the saddle roof.
     for i, (x, y) in enumerate(SADDLE_PINS):
-        pin = oc.cylinder(f"pin{i}", SADDLE_PIN_D, SADDLE_PIN_H,
-                          at=(x, y, -SADDLE_PIN_H), anchor="bottom")
-        oc.union(b, pin)
-    # Clamp inserts: Ø4.0 × 4.0 mm seat (insert length) from underside; flat
-    # bottom at z=4.0 → 2.0 mm keep-out under CAP_FLOOR_Z=6 (no cavity breach).
+        oc.cut(b, oc.cylinder(f"pin_sock{i}", SADDLE_PIN_HOLE_D, SADDLE_PIN_HOLE_DEPTH + 1,
+                              at=(x, y, SADDLE_PIN_HOLE_DEPTH - (SADDLE_PIN_HOLE_DEPTH + 1) / 2)))
+    # Clamp inserts: Ø4.0 × 4.0 mm seat from underside; flat bottom at z=4.0 →
+    # 2.0 mm keep-out under CAP_FLOOR_Z=6 (no cavity breach).
     for i, (x, y) in enumerate(CAP_CLAMP):
         oc.cut(b, oc.cylinder(f"ins{i}", INSERT["hole_d"], 5.0, at=(x, y, -1), anchor="bottom"))
     return b
@@ -276,14 +291,14 @@ def cap_base(style=None):
 
 
 def cap_saddle():
-    """Printed strap saddle for CAP_STYLE=saddle. Print roof-down (z=0 on bed):
-    flat roof, channel rails up, no overhangs steeper than 45°, no supports.
-    Outside the seal — no gasket required; optional grit-gasket groove on roof."""
+    """Printed strap saddle. Exported print-ready: flank/rail face on the bed
+    (z=0), roof + locating pins UP toward the cap. Channel opens toward the
+    bed (pocket, no bridge). No supports; lead-ins and spine V ≥45°."""
+    # Build in roof-at-z=0 frame first (channel cut from the +Z face), then
+    # flip 180° about X so the flank face lands on the bed and pins point up.
     s = oc.rounded_rect("cap_saddle", (SADDLE_W, SADDLE_L, SADDLE_H), 2.0, anchor="bottom")
-    # Strap channel through ±X; depth CHANNEL_D from the top (rail) face.
     oc.cut(s, oc.box("schan", (SADDLE_W + 2, CHANNEL_W, CHANNEL_D + 1),
                      at=(0, 0, SADDLE_H - CHANNEL_D + (CHANNEL_D + 1) / 2)))
-    # Lead-in chamfers at both strap entries (±X): 45° ramps, support-free.
     for sx in (-1, 1):
         tip_x = sx * (SADDLE_W / 2 + 0.2)
         inner_x = sx * (SADDLE_W / 2 - SADDLE_LEAD_IN)
@@ -292,7 +307,6 @@ def cap_saddle():
             (tip_x, SADDLE_ROOF_T - 0.2),
             (inner_x, SADDLE_H + 0.2),
         ], CHANNEL_W + 0.4, at_y=0.0))
-    # Spine relief: V through the rails only (roof stays intact). Flanks ≥45°.
     half_w = SPINE_RELIEF_W / 2
     oc.cut(s, oc.prism_x("spine_v", [
         (-half_w - 0.5, SADDLE_ROOF_T - 0.2),
@@ -301,23 +315,21 @@ def cap_saddle():
         (0.0, SADDLE_H + 0.2),
         (-half_w - 0.5, SADDLE_ROOF_T),
     ], SADDLE_W + 4, at_x=0.0))
-    # Clamp screw clearances (same XY as cap inserts / bars).
     for i, (x, y) in enumerate(CAP_CLAMP):
         oc.cut(s, oc.cylinder(f"scl{i}", CLEAR, SADDLE_H + 2, at=(x, y, -1), anchor="bottom"))
-    # Locating holes for the cap's underside pins (roof / bed face).
+    # Pins on the roof pointing toward the cap (−Z here); after the flip they
+    # stand up off the roof for the cap's blind sockets. Large flat gasket
+    # recess removed (bridged off the bed) — optional grit gasket is a note.
     for i, (x, y) in enumerate(SADDLE_PINS):
-        oc.cut(s, oc.cylinder(f"spin{i}", SADDLE_PIN_D + 0.35, SADDLE_PIN_H + 0.8,
-                              at=(x, y, -0.2), anchor="bottom"))
-    # Optional grit-gasket picture-frame groove on the roof (z=0) face.
-    gw = SADDLE_W - 2 * SADDLE_GASKET_INSET
-    gl = SADDLE_L - 2 * SADDLE_GASKET_INSET
-    gd = SADDLE_GASKET_D
-    if gw > 20 and gl > 20:
-        outer = oc.rounded_rect("gask_o", (gw, gl, gd + 1), 1.5,
-                                at=(0, 0, gd - (gd + 1) / 2))
-        inner = oc.rounded_rect("gask_i", (gw - 5.0, gl - 5.0, gd + 3), 1.0,
-                                at=(0, 0, gd - (gd + 3) / 2 - 0.5))
-        oc.cut(s, oc.cut(outer, inner))
+        pin = oc.cylinder(f"spin{i}", SADDLE_PIN_D, SADDLE_PIN_H,
+                          at=(x, y, -SADDLE_PIN_H), anchor="bottom")
+        oc.union(s, pin)
+    # Flip: roof+pins up, flank face on bed. Shift so z_min = 0.
+    oc.rotate(s, 180.0, "X")
+    oc.bake(s)
+    lo, _ = oc.bounds(s)
+    oc.move(s, dz=-lo[2])
+    oc.bake(s)
     return clean(s)
 
 

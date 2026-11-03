@@ -71,18 +71,17 @@ if part in ("all", "cap"):
             "node_v1_cap_saddle",
             {"node_cap_base_saddle": base, "node_cap_lid": lid,
              "node_cap_clamp_bar": bar, "node_cap_saddle": saddle},
-            # Base Z includes underside locating pins (SADDLE_PIN_H below z=0).
-            spec={"node_cap_base_saddle": {"size": (n.CAP_W, n.CAP_L, n.CAP_BASE_H + n.SADDLE_PIN_H), "tol": 0.6},
+            # Saddle Z includes roof pins (print: flank on bed, pins up).
+            spec={"node_cap_base_saddle": {"size": (n.CAP_W, n.CAP_L, n.CAP_BASE_H), "tol": 0.6},
                   "node_cap_lid": {"size": (n.CAP_W, n.CAP_L, n.CAP_LID_T)},
                   "node_cap_clamp_bar": {"size": n.CAP_BAR},
-                  "node_cap_saddle": {"size": (n.SADDLE_W, n.SADDLE_L, n.SADDLE_H), "tol": 0.6}},
+                  "node_cap_saddle": {"size": (n.SADDLE_W, n.SADDLE_L, n.SADDLE_H + n.SADDLE_PIN_H), "tol": 0.6}},
             refs=refs, material="PA12", min_wall=1.0, thin_area_allowed=60.0,
             notes=("CAP_STYLE=saddle slim set. Does NOT overwrite stl/node_v1_cap/ (gable v3). "
-                   f"Lid: {lid_screw:.0f} mm button head + sealing washer (stack ~{lid_stack:.1f} mm). "
-                   f"Clamp: {clamp_screw:.0f} mm button head (stack ~{clamp_stack:.1f} mm) through bar + "
-                   "saddle into underside inserts (blind to cavity). "
-                   "Print saddle roof-down. ASA: brim on base and saddle. "
-                   "thin_area_allowed: lid insert vs panel pocket keep-out."))
+                   f"Lid: M3x{lid_screw:.0f} + sealing washer (through-base ~{lid_stack:.1f} mm path). "
+                   f"Clamp: M3x{clamp_screw:.0f} (to insert mouth ~{clamp_stack:.1f} mm; tip stays in "
+                   "blind pocket). Cap base flat on bed, opening up. Saddle: flank face on bed, "
+                   "roof+pins up. ASA: brim. thin_area_allowed: lid insert vs panel pocket."))
     else:
         base, lid, bar = n.cap_base(), n.cap_lid(), n.cap_bar()
         oc.move(lid, dx=n.CAP_W + 20)

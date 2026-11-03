@@ -26,14 +26,13 @@ unless you intend to regenerate v3).
 
 | Part | Size (mm) | Notes |
 | --- | --- | --- |
-| Cap base (slim) | **76 × 160 × 19** (+1.5 mm locating pins below z=0 → bbox 20.5) | Flat underside; no gable; no spine V |
+| Cap base (slim) | **76 × 160 × 19** | Completely flat underside (bed face); blind pin sockets Ø4.35 × 2.0; no gable / spine V |
 | Cap lid | 76 × 160 × 7 | Unchanged (P124 pocket, inserts) |
-| Strap saddle | **76 × 80 × 5.9** | Roof 2.5 + channel 3.4 |
+| Strap saddle | **76 × 80 × 5.9** (+1.5 mm pins → bbox **7.4**) | Roof 2.5 + channel 3.4; pins on roof toward cap |
 | Clamp bar | 10 × 70 × 4 | Shared; positions (±20, ±28.5) unchanged |
 
 Footprint stays **76×160** so the owned P124 (pocket 66.6×113.6, `PANEL_Y=+11`)
-and 25 mm GPS patch still fit. `CAP_WALL` stays **5.0** (thinning to 4.0
-deferred — seal + drop impact).
+and 25 mm GPS patch still fit. `CAP_WALL` stays **5.0**.
 
 ### Electronics / seal checks
 
@@ -41,8 +40,8 @@ deferred — seal + drop impact).
 - O-ring groove, lid screws (bonded washers), 8 insert columns, potted Ø6 cable
   entries unchanged in plan.
 - Clamp inserts: Ø4.0 × 4.0 mm seat (flat bottom at z=4.0) with **2.0 mm**
-  keep-out under the 6 mm floor (blind to the sealed volume). Do not deepen
-  without raising the floor.
+  keep-out under the 6 mm floor (blind to the sealed volume).
+- Pin sockets: Ø4.35 × 2.0 mm blind from the underside (keep-out to cavity ≥4 mm).
 - Lid insert vs panel-pocket keep-out unchanged (~0.8 mm).
 
 ## Stack-up
@@ -58,61 +57,78 @@ strap protrusion below rails     0.6   (= STRAP_T − CHANNEL_D)
 =                               32.5 mm   (gable v3 was ~48.4)
 ```
 
-### Clamp screws (through bar → saddle → cap insert)
+### Clamp screws (through bar → saddle → cap insert) — round DOWN
+
+Bar rides on the 0.6 mm strap protrusion, so the screw crosses an air gap at
+the clamp holes too:
 
 ```
 clamp bar          4.0
 + saddle           5.9
-+ insert engage    4.0
-=                 13.9 mm  →  use M3×16 button head
++ strap gap        0.6
+= to insert mouth 10.5 mm
+
+blind pocket depth 4.0   (seat ends at z=4.0; floor/cavity at z=6.0)
+max screw          14.5  →  stock M3×14 (do NOT use M3×16)
+M3×14 tip into base      14 − 10.5 = 3.5 mm  (inside the 4.0 pocket)
 ```
 
-(Gable v3 used M3×8 with the bar flush on the underside.)
+M3×16 would put the tip at 5.5–6.1 mm into the base and risk breaking the seal.
 
 ### Lid screws (through base columns → lid insert)
 
+CAD seat: Ø8 cbore cylinder ends / cone starts at **z = 4.0** (bonded washer
+lands there). Lid insert pocket is **5.0 mm** deep from the mating face
+(cylinder from z=−1 height 6); insert length 4.0 mm.
+
 ```
-base above seat   14.0   (19 − ~5 seat)
-+ insert engage    4.0
-=                 18.0 mm  →  use M3×20 button head + sealing washer
+through base       15.0   (19.0 − 4.0 seat)
++ insert engage     4.0
+= path             19.0 mm
+
+M3×18 tip into lid = 18 − 15 = 3.0 mm  → engages insert, tip clear of pocket floor
+M3×20 tip into lid = 20 − 15 = 5.0 mm  → bottoms on the pocket floor — do not use
+M3×16 tip into lid = 16 − 15 = 1.0 mm  → under-engages the 4 mm insert
 ```
 
-(Gable v3 used M3×40 through the 41.4 mm base.)
+Use **M3×18** button head + sealing washer (gable v3 still uses M3×40).
 
-## Saddle print
+## Print
 
-- **Orientation:** roof-down (flat roof on the bed), rails up.
-- **Supports:** none. Channel lead-ins and spine V are ≥45° flanks.
-- **Spine:** V relief through the rails only; roof stays intact under the cap.
-- **Locating:** 4 pins on the cap underside into holes in the saddle roof
-  (pins print on the top of a face-down base). Clamp screws also register XY.
-- **Seal:** saddle is outside the O-ring; no gasket required. Optional thin
-  TPU/EPDM in the roof picture-frame groove to keep grit out of the mate plane.
-- **ASA:** brim on both the slim base and the saddle; closed chamber, bed
-  ~90–100 °C. Large flat parts warp — keep the door closed; do not raise speeds.
+### Cap base (slim)
+- **Orientation:** outside / underside flat on the bed, cavity opening up.
+- **Supports:** none. Underside is planar (pin sockets are blind recesses).
+- Re-check: no downward-facing overhang steeper than 45° apart from the bed face
+  (lid-screw cones are ≥45°; cavity ceiling is horizontal upward when printed
+  this way — it is a floor of the cavity from the nozzle’s view only after
+  walls rise; tree supports are not required for the self-supporting shell
+  once the rim is up — same class as the gable base’s cavity).
 
-## Mass (solid PA12 from `report.json`, this build)
+### Saddle
+- **Orientation (STL as exported):** flank / rail face on the bed, **roof +
+  locating pins UP**. Channel opens toward the bed as a pocket (no bridge).
+- **Supports:** none. Lead-ins and spine V flanks ≥45°.
+- **Locating:** 4 pins on the roof into the cap’s blind sockets. Clamp screws
+  also register XY.
+- **Gasket:** large roof recess removed (it bridged off the bed). Optional
+  thin TPU/EPDM grit gasket can be cut as a separate washer; a narrow groove
+  may return in a follow-up.
+- **ASA:** brim on base and saddle; closed chamber, bed ~90–100 °C.
 
-| Body | Volume | Solid mass |
-| --- | --- | --- |
-| Slim base | 100.3 cm³ | ~101 g |
-| Lid | 73.7 cm³ | ~74 g |
-| Saddle | 21.2 cm³ | ~21 g |
-| Clamp bar (×1) | 2.5 cm³ | ~2.5 g |
+## Mass (solid PA12, prior build order-of-magnitude)
 
-Gable v3 print #3 was **~156 g filament** for the tall base alone (PLA fast-fit).
-Slim base solid ~101 g PA12; real ASA at 40 % infill prints lighter. Net printed
-cap set still carries the lid (~74 g solid) + saddle (~21 g) + 2 bars — the big
-win is deleting the gable/spine bulk and dropping stack height ~16 mm.
+| Body | Solid mass (approx.) |
+| --- | --- |
+| Slim base | ~100 g |
+| Lid | ~74 g |
+| Saddle | ~21 g |
+| Clamp bar (×1) | ~2.5 g |
 
 ## Deferred
 
-- `CAP_WALL` 5 → 4 mm (evaluate seal/drop).
-- Smaller footprint (needs calipers proof vs P124 + patch).
-- Floor 6 → ~3–4 mm with local underside bosses for inserts.
-- Nest lip (tried; full-width recess left knife edges — revisit a narrower land).
-- Core-out of solid floor between bosses (THROUGHPUT.md lever).
-- Assembly script / mass budget not yet switched to `CAP_STYLE=saddle`.
+- `CAP_WALL` 5 → 4 mm; smaller footprint; floor core-out / local bosses.
+- Narrow grit-gasket groove on the saddle roof (recess removed for printability).
+- Assembly script mass budget for `CAP_STYLE=saddle`.
 
 ## Assumed (still need calipers)
 
