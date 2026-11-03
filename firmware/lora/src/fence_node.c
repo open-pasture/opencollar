@@ -90,8 +90,9 @@ static uint32_t effective_hwm(const oc_fh_node_t *n)
 }
 
 /*
- * Persist HWM then active (A/B+CRC contract in fence_store.h). On failure do
- * not advance fence_seq_hwm in RAM beyond what store already holds.
+ * Persist active + HWM atomically via save_active (A/B+CRC record; see
+ * fence_store.h). set_hwm is not used for durable commits. On failure do not
+ * advance fence_seq_hwm in RAM.
  */
 static int persist_fence(oc_fh_node_t *n, const oc_fh_freshness_t *fr, const uint8_t *payload,
                          size_t plen, const uint8_t *wire, size_t mlen,
@@ -103,12 +104,8 @@ static int persist_fence(oc_fh_node_t *n, const oc_fh_freshness_t *fr, const uin
 		}
 		return OC_FH_OK;
 	}
-	if (n->store->set_hwm(n->store, fr->fence_seq) != 0) {
-		n->stats.persist_fail++;
-		n->last_event = OC_FH_EV_PERSIST_FAIL;
-		return OC_FH_ERR_STORE;
-	}
-	if (n->store->save_active(n->store, fr, payload, plen, wire, mlen, manifest) != 0) {
+	if (!n->store->save_active ||
+	    n->store->save_active(n->store, fr, payload, plen, wire, mlen, manifest) != 0) {
 		n->stats.persist_fail++;
 		n->last_event = OC_FH_EV_PERSIST_FAIL;
 		return OC_FH_ERR_STORE;
@@ -443,21 +440,33 @@ static int begin_pending_from_manifest(oc_fh_node_t *n, const oc_fh_manifest_t *
 		return OC_FH_ERR_SEQ;
 	}
 	/*
-	 * Higher pending seq normally wins. Exception: a sealed (signed)
-	 * manifest preempts an unsigned/local pending even with a lower seq,
-	 * so a forged LOCAL 0xFFFFFFFF (or any high local) cannot block a real
-	 * farm-signed fence.
+	 * Ranking:
+	 *  - A real manifest (wire present) always replaces a beacon-hint
+	 *    pending (no wire yet), whatever the seq — forged beacons must
+	 *    never outrank a verified sealed/local envelope.
+	 *  - A sealed manifest preempts an unsigned/local pending (lower seq).
+	 *  - Otherwise higher pending seq wins.
 	 */
-	if (n->have_pending && n->pending_manifest.fence_seq > m->fence_seq) {
-		if (!(n->pending_is_local && !is_local)) {
-			return OC_FH_OK;
+	{
+		int pending_is_hint =
+		    n->have_pending &&
+		    (n->pending_from_hint || n->pending_manifest_wire_len == 0);
+		int incoming_is_real = (wire && wire_len > 0);
+
+		if (n->have_pending && incoming_is_real && pending_is_hint) {
+			clear_pending(n);
+			was_pending = 0;
+		} else if (n->have_pending && n->pending_manifest.fence_seq > m->fence_seq) {
+			if (n->pending_is_local && !is_local && incoming_is_real) {
+				clear_pending(n);
+				was_pending = 0;
+			} else {
+				return OC_FH_OK;
+			}
+		} else if (n->have_pending && n->pending_manifest.fence_seq < m->fence_seq) {
+			clear_pending(n);
+			was_pending = 0;
 		}
-		clear_pending(n);
-		was_pending = 0;
-	}
-	if (n->have_pending && n->pending_manifest.fence_seq < m->fence_seq) {
-		clear_pending(n);
-		was_pending = 0;
 	}
 	for (i = 0; i < m->frag_count; i++) {
 		total += n->cfg.frag_data_max;
@@ -570,6 +579,14 @@ static void on_beacon(oc_fh_node_t *n, const oc_fh_beacon_t *b, uint16_t peer)
 		return;
 	}
 	if (b->fence_seq > effective_hwm(n)) {
+		/*
+		 * Beacon is an unauthenticated hint only. Never replace a
+		 * pending that already holds a real manifest wire.
+		 */
+		if (n->have_pending && n->pending_manifest_wire_len > 0) {
+			trickle_reset(n);
+			return;
+		}
 		if (!n->have_pending || n->pending_manifest.fence_seq < b->fence_seq) {
 			oc_fh_manifest_t shell;
 			memset(&shell, 0, sizeof(shell));

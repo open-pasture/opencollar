@@ -22,6 +22,7 @@ static uint32_t crc32_update(uint32_t crc, const uint8_t *data, size_t len)
 static uint32_t slot_crc(const oc_fh_store_ram_slot_t *sl)
 {
 	uint32_t c = 0;
+	c = crc32_update(c, (const uint8_t *)&sl->hwm, sizeof(sl->hwm));
 	c = crc32_update(c, (const uint8_t *)&sl->fr, sizeof(sl->fr));
 	c = crc32_update(c, (const uint8_t *)&sl->manifest, sizeof(sl->manifest));
 	c = crc32_update(c, (const uint8_t *)&sl->plen, sizeof(sl->plen));
@@ -40,15 +41,34 @@ static int slot_ok(const oc_fh_store_ram_slot_t *sl)
 	return sl->occupied && sl->crc == slot_crc(sl);
 }
 
+static const oc_fh_store_ram_slot_t *best_slot(const oc_fh_store_ram_t *r)
+{
+	uint8_t pri = (uint8_t)(r->primary & 1u);
+	uint8_t alt = (uint8_t)(pri ^ 1u);
+
+	if (slot_ok(&r->slot[pri])) {
+		return &r->slot[pri];
+	}
+	if (slot_ok(&r->slot[alt])) {
+		return &r->slot[alt];
+	}
+	return NULL;
+}
+
 int oc_fh_store_ram_have_active(const oc_fh_store_ram_t *ram)
 {
+	return ram && best_slot(ram) != NULL;
+}
+
+uint32_t oc_fh_store_ram_hwm(const oc_fh_store_ram_t *ram)
+{
+	const oc_fh_store_ram_slot_t *sl;
+
 	if (!ram) {
 		return 0;
 	}
-	if (slot_ok(&ram->slot[ram->primary & 1u])) {
-		return 1;
-	}
-	return slot_ok(&ram->slot[(ram->primary ^ 1u) & 1u]);
+	sl = best_slot(ram);
+	return sl ? sl->hwm : 0;
 }
 
 static int ram_get_hwm(oc_fh_store_t *s, uint32_t *out_seq)
@@ -57,19 +77,15 @@ static int ram_get_hwm(oc_fh_store_t *s, uint32_t *out_seq)
 	if (!r || !out_seq) {
 		return -1;
 	}
-	*out_seq = r->hwm;
+	*out_seq = oc_fh_store_ram_hwm(r);
 	return 0;
 }
 
 static int ram_set_hwm(oc_fh_store_t *s, uint32_t seq)
 {
-	oc_fh_store_ram_t *r = (oc_fh_store_ram_t *)s->ctx;
-	if (!r) {
-		return -1;
-	}
-	if (seq > r->hwm) {
-		r->hwm = seq;
-	}
+	/* Soft/optional: durable HWM advances only inside save_active. */
+	(void)s;
+	(void)seq;
 	return 0;
 }
 
@@ -80,6 +96,7 @@ static int ram_save(oc_fh_store_t *s, const oc_fh_freshness_t *fr, const uint8_t
 	oc_fh_store_ram_t *r = (oc_fh_store_ram_t *)s->ctx;
 	uint8_t idx;
 	oc_fh_store_ram_slot_t *sl;
+	uint32_t prev_hwm;
 
 	if (!r || !fr || !payload || !manifest_wire || !manifest) {
 		return -1;
@@ -92,10 +109,13 @@ static int ram_save(oc_fh_store_t *s, const oc_fh_freshness_t *fr, const uint8_t
 		return -1;
 	}
 
+	prev_hwm = oc_fh_store_ram_hwm(r);
+
 	/* Alternate into the non-primary slot (A/B). */
 	idx = (uint8_t)((r->primary ^ 1u) & 1u);
 	sl = &r->slot[idx];
 	memset(sl, 0, sizeof(*sl));
+	sl->hwm = fr->fence_seq > prev_hwm ? fr->fence_seq : prev_hwm;
 	sl->fr = *fr;
 	sl->manifest = *manifest;
 	memcpy(sl->payload, payload, plen);
@@ -108,8 +128,8 @@ static int ram_save(oc_fh_store_t *s, const oc_fh_freshness_t *fr, const uint8_t
 	if (r->tear_next_save) {
 		/*
 		 * Torn write: primary advanced to the new slot but CRC is bad
-		 * (power cut mid-commit). load_active must fall back to the
-		 * other copy.
+		 * (power cut mid-commit). load/get_hwm fall back to the other
+		 * copy → old fence and old HWM together.
 		 */
 		r->tear_next_save = 0;
 		sl->crc ^= 0xFFFFFFFFu;
@@ -118,9 +138,6 @@ static int ram_save(oc_fh_store_t *s, const oc_fh_freshness_t *fr, const uint8_t
 	}
 
 	r->primary = idx;
-	if (fr->fence_seq > r->hwm) {
-		r->hwm = fr->fence_seq;
-	}
 	return 0;
 }
 

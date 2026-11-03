@@ -582,6 +582,151 @@ static void test_peer_evict_oldest(void)
 	CHECK(star.peer_need[0].peer_id != first_peer);
 }
 
+static void send_forged_beacon(sim_world_t *world, const uint8_t farm[8], uint32_t seq)
+{
+	oc_fh_beacon_t bc;
+	uint8_t bw[64];
+	size_t bl;
+
+	memset(&bc, 0, sizeof(bc));
+	memcpy(bc.farm_id, farm, 8);
+	bc.fence_seq = seq;
+	memset(bc.short_hash, 0xee, OC_FH_SHORT_HASH_LEN);
+	bl = oc_fh_encode_beacon(&bc, bw, sizeof(bw));
+	CHECK(bl > 0);
+	CHECK(oc_radio_send(sim_radio(world, 0), bw, bl, NULL) == OC_RADIO_OK);
+}
+
+static void deliver_sealed_and_activate(oc_fh_node_t *rook, oc_fh_node_t *star, sim_world_t *world,
+                                        const oc_fh_built_t *built, const uint8_t *payload,
+                                        size_t plen, uint32_t expect_seq, node_mem_t *ms)
+{
+	int t;
+
+	CHECK(oc_radio_send(sim_radio(world, 0), built->sealed, built->sealed_len, NULL) ==
+	      OC_RADIO_OK);
+	sim_world_advance(world, 5);
+	oc_fh_node_poll(star);
+	CHECK(star->have_pending == 1);
+	CHECK(star->pending_from_hint == 0);
+	CHECK(star->pending_manifest_wire_len > 0);
+	CHECK(star->pending_manifest.fence_seq == expect_seq);
+
+	for (t = 0; t < 3000; t++) {
+		oc_fh_node_poll(rook);
+		oc_fh_node_poll(star);
+		sim_world_advance(world, 5);
+		if (oc_fh_active(star)->fence_seq == expect_seq) {
+			break;
+		}
+	}
+	CHECK(oc_fh_active(star)->fence_seq == expect_seq);
+	CHECK(memcmp(ms->active, payload, plen) == 0);
+	CHECK(star->have_pending == 0);
+}
+
+static void test_beacon_hint_never_blocks_sealed(void)
+{
+	/*
+	 * A2: forged beacon at OC_FH_SEQ_MAX opens a hint pending (no wire).
+	 * A sealed manifest at a lower seq must replace it immediately — and
+	 * again after a repeated forge, and again after a pending timeout.
+	 */
+	sim_world_t world;
+	sim_link_t link;
+	test_keypair_t kp;
+	uint8_t seed[32] = { 25 };
+	uint8_t farm[8] = { 'F', 'A', 'R', 'M', '0', '0', '0', '1' };
+	uint8_t p8[80], p9[80], p10[80];
+	oc_fh_built_t b8, b9, b10;
+	oc_fh_node_t rook, star;
+	oc_fh_config_t cr, cs;
+	node_mem_t mr, ms;
+	unsigned i;
+
+	test_keygen(&kp, seed);
+	memset(p8, 0x81, sizeof(p8));
+	memset(p9, 0x82, sizeof(p9));
+	memset(p10, 0x83, sizeof(p10));
+	sim_world_init(&world, 2, 26);
+	memset(&link, 0, sizeof(link));
+	link.loss_pct = 0;
+	link.latency_ms = 1;
+	sim_world_set_fully_connected(&world, &link);
+
+	memset(&cr, 0, sizeof(cr));
+	cr.node_id = 1;
+	cr.is_rook = 1;
+	memcpy(cr.farm_id, farm, 8);
+	cr.frag_data_max = 40;
+	cr.trickle_imin_ms = 30;
+	cr.trickle_imax_ms = 200;
+	cr.pending_timeout_ms = 200;
+	cs = cr;
+	cs.node_id = 2;
+	cs.is_rook = 0;
+	setup_node(&rook, &cr, &mr, sim_radio(&world, 0), &kp, &world);
+	setup_node(&star, &cs, &ms, sim_radio(&world, 1), &kp, &world);
+
+	CHECK(oc_fh_build_signed(&b8, farm, 8, 8, p8, sizeof(p8), 40, test_sign, &kp) == 0);
+	CHECK(oc_fh_build_signed(&b9, farm, 9, 9, p9, sizeof(p9), 40, test_sign, &kp) == 0);
+	CHECK(oc_fh_build_signed(&b10, farm, 10, 10, p10, sizeof(p10), 40, test_sign, &kp) == 0);
+
+	/* 1) Forged high-seq beacon → hint pending; sealed seq 8 preempts. */
+	send_forged_beacon(&world, farm, OC_FH_SEQ_MAX);
+	sim_world_advance(&world, 5);
+	oc_fh_node_poll(&star);
+	CHECK(star.have_pending == 1);
+	CHECK(star.pending_from_hint == 1);
+	CHECK(star.pending_manifest_wire_len == 0);
+	CHECK(star.pending_manifest.fence_seq == OC_FH_SEQ_MAX);
+
+	CHECK(oc_fh_inject_local(&rook, b8.sealed, b8.sealed_len, p8, sizeof(p8)) == OC_FH_OK);
+	deliver_sealed_and_activate(&rook, &star, &world, &b8, p8, sizeof(p8), 8, &ms);
+
+	/* 2) Forge again after real manifest; sealed seq 9 still wins. */
+	send_forged_beacon(&world, farm, OC_FH_SEQ_MAX);
+	sim_world_advance(&world, 5);
+	oc_fh_node_poll(&star);
+	CHECK(star.have_pending == 1);
+	CHECK(star.pending_from_hint == 1);
+	CHECK(star.pending_manifest.fence_seq == OC_FH_SEQ_MAX);
+	CHECK(oc_fh_active(&star)->fence_seq == 8);
+
+	CHECK(oc_fh_inject_local(&rook, b9.sealed, b9.sealed_len, p9, sizeof(p9)) == OC_FH_OK);
+	deliver_sealed_and_activate(&rook, &star, &world, &b9, p9, sizeof(p9), 9, &ms);
+
+	/* 3) Forge → wait for pending timeout → forge again → sealed seq 10. */
+	send_forged_beacon(&world, farm, OC_FH_SEQ_MAX);
+	sim_world_advance(&world, 5);
+	oc_fh_node_poll(&star);
+	CHECK(star.have_pending == 1);
+	for (i = 0; i < 80; i++) {
+		oc_fh_node_poll(&star);
+		sim_world_advance(&world, 5);
+	}
+	CHECK(star.have_pending == 0);
+	CHECK(oc_fh_stats(&star)->pending_timeout >= 1);
+
+	send_forged_beacon(&world, farm, OC_FH_SEQ_MAX);
+	sim_world_advance(&world, 5);
+	oc_fh_node_poll(&star);
+	CHECK(star.have_pending == 1);
+	CHECK(star.pending_from_hint == 1);
+
+	CHECK(oc_fh_inject_local(&rook, b10.sealed, b10.sealed_len, p10, sizeof(p10)) ==
+	      OC_FH_OK);
+	deliver_sealed_and_activate(&rook, &star, &world, &b10, p10, sizeof(p10), 10, &ms);
+
+	/* Beacon must not displace a real sealed pending mid-transfer. */
+	send_forged_beacon(&world, farm, OC_FH_SEQ_MAX);
+	sim_world_advance(&world, 5);
+	oc_fh_node_poll(&star);
+	/* Active already 10; forged beacon may open a hint above hwm only if
+	 * seq > hwm — SEQ_MAX > 10, so hint opens, but active stays 10. */
+	CHECK(oc_fh_active(&star)->fence_seq == 10);
+}
+
 int main(void)
 {
 	test_forged_beacon();
@@ -592,6 +737,7 @@ int main(void)
 	test_pending_timeout();
 	test_sealed_preempts_unsigned_pending();
 	test_peer_evict_oldest();
+	test_beacon_hint_never_blocks_sealed();
 	if (failures) {
 		printf("test_security: %d failure(s)\n", failures);
 		return 1;

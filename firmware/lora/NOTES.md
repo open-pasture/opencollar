@@ -65,13 +65,14 @@ Host: `oc_fh_store_ram` (A/B slots + CRC, fault-injection for tests).
 
 **Power-cut contract** (see `fence_store.h`):
 
-1. Write **HWM first** (monotonic).
-2. Write active fence as **two copies (A/B) each with CRC**; commit primary only
-   after the new copy’s CRC is valid. A torn write leaves the other copy
-   loadable → old fence kept.
+1. **HWM and active fence share one A/B+CRC record** and commit atomically via
+   `save_active`. Do not durable-write HWM in a separate step before the blob
+   (avoids “HWM advanced, active still old” after power cut).
+2. Write the new record into the inactive slot; commit primary only after CRC
+   is valid. Torn write → other copy loadable → **old fence + old HWM** kept.
 3. Node path calls persist **before** mutating active RAM. Non-zero
-   `set_hwm`/`save_active` → `OC_FH_ERR_STORE`, `stats.persist_fail`, fence
-   **not** applied.
+   `save_active` → `OC_FH_ERR_STORE`, `stats.persist_fail`, fence **not**
+   applied. `set_hwm` is soft/optional.
 
 Rollback uses `max(active.fence_seq, hwm)` so reboot cannot accept an older
 fence. `oc_fh_node_restore` reloads the active blob so a restored node can serve.
@@ -81,9 +82,14 @@ fence. `oc_fh_node_restore` reloads the active blob so a restored node can serve
 Unsigned LOCAL from the air is accepted only when **`accept_local_air=1`**
 (pilot) **and** `payload_verify` is set; otherwise drop + `stats.reject_local_air`.
 Incomplete pending transfers time out (`pending_timeout_ms`, default
-`OC_FH_PENDING_TIMEOUT_MS`) → `stats.pending_timeout`. A **sealed** manifest
-preempts an unsigned/local pending even with a lower `fence_seq` (stops a forged
-high-seq LOCAL from blocking real fences). See `test_security`.
+`OC_FH_PENDING_TIMEOUT_MS`) → `stats.pending_timeout`.
+
+**Beacon hints vs real manifests:** an unsigned beacon may open a
+`pending_from_hint` shell (no wire) to drive bounded NEEDs, but that shell
+**never outranks** a real sealed/local envelope. Any verified sealed (or other
+real wire) replaces a no-wire hint pending regardless of seq. Beacons never
+displace a pending that already has manifest wire. A sealed also preempts an
+unsigned/local pending. See `test_security` (`test_beacon_hint_never_blocks_sealed`).
 
 ## fence_seq near-max (chosen rule)
 

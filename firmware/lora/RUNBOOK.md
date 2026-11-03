@@ -28,8 +28,8 @@ make -C firmware/lora loss    # 1000 seeds @ 30% one-hop
 | `test_vectors` | Manifest/fragment/NEED KATs; tamper; bad sig |
 | `test_onehop` | One-hop; 0/30/50% loss (`starling_serve` OFF) |
 | `test_chain` | Multi-hop chain @ 30%; newer supersedes; partition heal |
-| `test_security` | Forged beacon flood; LOCAL air gate + 0xFFFFFFFF attack; pending timeout; sealed preempts local pending; peer oldest eviction; forged manifest; rollback; dup/reorder |
-| `test_persist` | Store HWM + A/B CRC; reboot; failed save leaves old active; torn copy falls back; serve |
+| `test_security` | Forged beacon flood; LOCAL air gate; beacon-hint never blocks sealed (incl. repeat/timeout); pending timeout; sealed preempts local; peer oldest eviction; rollback; dup/reorder |
+| `test_persist` | Atomic HWM+active A/B CRC; reboot; failed save keeps old HWM+fence; torn copy falls back with matching HWM; serve |
 | `test_pilot` | Opaque inject (`accept_local_air`); valid activates; tamper/evil sig fail; older rejected |
 | `test_maxfrag` | 64-fragment sealed fence re-served by relay (`starling_serve` ON) |
 
