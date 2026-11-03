@@ -8,7 +8,7 @@ How to start a print: see `PRINTING.md`. Throughput notes: `THROUGHPUT.md`. Prin
 | --- | --- | --- | --- |
 | Cap (gable v3) | `../stl/node_v1_cap/` — base **76×160×41.4**, lid **76×160×7**, clamp bar 10×70×4 | `sliced/p2s_pla/F2_cap.gcode.3mf` — **STALE** (old 62×142 / dual-P122 cap from prints #1/#2; not the v3 76×160 gabled STLs). Re-slice. | Fit: `p2s_pla/` (supports off). Final: `p2s_asa/`. |
 | Cap (slim + saddle) | `../stl/node_v1_cap_saddle/` — base **76×160×19** (flat bed face + AID1 labels), saddle **76×80×5.9** (+pins), lid 7, clamp bar 10×70×4 | Not sliced yet (do not overwrite gable STLs). Build: `OC_CAP_STYLE=saddle ./build.sh node_v1 -- cap saddle`. | Fit: `p2s_pla/` (supports off; base underside down; saddle flank-down / pins up). Final: `p2s_asa/` + **brim**. Screws: lid **M3×16**, clamp **M3×14**. |
-| Test coupon + scale | `../stl/test_coupon/` — coupon ~40×34×6 + pins plinth; `scale_bar_100.stl` | Not sliced. Build: `./build.sh node_v1 -- coupon`. | Fit: `p2s_pla/` flat. |
+| Test coupon + scale | `../stl/test_coupon/` — coupon **56×34×6** (40×34×6 block + pin plinth); `scale_bar_100.stl` 100×10×2 | Not sliced. Build: `./build.sh node_v1 -- coupon`. | Fit: `p2s_pla/` flat. |
 | Pod (×2) | `../stl/node_v1_pod/` — `node_pod_base` (L) + `node_pod_base_R`, **92×68×24.5**, lid 6, clamp bar; AID1 cradle/locators/grooves/labels | `sliced/p2s_pla/F4_pod_left.gcode.3mf` — **STALE**. Re-slice. | Fit: `p2s_pla/`. Final: `p2s_asa/`. See `../cad/ASSEMBLY-AIDS.md`. |
 | Counterweight | `../stl/node_v1_cw/` | `sliced/p2s_pla/F3_counterweight.gcode.3mf` | Fit: `p2s_pla/`. Final: `p2s_asa/`. |
 

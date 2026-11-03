@@ -84,7 +84,7 @@ if part in ("all", "cap"):
             refs=refs, material="PA12", min_wall=1.0, thin_area_allowed=AID_THIN,
             notes=("CAP_STYLE=saddle slim set + assembly-aid engraving (REV "
                    f"{n.AID_REV}). Lid M3x{lid_screw:.0f}; clamp M3x{clamp_screw:.0f}. "
-                   "Bed-face labels; pin sockets marked PIN. Supports off."))
+                   "Inside-floor labels (bed face flat + dimples); PIN marked. Supports off."))
     else:
         base, lid, bar = n.cap_base(), n.cap_lid(), n.cap_bar()
         oc.move(lid, dx=n.CAP_W + 20)
@@ -118,7 +118,8 @@ if part in ("all", "pod"):
               "node_pod_clamp_bar": {"size": n.POD_BAR}},
         refs=n.pod_refs(), material="PA12", min_wall=1.0, thin_area_allowed=AID_THIN,
         notes=("Assembly aids REV "
-               f"{n.AID_REV}: cell cradle, buzzer L-locators, cable grooves, engraved labels. "
+               f"{n.AID_REV}: R9.4 cell cradle, trimmed buzzer L-locators, cable grooves, "
+               "inside + outer-wall labels (bed face flat). "
                "Print node_pod_base (L) and node_pod_base_R (or mirror L). "
                f"Per pod: 4 x M3x{n.POD_LID_SCREW:.0f} lid + sealing washers, 4 x M3x6 bars, 8 x M3x4 inserts."))
 

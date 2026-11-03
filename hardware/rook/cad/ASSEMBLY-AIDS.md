@@ -15,26 +15,27 @@ OC_CAP_STYLE=saddle ./build.sh node_v1 -- cap saddle
 STLs: `stl/node_v1_cap_saddle/`, `stl/node_v1_pod/` (includes `node_pod_base_R`),
 `stl/test_coupon/` (`test_coupon.stl`, `scale_bar_100.stl`).
 
-## Cap base (slim, bed face)
+## Cap base (slim)
 
 | Aid | Use |
 | --- | --- |
-| Engraved `CAP BASE`, `REV AID1` | Identify the part after the plate cools |
+| Inside-floor `CAP BASE`, `REV AID1` (4.5 × 0.7) | Identify the part during assembly |
 | `M3x14 CLAMP`, `M3x16 LID`, `M3x4 INSERT` | Grab the right fasteners without the BOM |
-| `PIN` next to each locating socket | Match the saddle roof pins |
-| Ø1 × 0.4 dimples by lid-screw columns | Visual / finger registration when starting inserts |
+| `PIN` | Match the saddle roof pins |
+| Ø1 × 0.4 dimples on the bed face by lid columns | Visual / finger registration when starting inserts |
 
-Underside stays planar (engraving only). Print outside-face down, cavity up, no supports.
+Bed face stays planar (dimples only — glyph cuts into z=0 left STL slivers).
+Print outside-face down, cavity up, no supports.
 
 ## Pod base (L and R)
 
 | Aid | Use |
 | --- | --- |
-| Cell cradle (2× V ribs, 2.5 mm) | Drop the Ø18.4 1781 in, leads toward the crest cable entry |
-| Buzzer L-corners (1.2 × 1.5, +0.3 clear) | Seat the 25.4 Qwiic board by the sound port |
+| Cell cradle (2× R9.4 arc ribs, 2.5 mm) | Drop the Ø18.4 1781 in (no roll); leads toward the crest cable entry |
+| Buzzer L-corners (1.2 × 1.5, +0.3 clear; +X/+Y trimmed) | Seat the 25.4 Qwiic board; ≥0.5 mm clear of column (37,27) |
 | Floor cable grooves (3 × 1.2) | Route cell and buzzer leads to the Ø6 crest entry before potting |
-| Inside: `+X PORT` / `-X PORT`, `+`/`-`, `BUZZER`, `STUD` | Orient cell polarity and find studs / port |
-| Outside: `POD BASE`, `L`/`R`, rev, `M3x25 LID`, `M3x4 INSERT` | Side and fastener callouts (bed face) |
+| Floor box-stamps at cell / buzzer / stud / port | Tactile cues without font slivers |
+| Outer −Y wall: `POD BASE`, `L`/`R`, rev, port, `BUZZER`, `M3x25 LID`, `M3x4 INSERT` | Readable callouts (bed face left flat) |
 | Column dimples | Start heat-set inserts on the right bosses |
 
 `node_pod_base.stl` is the left pod; `node_pod_base_R.stl` is a dedicated right
@@ -74,9 +75,11 @@ side print for fit learning.
 
 ## Intentional omissions
 
-- Cap inside-cavity labels: deferred (electronics layout still moving; bed-face
-  labels cover fasteners).
+- Bed-face glyph engraving: removed (remeshed font into z=0 left multi-face
+  STL slivers). IDs live on the inside floor (cap) or outer −Y wall (pod).
 - Raised nest lip on saddle: still deferred (knife edges in earlier try).
 - Pod electrode polarity beyond `STUD`: studs are unwired on unit #1.
+- Coupon hole-size callouts are bar stamps (not font glyphs) so the top face
+  stays watertight; sizes are documented here and in the build notes.
 - Cap lid-screw length engraved as `M3x16` (not M3×18): tip spare in the 5 mm
   lid pocket; see § Lid screw above.
