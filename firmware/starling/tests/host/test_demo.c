@@ -1,8 +1,5 @@
 /*
  * SPDX-License-Identifier: Apache-2.0
- * Copyright 2026 openpasture contributors
- *
- * Simulated-GNSS demo: print fence/cue decisions along the track (also asserts).
  */
 #include "test.h"
 
@@ -29,12 +26,12 @@ int main(void)
 
 	memset(&blob, 0, sizeof(blob));
 	blob.freshness.fence_seq = 1;
-	blob.freshness.verified = true;
+	blob.verified = true;
 	blob.n_vertices = STARLING_DEMO_FENCE_N;
 	memcpy(blob.vertices, STARLING_DEMO_FENCE, sizeof(STARLING_DEMO_FENCE));
 	blob.warn_m = 5.0;
 	blob.hysteresis_m = 1.0;
-	CHECK(starling_app_set_fence(&app, &blob, 1762128000) == 1);
+	CHECK(starling_app_set_fence(&app, &blob, 0) == 1);
 
 	printf("starling demo (fake GNSS)\n");
 	printf("t_ms\tstate\tmargin\tcue\tfence_seq\n");

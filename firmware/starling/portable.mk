@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Shared portable sources still living under firmware/src (no move yet).
-# Include from a Makefile with CORE_ROOT and SRC_ROOT set.
+# Include from a Makefile with STARLING_ROOT and SRC_ROOT set.
 
 CORE_PORTABLE_SRCS = \
 	$(SRC_ROOT)/protocol.c \
@@ -24,5 +24,5 @@ CORE_PORTABLE_HDRS = \
 	$(SRC_ROOT)/config.h \
 	$(SRC_ROOT)/provision.h \
 	$(SRC_ROOT)/store.h \
-	$(CORE_ROOT)/welfare.h \
-	$(CORE_ROOT)/fence_freshness.h
+	$(STARLING_ROOT)/welfare.h \
+	$(STARLING_ROOT)/fence_freshness.h

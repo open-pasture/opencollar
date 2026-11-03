@@ -3,6 +3,7 @@
  * Copyright 2026 openpasture contributors
  *
  * Starling Zephyr entry (nRF52840). Uses fake GNSS until the u-blox arrives.
+ * LoRa gossip (PR #6 oc_fh_*) attaches when firmware/lora + radio are present.
  */
 #include <string.h>
 
@@ -10,10 +11,10 @@
 #include <zephyr/logging/log.h>
 
 #include "app.h"
-#include "store.h"
 #include "fence_demo.h"
 #include "gnss_fake.h"
 #include "gnss_ubx.h"
+#include "store.h"
 
 LOG_MODULE_REGISTER(starling, LOG_LEVEL_INF);
 
@@ -61,7 +62,7 @@ int main(void)
 	if (!app.fenced) {
 		memset(&blob, 0, sizeof(blob));
 		blob.freshness.fence_seq = 1;
-		blob.freshness.verified = true;
+		blob.verified = true;
 		blob.n_vertices = STARLING_DEMO_FENCE_N;
 		memcpy(blob.vertices, STARLING_DEMO_FENCE, sizeof(STARLING_DEMO_FENCE));
 		blob.warn_m = 5.0;

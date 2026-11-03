@@ -6,104 +6,137 @@
 
 #include <string.h>
 
-void starling_gossip_init(struct starling_gossip *g, struct fence_store *store,
-			  bool starling_serve)
+#ifdef STARLING_HAS_LORA
+
+#define STARLING_FH_PAYLOAD_CAP STARLING_FENCE_PAYLOAD_MAX
+
+static void sync_applied_to_store(struct starling_gossip *g)
+{
+	const oc_fh_freshness_t *fr;
+	struct starling_fence_blob blob;
+
+	if (!g->store) {
+		return;
+	}
+	fr = oc_fh_active(&g->node);
+	if (!fr || fr->fence_seq == 0) {
+		return;
+	}
+
+	memset(&blob, 0, sizeof(blob));
+	blob.freshness = *fr;
+	blob.verified = true;
+	if (g->node.active_len <= sizeof(blob.payload)) {
+		blob.payload_len = (uint16_t)g->node.active_len;
+		memcpy(blob.payload, g->buf.active_payload, blob.payload_len);
+	}
+	if (g->node.active_manifest_wire_len <= sizeof(blob.sealed)) {
+		blob.sealed_len = (uint16_t)g->node.active_manifest_wire_len;
+		memcpy(blob.sealed, g->node.active_manifest_wire, blob.sealed_len);
+	}
+	(void)fence_store_offer(g->store, &blob, fr->received_at_ms);
+	g->apply_count++;
+}
+
+void starling_gossip_init(struct starling_gossip *g, struct fence_store *store, uint16_t node_id,
+			  const uint8_t farm_id[OC_FH_FARM_ID_LEN], bool starling_serve,
+			  oc_radio_t *radio, oc_fh_verify_fn verify, void *verify_ctx,
+			  uint32_t (*now_ms)(void *), void *clock_ctx)
 {
 	memset(g, 0, sizeof(*g));
 	g->store = store;
 	g->starling_serve = starling_serve;
-	g->accept_from_starling = starling_serve;
-	lora_gossip_ops_stub(&g->lora);
-	radio_hal_ops_stub(&g->radio);
-	g->next_beacon_ms = 0;
+
+	if (!radio || !verify || !now_ms || !farm_id) {
+		g->enabled = false;
+		return;
+	}
+
+	memset(&g->cfg, 0, sizeof(g->cfg));
+	g->cfg.node_id = node_id;
+	g->cfg.is_rook = 0;
+	g->cfg.starling_serve = starling_serve ? 1u : OC_FH_STARLING_SERVE_DEFAULT;
+	memcpy(g->cfg.farm_id, farm_id, OC_FH_FARM_ID_LEN);
+	g->cfg.frag_data_max = OC_FH_DEFAULT_FRAG_DATA;
+	g->cfg.trickle_imin_ms = OC_FH_TRICKLE_IMIN_MS;
+	g->cfg.trickle_imax_ms = OC_FH_TRICKLE_IMAX_MS;
+	g->cfg.trickle_k = OC_FH_TRICKLE_K;
+
+	g->buf.active_payload = g->active_payload;
+	g->buf.active_cap = STARLING_FH_PAYLOAD_CAP;
+	g->buf.pending_payload = g->pending_payload;
+	g->buf.pending_cap = STARLING_FH_PAYLOAD_CAP;
+	g->buf.rx_scratch = g->rx_scratch;
+	g->buf.rx_scratch_cap = sizeof(g->rx_scratch);
+	g->buf.tx_scratch = g->tx_scratch;
+	g->buf.tx_scratch_cap = sizeof(g->tx_scratch);
+
+	oc_fh_node_init(&g->node, &g->cfg, &g->buf, radio, verify, verify_ctx, now_ms, clock_ctx);
+	g->enabled = true;
+
+	if (store && store->has_active && store->active.sealed_len > 0 &&
+	    store->active.payload_len > 0) {
+		(void)oc_fh_inject_local(&g->node, store->active.sealed, store->active.sealed_len,
+					 store->active.payload, store->active.payload_len);
+	}
 }
 
-void starling_gossip_inject_peer(struct starling_gossip *g, const struct lora_gossip_peer *peer,
-				 const uint8_t *fence, size_t fence_len, bool from_rook)
+void starling_gossip_poll(struct starling_gossip *g)
 {
-	g->inject_peer = *peer;
-	g->has_inject = true;
-	g->inject_fence = fence;
-	g->inject_fence_len = fence_len;
-	g->inject_is_rook = from_rook;
+	oc_fh_event_t ev;
+
+	if (!g->enabled) {
+		return;
+	}
+	oc_fh_node_poll(&g->node);
+	ev = g->node.last_event;
+	if (ev == OC_FH_EV_APPLIED) {
+		sync_applied_to_store(g);
+	} else if (ev == OC_FH_EV_REJECT_SEQ) {
+		g->reject_seq_count++;
+	}
 }
 
-static int adopt_from_blob(struct starling_gossip *g, const struct starling_fence_blob *blob,
-			   int64_t now_utc)
+int starling_gossip_inject_local(struct starling_gossip *g, const uint8_t *sealed_manifest,
+				 size_t mlen, const uint8_t *payload, size_t plen)
 {
-	int rc = fence_store_offer(g->store, blob, now_utc, blob->freshness.verified);
+	int rc;
 
-	if (rc == 1) {
-		g->adopt_count++;
-	} else if (rc == 0) {
-		g->reject_count++;
+	if (!g->enabled) {
+		return -1;
+	}
+	rc = oc_fh_inject_local(&g->node, sealed_manifest, mlen, payload, plen);
+	if (rc == 0) {
+		sync_applied_to_store(g);
+	} else if (g->node.last_event == OC_FH_EV_REJECT_SEQ) {
+		g->reject_seq_count++;
 	}
 	return rc;
 }
 
-void starling_gossip_tick(struct starling_gossip *g, int64_t now_ms, int64_t now_utc)
+#else /* !STARLING_HAS_LORA */
+
+void starling_gossip_init(struct starling_gossip *g, struct fence_store *store, uint16_t node_id,
+			  const uint8_t farm_id[OC_FH_FARM_ID_LEN], bool starling_serve,
+			  void *radio, void *verify, void *verify_ctx, uint32_t (*now_ms)(void *),
+			  void *clock_ctx)
 {
-	const struct fence_freshness *local;
-	struct lora_gossip_peer peer;
-	bool have_peer = false;
-
-	local = fence_store_freshness(g->store);
-
-	if (g->lora.trickle_next_ms) {
-		if (g->next_beacon_ms == 0) {
-			g->next_beacon_ms = g->lora.trickle_next_ms(g->lora_ctx, now_ms);
-		}
-		if (now_ms >= g->next_beacon_ms && local && g->lora.beacon_send) {
-			g->lora.beacon_send(g->lora_ctx, local);
-			g->next_beacon_ms = g->lora.trickle_next_ms(g->lora_ctx, now_ms);
-		}
-	}
-
-	if (g->has_inject) {
-		peer = g->inject_peer;
-		have_peer = true;
-		g->has_inject = false;
-	} else if (g->lora.peer_poll) {
-		have_peer = g->lora.peer_poll(g->lora_ctx, &peer);
-	}
-
-	if (!have_peer) {
-		return;
-	}
-
-	if (!g->accept_from_starling && !g->inject_is_rook) {
-		/* One-hop fallback: ignore Starling-sourced ads when serve off. */
-		g->reject_count++;
-		return;
-	}
-
-	if (local && fence_freshness_cmp(&peer.freshness, local) <= 0) {
-		if (g->starling_serve && fence_freshness_cmp(local, &peer.freshness) > 0 &&
-		    g->store->has_active && g->lora.serve_fence) {
-			const struct starling_fence_blob *a = &g->store->active;
-
-			if (a->payload_len > 0 &&
-			    g->lora.serve_fence(g->lora_ctx, &peer, a->payload, a->payload_len) ==
-				    0) {
-				g->serve_count++;
-			}
-		} else {
-			g->reject_count++;
-		}
-		return;
-	}
-
-	/* Peer claims newer data: adopt if tests injected a full blob. */
-	if (g->inject_fence && g->inject_fence_len >= sizeof(struct starling_fence_blob)) {
-		struct starling_fence_blob blob;
-
-		memcpy(&blob, g->inject_fence, sizeof(blob));
-		blob.freshness = peer.freshness;
-		adopt_from_blob(g, &blob, now_utc);
-		g->inject_fence = NULL;
-		g->inject_fence_len = 0;
-		if (g->lora.trickle_heard) {
-			g->lora.trickle_heard(g->lora_ctx, now_ms);
-		}
-	}
+	(void)node_id;
+	(void)farm_id;
+	(void)radio;
+	(void)verify;
+	(void)verify_ctx;
+	(void)now_ms;
+	(void)clock_ctx;
+	memset(g, 0, sizeof(*g));
+	g->store = store;
+	g->starling_serve = starling_serve;
+	g->enabled = false;
 }
+
+void starling_gossip_poll(struct starling_gossip *g)
+{
+	(void)g;
+}
+
+#endif /* STARLING_HAS_LORA */

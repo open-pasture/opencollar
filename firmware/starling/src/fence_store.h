@@ -2,13 +2,13 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright 2026 openpasture contributors
  *
- * NVS layout for Starling fences:
- *   - active fence (verified payload + freshness)
- *   - staged fence (optional, future effective_at)
- *   - freshness log (signed server-issued metadata)
+ * Starling NVS persistence: active fence + fence_seq high-water mark.
  *
- * Never adopt unsigned or older/equal fence_seq. Keep enforcing the last
- * valid active fence with no radio contact.
+ * Uses PR #6's oc_fh_freshness_t. Never adopt unsigned or seq <= hwm.
+ * Reboot must not roll back to an older signed fence.
+ *
+ * TEMPORARY store surface until op-fw-proto adds the official store hook;
+ * then call that and delete the Starling-local save/load path.
  */
 #ifndef STARLING_FENCE_STORE_H
 #define STARLING_FENCE_STORE_H
@@ -17,8 +17,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "fence_freshness.h"
 #include "geofence.h"
+#include "opencollar/fence_node.h"
 #include "store.h"
 
 #ifdef __cplusplus
@@ -26,57 +26,50 @@ extern "C" {
 #endif
 
 #define STORE_ID_STARLING_ACTIVE 0x40
-#define STORE_ID_STARLING_STAGED 0x41
-#define STORE_ID_STARLING_FRESHNESS 0x42
+#define STORE_ID_STARLING_HWM 0x43
 
 #define STARLING_FENCE_PAYLOAD_MAX 4096
-#define STARLING_FENCE_SIG_LEN 64
 #define STARLING_FENCE_MAX_VERTICES 64
+#define STARLING_SEALED_MANIFEST_MAX 512
 
 struct starling_fence_blob {
-	struct fence_freshness freshness;
-	uint8_t sig[STARLING_FENCE_SIG_LEN];
-	bool has_sig;
+	oc_fh_freshness_t freshness;
+	bool verified; /* signature checked (by #6 node or test inject) */
 	uint16_t n_vertices;
 	struct geo_point vertices[STARLING_FENCE_MAX_VERTICES];
 	double warn_m;
 	double hysteresis_m;
-	/* Raw signed payload bytes (for re-serve / hash); optional. */
 	uint16_t payload_len;
 	uint8_t payload[STARLING_FENCE_PAYLOAD_MAX];
+	uint16_t sealed_len;
+	uint8_t sealed[STARLING_SEALED_MANIFEST_MAX];
 };
 
 struct fence_store {
 	struct starling_fence_blob active;
-	struct starling_fence_blob staged;
 	bool has_active;
-	bool has_staged;
-	struct fence_freshness log; /* Persisted freshness of active */
-	bool has_log;
-	const uint8_t *pubkey; /* 32-byte Ed25519; NULL = accept only pre-verified */
+	uint32_t fence_seq_hwm; /* persisted; never decreases */
 };
 
-void fence_store_init(struct fence_store *fs, const uint8_t pubkey[32]);
+void fence_store_init(struct fence_store *fs);
 
-/* Load active/staged/freshness from NVS. Returns 0 or negative errno. */
+/* Load active + hwm from NVS. hwm = max(stored_hwm, active.seq). */
 int fence_store_boot(struct fence_store *fs);
 
 /*
- * Offer a candidate fence. Must be signature-verified (or verify here if
- * pubkey set and payload/sig present). Rejects unsigned, unverified, or
- * fence_seq <= active. On accept: becomes active (or staged if future),
- * updates freshness log, persists.
- *
- * Returns: 1 adopted, 0 rejected (stale/equal/unsigned), -1 error.
+ * Offer a verified candidate. Rejects !verified or fence_seq <= hwm.
+ * On accept: updates active, raises hwm, persists both.
+ * Returns 1 adopted, 0 rejected, -1 I/O error.
  */
 int fence_store_offer(struct fence_store *fs, const struct starling_fence_blob *cand,
-		      int64_t now_utc, bool verified);
+		      uint32_t received_at_ms);
 
-/* Apply active vertices into a geofence. Returns false if none. */
 bool fence_store_apply_geofence(const struct fence_store *fs, struct geofence *gf,
 				const struct geofence_config *cfg);
 
-const struct fence_freshness *fence_store_freshness(const struct fence_store *fs);
+const oc_fh_freshness_t *fence_store_freshness(const struct fence_store *fs);
+
+uint32_t fence_store_hwm(const struct fence_store *fs);
 
 #ifdef __cplusplus
 }

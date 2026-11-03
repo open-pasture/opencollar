@@ -2,57 +2,63 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright 2026 openpasture contributors
  *
- * Starling fence-gossip policy on top of op-fw-proto stubs.
- *
- * starling_serve off: receive only from Rooks (one-hop fallback).
- * starling_serve on:  also serve neighbors (multi-hop).
+ * Starling glue around PR #6's fence-gossip node (oc_fh_node_*).
+ * When STARLING_HAS_LORA is unset, init/poll are no-ops (fake-GNSS builds).
  */
 #ifndef STARLING_GOSSIP_H
 #define STARLING_GOSSIP_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
-#include "fence_gossip.h"
 #include "fence_store.h"
-#include "radio_hal.h"
+#include "opencollar/fence_ids.h"
+#include "opencollar/fence_node.h"
+
+#ifdef STARLING_HAS_LORA
+#include "opencollar/radio_hal.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#define STARLING_GOSSIP_RX_MTU 256
+#define STARLING_GOSSIP_TX_MTU 256
+
 struct starling_gossip {
 	struct fence_store *store;
-	struct lora_gossip_ops lora;
-	void *lora_ctx;
-	struct radio_hal radio;
-	bool starling_serve; /* default off */
-	bool accept_from_starling; /* when serve off, only adopt from Rook sources */
-	int64_t next_beacon_ms;
-	/* Host-test injection of peers (bypasses radio). */
-	struct lora_gossip_peer inject_peer;
-	bool has_inject;
-	const uint8_t *inject_fence;
-	size_t inject_fence_len;
-	bool inject_is_rook;
-	/* Observability for tests */
-	unsigned adopt_count;
-	unsigned serve_count;
-	unsigned reject_count;
+	bool enabled;
+	bool starling_serve;
+	unsigned apply_count;
+	unsigned reject_seq_count;
+#ifdef STARLING_HAS_LORA
+	oc_fh_node_t node;
+	oc_fh_config_t cfg;
+	oc_fh_buffers_t buf;
+	uint8_t active_payload[STARLING_FENCE_PAYLOAD_MAX];
+	uint8_t pending_payload[STARLING_FENCE_PAYLOAD_MAX];
+	uint8_t rx_scratch[STARLING_GOSSIP_RX_MTU];
+	uint8_t tx_scratch[STARLING_GOSSIP_TX_MTU];
+#endif
 };
 
-void starling_gossip_init(struct starling_gossip *g, struct fence_store *store,
-			  bool starling_serve);
+#ifdef STARLING_HAS_LORA
+void starling_gossip_init(struct starling_gossip *g, struct fence_store *store, uint16_t node_id,
+			  const uint8_t farm_id[OC_FH_FARM_ID_LEN], bool starling_serve,
+			  oc_radio_t *radio, oc_fh_verify_fn verify, void *verify_ctx,
+			  uint32_t (*now_ms)(void *), void *clock_ctx);
+int starling_gossip_inject_local(struct starling_gossip *g, const uint8_t *sealed_manifest,
+				 size_t mlen, const uint8_t *payload, size_t plen);
+#else
+void starling_gossip_init(struct starling_gossip *g, struct fence_store *store, uint16_t node_id,
+			  const uint8_t farm_id[OC_FH_FARM_ID_LEN], bool starling_serve,
+			  void *radio, void *verify, void *verify_ctx, uint32_t (*now_ms)(void *),
+			  void *clock_ctx);
+#endif
 
-/* Inject a peer advertisement + optional fence bytes (host tests). */
-void starling_gossip_inject_peer(struct starling_gossip *g, const struct lora_gossip_peer *peer,
-				 const uint8_t *fence, size_t fence_len, bool from_rook);
-
-/*
- * Run one gossip step: Trickle beacon if due; poll peers; adopt newer
- * (after verify via fence_store_offer); serve if we are newer and serve on.
- */
-void starling_gossip_tick(struct starling_gossip *g, int64_t now_ms, int64_t now_utc);
+void starling_gossip_poll(struct starling_gossip *g);
 
 #ifdef __cplusplus
 }

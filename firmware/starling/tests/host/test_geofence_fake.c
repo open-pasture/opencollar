@@ -1,7 +1,5 @@
 /*
  * SPDX-License-Identifier: Apache-2.0
- * Copyright 2026 openpasture contributors
- *
  * Drive the fence + cue loop from the fake GNSS demo track.
  */
 #include "test.h"
@@ -17,8 +15,7 @@ static struct starling_fence_blob demo_blob(uint32_t seq)
 
 	memset(&b, 0, sizeof(b));
 	b.freshness.fence_seq = seq;
-	b.freshness.issued_at = 1762128000;
-	b.freshness.verified = true;
+	b.verified = true;
 	b.n_vertices = STARLING_DEMO_FENCE_N;
 	memcpy(b.vertices, STARLING_DEMO_FENCE, sizeof(STARLING_DEMO_FENCE));
 	b.warn_m = 5.0;
@@ -46,7 +43,7 @@ int main(void)
 	{
 		struct starling_fence_blob blob = demo_blob(1);
 
-		CHECK(starling_app_set_fence(&app, &blob, 1762128000) == 1);
+		CHECK(starling_app_set_fence(&app, &blob, 0) == 1);
 	}
 
 	for (int64_t t = 0; t <= 15000; t += 500) {
