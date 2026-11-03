@@ -193,7 +193,8 @@ def lid_screw_stack_mm(style=None):
 
 
 # ---------------------------------------------------------------- assembly aids (print-plate learning)
-# Engraved labels + light locators. Budget ~15 g PLA / ~30 min on the bases plate.
+# Engraved labels + light locators. Aids ~13 g PLA / ~50 min on the bases plate
+# (before coupon ladder + XYZ scale).
 # See cad/ASSEMBLY-AIDS.md.
 
 AID_REV = "AID1"
@@ -336,27 +337,36 @@ def _engrave_cut(name, body, size, at, z_face, depth=ENGRAVE_D, into="+Z"):
     """Text cutter for engraving into a face.
 
     into='+Z': cut downward from z_face (inside floor / top face).
-    into='-Y'/'+Y'/'-X'/'+X': outer-wall engraving. Depth axis points *into*
-    the part (e.g. -Y wall → cutter grows +Y). Bed-face (-Z) engraving is
-    intentionally unsupported — glyph booleans into z=0 left STL slivers.
+    into='-Y'/'+Y'/'-X'/'+X': outer-wall engraving. Bed-face (−Z) engraving
+    is intentionally unsupported — glyph booleans into z=0 left STL slivers.
+
+    −Y wall: +90° about X makes letter-up → +Z (readable upright from outside);
+    mirror X fixes the P→b flip. Depth then runs −Y, so the cutter is parked
+    straddling the outer face (see move below).
     """
     if into == "+Z":
         return _manifold_text(name, body, size, depth + ENGRAVE_OVER,
                               at=(at[0], at[1], z_face - depth))
-    # Build text along +Z, rotate so +Z becomes the inward wall normal.
-    txt = _manifold_text(name, body, size, depth + ENGRAVE_OVER, at=(0, 0, 0))
+    from mathutils import Matrix
+    dcut = depth + ENGRAVE_OVER
+    txt = _manifold_text(name, body, size, dcut, at=(0, 0, 0))
     ax, ay = at[0], at[1]
     az = at[2] if len(at) > 2 else z_face
-    # Blender +90° about X maps +Z → −Y; −90° maps +Z → +Y.
     if into == "-Y":
-        oc.rotate(txt, -90.0, "X")
-        oc.bake(txt)
-        # Origin just outside the face; depth grows +Y into the wall.
-        oc.move(txt, dx=ax, dy=ay - 0.2, dz=az)
-    elif into == "+Y":
+        # +90° X: letter-up (+Y) → +Z; extrusion (+Z) → −Y.
         oc.rotate(txt, 90.0, "X")
         oc.bake(txt)
-        oc.move(txt, dx=ax, dy=ay + 0.2, dz=az)
+        txt.data.transform(Matrix.Scale(-1.0, 4, (1.0, 0.0, 0.0)))
+        txt.data.flip_normals()
+        # Cutter spans y ∈ [origin−dcut, origin]; put origin so it bites ~depth
+        # into the wall from the outside face at ay.
+        oc.move(txt, dx=ax, dy=ay - 0.2 + dcut, dz=az)
+    elif into == "+Y":
+        oc.rotate(txt, -90.0, "X")
+        oc.bake(txt)
+        txt.data.transform(Matrix.Scale(-1.0, 4, (1.0, 0.0, 0.0)))
+        txt.data.flip_normals()
+        oc.move(txt, dx=ax, dy=ay + 0.2 - dcut, dz=az)
     elif into == "-X":
         oc.rotate(txt, 90.0, "Y")
         oc.bake(txt)
@@ -566,11 +576,10 @@ def _cap_bq_seat(b):
 
 
 def _cap_assembly_aids(b):
-    """bq24074 seat, inside-floor labels, bed-face dimples for the slim cap.
+    """bq24074 seat + inside-floor labels for the slim cap.
 
-    Labels stay off the bed face: remeshed glyph booleans into z=0 left hundreds
-    of multi-face sliver edges in the STL. Inside floor (CAP_FLOOR_Z) cuts are
-    watertight; bed face stays planar (dimples only).
+    Labels stay off the bed face (glyph cuts into z=0 left STL slivers). Bed
+    face stays planar — column dimples removed (read as buried 1 mm cubes).
     """
     _cap_bq_seat(b)
     _, lid_screw = lid_screw_stack_mm("saddle")
@@ -585,20 +594,14 @@ def _cap_assembly_aids(b):
         _engrave_cut("cap_lid", f"M3x{lid_screw:.0f} LID", ENGRAVE_SIZE, (0, -20), floor),
         _engrave_cut("cap_ins", "M3x4 INSERT", ENGRAVE_SIZE, (0, -28), floor),
         _engrave_cut("cap_pins", "PIN", ENGRAVE_SIZE, (0, 0), floor),
-        # Boss callouts next to a lid column / clamp (floor side of bosses).
         _engrave_cut("cap_b16", f"M3x{lid_screw:.0f}", ENGRAVE_SIZE - 1.0,
-                     (18.0, 40.0), floor),  # south of bq24074 seat / near lid col
+                     (18.0, 40.0), floor),
         _engrave_cut("cap_b14", f"M3x{clamp_screw:.0f}", ENGRAVE_SIZE - 1.0,
-                     (12.0, -36.0), floor),  # near clamp insert Y
+                     (12.0, -36.0), floor),
     ]
     oc.cut(b, *labels)
-    # Arrow toward +Y / GPS end — keep south of the bq24074 seat (board −Y ≈ 33).
     oc.cut(b, *_arrow_stamp("cap_arrow", (0, 26), toward="+Y", z_face=floor,
                             length=10.0, width=6.0))
-    # Bed-face dimples only (simple cylinders — no glyph slivers).
-    for i, (x, y) in enumerate(CAP_COLS):
-        oc.cut(b, oc.cylinder(f"cdim{i}", DIMPLE_D, DIMPLE_DEPTH + 0.1,
-                              at=(x - (5.5 if x > 0 else -5.5), y, 0.0), anchor="bottom"))
     return b
 
 
@@ -734,7 +737,7 @@ POD_LID_SCREW = 25.0       # M3×25 through pod base into lid inserts
 
 
 def _pod_assembly_aids(b, side="L"):
-    """Cell cradle, buzzer L-locators, cable grooves, labels, column dimples."""
+    """Cell cradle, buzzer L-locators + rails, cable grooves, wall/floor labels."""
     sx = 1.0 if side == "L" else -1.0
     cell_xy = (sx * CELL_AT[0], CELL_AT[1])
     buzz_xy = (sx * BUZZER_AT[0], BUZZER_AT[1])
@@ -828,30 +831,29 @@ def _pod_assembly_aids(b, side="L"):
     oc.cut(b, *_arrow_stamp(f"parrow{side}", (sx * 22.0, -2.0),
                             toward=("+X" if side == "L" else "-X"),
                             z_face=POD_FLOOR, length=10.0, width=6.0))
-    # Outer −Y wall labels: separate rows inside z∈[3, 22] (POD_BASE_H=24.5).
-    # at=(x, wall_y, z_center); cutter grows +Y into the wall.
+    # Outer −Y wall labels: separate rows inside z∈[3, 22]. Keep ±24 on the
+    # bottom rows so PORT / BUZZER / INSERT / LID do not run together.
     wall_y = -(POD_W / 2)
     pod_num = "#2 POD L" if side == "L" else "#3 POD R"
     wall = [
         _engrave_cut(f"pnum{side}", pod_num, ENGRAVE_SIZE,
                      (0, wall_y, 21.0), 21.0, into="-Y"),
         _engrave_cut(f"pname{side}", "POD BASE", ENGRAVE_SIZE,
-                     (sx * -22.0, wall_y, 16.0), 16.0, into="-Y"),
+                     (0, wall_y, 16.0), 16.0, into="-Y"),
         _engrave_cut(f"pside{side}", side, ENGRAVE_SIZE + 1.0,
                      (sx * 30.0, wall_y, 16.0), 16.0, into="-Y"),
         _engrave_cut(f"prev{side}", f"REV {AID_REV}", ENGRAVE_SIZE,
                      (0, wall_y, 11.0), 11.0, into="-Y"),
         _engrave_cut(f"pportw{side}", "+X PORT" if side == "L" else "-X PORT",
-                     ENGRAVE_SIZE, (sx * 22.0, wall_y, 5.5), 5.5, into="-Y"),
-        _engrave_cut(f"pbuzzw{side}", "BUZZER", ENGRAVE_SIZE,
-                     (sx * -22.0, wall_y, 5.5), 5.5, into="-Y"),
-        # Lid-boss screw (M3×25 into lid inserts) — wall has room at mid height.
-        _engrave_cut(f"plid{side}", f"M3x{POD_LID_SCREW:.0f}", ENGRAVE_SIZE - 1.0,
-                     (sx * 28.0, wall_y, 21.0), 21.0, into="-Y"),
+                     ENGRAVE_SIZE - 1.0, (sx * 24.0, wall_y, 11.0), 11.0, into="-Y"),
+        _engrave_cut(f"pbuzzw{side}", "BUZZER", ENGRAVE_SIZE - 1.0,
+                     (sx * -24.0, wall_y, 11.0), 11.0, into="-Y"),
+        _engrave_cut(f"plid{side}", f"M3x{POD_LID_SCREW:.0f} LID", ENGRAVE_SIZE - 1.0,
+                     (sx * 24.0, wall_y, 5.5), 5.5, into="-Y"),
+        _engrave_cut(f"pins{side}", "M3x4 INS", ENGRAVE_SIZE - 1.0,
+                     (sx * -24.0, wall_y, 5.5), 5.5, into="-Y"),
     ]
     oc.cut(b, *wall)
-    # Dimples omitted — short Ø1 bosses inside the columns read as buried
-    # 1 mm cubes and did not help insert starting more than the cbore does.
     return b
 
 
@@ -1026,8 +1028,11 @@ def test_coupon():
         step = oc.box(f"gstep{i}", (COUPON_GAUGE_W, 10.0, length),
                       at=(gx, y, 0), anchor="bottom")
         oc.union(p, step)
-        tools.append(oc.cylinder(f"gpilot{i}", 2.8, length - 1.0 + ENGRAVE_OVER,
-                                 at=(gx, y, 1.0 - ENGRAVE_OVER), anchor="bottom"))
+        # 0.2 mm floor so M3×L under-head seats nearly flush (1 mm floor left
+        # the head ~1 mm proud — M3×14 looked like it belonged on the 16 step).
+        # Overcut only upward — ENGRAVE_OVER below the floor would punch through.
+        tools.append(oc.cylinder(f"gpilot{i}", 2.8, length - 0.2 + ENGRAVE_OVER,
+                                 at=(gx, y, 0.2), anchor="bottom"))
         labels.append(oc.box(f"glen{i}", (length / 4.0, 1.0, ENGRAVE_D + ENGRAVE_OVER),
                              at=(gx, y + 4.0, length - ENGRAVE_D), anchor="bottom"))
 
@@ -1061,19 +1066,22 @@ def test_coupon():
     labels.append(oc.box("clgaplbl", (10.0, 1.0, ENGRAVE_D + ENGRAVE_OVER),
                          at=(0, -10.0, COUPON_H - ENGRAVE_D), anchor="bottom"))
 
-    # Legacy tap/clear depth + pin sockets on the main block.
+    # Tap/clear depth + pin sockets — keep ≥1 mm floor (6 mm tap used to
+    # break through the 6 mm block; Ø4.35 socket stays blind too).
     for i, depth in enumerate((4.0, 5.0, 6.0)):
         x = -12.0 + i * 12.0
-        tools.append(oc.cylinder(f"tap{i}", 2.8, depth + ENGRAVE_OVER,
-                                 at=(x, 3.5, COUPON_H - depth), anchor="bottom"))
-        tools.append(oc.cylinder(f"clr{i}", 3.2, depth + ENGRAVE_OVER,
-                                 at=(x, -3.0, COUPON_H - depth), anchor="bottom"))
+        blind = min(depth, COUPON_H - 1.0)
+        tools.append(oc.cylinder(f"tap{i}", 2.8, blind + ENGRAVE_OVER,
+                                 at=(x, 3.5, COUPON_H - blind), anchor="bottom"))
+        tools.append(oc.cylinder(f"clr{i}", 3.2, blind + ENGRAVE_OVER,
+                                 at=(x, -3.0, COUPON_H - blind), anchor="bottom"))
         labels.append(oc.box(f"depl{i}", (4.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
                              at=(x, -6.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
     for i, dia in enumerate((4.2, 4.35, 4.5)):
         x = -12.0 + i * 12.0
-        tools.append(oc.cylinder(f"psock{i}", dia, 2.0 + ENGRAVE_OVER,
-                                 at=(x, -9.0, COUPON_H - 2.0), anchor="bottom"))
+        sock_d = min(2.0, COUPON_H - 1.0)
+        tools.append(oc.cylinder(f"psock{i}", dia, sock_d + ENGRAVE_OVER,
+                                 at=(x, -9.0, COUPON_H - sock_d), anchor="bottom"))
         labels.append(oc.box(f"psl{i}", (5.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
                              at=(x, -12.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
     labels.append(oc.box("pinlbl", (8.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),

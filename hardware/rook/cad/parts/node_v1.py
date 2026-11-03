@@ -84,7 +84,7 @@ if part in ("all", "cap"):
             refs=refs, material="PA12", min_wall=1.0, thin_area_allowed=AID_THIN,
             notes=("CAP_STYLE=saddle slim set + assembly-aid engraving (REV "
                    f"{n.AID_REV}). Lid M3x{lid_screw:.0f}; clamp M3x{clamp_screw:.0f}. "
-                   "Inside-floor labels (bed face flat + dimples); PIN marked. Supports off."))
+                   "Inside-floor labels (bed face flat, no dimples); PIN marked. Supports off."))
     else:
         base, lid, bar = n.cap_base(), n.cap_lid(), n.cap_bar()
         oc.move(lid, dx=n.CAP_W + 20)
@@ -118,8 +118,9 @@ if part in ("all", "pod"):
               "node_pod_clamp_bar": {"size": n.POD_BAR}},
         refs=n.pod_refs(), material="PA12", min_wall=1.0, thin_area_allowed=AID_THIN,
         notes=("Assembly aids REV "
-               f"{n.AID_REV}: R9.4 cell cradle, trimmed buzzer L-locators, cable grooves, "
-               "inside + outer-wall labels (bed face flat). "
+               f"{n.AID_REV}: R9.4 cell cradle, buzzer L + ±Y slot rails, cable grooves, "
+               "inside + outer-wall labels (bed face flat; −Y wall +90°X + mirror X). "
+               "FDM: pods need supports for cavity rails/cradle. "
                "Print node_pod_base (L) and node_pod_base_R (or mirror L). "
                f"Per pod: 4 x M3x{n.POD_LID_SCREW:.0f} lid + sealing washers, 4 x M3x6 bars, 8 x M3x4 inserts."))
 
@@ -150,6 +151,7 @@ if part in ("all", "coupon"):
               "scale_bar_xyz": {"size": (n.SCALE_X, n.SCALE_Y, n.SCALE_Z), "tol": 1.0}},
         material="PA12", min_wall=0.8, thin_area_allowed=AID_THIN,
         notes=("AID1 coupon + tri-axis scale. Insert ladder Ø4.0–4.8 × 6 mm, "
-               "lid/clamp gap pads 0.1–0.4, M3x14/16/18 gauge, pins, bridge, "
+               "lid/clamp gap pads 0.1–0.4, M3x14/16/18 gauge (0.2 mm floor), "
+               "blind tap/clear/sockets (1 mm floor), pins, bridge, "
                f"e-foot, O-ring sample, ANT stamp. Plate footprint ~{plate[0]}×{plate[1]} "
                "with cap+2 pods (246 usable)."))

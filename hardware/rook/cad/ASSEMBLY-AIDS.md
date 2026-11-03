@@ -1,7 +1,8 @@
 # Assembly aids (REV AID1)
 
 Print-time locators and labels on the slim-cap / pod bases plate so Cody can
-assemble without a drawing. Budget: ~15 g PLA and ~30 min extra on the plate.
+assemble without a drawing. Aids (locators + engraving, before coupon ladder +
+XYZ scale): about **13 g** PLA and **~50 min** extra on the plate.
 
 Build:
 
@@ -52,18 +53,24 @@ Floor/wall labels: `M3x16` / `M3x14` on the cap floor near bosses; `M3x25` on th
 | `#1 CAP` + bq24074 L-corners + Ø5×1 standoffs at (0, 52) | ID + drop Adafruit 4755 |
 | Inside-floor labels (5 × 0.8 bitmap) | Fastener / pin callouts |
 | Floor arrow → +Y (south of bq seat) | Orient GPS / free end of the spine |
-| Ø1 × 0.4 bed dimples by lid columns | Insert start cues |
 
-Print outside-face down, cavity up, no supports. Bed face stays planar (no glyph cuts into z=0).
+Print outside-face down, cavity up, no supports. Bed face stays planar (no
+glyph cuts into z=0; column dimples removed).
 
 ## Pod base (L and R)
 
 | Aid | Use |
 | --- | --- |
-| `#2 POD L` / `#3 POD R` on −Y wall | Identify L vs R |
+| `#2 POD L` / `#3 POD R` on −Y wall | Identify L vs R (into wall ~1 mm; +90°X + mirror X) |
+| `POD BASE` / side letter / `REV AID1` | Mid wall rows |
+| `+X PORT` / `−X PORT` + `BUZZER` at x±24 | Port vs buzzer side |
+| `M3x25 LID` / `M3x4 INS` at x±24, z 5.5 | Fastener callouts (split so they do not run together) |
 | Cell cradle (2× R9.4 arc ribs, 2.5 mm) | Seat Ø18.4 1781 |
 | Buzzer L-corners + ±Y slot rails | Seat / hold 25.4 Qwiic board; ≥0.5 mm to column (37,27) |
 | Floor grooves + arrow | Route leads; orient crest cable |
+
+Print outside-face down, cavity up. **FDM needs supports** for cavity rails /
+cradle (re-slice — do not trust stale `F4_pod_left`).
 
 ## Test coupon + tri-axis scale
 
@@ -71,10 +78,10 @@ Print outside-face down, cavity up, no supports. Bed face stays planar (no glyph
 | --- | --- |
 | Insert ladder Ø4.0 / 4.2 / 4.4 / 4.6 / 4.8 × 6 mm deep | Iron-fit for Adafruit 4255 (`INSERT_M3`) |
 | Lid / clamp gap pads 0.1 / 0.2 / 0.3 / 0.4 mm proud | Mating-face clearance feel |
-| Blind Ø2.8 tap + Ø3.2 clear at 4 / 5 / 6 mm | Tip clearance vs pocket depth |
-| Pin sockets Ø4.2 / 4.35 / 4.5 × 2 + sample pins | Saddle pin fit |
+| Blind Ø2.8 tap + Ø3.2 clear at 4 / 5 / 5 mm (1 mm floor) | Tip clearance vs pocket depth |
+| Pin sockets Ø4.2 / 4.35 / 4.5 × 2 blind + sample pins | Saddle pin fit |
 | 20 mm bridge (2 mm roof) | Bridging check |
-| Stepped M3×14 / ×16 / ×18 Ø2.8 blind gauge | Screw-length feel |
+| Stepped M3×14 / ×16 / ×18 Ø2.8 blind gauge (0.2 mm floor) | Drop screw in — head nearly flush on the matching step |
 | Free 1×1×0.8 e-foot pad | First-layer spread |
 | O-ring groove sample + ANT stamp | Cheap extras |
 | `scale_bar_xyz.stl` | 100 X × 50 Y × 20 Z, 10 mm ticks |
@@ -87,10 +94,14 @@ usable bed.
 
 ## Mass (solid PLA @ 1.24 g/cm³)
 
+PCB rails + wall/floor labels + bq seat on the bases plate add about **13 g**
+and **~50 min** (before coupon ladder + XYZ scale).
+
 | Feature | Approx |
 | --- | --- |
 | Pod cell cradle + buzzer L + rails − grooves | ≈ 0 g net each pod |
 | Cap bq24074 seat + engraving | ≈ +0.3 g |
+| Aids total (bases plate, pre-ladder/scale) | ≈ **13 g** / **~50 min** |
 | Coupon + scale | side print (~12 g + ~4 g solid) |
 
 ## Intentional omissions

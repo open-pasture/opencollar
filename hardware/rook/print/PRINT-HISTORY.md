@@ -27,14 +27,14 @@ Offline Orca on earlier **76×160×29** STLs: stock PLA supports on 4h41m/140 g,
 
 ## Template notes — slim cap + assembly aids (REV AID1)
 
-**Next print plate (bases, restart after #4):** slim `node_cap_base_saddle` + `node_pod_base` + `node_pod_base_R` (+ optional `test_coupon` / `scale_bar_100`). PLA fit, supports off, brim for ASA later. Watertight STLs (bed face flat; labels on inside floor / outer wall).
+**Next print plate (bases, restart after #4):** slim `node_cap_base_saddle` + `node_pod_base` + `node_pod_base_R` (+ optional `test_coupon` / `scale_bar_xyz`). PLA fit; **cap slim supports off**; **pods need supports** for cavity rails/cradle in FDM (re-slice — do not trust stale `F4_pod_left`). Brim for ASA later. Watertight STLs (bed face flat; labels on inside floor / outer wall).
 
 | Callout | Value |
 | --- | --- |
 | Cap lid / clamp | **M3×16** / **M3×14** (M3×18 can bottom in the 5 mm lid pocket) |
 | Pod lid | **M3×25** |
 | Inserts | M3×4 (Adafruit 4255) |
-| Cap / pod labels | `REV AID1` — see `cad/ASSEMBLY-AIDS.md` (4.5 × 0.7 mm; not on bed face) |
-| Aids budget | ~15 g PLA / ~30 min on the bases plate (locators + engraving + coupon) |
+| Cap / pod labels | `REV AID1` — see `cad/ASSEMBLY-AIDS.md` (5 × 0.8 mm bitmap; not on bed face) |
+| Aids budget | ~**13 g** / ~**50 min** on the bases plate before coupon ladder + XYZ scale |
 
 Log the restart plate here when started (file, material, layers, estimate, route).
