@@ -43,7 +43,7 @@ __attribute__((unused)) static const struct cue_config CUE_CFG = {
 	.max_active_ms = 20000,
 	.rest_ms = 30000,
 	.outside_max_ms = 10000,
-	/* Zero welfare fields: cue_init fills the safe defaults (2 / 3 / 1 h) */
+	/* Zero welfare fields: cue_init fills the safe defaults (3 / 3 / 24 h) */
 };
 
 /* Feed a fix through the fence and the cue, as main.c does */

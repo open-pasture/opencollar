@@ -4,9 +4,9 @@
 
 /* Conservative defaults when a caller leaves welfare fields at 0.
  * REVIEW: animal-welfare expertise before shipping pulse hardware. */
-#define WELFARE_DEFAULT_MAX_OUTSIDE_CUES 2
+#define WELFARE_DEFAULT_MAX_OUTSIDE_CUES 3
 #define WELFARE_DEFAULT_ESCAPE_CYCLE_LIMIT 3
-#define WELFARE_DEFAULT_ESCAPE_WINDOW_MS (60u * 60u * 1000u) /* 1 hour */
+#define WELFARE_DEFAULT_ESCAPE_WINDOW_MS (24u * 60u * 60u * 1000u) /* 24 hours */
 
 static void apply_welfare_defaults(struct cue_config *cfg)
 {

@@ -66,7 +66,7 @@ Steps:
 - `{ op: "rearm", t_ms }`: a new boundary applied at `t_ms` (clears auto shut-off).
 - `{ op: "mode", mode }`: `audio` or `track`.
 
-Expect after each step: `{ cue, armed, episodes }`. `cue` is `null` (silent) or `{ kind, level }` (`warn` 1–4, `outside` 4); `armed` whether a crossing would be cued; `episodes` the episodes that ended at this step, each `{ start_ms, end_ms, ring, cues, max_level, min_margin_m, outcome }`. An optional `welfare` array (same shape as firmware `cue_take_welfare`: `{ kind, at_ms, outside_cues, escape_cycles }`) may appear once report runners learn it; until then, welfare behaviour is asserted through `cue` / `armed` (see `pulse_cutoff_after_two_outside_cues`, `auto_shutoff_after_three_escape_cycles`) and by the firmware host tests.
+Expect after each step: `{ cue, armed, episodes }`. `cue` is `null` (silent) or `{ kind, level }` (`warn` 1–4, `outside` 4); `armed` whether a crossing would be cued; `episodes` the episodes that ended at this step, each `{ start_ms, end_ms, ring, cues, max_level, min_margin_m, outcome }`. An optional `welfare` array (same shape as firmware `cue_take_welfare`: `{ kind, at_ms, outside_cues, escape_cycles }`) may appear once report runners learn it; until then, welfare behaviour is asserted through `cue` / `armed` (see `pulse_cutoff_after_three_outside_cues`, `auto_shutoff_after_three_escape_cycles`) and by the firmware host tests.
 
 ## v1 commands (HTTP + JSON)
 

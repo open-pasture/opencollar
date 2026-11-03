@@ -340,9 +340,9 @@ static void test_welfare_defaults_are_safe(void)
 	struct cue_config cfg = CUE_CFG;
 
 	cue_init(&c, &cfg);
-	CHECK(c.cfg.max_outside_cues == 2);
+	CHECK(c.cfg.max_outside_cues == 3);
 	CHECK(c.cfg.escape_cycle_limit == 3);
-	CHECK(c.cfg.escape_cycle_window_ms == 60u * 60u * 1000u);
+	CHECK(c.cfg.escape_cycle_window_ms == 24u * 60u * 60u * 1000u);
 	CHECK(cue_enforcement_active(&c));
 	CHECK(strcmp(welfare_event_str(WELFARE_PULSE_CUTOFF), "pulse_cutoff") == 0);
 }
@@ -365,11 +365,17 @@ static void test_pulse_cutoff_bounds_outside_cues(void)
 	CHECK(cmd.active && cmd.kind == CUE_OUTSIDE && c.outside_cues == 1);
 	CHECK(!cue_take_welfare(&c, &w));
 
-	/* Second outside cue hits the budget and engages cutoff */
+	/* Second outside cue: still under budget */
 	cmd = step(&gf, &c, at(50, -3), t += 1000, &st);
 	CHECK(cmd.active && cmd.kind == CUE_OUTSIDE && c.outside_cues == 2);
+	CHECK(!c.pulse_cutoff);
+	CHECK(!cue_take_welfare(&c, &w));
+
+	/* Third outside cue hits the budget and engages cutoff */
+	cmd = step(&gf, &c, at(50, -4), t += 1000, &st);
+	CHECK(cmd.active && cmd.kind == CUE_OUTSIDE && c.outside_cues == 3);
 	CHECK(c.pulse_cutoff);
-	CHECK(take_welfare(&c, &w) && w.kind == WELFARE_PULSE_CUTOFF && w.outside_cues == 2);
+	CHECK(take_welfare(&c, &w) && w.kind == WELFARE_PULSE_CUTOFF && w.outside_cues == 3);
 
 	/* Further outside fixes are silent until clear inside */
 	CHECK(!step(&gf, &c, at(50, -5), t += 1000, &st).active);
@@ -403,6 +409,7 @@ static void test_auto_shutoff_after_repeated_escapes(void)
 		/* Cross and burn the outside budget */
 		step(&gf, &c, at(50, -2), t += 1000, &st);
 		step(&gf, &c, at(50, -3), t += 1000, &st);
+		step(&gf, &c, at(50, -4), t += 1000, &st);
 		while (cue_take_welfare(&c, &w)) {
 			/* Drain pulse_cutoff from this crossing */
 		}

@@ -32,10 +32,10 @@ should be re-checked after field data from the pilot farm.
 
 | Rule | Default | Config field |
 | --- | --- | --- |
-| Outside/pulse cues per boundary crossing | **2** | `max_outside_cues` |
+| Outside/pulse cues per boundary crossing | **3** | `max_outside_cues` |
 | Then suspend until clear inside (`GEOFENCE_INSIDE`) | always | (state: `pulse_cutoff`) |
 | Escape→return cycles before auto shut-off | **3** | `escape_cycle_limit` |
-| Rolling window for those cycles | **1 hour** | `escape_cycle_window_ms` |
+| Rolling window for those cycles | **24 hours** | `escape_cycle_window_ms` |
 | Clear shut-off | new boundary / `cue_rearm` | — |
 
 Existing caps still apply: warning cues at most 20 s continuous then 30 s
@@ -61,11 +61,49 @@ Queued like episodes; drained by `cue_take_welfare`, logged as
 
 ## Open questions for welfare review
 
-- Are **2** outside/pulse cues per crossing and **3** cycles per hour the
-  right defaults for cattle (and later sheep/goats)?
+- Are **3** outside/pulse cues per crossing and **3** cycles per 24 h the
+  right defaults for cattle (and later sheep/goats)? See *Basis for the
+  defaults*; they still need sign-off from an animal-welfare expert, and no
+  collar goes on an animal before that review.
 - Should shut-off clear only on a new boundary, or also after a long quiet
   period / explicit caretaker command?
 - When the pulse board ships, should warning **audio** share the same count
   budget as the pulse, or stay on the existing time/rest caps only?
 - Should welfare events be a separate report array, or folded into episodes /
   a `welfare` cap in the protocol registry?
+
+## Basis for the defaults
+
+No vendor publishes a full threshold set; these are the published anchors.
+
+- **3 cues per crossing (strong, published).** Nofence's user guide: an
+  escaping animal gets at most three audio zones / three electric pulses,
+  then the fence function switches off, the farmer is alerted, and it
+  re-activates when the animal returns
+  (https://www.manula.com/manuals/nofence-as/master-user-guide/1/en/topic/the-nofence-boundary).
+  Nofence's submission to the Norwegian government gives the welfare reason:
+  if three aversive stimuli fail, more will not work
+  (https://regjeringen.no/contentassets/5bccb513f5cf47c78995247bce67b672/nofence-as.pdf).
+  V0 is audio only, so the cue is not aversive; matching the published
+  pulse cap keeps the counter ready to gate the pulse module unchanged.
+- **3 escape cycles per 24 h, then off until rearm (moderate; daily window
+  inferred).** Halter states it has time-bound limits and daily maximums on
+  pulses, after which the collar is disabled and the farmer alerted, but
+  does not publish the numbers
+  (https://www.halterhq.com/animal-welfare-charter/system-overview). Early
+  Nofence sheep trials capped corrections at four per day before
+  deactivating (http://hdl.handle.net/11250/2447492). A 24 h window is
+  stricter than the old 1 h placeholder: three escapes spread across a day
+  now also trigger shut-off.
+- **Re-arm only by new boundary or explicit `cue_rearm` (conservative,
+  inference).** Halter reactivates only once the animal shows it responds to
+  cues; we have no such test yet, so a person decides.
+- **Learning context.** Campbell et al. 2019 (eShepherd): cattle needed on
+  average 2.5 audio+pulse pairings (range 1-6) before responding to audio
+  alone; 71.5% of cues were audio-only over 4 weeks
+  (https://www.frontiersin.org/journals/veterinary-science/articles/10.3389/fvets.2019.00445/full).
+  Verdon/TIA (Halter): most learning within 1 day; about 2.6 pulses per 100
+  audio cues once trained
+  (https://www.utas.edu.au/__data/assets/pdf_file/0007/1675699/Factsheet-Managing-dairy-cows-with-Halter-virtual-fencing-technology-2023.pdf).
+- Vence, eShepherd (Gallagher) and Smart Paddock thresholds were not found
+  in public sources.

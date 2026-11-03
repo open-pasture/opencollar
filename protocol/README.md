@@ -61,7 +61,7 @@ warning zone) to outside under the boundary it holds.
   10 s), then **pulse cutoff**: silent until a fix clear inside the geofence
   (`GEOFENCE_INSIDE`), not merely in the warning zone. Walking back through
   the warning zone is silent; that clear-inside fix arms the fence again.
-- **Auto shut-off:** after **3** escape→return cycles within a rolling **1 hour**
+- **Auto shut-off:** after **3** escape→return cycles within a rolling **24 hours**
   window, enforcement turns off for that animal (fence still evaluates; no
   warn or outside cue). A new boundary / `cue_rearm` resumes it. Thresholds
   are conservative defaults and need animal-welfare review
@@ -227,9 +227,9 @@ server accepted.
 - Episode: a run of armed warning cues, ending `turned_back` (reached
   inside), `crossed`, `rest` (the 20 s cap) or `boundary_changed`.
 - Welfare (audio V0; same counters will gate a future pulse): outside cues
-  per crossing are count-capped (`max_outside_cues`, default 2), then
+  per crossing are count-capped (`max_outside_cues`, default 3), then
   suspended until clear inside; escape→return cycles in
-  `escape_cycle_window_ms` (default 1 h) hit `escape_cycle_limit` (default 3)
+  `escape_cycle_window_ms` (default 24 h) hit `escape_cycle_limit` (default 3)
   and auto-shut off enforcement. Events
   `pulse_cutoff` / `returned` / `auto_shutoff` / `enforcement_resumed` are
   queued like episodes and logged on serial today; report uplink is TBD

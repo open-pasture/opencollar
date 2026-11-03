@@ -26,7 +26,7 @@ Goal: draw a boundary in openpasture, send it to a collar built from off-the-she
 | `src/main.c` | Starts the modem in GNSS-only mode, 1 Hz fixes, feeds each fix and each console line to `app.c`, plays cues, logs every decision over serial |
 | `src/app.c` | The collar without Zephyr: boot from flash, GNSS time as the only clock for activation, ticks slots on fixes, console commands |
 | `src/geofence.c` | Outer ring plus up to 16 holes (384 vertices) in local metres; signed distance to the nearest edge and its ring; inside / warning / outside with hysteresis; ignores fixes worse than 10 m |
-| `src/cue.c` | Only cues a crossing (holes included): unarmed at boot and after each new boundary until an inside fix. Warning-zone beeps get louder toward the edge; outside tone count-capped (default 2) then pulse cutoff until clear inside; auto shut-off after repeated escape→return (default 3 / 1 h); 20 s max continuous cue then 30 s rest. Cue kinds, track mode, episodes, welfare events (`docs/WELFARE-POLICY.md`) |
+| `src/cue.c` | Only cues a crossing (holes included): unarmed at boot and after each new boundary until an inside fix. Warning-zone beeps get louder toward the edge; outside tone count-capped (default 3) then pulse cutoff until clear inside; auto shut-off after repeated escape→return (default 3 / 24 h); 20 s max continuous cue then 30 s rest. Cue kinds, track mode, episodes, welfare events (`docs/WELFARE-POLICY.md`) |
 | `src/shape.c` | The twelve shape rules, in openpasture's order and math |
 | `src/command.c` | Signed commands: top-level span scanner, canonical bytes into SHA-512, Ed25519 (Monocypher), exact decimal to e7 |
 | `src/config.c` | Signed config: herd, cadence, fast mode until a GNSS time, endpoint switch with 24 h fallback |

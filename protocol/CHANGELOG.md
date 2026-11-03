@@ -11,13 +11,13 @@ Not a wire version bump: welfare events are serial / local today. Cue rule and
 `cue.json` document the behaviour so openpasture and the collar stay aligned.
 
 - **Pulse cutoff:** at most `max_outside_cues` outside cues per crossing
-  (default **2**), then silent until clear inside the geofence; still bounded
+  (default **3**), then silent until clear inside the geofence; still bounded
   by `outside_max_ms` (10 s).
 - **Auto shut-off:** `escape_cycle_limit` escape→return cycles
-  (default **3**) inside `escape_cycle_window_ms` (default **1 h**) turns
+  (default **3**) inside `escape_cycle_window_ms` (default **24 h**) turns
   enforcement off until a new boundary / `cue_rearm`.
 - **`cue.json`:** config carries the three welfare fields; cases
-  `pulse_cutoff_after_two_outside_cues` and
+  `pulse_cutoff_after_three_outside_cues` and
   `auto_shutoff_after_three_escape_cycles`. Optional `expect.welfare` is
   documented for a later runner update.
 - **Registry:** welfare event kinds `pulse_cutoff` / `returned` /

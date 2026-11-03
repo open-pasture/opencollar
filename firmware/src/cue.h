@@ -50,12 +50,12 @@ struct cue_config {
 	/*
 	 * Welfare thresholds. REVIEW: pick final values with animal-welfare
 	 * expertise. Zero at cue_init() is replaced by the safe defaults
-	 * (2 outside cues, 3 cycles / hour). Use 255 / UINT32_MAX only in
+	 * (3 outside cues, 3 cycles / 24 h). Use 255 / UINT32_MAX only in
 	 * tests that deliberately disable a limit.
 	 */
-	uint8_t max_outside_cues;        /* Outside/pulse cues per crossing; default 2 */
+	uint8_t max_outside_cues;        /* Outside/pulse cues per crossing; default 3 */
 	uint8_t escape_cycle_limit;      /* Escape→return cycles before shut-off; default 3 */
-	uint32_t escape_cycle_window_ms; /* Rolling window for those cycles; default 1 h */
+	uint32_t escape_cycle_window_ms; /* Rolling window for those cycles; default 24 h */
 };
 
 enum cue_kind {
