@@ -119,7 +119,7 @@ if part in ("all", "pod"):
         refs=n.pod_refs(), material="PA12", min_wall=1.0, thin_area_allowed=AID_THIN,
         notes=("Assembly aids REV "
                f"{n.AID_REV}: R9.4 cell cradle, buzzer L + ±Y slot rails, cable grooves, "
-               "inside + outer-wall labels (bed face flat; −Y wall +90°X + mirror X). "
+               "inside + outer-wall labels (bed face flat; −Y wall +90°X, no X mirror). "
                "FDM: pods need supports for cavity rails/cradle. "
                "Print node_pod_base (L) and node_pod_base_R (or mirror L). "
                f"Per pod: 4 x M3x{n.POD_LID_SCREW:.0f} lid + sealing washers, 4 x M3x6 bars, 8 x M3x4 inserts."))
