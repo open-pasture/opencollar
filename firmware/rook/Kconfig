@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+menuconfig ROOK_LTE
+	bool "Rook LTE-M reporter (v1 HTTPS/JSON report + boundary download)"
+	depends on NRF_MODEM_LIB
+	select LTE_LINK_CONTROL
+	help
+	  firmware/rook: reports and signed boundary downloads over LTE-M.
+	  Enable with EXTRA_CONF_FILE=rook/rook.conf.
+
+if ROOK_LTE
+
+config ROOK_LTE_BASE_URL
+	string "Endpoint override (empty: provisioning's)"
+	default ""
+	help
+	  e.g. "http://192.0.2.10:8080/collar/v1" for the mock server.
+
+config ROOK_LTE_AUTH_TOKEN
+	string "Bearer key override (empty: provisioning's collar key)"
+	default ""
+
+config ROOK_LTE_ALLOW_HTTP
+	bool "Allow plain http:// endpoints (mock server only, never on a collar)"
+
+config ROOK_LTE_SEC_TAG
+	int "Modem TLS security tag holding the server's CA"
+	default 42
+
+config ROOK_LTE_APN
+	string "APN (empty: network default)"
+	default "hologram"
+
+config ROOK_LTE_PSM
+	bool "Request PSM"
+	default y
+
+config ROOK_LTE_REPORT_S
+	int "Report cadence, seconds"
+	default 60
+	range 10 3600
+
+config ROOK_LTE_SAMPLE_S
+	int "Seconds between queued fixes (fence changes always queue)"
+	default 10
+
+config ROOK_LTE_MAX_FIXES
+	int "Fixes per report"
+	default 12
+
+config ROOK_LTE_BODY_BYTES
+	int "Report body buffer"
+	default 2048
+
+config ROOK_LTE_STACK_SIZE
+	int "Reporter thread stack"
+	default 4096
+
+config ROOK_BATTERY_MAX17260
+	bool "Battery from the carrier's MAX17260 fuel gauge (I2C 0x36)"
+	select I2C
+
+endif
