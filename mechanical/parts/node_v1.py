@@ -30,9 +30,10 @@ if part in ("all", "cap"):
         spec={"node_cap_base": {"size": (n.CAP_W, n.CAP_L, n.CAP_BASE_H)},
               "node_cap_lid": {"size": (n.CAP_W, n.CAP_L, n.CAP_LID_T)},
               "node_cap_clamp_bar": {"size": n.CAP_BAR}},
-        refs=refs, material="PA12", min_wall=1.0,
-        notes="Print 2 clamp bars. 8 x M3x20 button head + bonded M3 sealing washers (lid, from below), "
-              "4 x M3x8 button head (bars); 12 x M3x4 heat-set inserts.")
+        refs=refs, material="PA12", min_wall=1.0, thin_area_allowed=60.0,
+        notes="Print 2 clamp bars. 8 x M3x40 button head (ISO 7380, A2/304) + bonded M3 sealing washers (lid, from below), "
+              "4 x M3x8 button head (bars); 12 x M3x4 heat-set inserts (8 lid + 4 clamp bar). "
+              "thin_area_allowed: ~0.8 mm keep-out between 5 mm lid insert pockets and the 1.2 mm panel pocket.")
 
 if part in ("all", "pod"):
     oc.reset()

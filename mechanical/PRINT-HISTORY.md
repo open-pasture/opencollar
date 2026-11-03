@@ -17,3 +17,9 @@ Printer: Bambu Lab P2S (home, Cody's LAN 192.168.1.248, cloud mode)
 Offline Orca on earlier **76×160×29** STLs: stock PLA supports on 4h41m/140 g, supports off 4h06m/134 g, fast-fit 3h15m/133 g (vs old 62×142 cap 3h32m/93 g).
 
 **Stale slices:** `F2_cap.gcode.3mf` (old 62×142 cap), `F4_pod_left.gcode.3mf` (old pod outline). Re-slice current exports. F3 counterweight unchanged.
+
+## Fix history — cap insert pockets / lid screw length
+
+**Cap v3 (print #3, Nov 2, `951e057`)** has shallow heat-set insert pockets (lid ~2.2 mm; base clamp ~2 mm) so an M3×4 insert cannot seat, and the lid through-screw note said M3×20 which cannot reach the lid through the 41.4 mm base. CAD fix: Ø4.0 × ~5 mm insert pockets (lid + clamp), deeper Ø8 counterbore + cone for **M3×40** button + bonded washer.
+
+**Rescue the printed #3 without reprint:** drill each lid insert pocket and each base clamp-bar pocket with a **4 mm bit to 5 mm deep** before pressing inserts; deepen the base lid-screw counterbore to accept the M3×40 head (Ø8 to ~z=4–6), or reprint the fixed STLs.

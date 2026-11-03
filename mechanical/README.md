@@ -54,7 +54,7 @@ The collar parts are draft 1: print the fit test and seal box first, put the win
 Material for everything: **ASA**, light grey or white, 0.2 mm layers, 6 perimeters (walls ≥ 2.4 mm), 40 % infill.
 
 1. **`fit_test`**: one plate that sets our tolerances for your printer. Engraved numbers are the designed size in mm.
-   - Row A: M3 × 4 brass heat-set inserts (Adafruit 4255). Press one into each hole with the iron; which holds best without bulging the plastic?
+   - Row A: M3 × 4 brass heat-set inserts (Adafruit 4255). Iron ~220 °C for PLA, ~245 °C for ASA; press until flush. Which hole size holds best without bulging the plastic?
    - Row B: M3 screw clearance. Which lets an M3 screw drop through without rattling?
    - Row C: 2 mm silicone O-ring cord. Which grips the cord and leaves it standing about 0.5 mm proud?
    - Row D: M6 × 0.75 tap drill. Tap each and screw in the vent; which threads cleanly and seals on its O-ring?
