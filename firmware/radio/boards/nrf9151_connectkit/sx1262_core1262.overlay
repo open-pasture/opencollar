@@ -1,0 +1,83 @@
+/*
+ * PROPOSED — nRF9151 Connect Kit + Waveshare Core1262-HF (SX1262) breakout.
+ *
+ * Unverified against the real Makerdiary kit header and the module's RF
+ * switch / TCXO wiring. Confirm before soldering. See RUNBOOK.md.
+ *
+ * Already taken on this board (do not reuse):
+ *   UART0 console  P0.11 / P0.12
+ *   Button         P0.25
+ *   I2C2 buzzer    P0.30 / P0.31  (app overlay)
+ *
+ * SPI0 and SPI2 share hardware with UART/I2C of the same number → use SPIM3.
+ *
+ * PROPOSED pin table (op-firmware ARCHITECTURE.md, carrier SPEC P0.16–P0.20):
+ *   SCK  P0.03    MOSI P0.02    MISO P0.01
+ *   CS   P0.16    BUSY P0.17    DIO1 P0.18    RESET P0.19
+ *   RXEN P0.20 (optional; only if the module needs a host-driven RX enable)
+ *
+ * Core1262-HF antenna switch (Waveshare wiki / CoreSX1262 schematic):
+ *   Module exposes TXEN and RXEN to an on-board RF SPDT.
+ *   DIO2 can drive the switch (SetDio2AsRfSwitchCtrl): HIGH in TX, LOW else.
+ *   We enable dio2-tx-enable and also wire rx-enable-gpios to P0.20 so the
+ *   Zephyr driver can hold RX path defined out of sleep (PE4259-class switch
+ *   undefined when both controls are low). Confirm on the physical module
+ *   whether DIO2 is already hard-wired to the switch and whether RXEN/TXEN
+ *   pads must be left open, tied, or driven.
+ *
+ * TCXO: Core1262 typically powers TCXO from DIO3 @ 1.8 V — assumed here.
+ *
+ * Carrier note: production carrier plans SPI flash on P0.01–P0.04; the SX1262
+ * is intended to share that SPI with its own CS (P0.16). On the Connect Kit
+ * bench we own the bus alone.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+#include <zephyr/dt-bindings/lora/sx126x.h>
+
+&pinctrl {
+	spi3_default: spi3_default {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 3)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 2)>,
+				<NRF_PSEL(SPIM_MISO, 0, 1)>;
+		};
+	};
+
+	spi3_sleep: spi3_sleep {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 3)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 2)>,
+				<NRF_PSEL(SPIM_MISO, 0, 1)>;
+			low-power-enable;
+		};
+	};
+};
+
+&spi3 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	pinctrl-0 = <&spi3_default>;
+	pinctrl-1 = <&spi3_sleep>;
+	pinctrl-names = "default", "sleep";
+	cs-gpios = <&gpio0 16 GPIO_ACTIVE_LOW>;
+
+	lora0: sx1262@0 {
+		compatible = "semtech,sx1262";
+		reg = <0>;
+		spi-max-frequency = <DT_FREQ_M(8)>;
+		reset-gpios = <&gpio0 19 GPIO_ACTIVE_LOW>;
+		busy-gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>;
+		dio1-gpios = <&gpio0 18 GPIO_ACTIVE_HIGH>;
+		rx-enable-gpios = <&gpio0 20 GPIO_ACTIVE_HIGH>;
+		dio2-tx-enable;
+		dio3-tcxo-voltage = <SX126X_DIO3_TCXO_1V8>;
+		tcxo-power-startup-delay-ms = <5>;
+	};
+};
+
+/ {
+	aliases {
+		lora0 = &lora0;
+	};
+};
