@@ -76,10 +76,21 @@ jobs:
         if: steps.cache-ncs.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          # Non-interactive: sdk-manager may prompt for licence acceptance.
+          # sdk-manager may prompt for licence acceptance. Feed "y", but do not
+          # let `yes`'s SIGPIPE fail the step under pipefail when nrfutil closes
+          # stdin after a successful install (that was the first CI failure).
+          set +o pipefail
           yes | nrfutil sdk-manager install "${NCS_VERSION}" \
             --log-output stdout --log-level info
+          install_status=${PIPESTATUS[1]}
+          set -o pipefail
+          if [[ "$install_status" -ne 0 ]]; then
+            echo "::error::nrfutil sdk-manager install failed with status ${install_status}"
+            exit "$install_status"
+          fi
           test -d "${HOME}/ncs/${NCS_VERSION}/zephyr"
+          # Drop install tarballs so the runner / cache stay within disk limits.
+          rm -rf "${HOME}/ncs/downloads" || true
 
       - name: Verify NCS layout
         run: |
