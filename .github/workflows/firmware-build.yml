@@ -1,0 +1,135 @@
+# Rook firmware: host tests + NCS v3.4.1 sysbuild (MCUboot merged.hex).
+# Kept in its own file so draft PRs that add starling.yml / other CI do not
+# conflict on .github/workflows/ci.yml.
+name: Firmware build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "firmware/**"
+      - ".github/workflows/firmware-build.yml"
+  pull_request:
+    paths:
+      - "firmware/**"
+      - ".github/workflows/firmware-build.yml"
+
+permissions:
+  contents: read
+
+env:
+  NCS_VERSION: v3.4.1
+
+jobs:
+  # Host tests stay independent of the NCS toolchain so they keep working
+  # even if the sysbuild job cannot provision the SDK on the runner.
+  host-tests:
+    name: Firmware host tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Install make
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends make
+      - name: Host tests
+        run: make -C firmware/tests/host
+
+  ncs-sysbuild:
+    name: NCS sysbuild (merged.hex)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Free disk space
+        run: |
+          set -euo pipefail
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force || true
+          df -h /
+
+      - name: Install make
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends make wget ca-certificates
+
+      - name: Install nrfutil + sdk-manager
+        run: |
+          set -euo pipefail
+          curl --fail --show-error --location --retry 3 \
+            -o /usr/local/bin/nrfutil \
+            https://files.nordicsemi.com/artifactory/swtools/external/nrfutil/executables/x86_64-unknown-linux-gnu/nrfutil
+          chmod +x /usr/local/bin/nrfutil
+          nrfutil install sdk-manager
+          nrfutil --version
+          nrfutil sdk-manager --help >/dev/null
+
+      - name: Cache NCS SDK and toolchain
+        id: cache-ncs
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/ncs/${{ env.NCS_VERSION }}
+            ~/ncs/toolchains
+          key: ncs-${{ env.NCS_VERSION }}-sdk-toolchain-v1
+
+      - name: Install NCS ${{ env.NCS_VERSION }}
+        if: steps.cache-ncs.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          # Non-interactive: sdk-manager may prompt for licence acceptance.
+          yes | nrfutil sdk-manager install "${NCS_VERSION}" \
+            --log-output stdout --log-level info
+          test -d "${HOME}/ncs/${NCS_VERSION}/zephyr"
+
+      - name: Verify NCS layout
+        run: |
+          set -euo pipefail
+          test -d "${HOME}/ncs/${NCS_VERSION}/zephyr"
+          test -d "${HOME}/ncs/${NCS_VERSION}/nrf"
+          ls -la "${HOME}/ncs/${NCS_VERSION}"
+          nrfutil sdk-manager list
+
+      - name: Host tests (same job, before west)
+        run: make -C firmware/tests/host
+
+      - name: Sysbuild Rook firmware
+        run: |
+          set -euo pipefail
+          # build.sh also probes ~/ncs and /opt/nordic; set ZEPHYR_BASE
+          # explicitly so CI never depends on that auto-detect.
+          export ZEPHYR_BASE="${HOME}/ncs/${NCS_VERSION}/zephyr"
+          test -d "${ZEPHYR_BASE}"
+          mkdir -p firmware/build-ci-logs
+          log="firmware/build-ci-logs/sysbuild.log"
+          # toolchain launch injects the NCS compiler / west / Python env.
+          nrfutil sdk-manager toolchain launch --ncs-version "${NCS_VERSION}" -- \
+            env ZEPHYR_BASE="${ZEPHYR_BASE}" \
+            bash -lc 'cd firmware && ./build.sh' 2>&1 | tee "${log}"
+          test -f firmware/build/merged.hex
+          test -f firmware/build/firmware/zephyr/zephyr.signed.hex
+          test -f firmware/build/dfu_application.zip
+          ls -l firmware/build/merged.hex \
+            firmware/build/firmware/zephyr/zephyr.signed.hex \
+            firmware/build/dfu_application.zip
+
+      - name: Upload flashable artifacts
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rook-firmware-nrf9151-connectkit-${{ github.sha }}
+          path: |
+            firmware/build/merged.hex
+            firmware/build/firmware/zephyr/zephyr.signed.hex
+            firmware/build/dfu_application.zip
+            firmware/build-ci-logs/sysbuild.log
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rook-firmware-sysbuild-log-failed-${{ github.sha }}
+          path: firmware/build-ci-logs/sysbuild.log
+          retention-days: 14
+          if-no-files-found: warn
