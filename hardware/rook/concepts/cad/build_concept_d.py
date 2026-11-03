@@ -1,12 +1,8 @@
-"""Rook concept D3 — cow-image look study (same PR as D/D2).
+"""Rook concept D3b — cow-look + Voltaic P124 panel (same PR as D/D2/D3).
 
-Target look (Cody): tall slim matte-charcoal cap slab with generous radii on
-the collar; strap with webbing slot, keeper and buckle; small low counterweight
-pod; orange only on the latch and 2–3 screws.
-
-Cap keeps the LOCKED hardware envelope (76×160, columns, clamp, cavity ≥13).
-Softer corners + slimmer visual profile are aesthetic only — anything that
-would break the envelope is flagged in the report / D-hybrid.md.
+Tall slim matte-charcoal cap (locked 76×160), soft radii, strap slot/keeper/
+buckle, small low CW, orange = latch + 2–3 end screws, flush P124 instrument
+window on the lid with separate panel_p124.stl (dark navy).
 
 Look study — not print-ready. Draft only.
 
@@ -37,6 +33,8 @@ import oc  # noqa: E402
 CHARCOAL = (0x26 / 255, 0x28 / 255, 0x2B / 255, 1.0)
 OAT = (0xEF / 255, 0xE8 / 255, 0xD8 / 255, 1.0)
 ORANGE = (0xFF / 255, 0x6A / 255, 0x2B / 255, 1.0)
+# Dark navy / glassy panel body (reads against matte charcoal lid).
+PANEL_NAVY = (0.10, 0.14, 0.22, 1.0)
 BLACK = (0.07, 0.07, 0.08, 1.0)
 WORLD = (0.94, 0.93, 0.90)
 
@@ -49,8 +47,15 @@ CAP_BASE_H = CAP_FLOOR + CAP_CAVITY_H  # 18 — tall-slim slab (low overall, lon
 CAP_LID_T = 6.0
 CAP_COLS = [(sx * 29.5, y) for sx in (-1, 1) for y in (-68.0, -42.0, 42.0, 68.0)]
 CAP_CLAMP = [(sx * 20.0, sy * 28.5) for sx in (-1, 1) for sy in (-1, 1)]
-# Option-1 orange: latch + 2–3 service screws (use 3: +Y end pair + one mid)
-CAP_ORANGE_SCREWS = [(29.5, 42.0), (-29.5, 42.0), (29.5, 68.0)]  # 3 screws
+# Voltaic P124 — HARDWARE-FIT / dims: 113×66×~2.6–3.1; pocket +0.3/side.
+# X across neck, Y along spine; centered on long axis (PANEL_Y=0).
+PANEL_SIZE = (66.0, 113.0, 2.6)          # visual body (user ~2.6 mm)
+PANEL_POCKET = (66.6, 113.6, 2.3)        # depth → panel face ~0.3 mm proud
+PANEL_Y = 0.0
+PANEL_BORDER_W = 1.4                     # slim raised instrument-window frame
+PANEL_BORDER_H = 0.7
+# Orange service screws clear of centered panel (|y|=68 > 56.8): three end-cols.
+CAP_ORANGE_SCREWS = [(29.5, 68.0), (-29.5, 68.0), (29.5, -68.0)]
 CAP_CHARCOAL_SCREWS = [c for c in CAP_COLS if c not in CAP_ORANGE_SCREWS]
 
 # Soft plan radius — max that still clears columns to outer wall.
@@ -189,6 +194,9 @@ def envelope_report():
         f"Pod columns {POD_COLS} (locked XY)",
         f"Reveal inset {REVEAL} mm on all lids (aesthetic)",
         f"Orange option-1: latch + {len(CAP_ORANGE_SCREWS)} cap screws only",
+        f"P124 pocket {PANEL_POCKET[0]}×{PANEL_POCKET[1]}×{PANEL_POCKET[2]} "
+        f"centered PANEL_Y={PANEL_Y} (HARDWARE-FIT sized)",
+        f"Orange screws at |y|=68 clear of panel ±{PANEL_POCKET[1]/2:.1f}",
     ]
     breaks = [
         {
@@ -233,13 +241,53 @@ def d_cap_base():
 
 
 def d_cap_lid():
+    """Flat lid + P124 instrument window (flush/0.3 proud panel) + wire exit."""
     lw, ll = CAP_W - 2 * REVEAL, CAP_L - 2 * REVEAL
     lid = slab("cap_lid", lw, ll, CAP_LID_T, CAP_PLAN_R - 0.5)
     lid_holes(lid, CAP_COLS, CAP_LID_T)
-    # Quiet label pad (look only).
-    oc.cut(lid, oc.rounded_rect("pad", (28, 10, 0.4), 1.0,
-                                at=(0, 8.0, CAP_LID_T - 0.4), anchor="bottom"))
+
+    px, py, pz = PANEL_POCKET
+    # Panel recess — face will sit ~0.3 mm proud of lid top with PANEL_SIZE z=2.6.
+    oc.cut(lid, oc.rounded_rect("ppocket", (px, py, pz + 0.2), 1.2,
+                                at=(0, PANEL_Y, CAP_LID_T - pz), anchor="bottom"))
+
+    # Slim raised border — intentional instrument window (matte lid frame).
+    frame_outer = oc.rounded_rect(
+        "pframe",
+        (px + 2 * PANEL_BORDER_W, py + 2 * PANEL_BORDER_W, PANEL_BORDER_H),
+        1.6,
+        at=(0, PANEL_Y, CAP_LID_T),
+        anchor="bottom",
+    )
+    oc.cut(frame_outer, oc.rounded_rect(
+        "pframe_i", (px + 0.2, py + 0.2, PANEL_BORDER_H + 1), 1.0,
+        at=(0, PANEL_Y, CAP_LID_T - 0.2), anchor="bottom"))
+    oc.union(lid, frame_outer)
+
+    # Wire exit: slot from pocket floor down into cavity (+Y end of panel).
+    wire_y = PANEL_Y + py / 2 - 10.0
+    oc.cut(lid, oc.cylinder("pwire", 4.0, CAP_LID_T + 2,
+                            at=(0, wire_y, -1), anchor="bottom"))
+    # Shallow channel on pocket floor toward the wire hole (readable in section).
+    oc.cut(lid, oc.box("pchan", (3.5, 12.0, 1.0),
+                       at=(0, wire_y - 4.0, CAP_LID_T - pz), anchor="bottom"))
+
+    # Label pad moved to −Y free end (beyond panel + orange screws on +/−Y ends).
+    # Sit between panel (−56.8) and −Y rim; keep clear of (−29.5, −68) screw.
+    oc.cut(lid, oc.rounded_rect("pad", (22, 8, 0.4), 1.0,
+                                at=(0, -72.0, CAP_LID_T - 0.4), anchor="bottom"))
     return prepare(lid)
+
+
+def d_panel_p124():
+    """Separate Voltaic P124 body — dark navy/glassy for colour renders."""
+    sx, sy, sz = PANEL_SIZE
+    p = oc.rounded_rect("panel_p124", (sx, sy, sz), 1.0, anchor="bottom", segments=8)
+    # Subtle cell grid cue (look only) — three lengthwise grooves.
+    for i, x in enumerate((-18.0, 0.0, 18.0)):
+        oc.cut(p, oc.box(f"cell{i}", (0.4, sy - 8, 0.25),
+                         at=(x, 0, sz - 0.2), anchor="bottom"))
+    return prepare(p)
 
 
 def d_pod_base():
@@ -408,7 +456,7 @@ def export_part(obj, path):
     }
 
 
-def layout(parts, plugs, strap_bits, latch, strap, explode=0.0):
+def layout(parts, plugs, strap_bits, latch, strap, panel, explode=0.0):
     gap = 28.0
     cap_x = 0.0
     pod_x = CAP_W / 2 + POD_L / 2 + gap
@@ -421,6 +469,10 @@ def layout(parts, plugs, strap_bits, latch, strap, explode=0.0):
     oc.move(parts["pod_lid"], dx=pod_x, dz=POD_BASE_H + explode)
     oc.move(parts["cw_tub"], dx=cw_x)
     oc.move(parts["cw_lid"], dx=cw_x, dz=CW_H + explode)
+
+    # Panel seats in pocket: top of panel = lid top + 0.3 proud (+ explode).
+    oc.move(panel, dx=cap_x, dy=PANEL_Y,
+            dz=CAP_BASE_H + CAP_LID_T - PANEL_POCKET[2] + explode * 1.2)
 
     for i, (x, y) in enumerate(CAP_ORANGE_SCREWS):
         oc.move(plugs["orange"][i], dx=cap_x + x, dy=y,
@@ -435,14 +487,16 @@ def layout(parts, plugs, strap_bits, latch, strap, explode=0.0):
         oc.move(plugs["cw"][i], dx=cw_x + x, dy=y,
                 dz=CW_H + CW_LID_T - PLUG_H + explode * 1.5)
 
-    oc.move(latch, dx=cap_x, dy=CAP_L / 2 - 7, dz=CAP_BASE_H + CAP_LID_T - 1 + explode)
+    # Latch at +Y end, clear of panel frame and orange screws.
+    oc.move(latch, dx=cap_x, dy=CAP_L / 2 - 5,
+            dz=CAP_BASE_H + CAP_LID_T + PANEL_BORDER_H - 0.5 + explode)
     oc.move(strap_bits["saddle"], dx=cap_x, dz=saddle_z)
     oc.move(strap, dx=cap_x, dz=saddle_z + 1.8)
     oc.move(strap_bits["keeper"], dx=cap_x, dy=-(CAP_L / 2 + 16), dz=saddle_z + 1.2)
     oc.move(strap_bits["buckle"], dx=cap_x, dy=-(CAP_L / 2 + 46), dz=saddle_z + 0.8)
 
 
-def color_opt1(parts, plugs, strap_bits, latch, strap, lid_color):
+def color_opt1(parts, plugs, strap_bits, latch, strap, panel, lid_color):
     bodies = [
         (parts["cap_base"], CHARCOAL, "body"),
         (parts["pod_base"], CHARCOAL, "body"),
@@ -450,6 +504,7 @@ def color_opt1(parts, plugs, strap_bits, latch, strap, lid_color):
         (parts["cap_lid"], lid_color, "lid"),
         (parts["pod_lid"], lid_color, "lid"),
         (parts["cw_lid"], lid_color, "lid"),
+        (panel, PANEL_NAVY, "panel"),
         (strap_bits["saddle"], CHARCOAL, "saddle"),
         (strap_bits["keeper"], CHARCOAL, "keeper"),
         (strap_bits["buckle"], CHARCOAL, "buckle"),
@@ -482,6 +537,7 @@ def main():
     builders = [
         ("cap_base", d_cap_base),
         ("cap_lid", d_cap_lid),
+        ("panel_p124", d_panel_p124),
         ("pod_base", d_pod_base),
         ("pod_lid", d_pod_lid),
         ("cw_tub", d_cw_tub),
@@ -497,9 +553,16 @@ def main():
     ]
     report = {
         "concept": "D_hybrid",
-        "revision": "D3_cow_look",
+        "revision": "D3b_panel",
         "envelope": env,
         "orange_screws": CAP_ORANGE_SCREWS,
+        "panel": {
+            "pocket_mm": PANEL_POCKET,
+            "body_mm": PANEL_SIZE,
+            "panel_y": PANEL_Y,
+            "proud_mm": round(PANEL_SIZE[2] - PANEL_POCKET[2], 2),
+            "border_mm": {"w": PANEL_BORDER_W, "h": PANEL_BORDER_H},
+        },
         "bodies": {},
         "pass": True,
     }
@@ -527,7 +590,7 @@ def main():
             "cw": [make_plug(f"cw{i}") for i in range(len(CW_SCREWS))],
         }
         strap_bits = {"saddle": d_saddle(), "keeper": d_keeper(), "buckle": d_buckle()}
-        return bases, plugs, strap_bits, d_latch(), d_strap()
+        return bases, plugs, strap_bits, d_latch(), d_strap(), d_panel_p124()
 
     views = {
         "iso": (1.15, -1.35, 0.85),
@@ -535,28 +598,37 @@ def main():
         "side": (1.0, 0.12, 0.22),
     }
 
-    bases, plugs, strap_bits, latch, strap = scene()
-    layout(bases, plugs, strap_bits, latch, strap, 0.0)
+    bases, plugs, strap_bits, latch, strap, panel = scene()
+    layout(bases, plugs, strap_bits, latch, strap, panel, 0.0)
     for view, direction in views.items():
         out = os.path.join(rend_dir, f"assembled_{view}.png")
-        render_colored(color_opt1(bases, plugs, strap_bits, latch, strap, CHARCOAL),
+        render_colored(color_opt1(bases, plugs, strap_bits, latch, strap, panel, CHARCOAL),
                        out, direction)
         shutil.copy2(out, os.path.join(img_dir, f"D_hybrid_{view}.png"))
 
-    bases, plugs, strap_bits, latch, strap = scene()
-    layout(bases, plugs, strap_bits, latch, strap, 14.0)
+    bases, plugs, strap_bits, latch, strap, panel = scene()
+    layout(bases, plugs, strap_bits, latch, strap, panel, 14.0)
     out = os.path.join(rend_dir, "assembled_exploded.png")
-    render_colored(color_opt1(bases, plugs, strap_bits, latch, strap, CHARCOAL),
+    render_colored(color_opt1(bases, plugs, strap_bits, latch, strap, panel, CHARCOAL),
                    out, (1.2, -1.4, 0.8), pad=1.18)
     shutil.copy2(out, os.path.join(img_dir, "D_hybrid_exploded.png"))
 
-    bases, plugs, strap_bits, latch, strap = scene()
-    layout(bases, plugs, strap_bits, latch, strap, 0.0)
+    bases, plugs, strap_bits, latch, strap, panel = scene()
+    layout(bases, plugs, strap_bits, latch, strap, panel, 0.0)
     for view, direction in views.items():
         out = os.path.join(rend_dir, f"oat_{view}.png")
-        render_colored(color_opt1(bases, plugs, strap_bits, latch, strap, OAT),
+        render_colored(color_opt1(bases, plugs, strap_bits, latch, strap, panel, OAT),
                        out, direction)
         shutil.copy2(out, os.path.join(img_dir, f"D_hybrid_oat_{view}.png"))
+
+    # Cap + panel close-up (instrument window)
+    oc.reset()
+    cl, pan = d_cap_lid(), d_panel_p124()
+    oc.move(pan, dy=PANEL_Y, dz=CAP_LID_T - PANEL_POCKET[2])
+    out = os.path.join(rend_dir, "panel_closeup.png")
+    render_colored([(cl, CHARCOAL, "lid"), (pan, PANEL_NAVY, "panel")],
+                   out, (0.2, -1.1, 1.2), pad=0.55)
+    shutil.copy2(out, os.path.join(img_dir, "D_hybrid_panel_closeup.png"))
 
     oc.reset()
     pod = d_pod_base()

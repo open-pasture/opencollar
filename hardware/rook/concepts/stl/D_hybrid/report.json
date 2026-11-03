@@ -1,6 +1,6 @@
 {
   "concept": "D_hybrid",
-  "revision": "D3_cow_look",
+  "revision": "D3b_panel",
   "envelope": {
     "fits": [
       "Cap footprint 76.0\u00d7160.0 (locked)",
@@ -12,7 +12,9 @@
       "Pod outer 92.0\u00d768.0 matches cavity 82.0\u00d758.0 + wall 5.0",
       "Pod columns [(-37.0, -27.0), (-37.0, 27.0), (37.0, -27.0), (37.0, 27.0)] (locked XY)",
       "Reveal inset 0.55 mm on all lids (aesthetic)",
-      "Orange option-1: latch + 3 cap screws only"
+      "Orange option-1: latch + 3 cap screws only",
+      "P124 pocket 66.6\u00d7113.6\u00d72.3 centered PANEL_Y=0.0 (HARDWARE-FIT sized)",
+      "Orange screws at |y|=68 clear of panel \u00b156.8"
     ],
     "breaks_or_flags": [
       {
@@ -44,17 +46,35 @@
   "orange_screws": [
     [
       29.5,
-      42.0
+      68.0
     ],
     [
       -29.5,
-      42.0
+      68.0
     ],
     [
       29.5,
-      68.0
+      -68.0
     ]
   ],
+  "panel": {
+    "pocket_mm": [
+      66.6,
+      113.6,
+      2.3
+    ],
+    "body_mm": [
+      66.0,
+      113.0,
+      2.6
+    ],
+    "panel_y": 0.0,
+    "proud_mm": 0.3,
+    "border_mm": {
+      "w": 1.4,
+      "h": 0.7
+    }
+  },
   "bodies": {
     "cap_base": {
       "size_mm": [
@@ -79,7 +99,7 @@
       "size_mm": [
         74.9,
         158.9,
-        6.0
+        6.7
       ],
       "watertight": {
         "watertight": true,
@@ -89,10 +109,29 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4560
+        "faces": 4622
       },
       "pass": true,
       "stl_path": "stl/D_hybrid/cap_lid.stl"
+    },
+    "panel_p124": {
+      "size_mm": [
+        66.0,
+        113.0,
+        2.6
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 188
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/panel_p124.stl"
     },
     "pod_base": {
       "size_mm": [

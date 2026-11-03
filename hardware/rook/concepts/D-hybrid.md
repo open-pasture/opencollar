@@ -1,32 +1,47 @@
-# D — Hybrid (D3 cow-look study)
+# D — Hybrid (D3b cow-look + P124 panel)
 
 Target look Cody liked: **tall slim matte-charcoal cap slab** with generous
 radii on the collar; strap with webbing slot, keeper and buckle; **small low
-counterweight**; orange only on the **latch and 2–3 screws**.
+counterweight**; orange only on the **latch and 2–3 screws**; **one Voltaic
+P124** on the cap lid (HARDWARE-FIT).
 
 Look / proportion study on the same draft PR as D/D2. **Not print-ready.**
 
 ## Cap proportion (locked envelope)
 
-| Locked | D3 study |
+| Locked | D3b study |
 | --- | --- |
 | Footprint **76×160** | **Kept** |
 | Columns `(±29.5, ±68/±42)` | **Kept** |
-| Clamp `(±20, ±28.5)` | **Kept** |
+| Clamp `(±20, ±28.5)` | **Kept** (underside — clear of lid panel) |
 | Cavity height **≥13** | **13 mm** (floor 5 → base 18) |
 | Plan corners | Softened to **R10** (still inside 76×160) |
 | Slim profile | Visual only — long low slab + soft R + flat lid (no XY shrink) |
-| Lid tops | Clean flat planes (no crown bevel / hairline) |
+| Lid tops | Clean flat planes + **P124 instrument window** |
 | Seam | Inset reveal **0.55 mm** |
 
 **Cap does not break the locked envelope.** Slimness is radii + proportion, not a smaller footprint.
+
+## P124 solar (D3b)
+
+Per `bom/HARDWARE-FIT.md` / `dims.P124_PANEL`: one owned **113×66** panel.
+
+| Cue | Spec |
+| --- | --- |
+| Pocket | **66.6×113.6×2.3** (panel +0.3/side); centered `PANEL_Y=0` |
+| Panel body | `panel_p124.stl` **66×113×2.6** → face **~0.3 mm proud** |
+| Border | Slim raised frame 1.4×0.7 mm — matte instrument window |
+| Wire exit | Ø4 through lid + shallow channel at +Y pocket end → cavity |
+| Colour | Dark navy / glassy panel vs matte charcoal lid |
+| Screws | Orange trio moved to **\|y\|=68** ends (clear of panel ±56.8) |
+| Label | Pad moved to **−Y** free end (`y≈−72`) |
 
 ## Orange (brand option 1)
 
 Orange = open / replace:
 
 - Lid **latch** (cosmetic placeholder)
-- **3** cap service screw plugs: `(±29.5, 42)` and `(+29.5, 68)`
+- **3** cap service screw plugs at end columns: `(±29.5, +68)`, `(+29.5, −68)`
 - All other plugs charcoal (including pod, tub, remaining cap screws)
 - Strap buckle stays **charcoal** this round (orange budget is latch + screws)
 

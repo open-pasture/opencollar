@@ -4,12 +4,12 @@ Design studies for the Rook collar housings. Same internal hardware envelope as
 Node V1 so the current electronics, cells, and strap clamps still fit. **Not**
 drop-in replacements for `stl/node_v1_*`.
 
-## D — Hybrid (D3 cow-look, current)
+## D — Hybrid (D3b cow-look + P124, current)
 
-Cody’s AI-cow target: tall slim charcoal cap slab, soft radii, strap
-slot/keeper/buckle, small low CW, orange = latch + 2–3 screws. **Cap keeps
-locked 76×160 envelope** (see fit/break table in [`D-hybrid.md`](D-hybrid.md)).
-Not print-ready.
+Cody’s AI-cow target + **Voltaic P124** instrument window on the cap lid.
+Tall slim charcoal slab, soft radii, strap slot/keeper/buckle, small low CW,
+orange = latch + 2–3 end screws. **Cap keeps locked 76×160 envelope** (see
+[`D-hybrid.md`](D-hybrid.md)). Separate `panel_p124.stl`. Not print-ready.
 
 | | |
 | --- | --- |
