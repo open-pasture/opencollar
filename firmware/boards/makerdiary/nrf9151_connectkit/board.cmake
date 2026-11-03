@@ -5,7 +5,10 @@ if(CONFIG_BOARD_NRF9151_CONNECTKIT_NRF9151 OR CONFIG_BOARD_NRF9151_CONNECTKIT_NR
   if(CONFIG_BOARD_NRF9151_CONNECTKIT_NRF9151_NS)
     set(TFM_PUBLIC_KEY_FORMAT "full")
   endif()
-  if(CONFIG_TFM_FLASH_MERGED_BINARY)
+  # With MCUboot, NCS's image signing makes zephyr.signed.hex the app's runner
+  # hex (it overrides anything set here), `west flash -d build` writes MCUboot
+  # then the signed image, and build.sh flashes the single build/merged.hex.
+  if(CONFIG_TFM_FLASH_MERGED_BINARY AND NOT CONFIG_BOOTLOADER_MCUBOOT)
     set_property(TARGET runners_yaml_props_target PROPERTY hex_file tfm_merged.hex)
   endif()
   board_runner_args(pyocd "--target=nrf91" "--frequency=4000000")

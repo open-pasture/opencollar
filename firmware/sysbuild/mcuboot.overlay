@@ -1,0 +1,9 @@
+/* MCUboot uses the same flash map as the application. */
+#include "../boards/partitions_mcuboot.dtsi"
+
+/* This file replaces MCUboot's own app.overlay, so say again where it runs. */
+/ {
+	chosen {
+		zephyr,code-partition = &boot_partition;
+	};
+};

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """After a build: print the flash partition map, check every edge sits on a
 32 KB SPU region boundary, and check the application image and RAM against
-protocol v1 §3.1 (image <= 440 KB so an internal-flash MCUboot fits later).
+protocol v1 §3.1. With MCUboot the application slot (slot0_ns) is 416 KB.
 
 Usage: scripts/check_image.py [build/firmware/zephyr]
 """
@@ -10,7 +10,7 @@ import re
 import sys
 
 REGION = 32 * 1024
-IMAGE_MAX = 440 * 1024
+IMAGE_MAX = 416 * 1024  # slot0_ns_partition, boards/partitions_mcuboot.dtsi
 RAM_BASE, RAM_END = 0x20000000, 0x20040000
 
 zdir = sys.argv[1] if len(sys.argv) > 1 else "build/firmware/zephyr"
