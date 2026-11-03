@@ -430,13 +430,68 @@ static void test_auto_shutoff_after_repeated_escapes(void)
 	CHECK(!step(&gf, &c, at(50, 2), t += 1000, &st).active);
 	CHECK(!step(&gf, &c, at(50, -2), t += 1000, &st).active);
 
-	/* A new boundary clears shut-off */
+	/* A new boundary must NOT clear shut-off or reset the cycle count */
+	uint8_t cycles_before = c.escape_cycles;
+
 	cue_rearm_at(&c, t += 1000);
+	CHECK(c.enforcement_off && !cue_enforcement_active(&c));
+	CHECK(c.escape_cycles == cycles_before);
+	CHECK(!cue_take_welfare(&c, &w));
+	CHECK(!step(&gf, &c, at(50, 50), t += 1000, &st).active);
+	CHECK(!c.armed);
+	CHECK(!step(&gf, &c, at(50, 2), t += 1000, &st).active);
+
+	/* Explicit caretaker clear resumes enforcement */
+	cue_clear_shutoff_at(&c, t += 1000);
 	CHECK(!c.enforcement_off && cue_enforcement_active(&c));
+	CHECK(c.escape_cycles == 0);
 	CHECK(take_welfare(&c, &w) && w.kind == WELFARE_ENFORCEMENT_RESUMED);
 	step(&gf, &c, at(50, 50), t += 1000, &st);
 	CHECK(c.armed);
 	CHECK(step(&gf, &c, at(50, 2), t += 1000, &st).active);
+}
+
+static void test_boundary_does_not_reset_escape_counters(void)
+{
+	struct geofence gf;
+	struct cue c;
+	struct welfare_event w;
+	enum geofence_state st;
+	int64_t t = 0;
+	struct cue_config cfg = CUE_CFG;
+
+	cfg.escape_cycle_limit = 3;
+	make_square(&gf);
+	cue_init(&c, &cfg);
+
+	/* Two escape cycles, then a fence move — counters must survive */
+	for (int cycle = 1; cycle <= 2; cycle++) {
+		step(&gf, &c, at(50, 50), t += 1000, &st);
+		step(&gf, &c, at(50, -2), t += 1000, &st);
+		step(&gf, &c, at(50, -3), t += 1000, &st);
+		while (cue_take_welfare(&c, &w)) {
+		}
+		step(&gf, &c, at(50, 20), t += 1000, &st);
+		CHECK(take_welfare(&c, &w) && w.kind == WELFARE_RETURNED &&
+		      w.escape_cycles == (uint8_t)cycle);
+	}
+	CHECK(c.escape_cycles == 2 && !c.enforcement_off);
+
+	cue_rearm_at(&c, t += 1000);
+	CHECK(c.escape_cycles == 2 && !c.enforcement_off);
+	CHECK(!cue_take_welfare(&c, &w));
+
+	/* Third cycle after the fence move still trips shut-off */
+	step(&gf, &c, at(50, 50), t += 1000, &st);
+	CHECK(c.armed);
+	step(&gf, &c, at(50, -2), t += 1000, &st);
+	step(&gf, &c, at(50, -3), t += 1000, &st);
+	while (cue_take_welfare(&c, &w)) {
+	}
+	step(&gf, &c, at(50, 20), t += 1000, &st);
+	CHECK(cue_take_welfare(&c, &w) && w.kind == WELFARE_RETURNED && w.escape_cycles == 3);
+	CHECK(c.enforcement_off);
+	CHECK(take_welfare(&c, &w) && w.kind == WELFARE_AUTO_SHUTOFF && w.escape_cycles == 3);
 }
 
 static void test_escape_cycle_window_resets(void)
@@ -493,6 +548,7 @@ int main(void)
 	test_welfare_defaults_are_safe();
 	test_pulse_cutoff_bounds_outside_cues();
 	test_auto_shutoff_after_repeated_escapes();
+	test_boundary_does_not_reset_escape_counters();
 	test_escape_cycle_window_resets();
 	return test_done("cue");
 }

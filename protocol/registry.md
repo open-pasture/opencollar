@@ -145,7 +145,7 @@ future uplink can reuse them without renumbering. See [`docs/WELFARE-POLICY.md`]
 | 1 | `pulse_cutoff` | Outside/pulse budget spent for this crossing; silent until clear inside |
 | 2 | `returned` | Clear inside after a counted crossing (one escape→return cycle) |
 | 3 | `auto_shutoff` | Escape-cycle limit hit; enforcement off for this animal |
-| 4 | `enforcement_resumed` | Shut-off cleared by a new boundary / `cue_rearm` |
+| 4 | `enforcement_resumed` | Shut-off cleared by explicit caretaker re-arm (`cue_clear_shutoff`); never by a new boundary |
 
 ## Ack and slot statuses
 

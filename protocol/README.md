@@ -63,9 +63,10 @@ warning zone) to outside under the boundary it holds.
   the warning zone is silent; that clear-inside fix arms the fence again.
 - **Auto shut-off:** after **3** escape→return cycles within a fixed **24 hours**
   window (starts at the first escape; resets after 24 h), enforcement turns
-  off for that animal (fence still evaluates; no warn or outside cue). A new
-  boundary / `cue_rearm` resumes it. Thresholds are conservative defaults and
-  need animal-welfare review
+  off for that animal (fence still evaluates; no warn or outside cue). Only an
+  explicit caretaker re-arm (`cue_clear_shutoff` / serial `rearm`) clears it;
+  a new boundary does not. Thresholds are conservative defaults and need
+  animal-welfare review
   ([`docs/WELFARE-POLICY.md`](../docs/WELFARE-POLICY.md)).
 - Warning-zone cues are otherwise unchanged: louder toward the edge, at most
   20 s of continuous cueing, then 30 s of rest.
@@ -232,7 +233,8 @@ server accepted.
   suspended until clear inside; escape→return cycles in a fixed
   `escape_cycle_window_ms` (default 24 h, starts at the first escape and
   resets after that window) hit `escape_cycle_limit` (default 3) and
-  auto-shut off enforcement. Events
+  auto-shut off enforcement until an explicit caretaker re-arm (a new
+  boundary does not clear it). Events
   `pulse_cutoff` / `returned` / `auto_shutoff` / `enforcement_resumed` are
   queued like episodes and logged on serial today; report uplink is TBD
   ([`registry.md`](registry.md#welfare-event-kinds)).
@@ -446,7 +448,7 @@ every case. Signing key: Ed25519 seed bytes `00 01 02 … 1f`.
 | `shapes.json` | each shape code minimal, exact limit passes and limit + 1 fails, both windings, gaps at ±0.1 m |
 | `geofence.json` | margins (1 mm), inside, nearest ring, around and inside holes |
 | `slots.json` | supersede, dead prune, duplicate re-ack, stale, slots_full by count and by bytes, boot without clock, wrong collar, herd change (step `{"op": "set_herd", "herd_id": …}`, the signed config's herd taking effect) |
-| `cue.json` | the cue rule: only a crossing, warning levels, the 20 s cap and rest, outside tone + pulse cutoff, auto shut-off, rearm, track mode, holes, episodes |
+| `cue.json` | the cue rule: only a crossing, warning levels, the 20 s cap and rest, outside tone + pulse cutoff, auto shut-off, boundary rearm vs caretaker clear_shutoff, track mode, holes, episodes |
 
 ## Transport
 

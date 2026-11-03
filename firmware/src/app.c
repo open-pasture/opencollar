@@ -346,6 +346,11 @@ void app_line(struct app *a, const char *line, size_t len, bool overflow, int64_
 		do_provision(a, rest, rest_len, reply, cap);
 	} else if (command_is(line, len, "status", &rest, &rest_len) && rest_len == 0) {
 		do_status(a, reply, cap);
+	} else if (command_is(line, len, "rearm", &rest, &rest_len) && rest_len == 0) {
+		/* Explicit caretaker clear of auto shut-off (not a fence move). */
+		cue_clear_shutoff_at(&a->cue, now_ms);
+		snprintf(reply, cap, "ok enforcement %s",
+			 a->cue.enforcement_off ? "off" : "on");
 	} else if (command_is(line, len, "config", &rest, &rest_len)) {
 		do_config(a, rest, rest_len, reply, cap);
 	} else {

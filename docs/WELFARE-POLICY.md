@@ -36,16 +36,21 @@ should be re-checked after field data from the pilot farm.
 | Then suspend until clear inside (`GEOFENCE_INSIDE`) | always | (state: `pulse_cutoff`) |
 | Escape→return cycles before auto shut-off | **3** | `escape_cycle_limit` |
 | Fixed window for those cycles (starts at first escape; resets after 24 h) | **24 hours** | `escape_cycle_window_ms` |
-| Clear shut-off (provisional; see OPEN DECISION) | new boundary / `cue_rearm` | — |
+| Clear shut-off | explicit caretaker re-arm only (`cue_clear_shutoff` / serial `rearm`); a new boundary never clears it | — |
 
 Existing caps still apply: warning cues at most 20 s continuous then 30 s
 rest; outside cues also stop after `outside_max_ms` (10 s) if the count
 budget has not already been spent.
 
 While auto shut-off is active, the fence still evaluates (state and margin)
-but no warn or outside cue plays. `status` reports `enforcement off`. A new
-boundary (or `cue_rearm`) resumes enforcement and emits
-`enforcement_resumed`.
+but no warn or outside cue plays. `status` reports `enforcement off`. Only an
+explicit caretaker re-arm (per collar) clears shut-off, resets the escape-cycle
+counters, and emits `enforcement_resumed`. A new boundary / fence update
+disarms cueing for the usual "animal left outside stays silent" reasons, but
+leaves shut-off and the cycle counters alone.
+
+**Decision (Cody, Nov 3):** a fence move must not clear auto shut-off. Once
+shut-off trips, enforcement stays off until a person re-arms that collar.
 
 ## Welfare events
 
@@ -57,7 +62,7 @@ Queued like episodes; drained by `cue_take_welfare`, logged as
 | `pulse_cutoff` | Outside cue budget (count or time) spent for this crossing |
 | `returned` | Clear inside after a counted crossing (one escape cycle) |
 | `auto_shutoff` | Escape-cycle limit hit; enforcement off |
-| `enforcement_resumed` | Shut-off cleared by rearm / new boundary |
+| `enforcement_resumed` | Shut-off cleared by explicit caretaker re-arm |
 
 ## Open questions for welfare review
 
@@ -65,11 +70,6 @@ Queued like episodes; drained by `cue_take_welfare`, logged as
   right defaults for cattle (and later sheep/goats)? See *Basis for the
   defaults*; they still need sign-off from an animal-welfare expert, and no
   collar goes on an animal before that review.
-- **OPEN DECISION (Cody):** Should a fence move (new boundary / `cue_rearm`)
-  undo shut-off? Current firmware clears shut-off on rearm so a caretaker
-  boundary change restores enforcement; whether that is the right policy is
-  not decided. Related: clear also after a long quiet period / explicit
-  caretaker command?
 - When the pulse board ships, should warning **audio** share the same count
   budget as the pulse, or stay on the existing time/rest caps only?
 - Should welfare events be a separate report array, or folded into episodes /
@@ -89,19 +89,20 @@ No vendor publishes a full threshold set; these are the published anchors.
   (https://regjeringen.no/contentassets/5bccb513f5cf47c78995247bce67b672/nofence-as.pdf).
   V0 is audio only, so the cue is not aversive; matching the published
   pulse cap keeps the counter ready to gate the pulse module unchanged.
-- **3 escape cycles per 24 h, then off until rearm (moderate; daily window
-  inferred).** Halter states it has time-bound limits and daily maximums on
-  pulses, after which the collar is disabled and the farmer alerted, but
-  does not publish the numbers
+- **3 escape cycles per 24 h, then off until caretaker re-arm (moderate; daily
+  window inferred).** Halter states it has time-bound limits and daily
+  maximums on pulses, after which the collar is disabled and the farmer
+  alerted, but does not publish the numbers
   (https://www.halterhq.com/animal-welfare-charter/system-overview). The
   2012 Nofence sheep trial: **4 pulses a day, audio continued**
   (http://hdl.handle.net/11250/2447492). Counting escapes (rather than
   pulses) for shut-off is **our own design choice**, not taken from that
   trial. A fixed 24 h window is stricter than the old 1 h placeholder:
   three escapes spread across a day now also trigger shut-off.
-- **Re-arm only by new boundary or explicit `cue_rearm` (conservative,
-  inference).** Halter reactivates only once the animal shows it responds to
-  cues; we have no such test yet, so a person decides.
+- **Re-arm only by an explicit caretaker command (conservative).** Decided
+  Nov 3 (Cody): a fence move alone must never resume enforcement. Halter
+  reactivates only once the animal shows it responds to cues; we have no
+  such test yet, so a person decides, per collar.
 - **Learning context.** Campbell et al. 2019 (eShepherd): cattle needed on
   average 2.5 audio+pulse pairings (range 1-6) before responding to audio
   alone; 71.5% of cues were audio-only over 4 weeks
