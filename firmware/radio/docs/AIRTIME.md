@@ -14,15 +14,16 @@ Computed by `radio_airtime_packet_us` (host test `test_airtime` locks these):
 | 128 | 215296 | 379392 | 676864 | 1230848 |
 | 222 | 348416 | 614912 | 1106944 | 2009088 |
 
-## What this means for FCC 15.247(a)(1) dwell
+## Pilot dwell accounting
 
-Hopping dwell is **≤ 400 ms on one channel per 20 s**. Rows above 400 000 µs
-cannot be sent under the HAL's dwell limiter (they also trip
-`max_frame_airtime_us`). Practical bring-up frames:
+The HAL's pilot default accounts **≤ 400 ms airtime on one channel per 20 s**
+(hopping-style planning). Rows above 400 000 µs trip `max_frame_airtime_us`
+(`ERR_AIRTIME`). Practical bring-up frames:
 
-- SF7 / SF8: up to 128 B is under 400 ms.
-- SF9: 64 B is under; 128 B is over.
-- SF10: even 64 B is over — use only short freshness beacons, or move to the
-  500 kHz Plan 1 preset for larger frames.
+- SF7 / SF8: up to 128 B stays under 400 ms.
+- SF9: 64 B under; 128 B over.
+- SF10: even 64 B over — use short freshness beacons, or switch to the
+  500 kHz preset when op-firmware enables it.
 
-Default bring-up SF is **8**.
+Default bring-up SF is **8**. This is a software limiter for the pilot, not a
+lab certification result.

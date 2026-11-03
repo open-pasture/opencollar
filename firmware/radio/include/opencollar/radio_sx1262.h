@@ -21,7 +21,7 @@ extern "C" {
 
 #define OC_RADIO_MTU 255u
 
-/* US915 bring-up defaults (125 kHz SF8). See docs/FCC-US915.md. */
+/* US915 pilot defaults (125 kHz SF8, +14 dBm cap). See docs/FCC-US915.md. */
 #define OC_RADIO_US915_FREQ_HZ         903900000u
 #define OC_RADIO_US915_SF_DEFAULT      8u
 #define OC_RADIO_US915_BW_CODE_125K    0u
@@ -65,7 +65,7 @@ struct oc_radio {
 	/* Hourly budget (lim.airtime_budget_us_per_h) */
 	uint32_t duty_used_us;
 	uint64_t duty_window_start_us;
-	/* FCC dwell (radio-local; not in portable limits yet) */
+	/* Pilot dwell accounting (radio-local; not in portable limits yet) */
 	uint32_t dwell_limit_us;
 	uint32_t dwell_window_ms;
 	uint32_t dwell_used_us;

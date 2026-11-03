@@ -108,6 +108,7 @@ int main(void)
 	oc_radio_cfg_us915_defaults(&cfg, &lim);
 	cfg.freq_hz = CONFIG_RADIO_FREQ_HZ;
 	cfg.sf = CONFIG_RADIO_SF;
+	cfg.bw_khz_code = CONFIG_RADIO_BW_KHZ_CODE;
 	cfg.tx_dbm = CONFIG_RADIO_TX_CAP_DBM;
 
 	st = oc_radio_sx1262_bind_zephyr(&g_radio, lora);

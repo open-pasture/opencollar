@@ -14,7 +14,8 @@ Implements **`firmware/lora/include/opencollar/radio_hal.h`** (op-fw-proto,
 | `boards/nrf9151_connectkit/` | PROPOSED Core1262 overlay |
 | `samples/pingpong/` | Symmetric link test |
 | `tests/host/` | CI-able unit tests |
-| `docs/` | FCC, airtime table, scheduler design |
+| `docs/` | Pilot US915 defaults, airtime table, scheduler design |
+| `ci/build_board.sh` | Board build hook for op-firmware's firmware-build.yml |
 | `RUNBOOK.md` | Build/flash/pins/measurements |
 
 This branch carries the header at `ab5350e` so CI can compile; the rest of

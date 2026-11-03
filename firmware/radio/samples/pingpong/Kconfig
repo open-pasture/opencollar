@@ -39,9 +39,17 @@ config RADIO_TX_CAP_DBM
 	range -9 22
 
 config RADIO_SF
-	int "Spreading factor (7..10 for US915 125 kHz bring-up)"
+	int "Spreading factor (7..10 for US915 pilot bring-up)"
 	default 8
 	range 7 10
+
+config RADIO_BW_KHZ_CODE
+	int "Bandwidth code: 0=125 kHz (pilot default), 1=250, 2=500"
+	default 0
+	range 0 2
+	help
+	  Pilot default is 125 kHz (hopping-style plan). Set 2 for a later
+	  500 kHz digital-modulation preset when op-firmware enables it.
 
 config RADIO_FREQ_HZ
 	int "Center frequency (Hz)"

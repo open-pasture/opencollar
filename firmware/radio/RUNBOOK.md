@@ -92,15 +92,19 @@ act as RF-switch ctrl (HIGH in TX). Overlay sets `dio2-tx-enable` and
 3. Same SF/freq on both (`CONFIG_RADIO_SF`, `CONFIG_RADIO_FREQ_HZ`).
 4. If CAD busy storms: check antennas and distance; watch `RHAL_E_BUDGET`.
 
-## Assumptions
+## Assumptions (pilot — not a compliance claim)
 
-- Bring-up preset is **125 kHz SF8 CR4/5**, not protocol Plan 1 (500 kHz).
-- TX capped at **+14 dBm** until conducted power is measured.
+- Pilot default: **125 kHz SF8 CR4/5**, hopping-style dwell accounting
+  (15.247(a)(1)-oriented). Switchable to 500 kHz via `RADIO_BW_KHZ_CODE=2`
+  when op-firmware wants Plan 1. See `docs/FCC-US915.md`.
+- TX capped at **+14 dBm** until measured. Certification / legal review
+  before field deployment is Cody's call — this firmware does not claim it.
 - Hourly airtime budget ~1 %; min TX gap 100 ms; CAD before every TX.
-- HAL header is `firmware/lora/include/opencollar/radio_hal.h` (PR #6 /
-  `ab5350e`): `oc_radio_init` / `sleep` / `now_us` / limits / `ERR_GAP` /
-  `ERR_AIRTIME`. Zephyr needs `oc_radio_sx1262_bind_zephyr` before init
-  (device pointer). Remaining header asks: CAD timeout arg, SKIP_CAD flag.
+- HAL: `firmware/lora/include/opencollar/radio_hal.h` (`ab5350e`). Zephyr
+  bind helper before `oc_radio_init`. Remaining proto asks: CAD timeout,
+  SKIP_CAD.
+- Board CI hook: `firmware/radio/ci/build_board.sh` (called from
+  op-firmware's `firmware-build.yml`, not a radio-owned workflow).
 
 ## Measurement plans (hardware-dependent — do not guess)
 
@@ -108,8 +112,8 @@ act as RF-switch ctrl (HIGH in TX). Overlay sets `dio2-tx-enable` and
 | --- | --- | --- | --- |
 | M1 | Average current vs RX scheme | Nordic PPK2; compare continuous RX vs `rx_window/rx_period` vs `lora_recv_duty_cycle` if available | ___ µA avg at scheme X |
 | M2 | Packet success vs distance | Fixed SF8/14 dBm; LOS pasture distances 10/50/100/200 m; 100 pings each | ___ % @ ___ m |
-| M3 | Conducted TX power | Spectrum analyzer / power meter at U.FL | ≤ cap; match grant |
-| M4 | 6 dB BW / PSD | For whichever FCC regime ships | 15.247 pass |
+| M3 | Conducted TX power | Spectrum analyzer / power meter at U.FL | Record vs +14 dBm pilot cap; Cody decides next steps |
+| M4 | Occupied BW / PSD | Whichever radio preset is under test | Record only — no pass/fail claim in this tree |
 | M5 | CAD false-busy rate | Quiet bench vs 2-node traffic | ___ % |
 
 ## Open questions for op-firmware

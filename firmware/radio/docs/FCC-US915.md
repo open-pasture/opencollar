@@ -1,36 +1,36 @@
-# US 915 MHz compliance assumptions (bring-up)
+# US 915 MHz pilot radio defaults (bench / private-farm)
 
-## Regime implemented in this HAL
+**Not a compliance claim.** These are pilot defaults for bring-up, bench
+tests, and private-farm experiments. Certification measurements and legal
+review are Cody's responsibility before any field deployment. Do not treat
+this document as FCC advice.
 
-**FCC Part 15.247(a)(1) — frequency hopping** for the 125 kHz SF7–SF10 preset:
+## Pilot default (configurable)
 
-| Rule | HAL behaviour |
-| --- | --- |
-| Hop across channels (system design needs ≥ 50 channels for the classic hop path) | Channel selection is protocol-owned; HAL accounts dwell **per `freq_hz`** |
-| ≤ 400 ms dwell on one channel in any 20 s | `dwell_limit_us` / `dwell_window_ms` (defaults 400 ms / 20 s); send → `RHAL_E_BUDGET` |
-| Conducted power | `tx_power_cap_dbm` default **+14 dBm** (conservative until grant/antenna measured); SX1262 silicon ceiling +22 |
-
-Additional **software** limits (not FCC numbers — herd fairness / battery /
-beacon+gossip headroom):
-
-| Limit | Default | Effect |
+| Setting | Pilot default | Notes |
 | --- | --- | --- |
-| `airtime_budget_us_per_h` | 36 s/hour (~1 %) | `RHAL_E_BUDGET` when spent |
-| `min_tx_gap_ms` | 100 ms | rate-limit between our own sends |
-| `max_frame_airtime_us` | 400 ms | refuse frames that cannot meet dwell |
+| Band plan intent | 15.247(a)(1)-style frequency hopping | Software dwell accounting only |
+| Bandwidth | 125 kHz (`bw_khz_code = 0`) | Kconfig / `oc_radio_cfg` |
+| Spreading factor | SF8 (SF7–SF10 supported) | |
+| Coding rate | 4/5 | |
+| TX power cap | **+14 dBm** | Until conducted power is measured on the real module+antenna; SX1262 silicon can go higher |
+| Soft hourly airtime budget | ~1 % of an hour | Fairness / battery / gossip headroom — not a regulatory number |
+| Min TX gap | 100 ms | Software rate limit |
+| Per-channel dwell accounting | 400 ms / 20 s window | Matches the hopping dwell figure for planning; not a lab result |
 
-CAD before every TX (unless `skip_cad` in tests) implements listen-before-talk.
+HAL behaviour: CAD before TX; refuse sends that would exceed the configured
+hourly budget (`ERR_DUTY`), min gap (`ERR_GAP`), or max frame airtime
+(`ERR_AIRTIME`).
 
-## Not the default: Plan 1 / 15.247(a)(2)
+## Alternate preset (not default)
 
-Protocol v2 `US915_500` (SF8 / 500 kHz / digital modulation, no hop, PSD
-≤ 8 dBm in any 3 kHz, +20 dBm conducted) remains the **one-hop star** plan in
-`protocol/v2/lora.md`. Switching the HAL preset to 500 kHz is a Kconfig /
-`rhal_cfg.bw_khz_code = 2` choice. **op-firmware must decide** which preset
-ships first; measured 6 dB bandwidth and PSD on the real module+antenna are
-still open (`lora.md` open question 2).
+Protocol v2 Plan 1 (`US915_500`: SF8 / 500 kHz / 15.247(a)(2)-style digital
+modulation) can be selected later via `bw_khz_code = 2` / Kconfig
+`RADIO_BW_KHZ_CODE`. Keep it off until op-firmware chooses it and the
+hardware path is characterized.
 
-## Open measurements (boards arrive)
+## Measurement plans before any field use
 
-See RUNBOOK.md measurement plans: conducted power, occupied bandwidth, PSD,
-dwell under gossip load, and average current for RX-window schemes.
+See RUNBOOK.md (conducted power, occupied bandwidth / PSD, dwell under load,
+average current). Results go to Cody for certification planning — this tree
+does not declare a pass/fail against Part 15.

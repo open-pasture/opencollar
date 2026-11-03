@@ -1,24 +1,31 @@
-# CI notes for op-firmware
+# CI hooks for op-firmware
 
-## What this PR changes in `.github/workflows/ci.yml`
+## Host tests (this PR)
 
-Adds one job that runs `make -C firmware/radio/tests/host` on ubuntu-24.04
-(no NCS). Flagged for op-firmware review; host tests are owned by op-fw-radio
-and are required for the Thu Nov 5 hardware-free handoff.
-
-## Proposed (not enabled): NCS board builds
-
-NCS v3.4.1 is **not** installed in the current GitHub Actions image for this
-repo. Enabling board builds needs one of:
-
-1. A self-hosted runner with NCS v3.4.1 + west, or
-2. A container image with the Nordic toolchain (large; license/cache), or
-3. A later op-firmware workflow that caches `nrfutil sdk-manager` installs.
-
-Draft job text is in `ncs-boards-proposed.yml`. Do not merge that into the
-main workflow until the runner can actually build. Local builds:
+`.github/workflows/ci.yml` already has a **Radio host tests** job:
 
 ```bash
-firmware/radio/scripts/build_xiao.sh
-firmware/radio/scripts/build_nrf9151.sh
+make -C firmware/radio/tests/host
+```
+
+No NCS required. Keep it unless it conflicts with a later unified workflow.
+
+## Board builds (owned by op-firmware)
+
+Do **not** add a radio-owned board-build workflow. Another agent drafts
+`.github/workflows/firmware-build.yml` (NCS v3.4.1 via `nrfutil sdk-manager`,
+Rook sysbuild, host tests, `ZEPHYR_BASE`). op-firmware will call this hook:
+
+```bash
+# After the parent job exports ZEPHYR_BASE / launches the NCS toolchain:
+firmware/radio/ci/build_board.sh xiao_ble    # XIAO + wio_sx1262 shield
+firmware/radio/ci/build_board.sh nrf9151     # Connect Kit + Core1262 overlay
+firmware/radio/ci/build_board.sh all
+```
+
+Local equivalent (same scripts as `firmware/radio/scripts/build_*.sh`):
+
+```bash
+nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 -- \
+  firmware/radio/ci/build_board.sh all
 ```
