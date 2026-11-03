@@ -83,15 +83,13 @@ lands there). Lid insert pocket is **5.0 mm** deep from the mating face
 
 ```
 through base       15.0   (19.0 − 4.0 seat)
-+ insert engage     4.0
-= path             19.0 mm
 
-M3×18 tip into lid = 18 − 15 = 3.0 mm  → engages insert, tip clear of pocket floor
-M3×20 tip into lid = 20 − 15 = 5.0 mm  → bottoms on the pocket floor — do not use
-M3×16 tip into lid = 16 − 15 = 1.0 mm  → under-engages the 4 mm insert
+M3×16 tip into lid = 16 − 15 = 1.0 mm past the face → ~3 mm insert grip, ~2 mm pocket spare
+M3×18 tip into lid = 18 − 15 = 3.0 mm  → can reach the pocket floor (0–0.5 mm spare) — avoid
+M3×20 tip into lid = 20 − 15 = 5.0 mm  → bottoms — do not use
 ```
 
-Use **M3×18** button head + sealing washer (gable v3 still uses M3×40).
+Use **M3×16** button head + sealing washer (gable v3 still uses M3×40).
 
 ## Print
 

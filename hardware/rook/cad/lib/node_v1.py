@@ -183,11 +183,63 @@ def lid_screw_stack_mm(style=None):
     seat = LID_SCREW_SEAT_Z
     through_base = h - seat
     if s == "saddle":
-        # M3×18: tip into lid = 18 − 15 = 3.0 (insert 4.0, pocket 5.0) — engages,
-        # does not bottom. M3×20 would put the tip at 5.0 (pocket floor).
-        return through_base + INSERT["length"], 18.0
+        # Through base 15.0 (19 − seat 4). M3×16 → tip 1.0 past the face into the
+        # insert (≈3 mm of the 4 mm insert engaged if counted from under-head
+        # seating with washer stack ≈ seat; practical grip ~3 mm, 2 mm pocket
+        # spare). M3×18 tips at ~3–5 mm and can bottom on the 5 mm pocket floor.
+        return through_base + INSERT["length"], 16.0
     # Gable: long base; M3×40 with ~4.6 mm into the lid insert (historical).
     return through_base + INSERT["length"], 40.0
+
+
+# ---------------------------------------------------------------- assembly aids (print-plate learning)
+# Engraved labels + light locators. Budget ~15 g PLA / ~30 min on the bases plate.
+# See cad/ASSEMBLY-AIDS.md.
+
+AID_REV = "AID1"
+ENGRAVE_D = 0.4
+ENGRAVE_SIZE = 3.0
+ENGRAVE_OVER = 0.5          # cutter past the face so booleans stay clean
+CRADLE_H = 2.5              # cell ribs; ≤3 mm into cavity
+LOCATOR_H = 1.2
+LOCATOR_T = 1.5
+BUZZER_CLEAR = 0.3
+CABLE_GROOVE_W = 3.0
+CABLE_GROOVE_D = 1.2
+DIMPLE_D = 1.0
+DIMPLE_DEPTH = 0.4
+
+
+def _manifold_text(name, body, size, depth, at, align="CENTER"):
+    """Font mesh remeshed so the boolean stays manifold (Blender 4 curve text
+    alone leaves hundreds of non-manifold edges on this toolchain)."""
+    obj = oc.text(name, body, size, depth, at=at, align=align)
+    m = obj.modifiers.new("aid_remesh", "REMESH")
+    m.mode = "SMOOTH"
+    m.octree_depth = 7
+    m.scale = 0.9
+    oc.apply_modifiers(obj)
+    return obj
+
+
+def _engrave_cut(name, body, size, at, z_face, depth=ENGRAVE_D, into="+Z"):
+    """Text cutter for engraving into a face.
+
+    into='+Z': cut downward from z_face (inside floor / top face).
+    into='-Z': cut into the bed face from z_face upward (cutter stays at
+    z ≥ z_face so the part bbox does not grow downward).
+    """
+    if into == "-Z":
+        return _manifold_text(name, body, size, depth, at=(at[0], at[1], z_face))
+    return _manifold_text(name, body, size, depth + ENGRAVE_OVER,
+                          at=(at[0], at[1], z_face - depth))
+
+
+def _l_corner(name, cx, cy, z, sx, sy, t=LOCATOR_T, h=LOCATOR_H, arm=4.0):
+    """L-shaped locator at a board corner. (sx,sy) is the inward quadrant."""
+    a = oc.box(f"{name}_a", (arm, t, h), at=(cx + sx * arm / 2, cy, z), anchor="bottom")
+    b = oc.box(f"{name}_b", (t, arm, h), at=(cx, cy + sy * arm / 2, z), anchor="bottom")
+    return oc.union(a, b)
 
 
 def stack_height_strap_to_lid_mm(style=None):
@@ -279,14 +331,40 @@ def _cap_base_saddle_underside(b):
     return b
 
 
+def _cap_assembly_aids(b):
+    """Bed-face engraving + column dimples for the slim cap (flat underside)."""
+    _, lid_screw = lid_screw_stack_mm("saddle")
+    _, clamp_screw = clamp_screw_stack_mm("saddle")
+    # Keep labels in the open mid-field away from clamp inserts / pin sockets
+    # so glyph booleans do not knife-edge against holes.
+    labels = [
+        _engrave_cut("cap_name", "CAP BASE", ENGRAVE_SIZE, (0, 50), 0.0, into="-Z"),
+        _engrave_cut("cap_rev", f"REV {AID_REV}", ENGRAVE_SIZE, (0, 42), 0.0, into="-Z"),
+        _engrave_cut("cap_clamp", f"M3x{clamp_screw:.0f} CLAMP", ENGRAVE_SIZE, (0, -42), 0.0, into="-Z"),
+        _engrave_cut("cap_lid", f"M3x{lid_screw:.0f} LID", ENGRAVE_SIZE, (0, -50), 0.0, into="-Z"),
+        _engrave_cut("cap_ins", "M3x4 INSERT", ENGRAVE_SIZE, (0, -58), 0.0, into="-Z"),
+        _engrave_cut("cap_pins", "PIN", ENGRAVE_SIZE, (0, 0), 0.0, into="-Z"),
+    ]
+    for i, (x, y) in enumerate(CAP_COLS):
+        # Dimple toward the centre so it cannot knife the outer wall.
+        labels.append(oc.cylinder(f"cdim{i}", DIMPLE_D, DIMPLE_DEPTH + 0.1,
+                                  at=(x - (5.5 if x > 0 else -5.5), y, 0.0), anchor="bottom"))
+    oc.cut(b, *labels)
+    # Do not remove_doubles after font booleans — it reintroduces non-manifold
+    # edges on this Blender. The remeshed cutters already leave a clean mesh.
+    return b
+
+
 def cap_base(style=None):
     if style is not None:
         set_cap_style(style)
     b = _cap_base_shell()
     if CAP_STYLE == "saddle":
         _cap_base_saddle_underside(b)
-    else:
-        _cap_base_gable_underside(b)
+        b = clean(b)
+        _cap_assembly_aids(b)
+        return b
+    _cap_base_gable_underside(b)
     return clean(b)
 
 
@@ -402,10 +480,102 @@ POD_BAR = (10.0, 70.0, 4.0)
 CELL_AT = (-2.0, -13.0)
 BUZZER_AT = (20.0, 15.0)   # board centre
 ELECTRODES = [(-30.0, 15.0), (-8.0, 15.0)]
+POD_LID_SCREW = 25.0       # M3×25 through pod base into lid inserts
 
 
-def pod_base():
-    b = oc.rounded_box("pod_base", (POD_L, POD_W, POD_BASE_H), 4.0, anchor="bottom")
+def _pod_assembly_aids(b, side="L"):
+    """Cell cradle, buzzer L-locators, cable grooves, labels, column dimples."""
+    sx = 1.0 if side == "L" else -1.0
+    cell_xy = (sx * CELL_AT[0], CELL_AT[1])
+    buzz_xy = (sx * BUZZER_AT[0], BUZZER_AT[1])
+    cable_xy = (sx * (POD_L / 2 - POD_WALL / 2), -2.0)
+
+    # (1) Cell cradle: two shallow V ribs under the Ø18.4 cell (axis X).
+    # Keep clear of corner columns (±37, ±27); ribs stay near cell centreline.
+    for i, dx in enumerate((-18.0, 18.0)):
+        rib = oc.prism_x(f"crib{side}{i}", [
+            (-5.0, POD_FLOOR - 0.05),
+            (5.0, POD_FLOOR - 0.05),
+            (1.8, POD_FLOOR + CRADLE_H),
+            (-1.8, POD_FLOOR + CRADLE_H),
+        ], 5.0, at_x=cell_xy[0] + sx * dx)
+        # Shift rib to cell Y.
+        oc.move(rib, dy=cell_xy[1])
+        oc.bake(rib)
+        oc.union(b, rib)
+
+    # (2) Buzzer L-corner locators (25.4 board + 0.3 clearance each side).
+    bw = d.QWIIC_BUZZER["board"][0] + 2 * BUZZER_CLEAR
+    half = bw / 2
+    for i, (csx, csy) in enumerate(((1, 1), (1, -1), (-1, 1), (-1, -1))):
+        cx = buzz_xy[0] + csx * half
+        cy = buzz_xy[1] + csy * half
+        # Inward toward board centre.
+        loc = _l_corner(f"bl{side}{i}", cx, cy, POD_FLOOR, -csx, -csy)
+        oc.union(b, loc)
+
+    # (3) Cable grooves in the floor: cell +X lead end → crest entry; buzzer → entry.
+    cell_lead = (cell_xy[0] + sx * (CELL["l"] / 2 - 2.0), cell_xy[1])
+    groovers = []
+    # Cell → cable (two-segment Manhattan path along floor).
+    mid_x = cable_xy[0] - sx * 6.0
+    groovers.append(oc.box(f"cg_cell_x{side}", (abs(mid_x - cell_lead[0]) + CABLE_GROOVE_W,
+                                                CABLE_GROOVE_W, CABLE_GROOVE_D + 1),
+                           at=((cell_lead[0] + mid_x) / 2, cell_lead[1],
+                               POD_FLOOR - CABLE_GROOVE_D), anchor="bottom"))
+    groovers.append(oc.box(f"cg_cell_y{side}", (CABLE_GROOVE_W,
+                                                abs(cable_xy[1] - cell_lead[1]) + CABLE_GROOVE_W,
+                                                CABLE_GROOVE_D + 1),
+                           at=(mid_x, (cell_lead[1] + cable_xy[1]) / 2,
+                               POD_FLOOR - CABLE_GROOVE_D), anchor="bottom"))
+    groovers.append(oc.box(f"cg_buzz{side}", (abs(cable_xy[0] - buzz_xy[0]) + CABLE_GROOVE_W,
+                                              CABLE_GROOVE_W, CABLE_GROOVE_D + 1),
+                           at=((buzz_xy[0] + cable_xy[0]) / 2, buzz_xy[1],
+                               POD_FLOOR - CABLE_GROOVE_D), anchor="bottom"))
+    groovers.append(oc.box(f"cg_buzz2{side}", (CABLE_GROOVE_W,
+                                               abs(cable_xy[1] - buzz_xy[1]) + CABLE_GROOVE_W,
+                                               CABLE_GROOVE_D + 1),
+                           at=(cable_xy[0] - sx * 2.0, (buzz_xy[1] + cable_xy[1]) / 2,
+                               POD_FLOOR - CABLE_GROOVE_D), anchor="bottom"))
+    oc.cut(b, *groovers)
+
+    # (4) Inside-floor labels.
+    inside = [
+        _engrave_cut(f"pport{side}", "+X PORT" if side == "L" else "-X PORT",
+                     ENGRAVE_SIZE, (sx * 28.0, -2.0), POD_FLOOR),
+        _engrave_cut(f"pplus{side}", "+", ENGRAVE_SIZE + 1,
+                     (cell_xy[0] + sx * (CELL["l"] / 2 - 8), cell_xy[1] + 8), POD_FLOOR),
+        _engrave_cut(f"pminus{side}", "-", ENGRAVE_SIZE + 1,
+                     (cell_xy[0] - sx * (CELL["l"] / 2 - 8), cell_xy[1] + 8), POD_FLOOR),
+        _engrave_cut(f"pbuzz{side}", "BUZZER", ENGRAVE_SIZE, (buzz_xy[0], buzz_xy[1] - 16), POD_FLOOR),
+        _engrave_cut(f"pstud{side}", "STUD", ENGRAVE_SIZE,
+                     (sx * ELECTRODES[0][0], ELECTRODES[0][1] - 8), POD_FLOOR),
+    ]
+    oc.cut(b, *inside)
+
+    # Outside bottom face (prints against the bed).
+    outside = [
+        _engrave_cut(f"pname{side}", "POD BASE", ENGRAVE_SIZE, (0, 20), 0.0, into="-Z"),
+        _engrave_cut(f"pside{side}", side, ENGRAVE_SIZE + 2, (0, 12), 0.0, into="-Z"),
+        _engrave_cut(f"prev{side}", f"REV {AID_REV}", ENGRAVE_SIZE, (0, 5), 0.0, into="-Z"),
+        _engrave_cut(f"plid{side}", f"M3x{POD_LID_SCREW:.0f} LID", ENGRAVE_SIZE, (0, -12), 0.0, into="-Z"),
+        _engrave_cut(f"pins{side}", "M3x4 INSERT", ENGRAVE_SIZE, (0, -20), 0.0, into="-Z"),
+    ]
+    oc.cut(b, *outside)
+
+    # (5) Alignment dimples at screw columns (inside floor).
+    for i, (x, y) in enumerate(POD_COLS):
+        oc.cut(b, oc.cylinder(f"pdim{side}{i}", DIMPLE_D, DIMPLE_DEPTH + ENGRAVE_OVER,
+                              at=(x + (6.0 if x > 0 else -6.0), y, POD_FLOOR - DIMPLE_DEPTH),
+                              anchor="bottom"))
+    return b
+
+
+def pod_base(side="L"):
+    """Pod base. side='L' is the canonical STL; side='R' mirrors asymmetric
+    features and labels for a dedicated right-hand print (optional)."""
+    sx = 1.0 if side == "L" else -1.0
+    b = oc.rounded_box(f"pod_base_{side}", (POD_L, POD_W, POD_BASE_H), 4.0, anchor="bottom")
     oc.union(b, oc.rounded_rect("rim", (POD_L, POD_W, 10.0), 9.0, at=(0, 0, POD_BASE_H - 10.0), anchor="bottom"))
     oc.intersect(b, oc.rounded_rect("trim", (POD_L, POD_W, POD_BASE_H + 2), 9.0, at=(0, 0, -1), anchor="bottom"))
     cav = oc.rounded_rect("pcav", (POD_L - 2 * POD_WALL, POD_W - 2 * POD_WALL, POD_BASE_H), 4.0,
@@ -418,14 +588,15 @@ def pod_base():
         oc.cut(b, oc.cylinder(f"ph{i}", CLEAR, POD_BASE_H + 2, at=(x, y, -1), anchor="bottom"))
         oc.cut(b, oc.cylinder(f"pcb{i}", CBORE_D, CBORE_DEPTH + 1, at=(x, y, -1), anchor="bottom"))
     oc.cut(b, _groove_loop("pgroove", POD_L, POD_W, 9.0, POD_BASE_H, POD_WALL / 2))
-    # Electrode studs (M4 pan head from the skin side, O-ring seat under the head).
     for i, (x, y) in enumerate(ELECTRODES):
-        oc.cut(b, oc.cylinder(f"el{i}", 4.3, POD_FLOOR + 2, at=(x, y, -1), anchor="bottom"))
-        oc.cut(b, oc.cylinder(f"elc{i}", 10.0, 1.0 + 1, at=(x, y, -1), anchor="bottom"))
-    # Sound port toward the head (+Y wall), at the buzzer; an acoustic membrane is bonded inside.
-    oc.cut(b, oc.cylinder("port", 8.0, POD_WALL + 4, at=(BUZZER_AT[0], POD_W / 2 - POD_WALL / 2, 11.0), axis="Y"))
-    # Potted cable entry on the end toward the crest (+X).
-    oc.cut(b, oc.cylinder("pcable", CABLE_D, POD_WALL + 4, at=(POD_L / 2 - POD_WALL / 2, -2.0, 12.0), axis="X"))
+        oc.cut(b, oc.cylinder(f"el{i}", 4.3, POD_FLOOR + 2, at=(sx * x, y, -1), anchor="bottom"))
+        oc.cut(b, oc.cylinder(f"elc{i}", 10.0, 1.0 + 1, at=(sx * x, y, -1), anchor="bottom"))
+    buzz = (sx * BUZZER_AT[0], BUZZER_AT[1])
+    oc.cut(b, oc.cylinder("port", 8.0, POD_WALL + 4, at=(buzz[0], POD_W / 2 - POD_WALL / 2, 11.0), axis="Y"))
+    oc.cut(b, oc.cylinder("pcable", CABLE_D, POD_WALL + 4,
+                          at=(sx * (POD_L / 2 - POD_WALL / 2), -2.0, 12.0), axis="X"))
+    b = clean(b)
+    _pod_assembly_aids(b, side=side)
     return b
 
 
@@ -454,10 +625,14 @@ def pod_bar():
 
 def pod_refs():
     qb = d.QWIIC_BUZZER
+    # Cell sits on the cradle rib tops (+0.3 mm clearance for the overlap check).
+    cell_z = POD_FLOOR + CRADLE_H + 0.3 + CELL["d"] / 2
+    # Buzzer board above the L-locators.
+    buzz_z = POD_FLOOR + LOCATOR_H + 0.3
     refs = [
-        oc.cylinder("ref_cell", CELL["d"], CELL["l"], at=(CELL_AT[0], CELL_AT[1], POD_FLOOR + CELL["d"] / 2 + 0.4), axis="X"),
+        oc.cylinder("ref_cell", CELL["d"], CELL["l"], at=(CELL_AT[0], CELL_AT[1], cell_z), axis="X"),
         oc.box("ref_buzzer", (qb["board"][0], qb["board"][1], qb["board"][2] + qb["buzzer"]["size"][2]),
-               at=(BUZZER_AT[0], BUZZER_AT[1], POD_FLOOR + 3.0), anchor="bottom"),
+               at=(BUZZER_AT[0], BUZZER_AT[1], buzz_z), anchor="bottom"),
     ]
     for i, (x, y) in enumerate(ELECTRODES):
         refs.append(oc.cylinder(f"ref_electrode{i}", 7.0, 2.2, at=(x, y, -2.2), anchor="bottom"))
@@ -510,3 +685,73 @@ def cw_refs():
 def steel_mass_g():
     sx, sy, sz = STEEL_PIECE
     return sx * sy * sz * STEEL_N / 1000 * d.STEEL_SLAB["density"]
+
+
+# ---------------------------------------------------------------- test coupon + scale bar
+
+COUPON_W, COUPON_L, COUPON_H = 40.0, 34.0, 6.0
+
+
+def test_coupon():
+    """~40×34×6 fit coupon: insert Ø, blind depths, pin sockets, sample pins,
+    and a short bridge. Target ~5–8 g PLA."""
+    p = oc.rounded_rect("test_coupon", (COUPON_W, COUPON_L, COUPON_H), 2.0, anchor="bottom")
+    tools, labels = [], []
+    for i, dia in enumerate((3.9, 4.0, 4.1)):
+        x = -12.0 + i * 12.0
+        tools.append(oc.cylinder(f"ins{i}", dia, 5.0 + ENGRAVE_OVER,
+                                 at=(x, 12.0, COUPON_H - 5.0), anchor="bottom"))
+        labels.append(_engrave_cut(f"insl{i}", f"{dia}", 2.4, (x, 7.5), COUPON_H))
+    labels.append(_engrave_cut("insrow", "INSERT", 2.4, (0, 15.5), COUPON_H))
+    for i, depth in enumerate((4.0, 5.0, 6.0)):
+        x = -12.0 + i * 12.0
+        tools.append(oc.cylinder(f"tap{i}", 2.8, depth + ENGRAVE_OVER,
+                                 at=(x, 3.5, COUPON_H - depth), anchor="bottom"))
+        tools.append(oc.cylinder(f"clr{i}", 3.2, depth + ENGRAVE_OVER,
+                                 at=(x, -3.0, COUPON_H - depth), anchor="bottom"))
+        labels.append(_engrave_cut(f"depl{i}", f"d{depth:.0f}", 2.2, (x, -6.5), COUPON_H))
+    for i, dia in enumerate((4.2, 4.35, 4.5)):
+        x = -12.0 + i * 12.0
+        tools.append(oc.cylinder(f"psock{i}", dia, 2.0 + ENGRAVE_OVER,
+                                 at=(x, -9.0, COUPON_H - 2.0), anchor="bottom"))
+        labels.append(_engrave_cut(f"psl{i}", f"{dia}", 2.2, (x, -12.5), COUPON_H))
+    # Sample pins on a 2 mm plinth to the +X side. Sink 0.2 into the plinth,
+    # then remesh — cylinder/box unions leave 2 non-manifold edges on this
+    # Blender 4 EXACT boolean path otherwise.
+    plinth = oc.box("pin_plinth", (14.0, 12.0, 2.0), at=(COUPON_W / 2 + 9.0, 2.0, 0), anchor="bottom")
+    for i in range(3):
+        y = -2.0 + i * 4.0
+        oc.union(plinth, oc.cylinder(f"spin{i}", 4.0, 1.7,
+                                     at=(COUPON_W / 2 + 9.0, y, 1.8), anchor="bottom"))
+    m = plinth.modifiers.new("pin_remesh", "REMESH")
+    m.mode = "SMOOTH"
+    m.octree_depth = 6
+    m.scale = 0.9
+    oc.apply_modifiers(plinth)
+    oc.union(p, plinth)
+    labels.append(_engrave_cut("pinlbl", "PIN4", 2.2, (COUPON_W / 2 + 9.0, 10.0), 2.0))
+    # Inset bridge pocket (20 mm span, 2 mm roof) — keep clear of the outer wall.
+    tools.append(oc.box("bridge", (18.0, 6.0, 4.0 + ENGRAVE_OVER),
+                        at=(0, -10.0, -ENGRAVE_OVER), anchor="bottom"))
+    labels.append(_engrave_cut("brl", "BR20", 2.4, (0, COUPON_L / 2 - 2.2), COUPON_H))
+    labels.append(_engrave_cut("title", AID_REV, 2.6, (0, 0.5), COUPON_H))
+    oc.cut(p, *tools)
+    oc.cut(p, *labels)
+    return p
+
+
+def scale_bar():
+    """100 × 10 × 2 mm flat bar with a 20 mm step for shrink measurement."""
+    bar = oc.box("scale_bar", (100.0, 10.0, 2.0), anchor="bottom")
+    # 20 mm step: drop the +X half by 1 mm over 20 mm starting at x=0.
+    step = oc.box("step", (20.0, 10.2, 1.0 + ENGRAVE_OVER),
+                  at=(40.0, 0, 2.0 - 1.0), anchor="bottom")
+    oc.cut(bar, step)
+    ticks = []
+    for x in range(0, 101, 20):
+        ticks.append(oc.box(f"tick{x}", (0.4, 4.0, ENGRAVE_D + ENGRAVE_OVER),
+                            at=(x - 50.0, -3.0, 2.0 - ENGRAVE_D), anchor="bottom"))
+        ticks.append(_engrave_cut(f"tl{x}", f"{x}", 2.2, (x - 50.0, 2.5), 2.0))
+    bar = clean(bar)
+    oc.cut(bar, *ticks)
+    return bar

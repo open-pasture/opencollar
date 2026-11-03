@@ -23,3 +23,17 @@ Offline Orca on earlier **76×160×29** STLs: stock PLA supports on 4h41m/140 g,
 **Cap v3 (print #3, Nov 2, `951e057`)** has shallow heat-set insert pockets (lid ~2.2 mm; base clamp ~2 mm) so an M3×4 insert cannot seat, and the lid through-screw note said M3×20 which cannot reach the lid through the 41.4 mm base. CAD fix: Ø4.0 × ~5 mm insert pockets (lid + clamp), deeper Ø8 counterbore + cone for **M3×40** button + bonded washer.
 
 **Rescue the printed #3 without reprint:** drill each lid insert pocket and each base clamp-bar pocket with a **4 mm bit to 5 mm deep** before pressing inserts; deepen the base lid-screw counterbore to accept the M3×40 head (Ø8 to ~z=4–6), or reprint the fixed STLs.
+
+## Template notes — slim cap + assembly aids (REV AID1)
+
+**Next print plate (bases):** slim `node_cap_base_saddle` + `node_pod_base` + `node_pod_base_R` (+ optional `test_coupon` / `scale_bar_100`). PLA fit, supports off, brim for ASA later.
+
+| Callout | Value |
+| --- | --- |
+| Cap lid / clamp | **M3×16** / **M3×14** |
+| Pod lid | **M3×25** |
+| Inserts | M3×4 (Adafruit 4255) |
+| Cap / pod labels | Bed-face engraved `REV AID1` — see `cad/ASSEMBLY-AIDS.md` |
+| Aids budget | ~15 g PLA / ~30 min on the bases plate (locators + engraving + coupon) |
+
+Log the real plate here when started (file, material, layers, estimate, route).
