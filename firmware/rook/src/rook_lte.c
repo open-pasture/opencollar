@@ -345,6 +345,7 @@ int rook_lte_start(const struct app *a)
 	strncpy(collar_id, a->prov.ok ? a->prov.collar_id.s : "unprovisioned",
 		sizeof(collar_id) - 1);
 	rook_queue_init(&queue);
+	LOG_INF("fence_seq high-water mark %u", (unsigned)rook_fence_init(a));
 	rook_battery_init();
 	k_thread_create(&rook_thread, rook_stack, K_THREAD_STACK_SIZEOF(rook_stack), thread_fn,
 			NULL, NULL, NULL, K_PRIO_PREEMPT(8), 0, K_NO_WAIT);

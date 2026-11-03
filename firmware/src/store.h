@@ -18,6 +18,11 @@
 #define STORE_ID_ACKS 2        /* Acks not yet delivered */
 #define STORE_ID_CONFIG 3      /* The applied config command (§3.4) */
 #define STORE_ID_SLOT_BASE 0x100 /* Slot records: 0x100 + i */
+/* Rook (firmware/rook): the last accepted signed fence and its fence_seq.
+ * A header at ROOK_FENCE, the signed bytes in 1 KB chunks in one of two
+ * banks at ROOK_FENCE_BASE + bank * 16 + i (rook_fence.c) */
+#define STORE_ID_ROOK_FENCE 4
+#define STORE_ID_ROOK_FENCE_BASE 0x200
 
 /* Mount the store. 0 or a negative errno. */
 int store_init(void);
