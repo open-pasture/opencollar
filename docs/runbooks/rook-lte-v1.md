@@ -9,9 +9,9 @@ host-tested against a mock server; **never run on a live network** (SIM not acti
   A downloaded command goes to the **main thread**, which verifies it with the existing
   Ed25519 path (`app_boundary` → `command_parse`) and stores it as a slot in NVS. The ack is
   `POST <endpoint>/ack`.
-- Verified fences with a rising `fence_seq` (v1: the signed `version`) are handed, still as the
-  signed bytes, to a LoRa sink registered with `rook_fence_set_sink()` (hook for op-fw-proto's
-  `firmware/lora`; nothing in `firmware/lora` is touched).
+- Verified fences with a rising `fence_seq` (v1: the signed `version`) are persisted and handed,
+  still as the signed bytes, to a LoRa sink registered with `rook_fence_set_sink()` (see
+  "Fence sink and persistence" below; nothing in `firmware/lora` is touched).
 - Retries per `protocol/v2/http.md` §5/§8: 30 s doubling to 30 min ±25 %, `Retry-After`
   (≤1 h) on 429/503, hourly on 401, drop on 400/403.
 - Offline queue: RAM ring of 64 samples (one per 10 s, plus every fence-state change), oldest
@@ -26,6 +26,33 @@ flag to op-proto/server): top-level `collar_id`; per-fix `fence` (`none|inside|w
 and `margin_m`; `health.dropped`. Key `roster` is **reserved** for a Starling freshness
 summary (`firmware/rook/src/rook_roster.h`, stub). No v2 names used; `fence_seq` is a local
 placeholder name for v1 `version`.
+
+## Fence sink and persistence
+- Sink signature (unchanged): `void sink(void *ctx, uint32_t fence_seq, const char *signed_wire,
+  size_t len)`. `signed_wire`/`len` is the v1 signed JSON boundary command exactly as the server
+  sent it, as **opaque bytes** (not re-encoded, not NUL-terminated by contract). `fence_seq` is
+  the v1 `version` of that command.
+- op-fw-proto's `inject_local` takes these bytes as an opaque payload; it should not parse them.
+- Receivers (collars, Starlings) verify the Ed25519 signature themselves with the provisioned
+  server key, as they do for any boundary command. The Rook is only a relay: **it holds no
+  signing key** and cannot mint or alter fences (any change breaks the signature).
+- Persistence (`firmware/src/store.h`): `STORE_ID_ROOK_FENCE` (4) holds a header (magic, fence_seq,
+  len, crc32, active bank, bound herd + server key); the signed bytes go in 1 KB chunks at
+  `STORE_ID_ROOK_FENCE_BASE + bank*16 + i` (two A/B banks; new bank written first, header last,
+  so a power cut leaves the old fence intact). `rook_fence_init()` restores the high-water mark
+  and active fence at boot; a download with `version <= hwm` is rejected as stale before
+  verification. Re-provisioning to another herd/server key resets the record.
+- Host test `test_fence` simulates reboot: older fence_seq rejected, active fence restored,
+  power cut mid-write survives.
+
+## Proposed additions to v1 report (for op-software to accept)
+v1 servers ignore unknown fields, so these are backward compatible; none are v2 names.
+- `collar_id` (top level, string): the Rook's own id, so one endpoint can serve several Rooks.
+- `fence` (per fix, `none|inside|warn|outside`): fence state at that fix.
+- `margin_m` (per fix, number): signed distance to the boundary in metres (negative = outside).
+- `health.dropped` (integer): samples lost from the offline queue since boot.
+- `roster` (top level, **reserved**): future Starling freshness summary; currently never sent.
+  Servers should ignore it until it is specified.
 
 ## Build
 ```
@@ -78,6 +105,7 @@ A device on LTE needs a public address for the mock (e.g. a tunnel); set it in `
 - MAX17260: register maths host-tested only; the I2C bus label (`i2c2` placeholder) must match
   the carrier overlay, which doesn't exist yet. No gauge config (ModelGauge EZ init) is written,
   so SoC is the gauge's default model until that is added.
+- Fence persistence: host-tested on `store_ram.c` only; not yet exercised on real NVS flash.
 - Pending acks from `app.acks` (NVS) are not resent by the reporter yet; only the ack for the
   command just downloaded is posted.
 - Config command in the report response (`config`) is not applied yet (cap not advertised).
