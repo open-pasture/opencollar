@@ -2,9 +2,13 @@
  * Symmetric fence-gossip node: Rook and Starling run the same exchange.
  * A Rook is a node that also receives fences from the server (inject_local).
  *
- * starling_serve=0 → only Rooks serve (one-hop star fallback).
+ * starling_serve defaults to OFF (OC_FH_STARLING_SERVE_DEFAULT): only Rooks
+ * serve (one-hop star; matches lora.md §1 until the protocol owner decides).
  * starling_serve=1 → any node with a verified fence may re-serve the same
- * signed manifest/fragments (multi-hop gossip).
+ * signed manifest/fragments (multi-hop gossip). Pilot telemetry stays one
+ * hop to the Rook regardless.
+ *
+ * All field/type names are PLACEHOLDERs.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -56,8 +60,8 @@ typedef struct oc_fh_stats {
 
 typedef struct oc_fh_config {
 	uint16_t node_id;
-	uint8_t is_rook;         /* 1 = may serve when starling_serve is off */
-	uint8_t starling_serve;  /* 1 = multi-hop; any holder may serve */
+	uint8_t is_rook;        /* 1 = Rook; always may serve */
+	uint8_t starling_serve; /* PLACEHOLDER; 0=default OFF, 1=multi-hop */
 	uint8_t farm_id[OC_FH_FARM_ID_LEN];
 	uint16_t frag_data_max;  /* default OC_FH_DEFAULT_FRAG_DATA */
 	uint32_t trickle_imin_ms;

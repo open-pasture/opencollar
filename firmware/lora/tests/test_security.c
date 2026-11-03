@@ -50,6 +50,86 @@ static void poll_pair(oc_fh_node_t *a, oc_fh_node_t *b, sim_world_t *w, int step
 	}
 }
 
+static void test_forged_beacon(void)
+{
+	/*
+	 * Forged freshness beacon is an unauthenticated hint only: may schedule
+	 * a bounded NEED, must never change the active fence (no state apply).
+	 */
+	sim_world_t world;
+	sim_link_t link;
+	test_keypair_t kp;
+	uint8_t seed[32] = { 11 };
+	uint8_t farm[8] = { 'F', 'A', 'R', 'M', '0', '0', '0', '1' };
+	uint8_t payload[80];
+	oc_fh_built_t built;
+	oc_fh_node_t star;
+	oc_fh_config_t cs;
+	node_mem_t ms;
+	oc_fh_beacon_t forged;
+	uint8_t wire[64];
+	size_t wlen;
+	uint32_t seq_before;
+	unsigned i;
+
+	test_keygen(&kp, seed);
+	memset(payload, 0x42, sizeof(payload));
+	sim_world_init(&world, 2, 17);
+	memset(&link, 0, sizeof(link));
+	link.loss_pct = 0;
+	link.latency_ms = 1;
+	sim_world_set_fully_connected(&world, &link);
+
+	memset(&cs, 0, sizeof(cs));
+	cs.node_id = 2;
+	cs.is_rook = 0;
+	cs.starling_serve = OC_FH_STARLING_SERVE_DEFAULT; /* OFF */
+	memcpy(cs.farm_id, farm, 8);
+	cs.frag_data_max = 40;
+	cs.trickle_imin_ms = 50;
+	cs.trickle_imax_ms = 200;
+	setup_node(&star, &cs, &ms, sim_radio(&world, 1), &kp, &world);
+
+	/* Establish a real last-good fence first. */
+	CHECK(oc_fh_build_signed(&built, farm, 5, 5, payload, sizeof(payload), 40, test_sign,
+	                         &kp) == 0);
+	CHECK(oc_fh_inject_local(&star, built.sealed, built.sealed_len, payload,
+	                         sizeof(payload)) == 0);
+	seq_before = oc_fh_active(&star)->fence_seq;
+	CHECK(seq_before == 5);
+
+	/* Flood forged beacons claiming a much newer seq + garbage hash. */
+	memset(&forged, 0, sizeof(forged));
+	memcpy(forged.farm_id, farm, 8);
+	forged.fence_seq = 999;
+	for (i = 0; i < OC_FH_SHORT_HASH_LEN; i++) {
+		forged.short_hash[i] = (uint8_t)(0xA5 ^ i);
+	}
+	forged.hop_reserved = 0;
+	wlen = oc_fh_encode_beacon(&forged, wire, sizeof(wire));
+	CHECK(wlen > 0);
+	for (i = 0; i < 20; i++) {
+		CHECK(oc_radio_send(sim_radio(&world, 0), wire, wlen, NULL) == OC_RADIO_OK);
+		sim_world_advance(&world, 5);
+		oc_fh_node_poll(&star);
+	}
+	/* Active fence unchanged; hint may have opened a pending shell only. */
+	CHECK(oc_fh_active(&star)->fence_seq == seq_before);
+	CHECK(oc_fh_stats(&star)->applied == 1); /* only the local inject */
+	CHECK(oc_fh_stats(&star)->reject_sig == 0); /* beacon is not signature-checked */
+
+	/* Wait without a real manifest: still must not apply. */
+	{
+		int t;
+		for (t = 0; t < 400; t++) {
+			oc_fh_node_poll(&star);
+			sim_world_advance(&world, 5);
+		}
+	}
+	CHECK(oc_fh_active(&star)->fence_seq == 5);
+	CHECK(memcmp(ms.active, payload, sizeof(payload)) == 0);
+}
+
 static void test_forged_manifest(void)
 {
 	sim_world_t world;
@@ -217,6 +297,7 @@ static void test_dup_reorder_resume(void)
 
 int main(void)
 {
+	test_forged_beacon();
 	test_forged_manifest();
 	test_rollback();
 	test_dup_reorder_resume();

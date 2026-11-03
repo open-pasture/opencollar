@@ -47,13 +47,15 @@ typedef struct sim_pending {
 struct oc_radio {
 	sim_world_t *world;
 	uint8_t id;
+	uint8_t asleep;
 	int8_t power_dbm;
 	uint32_t mtu;
 	uint32_t bytes_per_ms_air; /* crude airtime model */
-	uint32_t duty_window_us;
-	uint32_t duty_used_us;
+	oc_radio_cfg_t cfg;
+	oc_radio_limits_t limits;
+	uint32_t duty_used_us; /* within current hour window */
 	uint32_t duty_window_start_ms;
-	uint32_t duty_limit_us; /* hard cap within window */
+	uint32_t last_tx_ms; /* for min_tx_gap_ms; 0 = never */
 	/* RX queue */
 	uint8_t rq_head;
 	uint8_t rq_tail;

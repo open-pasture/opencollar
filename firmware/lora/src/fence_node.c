@@ -54,6 +54,7 @@ void oc_fh_node_init(oc_fh_node_t *n, const oc_fh_config_t *cfg, const oc_fh_buf
 	if (n->cfg.trickle_k == 0) {
 		n->cfg.trickle_k = (uint8_t)OC_FH_TRICKLE_K;
 	}
+	/* starling_serve: leave as provided; zero-init / DEFAULT = OFF. */
 	n->trickle_I = n->cfg.trickle_imin_ms;
 	n->trickle_interval_start = now(n);
 	n->trickle_t = n->trickle_interval_start +

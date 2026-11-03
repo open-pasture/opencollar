@@ -57,4 +57,11 @@
 /* Beacon rate limit: min gap between beacons from this node. */
 #define OC_FH_BEACON_MIN_GAP_MS 200u
 
+/*
+ * Default for PLACEHOLDER config key starling_serve: OFF until Starling
+ * listen energy is measured (ARCHITECTURE.md). Rooks always serve; pilot
+ * telemetry stays one hop to the Rook. Multi-hop tests set it to 1 explicitly.
+ */
+#define OC_FH_STARLING_SERVE_DEFAULT 0u
+
 #endif /* OPENCOLLAR_FENCE_IDS_H */

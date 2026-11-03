@@ -45,18 +45,26 @@ void sim_world_init(sim_world_t *w, uint8_t n_nodes, uint64_t seed)
 	w->n_nodes = n_nodes > SIM_MAX_NODES ? SIM_MAX_NODES : n_nodes;
 	w->now_ms = 0;
 	for (i = 0; i < w->n_nodes; i++) {
+		oc_radio_cfg_t cfg;
+		oc_radio_limits_t lim;
 		oc_radio_t *r = &w->nodes[i];
+		memset(&cfg, 0, sizeof(cfg));
+		cfg.freq_hz = 903000000u;
+		cfg.sf = 8;
+		cfg.bw_khz_code = 1; /* PLACEHOLDER: 1 = 500 kHz plan */
+		cfg.cr = 5;
+		cfg.sync_word = 0x12;
+		cfg.tx_dbm = 14;
+		memset(&lim, 0, sizeof(lim));
+		/* Plan-1-ish defaults; tests may tighten via oc_radio_init. */
+		lim.max_frame_airtime_us = 200000u;
+		lim.airtime_budget_us_per_h = 3600u * 1000000u / 10u; /* 10% */
+		lim.min_tx_gap_ms = 0; /* gossip tests: no gap unless set */
 		r->world = w;
 		r->id = i;
-		r->power_dbm = 14;
-		/* Gossip-plane MTU: 255 (max LoRa frame). Manifests with many
-		 * per-fragment hashes can approach this; keep frag_count small
-		 * in tests / use larger frag_data_max on air. */
 		r->mtu = 255;
-		r->bytes_per_ms_air = 2; /* ~0.5 ms/byte ≈ SF8-ish crude */
-		r->duty_window_us = 3600u * 1000000u;
-		r->duty_limit_us = r->duty_window_us / 10u; /* 10% hard cap for sim */
-		r->duty_window_start_ms = 0;
+		r->bytes_per_ms_air = 2;
+		(void)oc_radio_init(r, &cfg, &lim);
 		for (j = 0; j < w->n_nodes; j++) {
 			w->link[i][j].connected = 0;
 		}
@@ -214,24 +222,92 @@ static void schedule_to(oc_radio_t *src, uint8_t dst_id, const uint8_t *buf, siz
 
 /* ---- HAL implementation ------------------------------------------------- */
 
+static void duty_roll_window(oc_radio_t *radio)
+{
+	uint32_t now = radio->world->now_ms;
+	if (now - radio->duty_window_start_ms >= 3600u * 1000u) {
+		radio->duty_window_start_ms = now;
+		radio->duty_used_us = 0;
+	}
+}
+
+oc_radio_status_t oc_radio_init(oc_radio_t *radio, const oc_radio_cfg_t *cfg,
+                                const oc_radio_limits_t *lim)
+{
+	if (!radio || !cfg || !lim) {
+		return OC_RADIO_ERR_PARAM;
+	}
+	radio->cfg = *cfg;
+	radio->limits = *lim;
+	radio->power_dbm = cfg->tx_dbm;
+	radio->asleep = 0;
+	radio->duty_used_us = 0;
+	radio->duty_window_start_ms = radio->world ? radio->world->now_ms : 0;
+	radio->last_tx_ms = 0;
+	if (radio->mtu == 0) {
+		radio->mtu = 255;
+	}
+	if (radio->bytes_per_ms_air == 0) {
+		radio->bytes_per_ms_air = 2;
+	}
+	return OC_RADIO_OK;
+}
+
+oc_radio_status_t oc_radio_sleep(oc_radio_t *radio)
+{
+	if (!radio) {
+		return OC_RADIO_ERR_PARAM;
+	}
+	radio->asleep = 1;
+	return OC_RADIO_OK;
+}
+
+uint64_t oc_radio_now_us(const oc_radio_t *radio)
+{
+	if (!radio || !radio->world) {
+		return 0;
+	}
+	return (uint64_t)radio->world->now_ms * 1000ull;
+}
+
 oc_radio_status_t oc_radio_send(oc_radio_t *radio, const uint8_t *buf, size_t len,
                                 const oc_radio_tx_opts_t *opts)
 {
 	uint32_t air;
 	uint8_t i;
-	(void)opts;
+	uint32_t now_ms;
 
 	if (!radio || !buf) {
 		return OC_RADIO_ERR_PARAM;
 	}
+	radio->asleep = 0;
 	if (len == 0 || len > radio->mtu || len > SIM_MAX_MTU) {
 		return OC_RADIO_ERR_TOO_LARGE;
 	}
 	air = oc_radio_airtime_us(radio, len);
-	if (radio->duty_used_us + air > radio->duty_limit_us) {
+	if (radio->limits.max_frame_airtime_us && air > radio->limits.max_frame_airtime_us) {
+		return OC_RADIO_ERR_AIRTIME;
+	}
+	duty_roll_window(radio);
+	if (radio->limits.airtime_budget_us_per_h &&
+	    radio->duty_used_us + air > radio->limits.airtime_budget_us_per_h) {
 		return OC_RADIO_ERR_DUTY;
 	}
+	now_ms = radio->world->now_ms;
+	if (radio->limits.min_tx_gap_ms && radio->last_tx_ms != 0 &&
+	    now_ms - radio->last_tx_ms < radio->limits.min_tx_gap_ms) {
+		return OC_RADIO_ERR_GAP;
+	}
+	if (opts && opts->tx_power_dbm != OC_RADIO_TX_POWER_DEFAULT) {
+		if (opts->tx_power_dbm < 0 || opts->tx_power_dbm > 22) {
+			return OC_RADIO_ERR_PARAM;
+		}
+		/* per-packet override does not permanently change default */
+	}
+	/* at_us: sim is discrete-ms; treat as advisory (no wait loop here). */
+	(void)opts;
 	radio->duty_used_us += air;
+	radio->last_tx_ms = now_ms;
 	radio->world->airtime_us_total += air;
 	for (i = 0; i < radio->world->n_nodes; i++) {
 		schedule_to(radio, i, buf, len);
@@ -246,6 +322,7 @@ oc_radio_status_t oc_radio_recv(oc_radio_t *radio, uint8_t *buf, size_t cap, siz
 	if (!radio || !buf || !out_len) {
 		return OC_RADIO_ERR_PARAM;
 	}
+	radio->asleep = 0;
 	deliver_due(radio->world);
 	if (radio->rq_count == 0) {
 		return OC_RADIO_ERR_TIMEOUT;
@@ -262,6 +339,7 @@ oc_radio_status_t oc_radio_recv(oc_radio_t *radio, uint8_t *buf, size_t cap, siz
 			out_meta->snr_db = p->snr_db;
 			out_meta->flags = 0;
 			out_meta->timestamp_ms = radio->world->now_ms;
+			out_meta->t_rx_us = oc_radio_now_us(radio);
 		}
 		radio->rq_head = (uint8_t)((radio->rq_head + 1) % 32);
 		radio->rq_count--;
@@ -274,6 +352,7 @@ oc_radio_status_t oc_radio_cad(oc_radio_t *radio, oc_radio_cad_result_t *out)
 	if (!radio || !out) {
 		return OC_RADIO_ERR_PARAM;
 	}
+	radio->asleep = 0;
 	*out = OC_RADIO_CAD_FREE;
 	return OC_RADIO_OK;
 }
@@ -287,6 +366,7 @@ oc_radio_status_t oc_radio_set_power(oc_radio_t *radio, int8_t dbm)
 		return OC_RADIO_ERR_PARAM;
 	}
 	radio->power_dbm = dbm;
+	radio->cfg.tx_dbm = dbm;
 	return OC_RADIO_OK;
 }
 
@@ -302,13 +382,18 @@ uint32_t oc_radio_airtime_us(const oc_radio_t *radio, size_t len)
 
 uint32_t oc_radio_duty_budget_us(const oc_radio_t *radio)
 {
+	uint32_t lim;
 	if (!radio) {
 		return 0;
 	}
-	if (radio->duty_used_us >= radio->duty_limit_us) {
+	lim = radio->limits.airtime_budget_us_per_h;
+	if (lim == 0) {
+		return UINT32_MAX;
+	}
+	if (radio->duty_used_us >= lim) {
 		return 0;
 	}
-	return radio->duty_limit_us - radio->duty_used_us;
+	return lim - radio->duty_used_us;
 }
 
 uint32_t oc_radio_backoff_ms(oc_radio_t *radio, uint32_t lo_ms, uint32_t hi_ms)
