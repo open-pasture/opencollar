@@ -4,6 +4,11 @@
 
 #include <string.h>
 
+typedef char oc_fh_assert_active_wire[(sizeof(((oc_fh_node_t *)0)->active_manifest_wire) >=
+                                       OC_FH_MANIFEST_WIRE_MAX)
+                                          ? 1
+                                          : -1];
+
 static uint32_t now(const oc_fh_node_t *n)
 {
 	return n->now_ms ? n->now_ms(n->clock_ctx) : 0;
@@ -30,6 +35,21 @@ const oc_fh_stats_t *oc_fh_stats(const oc_fh_node_t *n)
 	return n ? &n->stats : NULL;
 }
 
+void oc_fh_node_set_store(oc_fh_node_t *n, oc_fh_store_t *store)
+{
+	if (n) {
+		n->store = store;
+	}
+}
+
+void oc_fh_node_set_payload_verify(oc_fh_node_t *n, oc_fh_payload_verify_fn fn, void *ctx)
+{
+	if (n) {
+		n->payload_verify = fn;
+		n->payload_verify_ctx = ctx;
+	}
+}
+
 void oc_fh_node_init(oc_fh_node_t *n, const oc_fh_config_t *cfg, const oc_fh_buffers_t *buf,
                      oc_radio_t *radio, oc_fh_verify_fn verify, void *verify_ctx,
                      uint32_t (*now_ms_fn)(void *), void *clock_ctx)
@@ -54,11 +74,57 @@ void oc_fh_node_init(oc_fh_node_t *n, const oc_fh_config_t *cfg, const oc_fh_buf
 	if (n->cfg.trickle_k == 0) {
 		n->cfg.trickle_k = (uint8_t)OC_FH_TRICKLE_K;
 	}
-	/* starling_serve: leave as provided; zero-init / DEFAULT = OFF. */
 	n->trickle_I = n->cfg.trickle_imin_ms;
 	n->trickle_interval_start = now(n);
 	n->trickle_t = n->trickle_interval_start +
 	               oc_radio_trickle_t_ms(n->radio, n->trickle_I);
+}
+
+static uint32_t effective_hwm(const oc_fh_node_t *n)
+{
+	uint32_t h = n->fence_seq_hwm;
+	if (n->active.fence_seq > h) {
+		h = n->active.fence_seq;
+	}
+	return h;
+}
+
+static void persist_active(oc_fh_node_t *n)
+{
+	if (!n->store) {
+		return;
+	}
+	(void)n->store->set_hwm(n->store, n->active.fence_seq);
+	(void)n->store->save_active(n->store, &n->active, n->buf.active_payload, n->active_len,
+	                            n->active_manifest_wire, n->active_manifest_wire_len,
+	                            &n->active_manifest);
+	n->fence_seq_hwm = effective_hwm(n);
+}
+
+int oc_fh_node_restore(oc_fh_node_t *n)
+{
+	uint32_t hwm = 0;
+	size_t plen = 0, mlen = 0;
+
+	if (!n || !n->store) {
+		return OC_FH_ERR_STORE;
+	}
+	if (n->store->get_hwm(n->store, &hwm) == 0) {
+		n->fence_seq_hwm = hwm;
+	}
+	if (n->store->load_active(n->store, &n->active, n->buf.active_payload, n->buf.active_cap,
+	                          &plen, n->active_manifest_wire, sizeof(n->active_manifest_wire),
+	                          &mlen, &n->active_manifest) != 0) {
+		return OC_FH_ERR_STORE;
+	}
+	n->active_len = plen;
+	n->active_manifest_wire_len = mlen;
+	n->active_is_local =
+	    (mlen > 0 && n->active_manifest_wire[0] == OC_FH_MSG_MANIFEST_LOCAL) ? 1 : 0;
+	if (n->active.fence_seq > n->fence_seq_hwm) {
+		n->fence_seq_hwm = n->active.fence_seq;
+	}
+	return OC_FH_OK;
 }
 
 static void trickle_reset(oc_fh_node_t *n)
@@ -80,8 +146,10 @@ static int tx(oc_fh_node_t *n, const uint8_t *buf, size_t len)
 {
 	oc_radio_status_t st;
 	uint32_t air;
+	oc_radio_tx_opts_t opts = oc_radio_tx_opts_default();
 
-	st = oc_radio_send(n->radio, buf, len, NULL);
+	opts.flags = OC_RADIO_TX_FLAG_SKIP_CAD; /* protocol schedules; CAD optional */
+	st = oc_radio_send(n->radio, buf, len, &opts);
 	if (st != OC_RADIO_OK) {
 		return (int)st;
 	}
@@ -114,8 +182,8 @@ static void send_beacon(oc_fh_node_t *n)
 	}
 }
 
-static size_t frag_offset(const oc_fh_manifest_t *m, uint16_t idx, size_t total_len,
-                          uint16_t frag_data_max, uint16_t *out_len)
+static size_t frag_offset(uint16_t idx, size_t total_len, uint16_t frag_data_max,
+                          uint16_t *out_len)
 {
 	size_t off = (size_t)idx * frag_data_max;
 	size_t rem;
@@ -126,7 +194,6 @@ static size_t frag_offset(const oc_fh_manifest_t *m, uint16_t idx, size_t total_
 	}
 	rem = total_len - off;
 	*out_len = (uint16_t)(rem > frag_data_max ? frag_data_max : rem);
-	(void)m;
 	return off;
 }
 
@@ -141,11 +208,13 @@ static void serve_active(oc_fh_node_t *n, const oc_fh_need_t *need_or_null)
 	if (!oc_fh_may_serve(n)) {
 		return;
 	}
-	/* Manifest first. */
-	if (n->active_manifest_wire_len) {
-		if (tx(n, n->active_manifest_wire, n->active_manifest_wire_len) == 0) {
-			n->last_event = OC_FH_EV_SERVED;
-		}
+	if (n->active_manifest_wire_len == 0) {
+		n->stats.manifest_wire_ovf++;
+		n->last_event = OC_FH_EV_MANIFEST_WIRE_OVF;
+		return;
+	}
+	if (tx(n, n->active_manifest_wire, n->active_manifest_wire_len) == 0) {
+		n->last_event = OC_FH_EV_SERVED;
 	}
 	for (i = 0; i < n->active_manifest.frag_count; i++) {
 		int send_it = 1;
@@ -164,8 +233,7 @@ static void serve_active(oc_fh_node_t *n, const oc_fh_need_t *need_or_null)
 		if (!send_it) {
 			continue;
 		}
-		off = frag_offset(&n->active_manifest, i, n->active_len, n->cfg.frag_data_max,
-		                  &dlen);
+		off = frag_offset(i, n->active_len, n->cfg.frag_data_max, &dlen);
 		if (dlen == 0) {
 			continue;
 		}
@@ -190,8 +258,27 @@ static void clear_pending(oc_fh_node_t *n)
 	n->pending_len = 0;
 	memset(n->have_frag, 0, sizeof(n->have_frag));
 	n->pending_manifest_wire_len = 0;
+	n->pending_is_local = 0;
+	n->pending_from_hint = 0;
 	n->need_pending = 0;
 	n->need_retries = 0;
+}
+
+static int store_manifest_wire(oc_fh_node_t *n, uint8_t *dst, size_t dst_cap, size_t *dst_len,
+                               const uint8_t *wire, size_t wire_len)
+{
+	if (!wire || wire_len == 0) {
+		*dst_len = 0;
+		return OC_FH_OK;
+	}
+	if (wire_len > dst_cap) {
+		n->stats.manifest_wire_ovf++;
+		n->last_event = OC_FH_EV_MANIFEST_WIRE_OVF;
+		return OC_FH_ERR_MANIFEST_WIRE;
+	}
+	memcpy(dst, wire, wire_len);
+	*dst_len = wire_len;
+	return OC_FH_OK;
 }
 
 static int activate_pending(oc_fh_node_t *n)
@@ -208,58 +295,132 @@ static int activate_pending(oc_fh_node_t *n)
 		clear_pending(n);
 		return -1;
 	}
-	/* Keep last-good until this point; now swap. */
+	if (n->pending_is_local) {
+		if (!n->payload_verify ||
+		    n->payload_verify(n->buf.pending_payload, n->pending_len,
+		                      n->pending_manifest.fence_seq, n->payload_verify_ctx) != 0) {
+			n->stats.reject_payload++;
+			n->last_event = OC_FH_EV_REJECT_PAYLOAD;
+			clear_pending(n);
+			return -1;
+		}
+	}
 	if (n->pending_len > n->buf.active_cap) {
 		clear_pending(n);
 		return -1;
 	}
+	if (n->pending_manifest_wire_len == 0 ||
+	    n->pending_manifest_wire_len > sizeof(n->active_manifest_wire)) {
+		n->stats.manifest_wire_ovf++;
+		n->last_event = OC_FH_EV_MANIFEST_WIRE_OVF;
+		clear_pending(n);
+		return OC_FH_ERR_MANIFEST_WIRE;
+	}
 	memcpy(n->buf.active_payload, n->buf.pending_payload, n->pending_len);
 	n->active_len = n->pending_len;
 	n->active_manifest = n->pending_manifest;
-	memcpy(n->active_manifest_wire, n->pending_manifest_wire,
-	       n->pending_manifest_wire_len);
+	memcpy(n->active_manifest_wire, n->pending_manifest_wire, n->pending_manifest_wire_len);
 	n->active_manifest_wire_len = n->pending_manifest_wire_len;
+	n->active_is_local = n->pending_is_local;
 	memcpy(n->active.farm_id, n->pending_manifest.farm_id, OC_FH_FARM_ID_LEN);
 	n->active.fence_seq = n->pending_manifest.fence_seq;
 	memcpy(n->active.poly_hash, n->pending_manifest.poly_hash, OC_FH_POLY_HASH_LEN);
 	n->active.received_at_ms = now(n);
 	n->active.source_id = n->pending_source;
+	if (n->active.fence_seq > n->fence_seq_hwm) {
+		n->fence_seq_hwm = n->active.fence_seq;
+	}
 	n->stats.applied++;
 	n->last_event = OC_FH_EV_APPLIED;
+	persist_active(n);
 	clear_pending(n);
 	trickle_reset(n);
 	return 0;
 }
 
-static void begin_pending_from_manifest(oc_fh_node_t *n, const oc_fh_manifest_t *m,
-                                        const uint8_t *wire, size_t wire_len,
-                                        uint16_t source)
+static int need_budget_allow(oc_fh_node_t *n, uint16_t peer_id)
+{
+	uint32_t t = now(n);
+	unsigned i;
+	oc_fh_peer_need_t *slot = NULL;
+
+	if (n->need_global_window_start_ms == 0 ||
+	    t - n->need_global_window_start_ms > OC_FH_NEED_WINDOW_MS) {
+		n->need_global_window_start_ms = t;
+		n->need_global_count = 0;
+	}
+	if (n->need_global_count >= OC_FH_NEED_WINDOW_GLOBAL_MAX) {
+		return 0;
+	}
+	for (i = 0; i < OC_FH_NEED_PEER_SLOTS; i++) {
+		if (n->peer_need[i].used && n->peer_need[i].peer_id == peer_id) {
+			slot = &n->peer_need[i];
+			break;
+		}
+	}
+	if (!slot) {
+		for (i = 0; i < OC_FH_NEED_PEER_SLOTS; i++) {
+			if (!n->peer_need[i].used) {
+				slot = &n->peer_need[i];
+				slot->used = 1;
+				slot->peer_id = peer_id;
+				slot->window_start_ms = t;
+				slot->need_count = 0;
+				break;
+			}
+		}
+	}
+	if (!slot) {
+		/* Evict oldest window. */
+		slot = &n->peer_need[0];
+		slot->peer_id = peer_id;
+		slot->window_start_ms = t;
+		slot->need_count = 0;
+		slot->used = 1;
+	}
+	if (t - slot->window_start_ms > OC_FH_NEED_WINDOW_MS) {
+		slot->window_start_ms = t;
+		slot->need_count = 0;
+	}
+	if (slot->need_count >= OC_FH_NEED_HINT_MAX) {
+		return 0;
+	}
+	slot->need_count++;
+	n->need_global_count++;
+	return 1;
+}
+
+static int begin_pending_from_manifest(oc_fh_node_t *n, const oc_fh_manifest_t *m,
+                                       const uint8_t *wire, size_t wire_len, uint16_t source,
+                                       int is_local, int from_hint)
 {
 	uint16_t i;
 	size_t total = 0;
-	uint16_t dlen;
 
-	if (m->fence_seq <= n->active.fence_seq) {
+	if (m->fence_seq <= effective_hwm(n)) {
 		n->stats.reject_seq++;
 		n->last_event = OC_FH_EV_REJECT_SEQ;
-		return;
+		return OC_FH_ERR_SEQ;
 	}
 	if (n->have_pending && n->pending_manifest.fence_seq > m->fence_seq) {
-		return; /* already assembling something newer */
+		return OC_FH_OK;
 	}
 	if (n->have_pending && n->pending_manifest.fence_seq < m->fence_seq) {
-		clear_pending(n); /* supersede older in-flight */
+		clear_pending(n);
 	}
-	/* Estimate payload size from fragment layout: last frag may be short;
-	 * we learn exact length as fragments arrive. Cap check uses max. */
 	for (i = 0; i < m->frag_count; i++) {
 		total += n->cfg.frag_data_max;
 	}
 	if (total > n->buf.pending_cap || total > OC_FH_MAX_PAYLOAD) {
-		return;
+		return OC_FH_ERR_PARAM;
 	}
-	/* Upgrading a beacon shell (no sealed wire yet) or starting fresh:
-	 * always reset fragment progress when the sealed manifest arrives. */
+	if (wire && wire_len > 0) {
+		if (wire_len > sizeof(n->pending_manifest_wire)) {
+			n->stats.manifest_wire_ovf++;
+			n->last_event = OC_FH_EV_MANIFEST_WIRE_OVF;
+			return OC_FH_ERR_MANIFEST_WIRE;
+		}
+	}
 	if (!n->have_pending || n->pending_manifest_wire_len == 0 ||
 	    n->pending_manifest.fence_seq != m->fence_seq ||
 	    n->pending_manifest.frag_count != m->frag_count) {
@@ -269,15 +430,25 @@ static void begin_pending_from_manifest(oc_fh_node_t *n, const oc_fh_manifest_t 
 	}
 	n->have_pending = 1;
 	n->pending_manifest = *m;
-	if (wire && wire_len > 0 && wire_len <= sizeof(n->pending_manifest_wire)) {
-		memcpy(n->pending_manifest_wire, wire, wire_len);
-		n->pending_manifest_wire_len = wire_len;
+	n->pending_is_local = is_local ? 1 : 0;
+	/* Real manifest wire clears the beacon-hint flag so loss recovery
+	 * NEEDs are not starved by the anti-DoS budget. */
+	if (wire && wire_len > 0) {
+		n->pending_from_hint = 0;
+		if (store_manifest_wire(n, n->pending_manifest_wire,
+		                        sizeof(n->pending_manifest_wire),
+		                        &n->pending_manifest_wire_len, wire, wire_len) != OC_FH_OK) {
+			clear_pending(n);
+			return OC_FH_ERR_MANIFEST_WIRE;
+		}
+	} else {
+		n->pending_from_hint = from_hint ? 1 : 0;
 	}
 	n->pending_source = source;
 	n->need_pending = 1;
 	n->need_at_ms = now(n) + oc_radio_backoff_ms(n->radio, OC_FH_NEED_BACKOFF_LO_MS,
 	                                             OC_FH_NEED_BACKOFF_HI_MS);
-	(void)dlen;
+	return OC_FH_OK;
 }
 
 static void send_need(oc_fh_node_t *n)
@@ -288,6 +459,17 @@ static void send_need(oc_fh_node_t *n)
 
 	if (!n->have_pending) {
 		return;
+	}
+	/* Cap NEEDs while still waiting for any manifest (forged-beacon DoS). */
+	if (n->pending_from_hint && n->pending_manifest_wire_len == 0) {
+		uint16_t peer = n->pending_source ? n->pending_source : n->last_rx_peer;
+		if (n->need_retries >= OC_FH_NEED_HINT_MAX || !need_budget_allow(n, peer)) {
+			n->stats.need_capped++;
+			n->last_event = OC_FH_EV_NEED_CAPPED;
+			n->need_pending = 1;
+			n->need_at_ms = now(n) + OC_FH_NEED_WINDOW_MS;
+			return;
+		}
 	}
 	memset(&need, 0, sizeof(need));
 	memcpy(need.farm_id, n->cfg.farm_id, OC_FH_FARM_ID_LEN);
@@ -303,19 +485,18 @@ static void send_need(oc_fh_node_t *n)
 	if (len && tx(n, n->buf.tx_scratch, len) == 0) {
 		n->last_event = OC_FH_EV_NEED_TX;
 		n->need_retries++;
+		n->stats.need_tx++;
 	}
-	/* Schedule another NEED while incomplete (loss recovery). */
 	n->need_pending = 1;
 	n->need_at_ms = now(n) + OC_FH_NEED_RETRY_MS +
 	                oc_radio_backoff_ms(n->radio, 0, OC_FH_NEED_BACKOFF_HI_MS);
 }
 
-static void on_beacon(oc_fh_node_t *n, const oc_fh_beacon_t *b)
+static void on_beacon(oc_fh_node_t *n, const oc_fh_beacon_t *b, uint16_t peer)
 {
 	if (!oc_fh_farm_eq(b->farm_id, n->cfg.farm_id)) {
 		return;
 	}
-	/* Beacons never change state directly — only schedule bounded actions. */
 	if (b->fence_seq == n->active.fence_seq && n->active.fence_seq != 0) {
 		uint8_t sh[OC_FH_SHORT_HASH_LEN];
 		short_hash_from_poly(sh, n->active.poly_hash);
@@ -325,7 +506,6 @@ static void on_beacon(oc_fh_node_t *n, const oc_fh_beacon_t *b)
 		}
 	}
 	if (b->fence_seq < n->active.fence_seq && oc_fh_may_serve(n)) {
-		/* Neighbor is stale: schedule serve with backoff/suppression. */
 		n->serve_pending = 1;
 		n->serve_target_seq_seen = b->fence_seq;
 		n->serve_at_ms = now(n) + oc_radio_backoff_ms(n->radio, OC_FH_SERVE_BACKOFF_LO_MS,
@@ -333,29 +513,22 @@ static void on_beacon(oc_fh_node_t *n, const oc_fh_beacon_t *b)
 		trickle_reset(n);
 		return;
 	}
-	if (b->fence_seq > n->active.fence_seq) {
-		/* Newer out there: ask for it (bounded NEED). */
+	if (b->fence_seq > effective_hwm(n)) {
 		if (!n->have_pending || n->pending_manifest.fence_seq < b->fence_seq) {
-			/* Soft-start pending shell so NEED can go out; manifest fills later. */
 			oc_fh_manifest_t shell;
 			memset(&shell, 0, sizeof(shell));
 			memcpy(shell.farm_id, b->farm_id, OC_FH_FARM_ID_LEN);
 			shell.fence_seq = b->fence_seq;
-			shell.frag_count = 1; /* placeholder until manifest arrives */
+			shell.frag_count = 1;
 			memcpy(shell.poly_hash, b->short_hash, OC_FH_SHORT_HASH_LEN);
-			begin_pending_from_manifest(n, &shell, NULL, 0, 0);
-			n->have_pending = 1; /* mark awaiting manifest */
-			n->pending_manifest = shell;
-			n->need_pending = 1;
-			n->need_at_ms =
-			    now(n) + oc_radio_backoff_ms(n->radio, OC_FH_NEED_BACKOFF_LO_MS,
-			                                OC_FH_NEED_BACKOFF_HI_MS);
+			/* Shell only; NEED airtime gated in send_need(). */
+			(void)begin_pending_from_manifest(n, &shell, NULL, 0, peer, 0, 1);
 		}
 		trickle_reset(n);
 	}
 }
 
-static void on_manifest(oc_fh_node_t *n, const uint8_t *msg, size_t len)
+static void on_manifest_sealed(oc_fh_node_t *n, const uint8_t *msg, size_t len, uint16_t peer)
 {
 	oc_fh_manifest_t m;
 	int rc;
@@ -372,40 +545,52 @@ static void on_manifest(oc_fh_node_t *n, const uint8_t *msg, size_t len)
 	if (!oc_fh_farm_eq(m.farm_id, n->cfg.farm_id)) {
 		return;
 	}
-	if (m.fence_seq <= n->active.fence_seq) {
+	if (m.fence_seq <= effective_hwm(n)) {
 		n->stats.reject_seq++;
 		n->last_event = OC_FH_EV_REJECT_SEQ;
-		/* Peer heard us needing old stuff — if they are stale relative to us, serve. */
 		if (m.fence_seq < n->active.fence_seq && oc_fh_may_serve(n)) {
 			n->serve_pending = 1;
 			n->serve_at_ms = now(n);
 		}
 		return;
 	}
-	begin_pending_from_manifest(n, &m, msg, len, 0);
+	(void)begin_pending_from_manifest(n, &m, msg, len, peer, 0, 0);
+}
+
+static void on_manifest_local(oc_fh_node_t *n, const uint8_t *msg, size_t len, uint16_t peer)
+{
+	oc_fh_manifest_t m;
+
+	if (oc_fh_manifest_open_local(msg, len, &m) != 0) {
+		return;
+	}
+	if (!oc_fh_farm_eq(m.farm_id, n->cfg.farm_id)) {
+		return;
+	}
+	if (m.fence_seq <= effective_hwm(n)) {
+		n->stats.reject_seq++;
+		n->last_event = OC_FH_EV_REJECT_SEQ;
+		return;
+	}
+	(void)begin_pending_from_manifest(n, &m, msg, len, peer, 1, 0);
 }
 
 static void on_fragment(oc_fh_node_t *n, const oc_fh_fragment_t *f)
 {
 	uint8_t h[OC_FH_FRAG_HASH_LEN];
 	size_t off;
-	uint16_t expect_len;
 	size_t end;
 
-	if (!oc_fh_farm_eq(f->farm_id, n->cfg.farm_id)) {
-		return;
-	}
-	if (!n->have_pending) {
+	if (!oc_fh_farm_eq(f->farm_id, n->cfg.farm_id) || !n->have_pending) {
 		return;
 	}
 	if (f->fence_seq != n->pending_manifest.fence_seq) {
-		if (f->fence_seq <= n->active.fence_seq) {
+		if (f->fence_seq <= effective_hwm(n)) {
 			n->stats.reject_seq++;
 			n->last_event = OC_FH_EV_REJECT_SEQ;
 		}
 		return;
 	}
-	/* Manifest must be real (not beacon shell) before accepting frags. */
 	if (n->pending_manifest_wire_len == 0) {
 		return;
 	}
@@ -428,14 +613,10 @@ static void on_fragment(oc_fh_node_t *n, const oc_fh_fragment_t *f)
 		n->have_frag[f->idx] = 1;
 		n->pending_got++;
 		n->last_event = OC_FH_EV_GOT_FRAG;
-	} else {
-		/* replace allowed */
-		memcpy(n->buf.pending_payload + off, f->data, f->data_len);
 	}
 	if (end > n->pending_len) {
 		n->pending_len = end;
 	}
-	(void)expect_len;
 	if (n->pending_got == n->pending_manifest.frag_count) {
 		activate_pending(n);
 	}
@@ -443,25 +624,15 @@ static void on_fragment(oc_fh_node_t *n, const oc_fh_fragment_t *f)
 
 static void on_need(oc_fh_node_t *n, const oc_fh_need_t *need)
 {
-	if (!oc_fh_farm_eq(need->farm_id, n->cfg.farm_id)) {
-		return;
-	}
-	if (!oc_fh_may_serve(n)) {
+	if (!oc_fh_farm_eq(need->farm_id, n->cfg.farm_id) || !oc_fh_may_serve(n)) {
 		return;
 	}
 	if (need->fence_seq == n->active.fence_seq) {
-		/* Someone else may also serve — small backoff suppression. */
-		n->serve_pending = 1;
-		n->serve_at_ms = now(n) + oc_radio_backoff_ms(n->radio, OC_FH_SERVE_BACKOFF_LO_MS,
-		                                             OC_FH_SERVE_BACKOFF_HI_MS);
-		/* Store need in tx path by serving immediately with filter:
-		 * for simplicity serve filtered now and clear pending. */
 		serve_active(n, need);
 		n->serve_pending = 0;
 		return;
 	}
 	if (need->fence_seq < n->active.fence_seq) {
-		/* They want an older fence; offer ours instead. */
 		n->serve_pending = 1;
 		n->serve_at_ms = now(n) + oc_radio_backoff_ms(n->radio, OC_FH_SERVE_BACKOFF_LO_MS,
 		                                             OC_FH_SERVE_BACKOFF_HI_MS);
@@ -470,7 +641,6 @@ static void on_need(oc_fh_node_t *n, const oc_fh_need_t *need)
 
 static void on_have(oc_fh_node_t *n, const oc_fh_have_t *h)
 {
-	/* Suppression: if we planned to serve the same seq, cancel. */
 	if (!oc_fh_farm_eq(h->farm_id, n->cfg.farm_id)) {
 		return;
 	}
@@ -482,7 +652,7 @@ static void on_have(oc_fh_node_t *n, const oc_fh_have_t *h)
 	}
 }
 
-static void handle_rx(oc_fh_node_t *n, const uint8_t *buf, size_t len)
+static void handle_rx(oc_fh_node_t *n, const uint8_t *buf, size_t len, uint16_t peer)
 {
 	oc_fh_beacon_t b;
 	oc_fh_fragment_t f;
@@ -490,17 +660,21 @@ static void handle_rx(oc_fh_node_t *n, const uint8_t *buf, size_t len)
 	oc_fh_have_t have;
 
 	n->stats.rx_frames++;
+	n->last_rx_peer = peer;
 	if (len == 0) {
 		return;
 	}
 	switch (buf[0]) {
 	case OC_FH_MSG_BEACON:
 		if (oc_fh_decode_beacon(&b, buf, len) == 0) {
-			on_beacon(n, &b);
+			on_beacon(n, &b, peer);
 		}
 		break;
 	case OC_FH_MSG_MANIFEST:
-		on_manifest(n, buf, len);
+		on_manifest_sealed(n, buf, len, peer);
+		break;
+	case OC_FH_MSG_MANIFEST_LOCAL:
+		on_manifest_local(n, buf, len, peer);
 		break;
 	case OC_FH_MSG_FRAGMENT:
 		if (oc_fh_decode_fragment(&f, buf, len) == 0) {
@@ -533,7 +707,6 @@ static void trickle_tick(oc_fh_node_t *n)
 		if (n->trickle_c < n->cfg.trickle_k) {
 			send_beacon(n);
 		}
-		/* ensure we only fire once per interval */
 		n->trickle_t = n->trickle_interval_start + n->trickle_I;
 	}
 	if (t >= n->trickle_interval_start + n->trickle_I) {
@@ -553,18 +726,19 @@ void oc_fh_node_poll(oc_fh_node_t *n)
 	oc_radio_rx_meta_t meta;
 	oc_radio_status_t st;
 	uint32_t t;
+	int i;
 
 	if (!n || !n->radio) {
 		return;
 	}
-	/* Drain a few frames per poll. */
-	for (int i = 0; i < 8; i++) {
-		st = oc_radio_recv(n->radio, n->buf.rx_scratch, n->buf.rx_scratch_cap, &got,
-		                   &meta, 0);
+	for (i = 0; i < 8; i++) {
+		memset(&meta, 0, sizeof(meta));
+		st = oc_radio_recv(n->radio, n->buf.rx_scratch, n->buf.rx_scratch_cap, &got, &meta,
+		                   0);
 		if (st != OC_RADIO_OK) {
 			break;
 		}
-		handle_rx(n, n->buf.rx_scratch, got);
+		handle_rx(n, n->buf.rx_scratch, got, meta.peer_id);
 	}
 	t = now(n);
 	if (n->need_pending && t >= n->need_at_ms) {
@@ -582,77 +756,142 @@ void oc_fh_node_poll(oc_fh_node_t *n)
 	trickle_tick(n);
 }
 
-int oc_fh_inject_local(oc_fh_node_t *n, const uint8_t *sealed_manifest, size_t mlen,
-                       const uint8_t *payload, size_t plen)
+static int activate_from_parts(oc_fh_node_t *n, const oc_fh_manifest_t *m, const uint8_t *wire,
+                               size_t mlen, const uint8_t *payload, size_t plen, int is_local)
 {
-	oc_fh_manifest_t m;
-	int rc;
 	uint8_t poly[OC_FH_POLY_HASH_LEN];
 	uint16_t i;
 	size_t off;
 	uint16_t dlen;
 
+	if (m->fence_seq <= effective_hwm(n)) {
+		n->stats.reject_seq++;
+		n->last_event = OC_FH_EV_REJECT_SEQ;
+		return OC_FH_ERR_SEQ;
+	}
+	oc_fh_hash_payload(poly, payload, plen);
+	if (memcmp(poly, m->poly_hash, OC_FH_POLY_HASH_LEN) != 0) {
+		n->stats.reject_hash++;
+		n->last_event = OC_FH_EV_REJECT_HASH;
+		return OC_FH_ERR_HASH;
+	}
+	off = 0;
+	for (i = 0; i < m->frag_count; i++) {
+		uint8_t h[OC_FH_FRAG_HASH_LEN];
+		size_t rem = plen - off;
+		dlen = (uint16_t)(rem > n->cfg.frag_data_max ? n->cfg.frag_data_max : rem);
+		if (dlen == 0) {
+			return OC_FH_ERR_HASH;
+		}
+		oc_fh_hash_fragment(h, payload + off, dlen);
+		if (memcmp(h, m->frag_hash[i], OC_FH_FRAG_HASH_LEN) != 0) {
+			n->stats.reject_hash++;
+			n->last_event = OC_FH_EV_REJECT_HASH;
+			return OC_FH_ERR_HASH;
+		}
+		off += dlen;
+	}
+	if (off != plen || plen > n->buf.active_cap) {
+		return OC_FH_ERR_PARAM;
+	}
+	if (is_local) {
+		if (!n->payload_verify ||
+		    n->payload_verify(payload, plen, m->fence_seq, n->payload_verify_ctx) != 0) {
+			n->stats.reject_payload++;
+			n->last_event = OC_FH_EV_REJECT_PAYLOAD;
+			return OC_FH_ERR_PAYLOAD;
+		}
+	}
+	if (store_manifest_wire(n, n->active_manifest_wire, sizeof(n->active_manifest_wire),
+	                        &n->active_manifest_wire_len, wire, mlen) != OC_FH_OK) {
+		return OC_FH_ERR_MANIFEST_WIRE;
+	}
+	memcpy(n->buf.active_payload, payload, plen);
+	n->active_len = plen;
+	n->active_manifest = *m;
+	n->active_is_local = is_local ? 1 : 0;
+	memcpy(n->active.farm_id, m->farm_id, OC_FH_FARM_ID_LEN);
+	n->active.fence_seq = m->fence_seq;
+	memcpy(n->active.poly_hash, m->poly_hash, OC_FH_POLY_HASH_LEN);
+	n->active.received_at_ms = now(n);
+	n->active.source_id = n->cfg.node_id;
+	if (n->active.fence_seq > n->fence_seq_hwm) {
+		n->fence_seq_hwm = n->active.fence_seq;
+	}
+	n->stats.applied++;
+	n->last_event = OC_FH_EV_APPLIED;
+	persist_active(n);
+	clear_pending(n);
+	trickle_reset(n);
+	return OC_FH_OK;
+}
+
+int oc_fh_inject_local(oc_fh_node_t *n, const uint8_t *sealed_manifest, size_t mlen,
+                       const uint8_t *payload, size_t plen)
+{
+	oc_fh_manifest_t m;
+	int rc;
+
 	if (!n || !sealed_manifest || !payload) {
-		return -1;
+		return OC_FH_ERR_PARAM;
+	}
+	if (mlen > sizeof(n->active_manifest_wire)) {
+		n->stats.manifest_wire_ovf++;
+		n->last_event = OC_FH_EV_MANIFEST_WIRE_OVF;
+		return OC_FH_ERR_MANIFEST_WIRE;
 	}
 	rc = oc_fh_manifest_open(sealed_manifest, mlen, &m, n->verify, n->verify_ctx);
 	if (rc == -2) {
 		n->stats.reject_sig++;
 		n->last_event = OC_FH_EV_REJECT_SIG;
-		return -2;
+		return OC_FH_ERR_SIG;
 	}
 	if (rc != 0) {
-		return -1;
+		return OC_FH_ERR_PARAM;
 	}
 	if (!oc_fh_farm_eq(m.farm_id, n->cfg.farm_id)) {
-		return -1;
+		return OC_FH_ERR_PARAM;
 	}
-	if (m.fence_seq <= n->active.fence_seq) {
-		n->stats.reject_seq++;
-		n->last_event = OC_FH_EV_REJECT_SEQ;
-		return -3;
+	return activate_from_parts(n, &m, sealed_manifest, mlen, payload, plen, 0);
+}
+
+int oc_fh_inject_opaque(oc_fh_node_t *n, const uint8_t *payload, size_t plen, uint32_t fence_seq,
+                        uint32_t issued_at)
+{
+	oc_fh_manifest_t m;
+	uint8_t wire[OC_FH_MANIFEST_WIRE_MAX];
+	size_t wlen;
+	uint16_t count;
+	uint16_t i;
+	size_t off;
+	uint16_t frag_max;
+
+	if (!n || !payload || plen == 0 || plen > OC_FH_MAX_PAYLOAD || fence_seq == 0) {
+		return OC_FH_ERR_PARAM;
 	}
-	oc_fh_hash_payload(poly, payload, plen);
-	if (memcmp(poly, m.poly_hash, OC_FH_POLY_HASH_LEN) != 0) {
-		n->stats.reject_hash++;
-		n->last_event = OC_FH_EV_REJECT_HASH;
-		return -4;
+	frag_max = n->cfg.frag_data_max ? n->cfg.frag_data_max : (uint16_t)OC_FH_DEFAULT_FRAG_DATA;
+	count = (uint16_t)((plen + frag_max - 1) / frag_max);
+	if (count == 0 || count > OC_FH_MAX_FRAGMENTS) {
+		return OC_FH_ERR_PARAM;
 	}
-	/* Verify each fragment hash against payload split. */
+	memset(&m, 0, sizeof(m));
+	memcpy(m.farm_id, n->cfg.farm_id, OC_FH_FARM_ID_LEN);
+	m.fence_seq = fence_seq;
+	m.issued_at = issued_at;
+	m.frag_count = count;
+	oc_fh_hash_payload(m.poly_hash, payload, plen);
 	off = 0;
-	for (i = 0; i < m.frag_count; i++) {
-		uint8_t h[OC_FH_FRAG_HASH_LEN];
+	for (i = 0; i < count; i++) {
 		size_t rem = plen - off;
-		dlen = (uint16_t)(rem > n->cfg.frag_data_max ? n->cfg.frag_data_max : rem);
-		if (dlen == 0) {
-			return -4;
-		}
-		oc_fh_hash_fragment(h, payload + off, dlen);
-		if (memcmp(h, m.frag_hash[i], OC_FH_FRAG_HASH_LEN) != 0) {
-			n->stats.reject_hash++;
-			n->last_event = OC_FH_EV_REJECT_HASH;
-			return -4;
-		}
+		uint16_t dlen = (uint16_t)(rem > frag_max ? frag_max : rem);
+		oc_fh_hash_fragment(m.frag_hash[i], payload + off, dlen);
 		off += dlen;
 	}
-	if (off != plen || plen > n->buf.active_cap) {
-		return -1;
+	wlen = oc_fh_manifest_encode_local(&m, wire, sizeof(wire));
+	if (wlen == 0) {
+		n->stats.manifest_wire_ovf++;
+		n->last_event = OC_FH_EV_MANIFEST_WIRE_OVF;
+		return OC_FH_ERR_MANIFEST_WIRE;
 	}
-	memcpy(n->buf.active_payload, payload, plen);
-	n->active_len = plen;
-	n->active_manifest = m;
-	if (mlen <= sizeof(n->active_manifest_wire)) {
-		memcpy(n->active_manifest_wire, sealed_manifest, mlen);
-		n->active_manifest_wire_len = mlen;
-	}
-	memcpy(n->active.farm_id, m.farm_id, OC_FH_FARM_ID_LEN);
-	n->active.fence_seq = m.fence_seq;
-	memcpy(n->active.poly_hash, m.poly_hash, OC_FH_POLY_HASH_LEN);
-	n->active.received_at_ms = now(n);
-	n->active.source_id = n->cfg.node_id;
-	n->stats.applied++;
-	n->last_event = OC_FH_EV_APPLIED;
-	clear_pending(n);
-	trickle_reset(n);
-	return 0;
+	return activate_from_parts(n, &m, wire, wlen, payload, plen, 1);
 }

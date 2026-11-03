@@ -38,8 +38,30 @@
 #define OC_FH_MAX_PAYLOAD 12288u
 #define OC_FH_DEFAULT_FRAG_DATA 209u /* lora.md typical fragment data */
 
+/*
+ * Manifest wire sizes (derived; do not hand-edit).
+ * Body: ver(1)+farm(8)+seq(4)+issued(4)+poly(32)+count(2)+frag_hash[N]*16
+ * Sealed: type(1)+sig(64)+body. Local/opaque: type(1)+body (no sig).
+ */
+#define OC_FH_MANIFEST_BODY_MAX                                                        \
+	(1u + OC_FH_FARM_ID_LEN + 4u + 4u + OC_FH_POLY_HASH_LEN + 2u +                 \
+	 OC_FH_MAX_FRAGMENTS * OC_FH_FRAG_HASH_LEN)
+#define OC_FH_MANIFEST_WIRE_MAX (1u + OC_FH_SIG_LEN + OC_FH_MANIFEST_BODY_MAX)
+#define OC_FH_MANIFEST_LOCAL_WIRE_MAX (1u + OC_FH_MANIFEST_BODY_MAX)
+
+/* Unsigned local/pilot manifest (Rook has no farm signing key). */
+#define OC_FH_MSG_MANIFEST_LOCAL 0xA5u
+
 /* Reserved hop counter (telemetry later; unused in fence transfer). */
 #define OC_FH_HOP_RESERVED 0u
+
+/* Beacon-hint NEED budgets (anti-DoS for forged high-seq beacons).
+ * Applies only while awaiting a real manifest (wire_len == 0). Once a
+ * verified/local manifest arrives, loss-recovery NEEDs are uncapped here. */
+#define OC_FH_NEED_PEER_SLOTS 8u
+#define OC_FH_NEED_HINT_MAX 48u /* max NEEDs awaiting manifest before pause */
+#define OC_FH_NEED_WINDOW_MS 5000u
+#define OC_FH_NEED_WINDOW_GLOBAL_MAX 64u
 
 /* Trickle defaults (ms), RFC 6206-inspired; tunable via node config. */
 #define OC_FH_TRICKLE_IMIN_MS 1000u

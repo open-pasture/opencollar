@@ -108,7 +108,8 @@ static void test_forged_beacon(void)
 	forged.hop_reserved = 0;
 	wlen = oc_fh_encode_beacon(&forged, wire, sizeof(wire));
 	CHECK(wlen > 0);
-	for (i = 0; i < 20; i++) {
+	/* ~15 s of flood: enough to hit OC_FH_NEED_HINT_MAX, then pause. */
+	for (i = 0; i < 3000; i++) {
 		CHECK(oc_radio_send(sim_radio(&world, 0), wire, wlen, NULL) == OC_RADIO_OK);
 		sim_world_advance(&world, 5);
 		oc_fh_node_poll(&star);
@@ -117,15 +118,11 @@ static void test_forged_beacon(void)
 	CHECK(oc_fh_active(&star)->fence_seq == seq_before);
 	CHECK(oc_fh_stats(&star)->applied == 1); /* only the local inject */
 	CHECK(oc_fh_stats(&star)->reject_sig == 0); /* beacon is not signature-checked */
-
-	/* Wait without a real manifest: still must not apply. */
-	{
-		int t;
-		for (t = 0; t < 400; t++) {
-			oc_fh_node_poll(&star);
-			sim_world_advance(&world, 5);
-		}
-	}
+	/* NEED/airtime bounded despite flood. */
+	CHECK(oc_fh_stats(&star)->need_tx >= 1);
+	CHECK(oc_fh_stats(&star)->need_capped >= 1);
+	CHECK(oc_fh_stats(&star)->need_tx <= OC_FH_NEED_HINT_MAX + 2u);
+	CHECK(oc_fh_stats(&star)->airtime_us < 500000u);
 	CHECK(oc_fh_active(&star)->fence_seq == 5);
 	CHECK(memcmp(ms.active, payload, sizeof(payload)) == 0);
 }

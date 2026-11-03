@@ -16,7 +16,8 @@ LIB_SRC := \
 	src/fence_manifest.c \
 	src/fence_wire.c \
 	src/fence_node.c \
-	src/fence_build.c
+	src/fence_build.c \
+	src/fence_store_ram.c
 
 SIM_SRC := \
 	$(SIM)/src/sim_radio.c
@@ -49,7 +50,7 @@ $(BUILD)/monocypher.o: $(MONO)/monocypher.c | $(BUILD)
 $(BUILD)/monocypher-ed25519.o: $(MONO)/monocypher-ed25519.c | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
-TESTS := test_vectors test_onehop test_chain test_security
+TESTS := test_vectors test_onehop test_chain test_security test_persist test_pilot test_maxfrag
 
 $(BUILD)/test_vectors: tests/test_vectors.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
@@ -61,6 +62,15 @@ $(BUILD)/test_chain: tests/test_chain.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
 $(BUILD)/test_security: tests/test_security.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
+
+$(BUILD)/test_persist: tests/test_persist.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
+
+$(BUILD)/test_pilot: tests/test_pilot.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
+
+$(BUILD)/test_maxfrag: tests/test_maxfrag.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
 test: $(TESTS:%=$(BUILD)/%)

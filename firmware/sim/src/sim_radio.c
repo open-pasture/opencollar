@@ -62,7 +62,7 @@ void sim_world_init(sim_world_t *w, uint8_t n_nodes, uint64_t seed)
 		lim.min_tx_gap_ms = 0; /* gossip tests: no gap unless set */
 		r->world = w;
 		r->id = i;
-		r->mtu = 255;
+		r->mtu = 255; /* default LoRa-sized; tests may raise via sim_radio_set_mtu */
 		r->bytes_per_ms_air = 2;
 		(void)oc_radio_init(r, &cfg, &lim);
 		for (j = 0; j < w->n_nodes; j++) {
@@ -304,8 +304,16 @@ oc_radio_status_t oc_radio_send(oc_radio_t *radio, const uint8_t *buf, size_t le
 		}
 		/* per-packet override does not permanently change default */
 	}
+	if (opts && !(opts->flags & OC_RADIO_TX_FLAG_SKIP_CAD)) {
+		oc_radio_cad_result_t cad;
+		if (oc_radio_cad(radio, &cad, 0) != OC_RADIO_OK) {
+			return OC_RADIO_ERR_IO;
+		}
+		if (cad == OC_RADIO_CAD_BUSY) {
+			return OC_RADIO_ERR_BUSY;
+		}
+	}
 	/* at_us: sim is discrete-ms; treat as advisory (no wait loop here). */
-	(void)opts;
 	radio->duty_used_us += air;
 	radio->last_tx_ms = now_ms;
 	radio->world->airtime_us_total += air;
@@ -340,6 +348,7 @@ oc_radio_status_t oc_radio_recv(oc_radio_t *radio, uint8_t *buf, size_t cap, siz
 			out_meta->flags = 0;
 			out_meta->timestamp_ms = radio->world->now_ms;
 			out_meta->t_rx_us = oc_radio_now_us(radio);
+			out_meta->peer_id = p->src;
 		}
 		radio->rq_head = (uint8_t)((radio->rq_head + 1) % 32);
 		radio->rq_count--;
@@ -347,8 +356,27 @@ oc_radio_status_t oc_radio_recv(oc_radio_t *radio, uint8_t *buf, size_t cap, siz
 	return OC_RADIO_OK;
 }
 
-oc_radio_status_t oc_radio_cad(oc_radio_t *radio, oc_radio_cad_result_t *out)
+void sim_radio_set_mtu(oc_radio_t *r, uint32_t mtu)
 {
+	uint32_t air;
+	if (!r) {
+		return;
+	}
+	if (mtu == 0 || mtu > SIM_MAX_MTU) {
+		mtu = SIM_MAX_MTU;
+	}
+	r->mtu = mtu;
+	/* Host tests may raise MTU for max sealed manifests; keep airtime cap coherent. */
+	air = oc_radio_airtime_us(r, mtu);
+	if (air > r->limits.max_frame_airtime_us) {
+		r->limits.max_frame_airtime_us = air;
+	}
+}
+
+oc_radio_status_t oc_radio_cad(oc_radio_t *radio, oc_radio_cad_result_t *out,
+                               uint32_t timeout_ms)
+{
+	(void)timeout_ms; /* sim: instantaneous; hardware uses bound (default 50 ms) */
 	if (!radio || !out) {
 		return OC_RADIO_ERR_PARAM;
 	}

@@ -12,7 +12,7 @@
 
 typedef struct oc_fh_built {
 	oc_fh_manifest_t manifest;
-	uint8_t sealed[1 + 64 + 1 + 8 + 4 + 4 + 32 + 2 + 64 * 16];
+	uint8_t sealed[OC_FH_MANIFEST_WIRE_MAX];
 	size_t sealed_len;
 	uint16_t frag_data_max;
 } oc_fh_built_t;

@@ -112,6 +112,31 @@ size_t oc_fh_manifest_seal(const oc_fh_manifest_t *m, uint8_t *out, size_t cap,
 	return 1 + OC_FH_SIG_LEN + body_len;
 }
 
+size_t oc_fh_manifest_encode_local(const oc_fh_manifest_t *m, uint8_t *out, size_t cap)
+{
+	size_t body_len;
+	uint8_t body[OC_FH_MANIFEST_BODY_MAX];
+
+	if (!m || !out) {
+		return 0;
+	}
+	body_len = oc_fh_manifest_encode_body(m, body, sizeof(body));
+	if (body_len == 0 || 1 + body_len > cap) {
+		return 0;
+	}
+	out[0] = (uint8_t)OC_FH_MSG_MANIFEST_LOCAL;
+	memcpy(out + 1, body, body_len);
+	return 1 + body_len;
+}
+
+int oc_fh_manifest_open_local(const uint8_t *msg, size_t len, oc_fh_manifest_t *out_m)
+{
+	if (!msg || len < 2 || msg[0] != OC_FH_MSG_MANIFEST_LOCAL) {
+		return -1;
+	}
+	return oc_fh_manifest_decode_body(out_m, msg + 1, len - 1);
+}
+
 int oc_fh_manifest_open(const uint8_t *msg, size_t len, oc_fh_manifest_t *out_m,
                         oc_fh_verify_fn verify, void *verify_ctx)
 {

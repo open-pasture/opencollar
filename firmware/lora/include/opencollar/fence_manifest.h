@@ -26,6 +26,22 @@ typedef struct oc_fh_manifest {
 	uint8_t frag_hash[OC_FH_MAX_FRAGMENTS][OC_FH_FRAG_HASH_LEN];
 } oc_fh_manifest_t;
 
+/*
+ * Per-node freshness record for the fence in force (canonical for
+ * op-fw-starling). Field widths are fixed; see NOTES.md § Freshness record.
+ */
+typedef struct oc_fh_freshness {
+	uint8_t farm_id[OC_FH_FARM_ID_LEN]; /* 8 */
+	uint32_t fence_seq;                 /* 4; 0 = none */
+	uint8_t poly_hash[OC_FH_POLY_HASH_LEN]; /* 32 */
+	uint32_t received_at_ms;            /* 4; local clock ms */
+	uint16_t source_id;                 /* 2; node id that served us */
+} oc_fh_freshness_t;
+
+/* Compile-time: sealed wire buffer fits max fragment count. */
+typedef char oc_fh_static_assert_wire_max[(OC_FH_MANIFEST_WIRE_MAX == 1140u) ? 1 : -1];
+typedef char oc_fh_static_assert_body_max[(OC_FH_MANIFEST_BODY_MAX == 1075u) ? 1 : -1];
+
 /* Encode unsigned body into out (cap bytes). Returns length or 0 on error. */
 size_t oc_fh_manifest_encode_body(const oc_fh_manifest_t *m, uint8_t *out, size_t cap);
 
@@ -55,6 +71,10 @@ typedef int (*oc_fh_verify_fn)(const uint8_t sig[OC_FH_SIG_LEN], const uint8_t *
 
 int oc_fh_manifest_open(const uint8_t *msg, size_t len, oc_fh_manifest_t *out_m,
                         oc_fh_verify_fn verify, void *verify_ctx);
+
+/* PILOT local/opaque: type | body (no signature on the envelope). */
+size_t oc_fh_manifest_encode_local(const oc_fh_manifest_t *m, uint8_t *out, size_t cap);
+int oc_fh_manifest_open_local(const uint8_t *msg, size_t len, oc_fh_manifest_t *out_m);
 
 /* Hash helpers (Blake2b via Monocypher when linked; see fence_hash.c). */
 void oc_fh_hash_payload(uint8_t out[OC_FH_POLY_HASH_LEN], const uint8_t *data, size_t len);

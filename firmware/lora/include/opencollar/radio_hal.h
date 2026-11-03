@@ -74,12 +74,14 @@ typedef struct oc_radio_limits {
  */
 typedef struct oc_radio_tx_opts {
 	int8_t tx_power_dbm; /* INT8_MIN = use current default power */
-	uint8_t flags;       /* reserved; must be 0 for now */
+	uint8_t flags;       /* OC_RADIO_TX_FLAG_* */
 	uint16_t reserved;   /* reserved; must be 0 for now */
 	uint64_t at_us;      /* 0 = now; else absolute oc_radio_now_us target */
 } oc_radio_tx_opts_t;
 
 #define OC_RADIO_TX_POWER_DEFAULT ((int8_t)(-128)) /* INT8_MIN */
+/* Skip CAD before TX (tests / already-cleared channel). */
+#define OC_RADIO_TX_FLAG_SKIP_CAD 0x01u
 
 static inline oc_radio_tx_opts_t oc_radio_tx_opts_default(void)
 {
@@ -99,6 +101,7 @@ typedef struct oc_radio_rx_meta {
 	uint8_t flags;         /* reserved; 0 for now */
 	uint32_t timestamp_ms; /* coarse; prefer now_us for scheduling */
 	uint64_t t_rx_us;      /* monotonic RX time; 0 if unknown */
+	uint16_t peer_id;      /* backend peer/node id; 0 if unknown */
 } oc_radio_rx_meta_t;
 
 /* ---- Opaque handle ------------------------------------------------------ */
@@ -152,9 +155,10 @@ oc_radio_status_t oc_radio_recv(oc_radio_t *radio, uint8_t *buf, size_t cap,
 
 /*
  * Channel activity detection. Sets *out to FREE or BUSY.
- * timeout_ms is a CAD listen bound (0 = backend default).
+ * timeout_ms is the CAD listen bound; 0 = backend default (SX1262: 50 ms).
  */
-oc_radio_status_t oc_radio_cad(oc_radio_t *radio, oc_radio_cad_result_t *out);
+oc_radio_status_t oc_radio_cad(oc_radio_t *radio, oc_radio_cad_result_t *out,
+                               uint32_t timeout_ms);
 
 /*
  * Set the default TX power used when send opts do not override it.

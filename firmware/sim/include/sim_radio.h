@@ -18,7 +18,8 @@ extern "C" {
 
 #define SIM_MAX_NODES 16
 #define SIM_MAX_PENDING 256
-#define SIM_MAX_MTU 255
+/* Allow oversized frames in unit tests (e.g. max sealed manifest); LoRa HW stays ≤255. */
+#define SIM_MAX_MTU 2048
 
 typedef struct sim_link {
 	uint8_t connected;     /* 0 = partitioned */
@@ -85,6 +86,7 @@ void sim_world_partition(sim_world_t *w, uint8_t a, uint8_t b, int connected);
 oc_radio_t *sim_radio(sim_world_t *w, uint8_t id);
 void sim_world_advance(sim_world_t *w, uint32_t ms);
 uint32_t sim_world_now(sim_world_t *w);
+void sim_radio_set_mtu(oc_radio_t *r, uint32_t mtu);
 
 uint32_t sim_clock_ms(void *ctx); /* ctx = sim_world_t* */
 
