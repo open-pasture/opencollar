@@ -57,18 +57,26 @@ warning zone) to outside under the boundary it holds.
   animal.
 - While unarmed and outside, the collar is silent and reports state `outside`.
   A boundary that leaves an animal outside never cues it.
-- A crossing cues the outside tone for up to 10 s, then disarms. An animal
-  walking back in is not cued in the warning zone on its way; a fix clear of
-  the warning zone arms the fence again.
+- A crossing cues the outside tone for up to **3 cues** (and never longer than
+  10 s), then **pulse cutoff**: silent until a fix clear inside the geofence
+  (`GEOFENCE_INSIDE`), not merely in the warning zone. Walking back through
+  the warning zone is silent; that clear-inside fix arms the fence again.
+- **Auto shut-off:** after **3** escape→return cycles within a fixed **24 hours**
+  window (starts at the first escape; resets after 24 h), enforcement turns
+  off for that animal (fence still evaluates; no warn or outside cue). A new
+  boundary / `cue_rearm` resumes it. Thresholds are conservative defaults and
+  need animal-welfare review
+  ([`docs/WELFARE-POLICY.md`](../docs/WELFARE-POLICY.md)).
 - Warning-zone cues are otherwise unchanged: louder toward the edge, at most
   20 s of continuous cueing, then 30 s of rest.
-- Holes work the same way: walking into a hole is a crossing (outside tone up
-  to 10 s, then disarm). A hole drawn on top of an animal leaves it outside
+- Holes work the same way: walking into a hole is a crossing (same outside
+  budget and cutoff). A hole drawn on top of an animal leaves it outside
   after rearm: silent while it walks out, armed once clear.
 
 Why: an audio cue only teaches when the animal can escape it by moving away
 from the edge. A fence drawn on top of an animal, or behind it, gives no
-direction, only noise. In the firmware this is `cue.c`.
+direction, only noise. Bounded stimuli and auto shut-off keep virtual fencing
+kinder than tangled wire. In the firmware this is `cue.c`.
 
 ## Limits
 
@@ -219,6 +227,15 @@ server accepted.
 - Cue kinds: `warn` and `outside`. The boot chirp is not a cue.
 - Episode: a run of armed warning cues, ending `turned_back` (reached
   inside), `crossed`, `rest` (the 20 s cap) or `boundary_changed`.
+- Welfare (audio V0; same counters will gate a future pulse): outside cues
+  per crossing are count-capped (`max_outside_cues`, default 3), then
+  suspended until clear inside; escape→return cycles in a fixed
+  `escape_cycle_window_ms` (default 24 h, starts at the first escape and
+  resets after that window) hit `escape_cycle_limit` (default 3) and
+  auto-shut off enforcement. Events
+  `pulse_cutoff` / `returned` / `auto_shutoff` / `enforcement_resumed` are
+  queued like episodes and logged on serial today; report uplink is TBD
+  ([`registry.md`](registry.md#welfare-event-kinds)).
 
 ## Slots
 
@@ -429,7 +446,7 @@ every case. Signing key: Ed25519 seed bytes `00 01 02 … 1f`.
 | `shapes.json` | each shape code minimal, exact limit passes and limit + 1 fails, both windings, gaps at ±0.1 m |
 | `geofence.json` | margins (1 mm), inside, nearest ring, around and inside holes |
 | `slots.json` | supersede, dead prune, duplicate re-ack, stale, slots_full by count and by bytes, boot without clock, wrong collar, herd change (step `{"op": "set_herd", "herd_id": …}`, the signed config's herd taking effect) |
-| `cue.json` | the cue rule: only a crossing, warning levels, the 20 s cap and rest, the 10 s outside tone, rearm, track mode, holes, episodes |
+| `cue.json` | the cue rule: only a crossing, warning levels, the 20 s cap and rest, outside tone + pulse cutoff, auto shut-off, rearm, track mode, holes, episodes |
 
 ## Transport
 

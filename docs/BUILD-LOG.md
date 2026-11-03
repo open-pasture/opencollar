@@ -1,5 +1,13 @@
 # Build log
 
+## 2026-11-01
+
+### Collar welfare safeguards (audio V0)
+- Informed by public commentary on Nofence's N3 (Alexander Crawley, Nuffield Farming Scholar): bounded stimuli per crossing, suspend until clear inside, auto shut-off after repeated escape→return, welfare events observable, battery savings never overriding those behaviours.
+- Implemented in `firmware/src/cue.c` / `cue.h`: `max_outside_cues` (default 3), pulse cutoff until `GEOFENCE_INSIDE`, `escape_cycle_limit` / `escape_cycle_window_ms` (default 3 / 24 h) → `enforcement_off`, cleared by `cue_rearm` / new boundary. Zero config fields get the safe defaults.
+- Welfare queue (`pulse_cutoff`, `returned`, `auto_shutoff`, `enforcement_resumed`) drained like episodes; `main.c` logs `welfare: …`; `status` reports `enforcement on|off`.
+- Host tests in `test_cue.c`; `docs/WELFARE-POLICY.md` captures rationale and open questions. Protocol: `cue.json` + README / vectors README / registry / CHANGELOG. **Thresholds need animal-welfare expert review before pulse hardware.**
+
 ## 2026-09-25
 
 - All prototype parts delivered.

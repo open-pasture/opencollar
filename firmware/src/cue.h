@@ -24,6 +24,12 @@
  * evaluates the fence without sound, and episodes: a run of armed warning
  * cues, ending turned_back (the animal reached inside), crossed, rest (the
  * 20 s cap forced a rest) or boundary_changed (a new boundary or mode).
+ *
+ * Welfare (see docs/WELFARE-POLICY.md): outside cues are count-capped per
+ * crossing (pulse cutoff), then suspended until the animal is clear inside;
+ * repeated escape→return cycles auto-shut off enforcement for that animal.
+ * Thresholds are conservative defaults and need animal-welfare review.
+ * Welfare events are queued like episodes so they stay observable.
  */
 #ifndef OPENCOLLAR_CUE_H
 #define OPENCOLLAR_CUE_H
@@ -40,12 +46,22 @@ struct cue_config {
 	uint32_t max_active_ms;  /* Longest continuous cue before a forced rest */
 	uint32_t rest_ms;        /* Silence after hitting max_active_ms */
 	uint32_t outside_max_ms; /* How long to cue after leaving the polygon */
+
+	/*
+	 * Welfare thresholds. REVIEW: pick final values with animal-welfare
+	 * expertise. Zero at cue_init() is replaced by the safe defaults
+	 * (3 outside cues, 3 cycles / 24 h). Use 255 / UINT32_MAX only in
+	 * tests that deliberately disable a limit.
+	 */
+	uint8_t max_outside_cues;        /* Outside/pulse cues per crossing; default 3 */
+	uint8_t escape_cycle_limit;      /* Escape→return cycles before shut-off; default 3 */
+	uint32_t escape_cycle_window_ms; /* Fixed window (from first escape); default 24 h */
 };
 
 enum cue_kind {
 	CUE_NONE = 0,
 	CUE_WARN,    /* The warning tone, louder toward the edge */
-	CUE_OUTSIDE, /* The tone after a crossing, for up to 10 s */
+	CUE_OUTSIDE, /* The tone after a crossing, for up to 10 s / cue budget */
 };
 
 enum cue_mode {
@@ -82,6 +98,22 @@ struct episode {
 /* Ended episodes kept until taken; the oldest is dropped beyond this */
 #define CUE_EPISODES_MAX 8
 
+enum welfare_event_kind {
+	WELFARE_PULSE_CUTOFF = 0,    /* Outside cue budget spent; suspended until inside */
+	WELFARE_RETURNED,            /* Clear inside after a crossing (one escape cycle) */
+	WELFARE_AUTO_SHUTOFF,        /* Escape-cycle limit hit; enforcement off */
+	WELFARE_ENFORCEMENT_RESUMED, /* Cleared by a new boundary / rearm */
+};
+
+struct welfare_event {
+	enum welfare_event_kind kind;
+	int64_t at_ms;
+	uint8_t outside_cues;  /* Outside cues delivered on the crossing just ended */
+	uint8_t escape_cycles; /* Cycles counted in the window at this event */
+};
+
+#define CUE_WELFARE_MAX 8
+
 struct cue {
 	struct cue_config cfg;
 	enum cue_mode mode;
@@ -94,18 +126,29 @@ struct cue {
 	bool escaping;     /* Crossed out; the outside tone window is running */
 	int64_t last_ms;   /* Time of the last fix */
 
+	/* Welfare state */
+	uint8_t outside_cues;           /* Outside cues delivered this escape */
+	bool pulse_cutoff;              /* Budget spent; silent until clear inside */
+	bool crossed_out;               /* A real crossing is open until returned */
+	uint8_t escape_cycles;          /* Completed escape→return cycles in the window */
+	int64_t escape_window_start_ms; /* Start of the current cycle window; 0 = none */
+	bool enforcement_off;           /* Auto shut-off: no cues until rearm */
+
 	bool ep_open;
 	struct episode ep;
 	struct episode done[CUE_EPISODES_MAX];
 	uint8_t done_head, done_n;
+
+	struct welfare_event welfare[CUE_WELFARE_MAX];
+	uint8_t welfare_head, welfare_n;
 };
 
-/* Starts unarmed, in audio mode. */
+/* Starts unarmed, in audio mode. Missing welfare fields (zero) get safe defaults. */
 void cue_init(struct cue *c, const struct cue_config *cfg);
 
 /* Call whenever a new boundary is applied: silent until the next inside fix.
  * Keeps any forced rest that is running. A running episode ends as
- * boundary_changed at the last fix's time. */
+ * boundary_changed at the last fix's time. Clears auto shut-off. */
 void cue_rearm(struct cue *c);
 
 /* cue_rearm() at now_ms */
@@ -121,7 +164,14 @@ struct cue_command cue_update(struct cue *c, const struct geofence_result *r,
 /* Oldest ended episode not yet taken. */
 bool cue_take_episode(struct cue *c, struct episode *out);
 
+/* Oldest welfare event not yet taken. */
+bool cue_take_welfare(struct cue *c, struct welfare_event *out);
+
+/* True when audio/pulse enforcement is allowed (not auto-shut-off, not track). */
+bool cue_enforcement_active(const struct cue *c);
+
 const char *cue_kind_str(enum cue_kind k);
 const char *episode_outcome_str(enum episode_outcome o);
+const char *welfare_event_str(enum welfare_event_kind k);
 
 #endif

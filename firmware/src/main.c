@@ -37,6 +37,10 @@ static const struct cue_config cue_cfg = {
 	.max_active_ms = 20000,
 	.rest_ms = 30000,
 	.outside_max_ms = 10000,
+	/* Welfare: REVIEW with animal-welfare expertise (docs/WELFARE-POLICY.md) */
+	.max_outside_cues = 3,
+	.escape_cycle_limit = 3,
+	.escape_cycle_window_ms = 24u * 60u * 60u * 1000u,
 };
 
 struct fix {
@@ -167,6 +171,7 @@ static void handle_fix(const struct fix *f)
 	};
 	struct app_fix_out out = app_fix(&app, &in, now);
 	struct episode ep;
+	struct welfare_event we;
 
 	if (out.applied) {
 		LOG_INF("event: staged boundary v%u now in force", out.ack.version);
@@ -204,7 +209,10 @@ static void handle_fix(const struct fix *f)
 		f->lat, f->lon, (double)f->accuracy, f->sats_in_fix, out.version,
 		geofence_state_str(out.r.state), out.r.margin_m, out.r.nearest_ring,
 		out.r.degraded ? " (degraded)" : "",
-		app.cue.mode == CUE_MODE_TRACK ? " (track)" : (app.cue.armed ? "" : " (unarmed)"),
+		app.cue.mode == CUE_MODE_TRACK
+			? " (track)"
+			: (app.cue.enforcement_off ? " (enforcement off)"
+						   : (app.cue.armed ? "" : " (unarmed)")),
 		out.cmd.active ? cue_kind_str(out.cmd.kind) : "off", out.cmd.volume, at);
 
 	if (out.r.changed) {
@@ -214,6 +222,11 @@ static void handle_fix(const struct fix *f)
 		LOG_INF("episode: %s ring=%d cues=%u max=%u min_margin=%.1fm %lld ms",
 			episode_outcome_str(ep.outcome), ep.ring, ep.cues, ep.max_level,
 			ep.min_margin_m, ep.end - ep.start);
+	}
+	while (cue_take_welfare(&app.cue, &we)) {
+		LOG_INF("welfare: %s outside_cues=%u escape_cycles=%u at=%lld",
+			welfare_event_str(we.kind), we.outside_cues, we.escape_cycles,
+			(long long)we.at_ms);
 	}
 }
 

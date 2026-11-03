@@ -3,6 +3,30 @@
 Wire-visible changes, newest first. Versions name the protocol, not any firmware or server
 release.
 
+## 2026-11-01
+
+### Welfare safeguards (firmware; vectors + registry prep)
+
+Not a wire version bump: welfare events are serial / local today. Cue rule and
+`cue.json` document the behaviour so openpasture and the collar stay aligned.
+
+- **Pulse cutoff:** at most `max_outside_cues` outside cues per crossing
+  (default **3**), then silent until clear inside the geofence; still bounded
+  by `outside_max_ms` (10 s).
+- **Auto shut-off:** `escape_cycle_limit` escape→return cycles
+  (default **3**) inside a fixed `escape_cycle_window_ms` (default **24 h**,
+  starts at the first escape and resets after that window) turns enforcement
+  off until a new boundary / `cue_rearm`.
+- **`cue.json`:** config carries the three welfare fields; cases
+  `pulse_cutoff_after_three_outside_cues` and
+  `auto_shutoff_after_three_escape_cycles`. Optional `expect.welfare` is
+  documented for a later runner update.
+- **Registry:** welfare event kinds `pulse_cutoff` / `returned` /
+  `auto_shutoff` / `enforcement_resumed` reserved (codes 1–4); report uplink
+  TBD.
+- Thresholds are **conservative defaults that need animal-welfare review**
+  before pulse hardware ships ([`docs/WELFARE-POLICY.md`](../docs/WELFARE-POLICY.md)).
+
 ## 2026-10-27
 
 ### v2.0.0-draft.2

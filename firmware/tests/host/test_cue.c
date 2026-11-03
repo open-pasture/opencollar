@@ -323,6 +323,158 @@ static void test_a_hole_drawn_on_an_animal_stays_silent(void)
 	CHECK(c.armed);
 }
 
+/* ---- Welfare ---- */
+
+static bool take_welfare(struct cue *c, struct welfare_event *e)
+{
+	bool got = cue_take_welfare(c, e);
+	struct welfare_event more;
+
+	CHECK(got && !cue_take_welfare(c, &more));
+	return got;
+}
+
+static void test_welfare_defaults_are_safe(void)
+{
+	struct cue c;
+	struct cue_config cfg = CUE_CFG;
+
+	cue_init(&c, &cfg);
+	CHECK(c.cfg.max_outside_cues == 3);
+	CHECK(c.cfg.escape_cycle_limit == 3);
+	CHECK(c.cfg.escape_cycle_window_ms == 24u * 60u * 60u * 1000u);
+	CHECK(cue_enforcement_active(&c));
+	CHECK(strcmp(welfare_event_str(WELFARE_PULSE_CUTOFF), "pulse_cutoff") == 0);
+}
+
+static void test_pulse_cutoff_bounds_outside_cues(void)
+{
+	struct geofence gf;
+	struct cue c;
+	struct welfare_event w;
+	struct cue_command cmd;
+	enum geofence_state st;
+	int64_t t = 0;
+
+	make_square(&gf);
+	cue_init(&c, &CUE_CFG);
+	step(&gf, &c, at(50, 50), t, &st);
+
+	/* Cross: first outside cue */
+	cmd = step(&gf, &c, at(50, -2), t += 1000, &st);
+	CHECK(cmd.active && cmd.kind == CUE_OUTSIDE && c.outside_cues == 1);
+	CHECK(!cue_take_welfare(&c, &w));
+
+	/* Second outside cue: still under budget */
+	cmd = step(&gf, &c, at(50, -3), t += 1000, &st);
+	CHECK(cmd.active && cmd.kind == CUE_OUTSIDE && c.outside_cues == 2);
+	CHECK(!c.pulse_cutoff);
+	CHECK(!cue_take_welfare(&c, &w));
+
+	/* Third outside cue hits the budget and engages cutoff */
+	cmd = step(&gf, &c, at(50, -4), t += 1000, &st);
+	CHECK(cmd.active && cmd.kind == CUE_OUTSIDE && c.outside_cues == 3);
+	CHECK(c.pulse_cutoff);
+	CHECK(take_welfare(&c, &w) && w.kind == WELFARE_PULSE_CUTOFF && w.outside_cues == 3);
+
+	/* Further outside fixes are silent until clear inside */
+	CHECK(!step(&gf, &c, at(50, -5), t += 1000, &st).active);
+	CHECK(!step(&gf, &c, at(50, -10), t += 5000, &st).active);
+
+	/* Warning zone on the way back is still silent (unarmed) */
+	CHECK(!step(&gf, &c, at(50, 2), t += 1000, &st).active);
+
+	/* Clear inside: returned, armed again, cues resume on a new approach */
+	CHECK(!step(&gf, &c, at(50, 20), t += 1000, &st).active);
+	CHECK(c.armed && !c.pulse_cutoff);
+	CHECK(take_welfare(&c, &w) && w.kind == WELFARE_RETURNED && w.escape_cycles == 1);
+	cmd = step(&gf, &c, at(50, 2), t += 1000, &st);
+	CHECK(cmd.active && cmd.kind == CUE_WARN);
+}
+
+static void test_auto_shutoff_after_repeated_escapes(void)
+{
+	struct geofence gf;
+	struct cue c;
+	struct welfare_event w;
+	enum geofence_state st;
+	int64_t t = 0;
+
+	make_square(&gf);
+	cue_init(&c, &CUE_CFG);
+
+	for (int cycle = 1; cycle <= 3; cycle++) {
+		step(&gf, &c, at(50, 50), t += 1000, &st);
+		CHECK(c.armed);
+		/* Cross and burn the outside budget */
+		step(&gf, &c, at(50, -2), t += 1000, &st);
+		step(&gf, &c, at(50, -3), t += 1000, &st);
+		step(&gf, &c, at(50, -4), t += 1000, &st);
+		while (cue_take_welfare(&c, &w)) {
+			/* Drain pulse_cutoff from this crossing */
+		}
+		/* Return inside: completes the cycle */
+		step(&gf, &c, at(50, 20), t += 1000, &st);
+		CHECK(cue_take_welfare(&c, &w) && w.kind == WELFARE_RETURNED &&
+		      w.escape_cycles == (uint8_t)cycle);
+		if (cycle < 3) {
+			CHECK(!c.enforcement_off && cue_enforcement_active(&c));
+			CHECK(!cue_take_welfare(&c, &w));
+		}
+	}
+
+	CHECK(c.enforcement_off && !cue_enforcement_active(&c));
+	CHECK(take_welfare(&c, &w) && w.kind == WELFARE_AUTO_SHUTOFF && w.escape_cycles == 3);
+
+	/* No more cues while shut off, even in the warning zone */
+	CHECK(!step(&gf, &c, at(50, 2), t += 1000, &st).active);
+	CHECK(!step(&gf, &c, at(50, -2), t += 1000, &st).active);
+
+	/* A new boundary clears shut-off */
+	cue_rearm_at(&c, t += 1000);
+	CHECK(!c.enforcement_off && cue_enforcement_active(&c));
+	CHECK(take_welfare(&c, &w) && w.kind == WELFARE_ENFORCEMENT_RESUMED);
+	step(&gf, &c, at(50, 50), t += 1000, &st);
+	CHECK(c.armed);
+	CHECK(step(&gf, &c, at(50, 2), t += 1000, &st).active);
+}
+
+static void test_escape_cycle_window_resets(void)
+{
+	struct geofence gf;
+	struct cue c;
+	struct welfare_event w;
+	enum geofence_state st;
+	int64_t t = 0;
+	struct cue_config cfg = CUE_CFG;
+
+	/* Short window so the test doesn't wait an hour */
+	cfg.escape_cycle_window_ms = 10000;
+	cfg.escape_cycle_limit = 2;
+	make_square(&gf);
+	cue_init(&c, &cfg);
+
+	/* Cycle 1 */
+	step(&gf, &c, at(50, 50), t, &st);
+	step(&gf, &c, at(50, -2), t += 1000, &st);
+	step(&gf, &c, at(50, -3), t += 1000, &st);
+	while (cue_take_welfare(&c, &w)) {
+	}
+	step(&gf, &c, at(50, 20), t += 1000, &st);
+	CHECK(take_welfare(&c, &w) && w.kind == WELFARE_RETURNED && w.escape_cycles == 1);
+
+	/* After the window, the next cycle starts a fresh count */
+	t += 11000;
+	step(&gf, &c, at(50, 50), t, &st);
+	step(&gf, &c, at(50, -2), t += 1000, &st);
+	step(&gf, &c, at(50, -3), t += 1000, &st);
+	while (cue_take_welfare(&c, &w)) {
+	}
+	step(&gf, &c, at(50, 20), t += 1000, &st);
+	CHECK(take_welfare(&c, &w) && w.kind == WELFARE_RETURNED && w.escape_cycles == 1);
+	CHECK(!c.enforcement_off);
+}
+
 int main(void)
 {
 	test_cue_volume_ramps();
@@ -338,5 +490,9 @@ int main(void)
 	test_track_mode_is_silent();
 	test_walking_into_a_hole_is_a_crossing();
 	test_a_hole_drawn_on_an_animal_stays_silent();
+	test_welfare_defaults_are_safe();
+	test_pulse_cutoff_bounds_outside_cues();
+	test_auto_shutoff_after_repeated_escapes();
+	test_escape_cycle_window_resets();
 	return test_done("cue");
 }

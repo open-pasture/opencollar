@@ -250,7 +250,11 @@ static void do_status(struct app *a, char *reply, size_t cap)
 		n += (size_t)snprintf(reply + n, cap - n, " %u", (unsigned)a->slots.s[i].version);
 	}
 	if (a->slots.n == 0 && n < cap) {
-		snprintf(reply + n, cap - n, " -");
+		n += (size_t)snprintf(reply + n, cap - n, " -");
+	}
+	if (n < cap) {
+		snprintf(reply + n, cap - n, " enforcement %s",
+			 a->cue.enforcement_off ? "off" : "on");
 	}
 }
 
