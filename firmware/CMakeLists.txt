@@ -24,6 +24,9 @@ target_sources(app PRIVATE
 
 target_include_directories(app PRIVATE third_party/monocypher)
 
+# Rook LTE-M reporter (firmware/rook), only with CONFIG_ROOK_LTE
+include(rook/rook.cmake)
+
 # The shape rules are single precision in a fixed order of operations, to
 # give the same answers as openpasture's op_geo::shape: no fused multiply-add.
 target_compile_options(app PRIVATE -ffp-contract=off)

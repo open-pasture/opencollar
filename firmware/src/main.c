@@ -15,6 +15,9 @@
 #include <modem/lte_lc.h>
 #include <modem/nrf_modem_lib.h>
 #include <nrf_modem_gnss.h>
+#ifdef CONFIG_ROOK_LTE
+#include "rook_lte.h"
+#endif
 
 #include "app.h"
 #include "boundary.h"
@@ -166,6 +169,9 @@ static void handle_fix(const struct fix *f)
 		.utc = f->utc,
 	};
 	struct app_fix_out out = app_fix(&app, &in, now);
+#ifdef CONFIG_ROOK_LTE
+	rook_lte_on_fix(&app, &in, &out, f->sats_in_fix);
+#endif
 	struct episode ep;
 
 	if (out.applied) {
@@ -281,6 +287,10 @@ int main(void)
 						K_POLL_MODE_NOTIFY_ONLY, &fix_q, 0),
 		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
 						&console_sig, 0),
+#ifdef CONFIG_ROOK_LTE
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
+					 rook_lte_signal()),
+#endif
 	};
 
 	LOG_INF("OpenCollar %s starting", APP_FW_VERSION);
@@ -314,6 +324,9 @@ int main(void)
 	if (gnss_start() == 0) {
 		LOG_INF("GNSS started");
 	}
+#ifdef CONFIG_ROOK_LTE
+	rook_lte_start(&app);
+#endif
 
 	while (true) {
 		k_poll(events, ARRAY_SIZE(events), K_FOREVER);
@@ -327,6 +340,13 @@ int main(void)
 			k_poll_signal_reset(&console_sig);
 			handle_line();
 		}
+#ifdef CONFIG_ROOK_LTE
+		if (events[2].state == K_POLL_STATE_SIGNALED) {
+			k_poll_signal_reset(rook_lte_signal());
+			rook_lte_service(&app);
+		}
+		events[2].state = K_POLL_STATE_NOT_READY;
+#endif
 		events[0].state = K_POLL_STATE_NOT_READY;
 		events[1].state = K_POLL_STATE_NOT_READY;
 	}

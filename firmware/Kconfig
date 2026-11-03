@@ -8,4 +8,6 @@ config OPENCOLLAR_BENCH_BOUNDARY
 	  cues on the bench without a server. Off on real collars, which never
 	  invent a fence.
 
+rsource "rook/Kconfig"
+
 source "Kconfig.zephyr"
