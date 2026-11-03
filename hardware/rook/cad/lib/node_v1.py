@@ -205,10 +205,22 @@ CRADLE_R = 9.4              # arc seat (~cell R 9.2 + 0.2 clearance)
 LOCATOR_H = 1.2
 LOCATOR_T = 1.5
 BUZZER_CLEAR = 0.3
+# Buzzer slot rails: board 1.6 + clear slides under a 45° lip (no supports).
+BUZZER_RAIL_LIP = 1.5
+BUZZER_RAIL_WALL = 1.5
+BUZZER_RAIL_LEN = 16.0          # between L-corner arms; truncated for column keep-out
 CABLE_GROOVE_W = 3.0
 CABLE_GROOVE_D = 1.2
 DIMPLE_D = 1.0
 DIMPLE_DEPTH = 0.4
+# Slim-cap bq24074 seat (matches cap_refs; collar.py rot=True long-side along Y).
+BQ_AT = (0.0, 52.0)
+BQ_CLEAR = 0.3
+BQ_STAND_H = 1.0               # printable pad; board top of pad
+BQ_STAND_D = 5.0
+BQ_PILOT_D = 2.1               # self-tap pilot for Ø2.5 board holes
+BQ_LOC_H = 3.0
+BQ_LOC_ARM = 4.0
 
 
 # 5×7 bitmap glyphs (rows top→bottom). Built from boxes so engraving booleans
@@ -365,6 +377,52 @@ def _l_corner(name, cx, cy, z, sx, sy, t=LOCATOR_T, h=LOCATOR_H, arm=4.0):
     return oc.union(a, b)
 
 
+def _slot_rail_y(name, y_edge, x_at, length, z0, side="+Y",
+                 slot_h=None, lip=BUZZER_RAIL_LIP, wall=BUZZER_RAIL_WALL):
+    """Slot rail along a board edge parallel to X (holds the board down).
+
+    `side='+Y'`: wall outside toward +Y, lip grows −Y over the board.
+    `side='-Y'`: mirrored. Lip underside is 45° (lip rise = lip run) so the
+    cavity-up print needs no supports.
+    """
+    if slot_h is None:
+        slot_h = d.QWIIC_BUZZER["board"][2] + BUZZER_CLEAR
+    h = slot_h + lip
+    if side == "+Y":
+        # YZ profile CCW from +X: outer wall + 45° lip over the board.
+        profile = [
+            (y_edge + wall, z0),
+            (y_edge + wall, z0 + h),
+            (y_edge, z0 + h),
+            (y_edge - lip, z0 + slot_h),
+            (y_edge, z0 + slot_h),
+            (y_edge, z0),
+        ]
+    elif side == "-Y":
+        profile = [
+            (y_edge - wall, z0),
+            (y_edge, z0),
+            (y_edge, z0 + slot_h),
+            (y_edge + lip, z0 + slot_h),
+            (y_edge, z0 + h),
+            (y_edge - wall, z0 + h),
+        ]
+    else:
+        raise ValueError(f"unsupported slot rail side={side!r}")
+    return oc.prism_x(name, profile, length, at_x=x_at)
+
+
+def _bq_hole_xy(at=BQ_AT):
+    """bq24074 hole centres in cap coords (board rot=True, long side along Y)."""
+    bx, by = d.BQ24074["board"][0], d.BQ24074["board"][1]
+    out = []
+    for hx, hy in d.BQ24074["holes"]:
+        lx, ly = hx - bx / 2, hy - by / 2
+        lx, ly = -ly, lx  # 90° CCW — matches collar._board_holes(rot=True)
+        out.append((at[0] + lx, at[1] + ly))
+    return out
+
+
 def _arrow_stamp(name, tip, toward="+X", z_face=0.0, length=10.0, width=6.0, depth=ENGRAVE_D):
     """Engraved chevron (box stamps) pointing toward a cable/port axis.
 
@@ -478,17 +536,46 @@ def _cap_base_saddle_underside(b):
     return b
 
 
+def _cap_bq_seat(b):
+    """L-corner fence + hole-pattern standoffs for Adafruit 4755 (bq24074).
+
+    Placement matches cap_refs / collar rot=True at BQ_AT. No overhanging
+    kit_fence frame — a horizontal ledge would need supports on the cavity-up
+    print — so this is L-corners (vertical walls) + Ø5×1 mm standoffs only.
+    Slim cap has no kit_fence solid to collide with; kit ref sits at (−6,−6).
+    L-walls sit fully outside the board footprint (inner face at board+clear).
+    """
+    # World half-sizes after rot=True: X=board[1]/2, Y=board[0]/2.
+    hx = d.BQ24074["board"][1] / 2 + BQ_CLEAR + LOCATOR_T / 2
+    hy = d.BQ24074["board"][0] / 2 + BQ_CLEAR + LOCATOR_T / 2
+    z0 = CAP_FLOOR_Z
+    for i, (csx, csy) in enumerate(((1, 1), (1, -1), (-1, 1), (-1, -1))):
+        cx = BQ_AT[0] + csx * hx
+        cy = BQ_AT[1] + csy * hy
+        loc = _l_corner(f"bql{i}", cx, cy, z0, -csx, -csy,
+                        t=LOCATOR_T, h=BQ_LOC_H, arm=BQ_LOC_ARM)
+        oc.union(b, loc)
+    for i, (x, y) in enumerate(_bq_hole_xy()):
+        post = oc.cylinder(f"bqst{i}", BQ_STAND_D, BQ_STAND_H,
+                           at=(x, y, z0), anchor="bottom")
+        oc.cut(post, oc.cylinder(f"bqpi{i}", BQ_PILOT_D, BQ_STAND_H + 0.5,
+                                 at=(x, y, z0 - 0.1), anchor="bottom"))
+        oc.union(b, post)
+    return b
+
+
 def _cap_assembly_aids(b):
-    """Inside-floor labels + bed-face dimples for the slim cap.
+    """bq24074 seat, inside-floor labels, bed-face dimples for the slim cap.
 
     Labels stay off the bed face: remeshed glyph booleans into z=0 left hundreds
     of multi-face sliver edges in the STL. Inside floor (CAP_FLOOR_Z) cuts are
     watertight; bed face stays planar (dimples only).
     """
+    _cap_bq_seat(b)
     _, lid_screw = lid_screw_stack_mm("saddle")
     _, clamp_screw = clamp_screw_stack_mm("saddle")
     floor = CAP_FLOOR_Z
-    # Mid-field away from clamp inserts / pin sockets / columns.
+    # Mid-field away from clamp inserts / pin sockets / columns / bq seat.
     labels = [
         _engrave_cut("cap_name", "CAP BASE", ENGRAVE_SIZE, (0, 20), floor),
         _engrave_cut("cap_rev", f"REV {AID_REV}", ENGRAVE_SIZE, (0, 12), floor),
@@ -498,9 +585,9 @@ def _cap_assembly_aids(b):
         _engrave_cut("cap_pins", "PIN", ENGRAVE_SIZE, (0, 0), floor),
     ]
     oc.cut(b, *labels)
-    # Orientation arrow on the floor: points +Y (GPS / free end of the spine).
-    oc.cut(b, *_arrow_stamp("cap_arrow", (0, 32), toward="+Y", z_face=floor,
-                            length=12.0, width=7.0))
+    # Arrow toward +Y / GPS end — keep south of the bq24074 seat (board −Y ≈ 33).
+    oc.cut(b, *_arrow_stamp("cap_arrow", (0, 26), toward="+Y", z_face=floor,
+                            length=10.0, width=6.0))
     # Bed-face dimples only (simple cylinders — no glyph slivers).
     for i, (x, y) in enumerate(CAP_COLS):
         oc.cut(b, oc.cylinder(f"cdim{i}", DIMPLE_D, DIMPLE_DEPTH + 0.1,
@@ -603,8 +690,9 @@ def cap_refs(z_lid=CAP_BASE_H):
     cable_z = CAP_FLOOR_Z + (CAP_BASE_H - CAP_FLOOR_Z) / 2
     refs = [
         oc.box("ref_kit", (kb[1], kb[0], kb[2] + k["above_pcb"]), at=(-6.0, -6.0, CAP_FLOOR_Z + 2.0), anchor="bottom"),
+        # +0.3 above standoff tops so the clearance check doesn't see coplanar contact.
         oc.box("ref_bq24074", (d.BQ24074["board"][1], d.BQ24074["board"][0], BQ_H),
-               at=(0.0, 52.0, CAP_FLOOR_Z + 0.3), anchor="bottom"),
+               at=(BQ_AT[0], BQ_AT[1], CAP_FLOOR_Z + BQ_STAND_H + 0.3), anchor="bottom"),
         oc.box("ref_ism330", (d.ISM330["board"][1], d.ISM330["board"][0], 3.2),
                at=(18.0, -8.0, CAP_FLOOR_Z + 2.0), anchor="bottom"),
         oc.box("ref_gps_patch", (25.0, 25.0, PATCH_H),
@@ -657,19 +745,32 @@ def _pod_assembly_aids(b, side="L"):
                                 at=(rx, cell_xy[1], POD_FLOOR + CRADLE_R), axis="X"))
         oc.union(b, rib)
 
-    # (2) Buzzer L-corner locators (25.4 board + 0.3 clearance each side).
+    # (2) Buzzer L-corner locators — walls fully outside the board footprint
+    # (inner face at board+clear) so the PCB can sit on the floor in the slots.
     # Trim the corner nearest column (±37, +27) so locator-to-column ≥0.5 mm.
-    bw = d.QWIIC_BUZZER["board"][0] + 2 * BUZZER_CLEAR
-    half = bw / 2
+    half = d.QWIIC_BUZZER["board"][0] / 2 + BUZZER_CLEAR + LOCATOR_T / 2
     col_sx = 1 if side == "L" else -1
     for i, (csx, csy) in enumerate(((1, 1), (1, -1), (-1, 1), (-1, -1))):
         near_col = (csx == col_sx) and (csy == 1)
-        inset = 2.0 if near_col else 0.0
+        # Near column: pull the corner in (−X) and shorten arms (≥0.5 clear).
         arm = 2.5 if near_col else 4.0
-        cx = buzz_xy[0] + csx * (half - inset)
-        cy = buzz_xy[1] + csy * (half - inset)
+        shrink = 2.0 if near_col else 0.0
+        cx = buzz_xy[0] + csx * (half - shrink)
+        cy = buzz_xy[1] + csy * half
         loc = _l_corner(f"bl{side}{i}", cx, cy, POD_FLOOR, -csx, -csy, arm=arm)
         oc.union(b, loc)
+
+    # (2b) Slot rails on ±Y board edges — board slides in along X (open toward
+    # the column end). 45° lip holds the 1.6 mm PCB down; length stays between
+    # the L-arms and ≥0.5 mm from column (±37, +27).
+    bh = d.QWIIC_BUZZER["board"][1] / 2  # 12.7
+    # Bias rail centre away from the column (±X) so the +X end clears 0.5 mm.
+    rail_x = buzz_xy[0] - sx * 2.0
+    for i, (side_y, y_edge) in enumerate((("+Y", buzz_xy[1] + bh),
+                                          ("-Y", buzz_xy[1] - bh))):
+        rail = _slot_rail_y(f"brail{side}{i}", y_edge, rail_x, BUZZER_RAIL_LEN,
+                            POD_FLOOR, side=side_y)
+        oc.union(b, rail)
 
     # (3) Cable grooves in the floor: cell lead end → crest entry; buzzer → entry.
     cell_lead = (cell_xy[0] + sx * (CELL["l"] / 2 - 2.0), cell_xy[1])
@@ -801,11 +902,14 @@ def pod_refs():
     qb = d.QWIIC_BUZZER
     # Cell sits in the R=CRADLE_R arc seat (axis at floor+R); top under the rim.
     cell_z = POD_FLOOR + CRADLE_R
-    # Buzzer board above the L-locators.
-    buzz_z = POD_FLOOR + LOCATOR_H + 0.3
+    # Board sits on the floor in the ±Y slot rails; inset Y so the 1.5 mm lips
+    # (intentional hold-downs) are not flagged as clearance failures.
+    buzz_z = POD_FLOOR
     refs = [
         oc.cylinder("ref_cell", CELL["d"], CELL["l"], at=(CELL_AT[0], CELL_AT[1], cell_z), axis="X"),
-        oc.box("ref_buzzer", (qb["board"][0], qb["board"][1], qb["board"][2] + qb["buzzer"]["size"][2]),
+        oc.box("ref_buzzer", (qb["board"][0],
+                              qb["board"][1] - 2 * BUZZER_RAIL_LIP - 0.2,
+                              qb["board"][2] + qb["buzzer"]["size"][2]),
                at=(BUZZER_AT[0], BUZZER_AT[1], buzz_z), anchor="bottom"),
     ]
     for i, (x, y) in enumerate(ELECTRODES):

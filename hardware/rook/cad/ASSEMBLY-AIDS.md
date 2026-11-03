@@ -19,10 +19,11 @@ STLs: `stl/node_v1_cap_saddle/`, `stl/node_v1_pod/` (includes `node_pod_base_R`)
 
 | Aid | Use |
 | --- | --- |
+| bq24074 L-corner fence + Ø5×1 mm standoffs on the 2.54 hole pattern at (0, 52) | Drop the Adafruit 4755 in; pilots Ø2.1. No overhanging kit_fence ledge (would need supports cavity-up) |
 | Inside-floor `CAP BASE`, `REV AID1` (5 × 0.8) | Identify the part during assembly |
 | `M3x14 CLAMP`, `M3x16 LID`, `M3x4 INSERT` | Grab the right fasteners without the BOM |
 | `PIN` | Match the saddle roof pins |
-| Floor arrow → +Y | Orient GPS / free end of the spine |
+| Floor arrow → +Y (south of bq seat) | Orient GPS / free end of the spine |
 | Ø1 × 0.4 dimples on the bed face by lid columns | Visual / finger registration when starting inserts |
 
 Bed face stays planar (dimples only — glyph cuts into z=0 left STL slivers).
@@ -35,7 +36,8 @@ up, no supports.
 | Aid | Use |
 | --- | --- |
 | Cell cradle (2× R9.4 arc ribs, 2.5 mm) | Drop the Ø18.4 1781 in (no roll); leads toward the crest cable entry |
-| Buzzer L-corners (1.2 × 1.5, +0.3 clear; +X/+Y trimmed) | Seat the 25.4 Qwiic board; ≥0.5 mm clear of column (37,27) |
+| Buzzer L-corners (1.2 × 1.5, +0.3 clear; +X/+Y trimmed) | XY seat for the 25.4 Qwiic board; ≥0.5 mm clear of column (37,27) |
+| Buzzer ±Y slot rails (1.6+0.3 slot, 1.5 mm 45° lip, 16 mm long) | Board slides in along X; lip holds PCB down; no supports |
 | Floor cable grooves (3 × 1.2) | Route cell and buzzer leads to the Ø6 crest entry before potting |
 | Floor box-stamps at cell / buzzer / stud / port | Tactile cues without font slivers |
 | Floor arrow → crest cable (±X) | Orient the pod before potting |
@@ -71,14 +73,16 @@ pocket floor. Clamp stays **M3×14**. See `SADDLE.md`.
 | Pod buzzer L-locators ×4 | +0.07 g each base |
 | Pod cable grooves | −0.5 g each base (cut) |
 | Cap / pod engraving + dimples | −0.05 g each base |
-| Net on bases plate (cap + 2 pods) | ≈ 0 g (cuts ≈ adds) |
+| Net on bases plate (cap + 2 pods) | ≈ 0 g before PCB rails (cuts ≈ adds) |
+| Pod buzzer slot rails ×2 | ≈ +0.4 g each base |
+| Cap bq24074 L-corners + standoffs | ≈ +0.8 g |
 | Orientation arrows (cuts) | ≈ 0 g (removed) |
 | Coupon gauge strip + e-foot pad | ≈ +1.6 g on the coupon |
 | `test_coupon.stl` | ~11.5 g solid (~6–8 g @ typical infill) |
 | `scale_bar_100.stl` | ~2.2 g solid |
 
-Bases-plate aids net ≈ 0 g (under the ~12 g budget). Coupon is an optional
-side print for fit learning.
+PCB rails add ≈ +0.3 g/cap and ≈ +0.2 g/pod (under the ~3 g/base budget).
+Earlier floor/wall aids still net ≈ 0 g. Coupon is an optional side print.
 
 ## Intentional omissions
 
