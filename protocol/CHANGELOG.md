@@ -3,6 +3,23 @@
 Wire-visible changes, newest first. Versions name the protocol, not any firmware or server
 release.
 
+## 2026-11-03
+
+### Auto shut-off: caretaker re-arm only (Cody)
+
+Not a wire version bump. A fence move must not clear welfare auto shut-off.
+
+- **Decision (Cody, Nov 3):** once `escape_cycle_limit` trips, enforcement
+  stays off until a person re-arms that collar. A new boundary (`cue_rearm`)
+  never clears shut-off or resets escape-cycle counters.
+- **Caretaker path:** `cue_clear_shutoff` / serial `rearm` clears shut-off,
+  resets the counters, and emits `enforcement_resumed`.
+- **`cue.json`:** `rearm` is a new boundary only; new step
+  `clear_shutoff`; case `boundary_change_does_not_clear_shutoff`;
+  `auto_shutoff_after_three_escape_cycles` ends with caretaker clear.
+- Docs and registry wording updated
+  ([`docs/WELFARE-POLICY.md`](../docs/WELFARE-POLICY.md)).
+
 ## 2026-11-01
 
 ### Welfare safeguards (firmware; vectors + registry prep)
@@ -16,7 +33,8 @@ Not a wire version bump: welfare events are serial / local today. Cue rule and
 - **Auto shut-off:** `escape_cycle_limit` escape→return cycles
   (default **3**) inside a fixed `escape_cycle_window_ms` (default **24 h**,
   starts at the first escape and resets after that window) turns enforcement
-  off until a new boundary / `cue_rearm`.
+  off until an explicit caretaker re-arm (see 2026-11-03; provisional text
+  here said a new boundary cleared it).
 - **`cue.json`:** config carries the three welfare fields; cases
   `pulse_cutoff_after_three_outside_cues` and
   `auto_shutoff_after_three_escape_cycles`. Optional `expect.welfare` is

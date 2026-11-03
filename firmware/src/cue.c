@@ -130,10 +130,23 @@ static void note_return(struct cue *c, int64_t now_ms)
 
 void cue_rearm_at(struct cue *c, int64_t now_ms)
 {
+	/* New boundary only: arming / episode / in-progress escape state.
+	 * Shut-off and escape-cycle counters stay put (Cody, Nov 3). */
 	close_episode(c, EPISODE_BOUNDARY_CHANGED, now_ms);
 	c->armed = false;
 	c->seen_outside = false;
 	c->cueing = false;
+	clear_escape_state(c);
+}
+
+void cue_rearm(struct cue *c)
+{
+	cue_rearm_at(c, c->last_ms);
+}
+
+void cue_clear_shutoff_at(struct cue *c, int64_t now_ms)
+{
+	/* Caretaker only — never call from a fence / boundary update. */
 	clear_escape_state(c);
 	c->escape_cycles = 0;
 	c->escape_window_start_ms = 0;
@@ -143,9 +156,9 @@ void cue_rearm_at(struct cue *c, int64_t now_ms)
 	}
 }
 
-void cue_rearm(struct cue *c)
+void cue_clear_shutoff(struct cue *c)
 {
-	cue_rearm_at(c, c->last_ms);
+	cue_clear_shutoff_at(c, c->last_ms);
 }
 
 void cue_set_mode(struct cue *c, enum cue_mode mode)

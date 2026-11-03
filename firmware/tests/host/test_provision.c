@@ -171,6 +171,9 @@ static void test_lines(void)
 {
 	CHECK(strcmp(say("  status  "), "collar col_3 herd herd_3 fw 0.2.0 config - active - slots - enforcement on") ==
 	      0);
+	/* Caretaker re-arm (clears shut-off); not a fence move */
+	CHECK(strcmp(say("rearm"), "ok enforcement on") == 0);
+	CHECK(strcmp(say("rearm now"), "error unknown_command") == 0);
 	CHECK(strcmp(say(""), "") == 0);
 	CHECK(strcmp(say("   "), "") == 0);
 	CHECK(strcmp(say("statusx"), "error unknown_command") == 0);

@@ -28,8 +28,10 @@
  * Welfare (see docs/WELFARE-POLICY.md): outside cues are count-capped per
  * crossing (pulse cutoff), then suspended until the animal is clear inside;
  * repeated escape→return cycles auto-shut off enforcement for that animal.
- * Thresholds are conservative defaults and need animal-welfare review.
- * Welfare events are queued like episodes so they stay observable.
+ * A new boundary (cue_rearm) never clears shut-off or resets escape-cycle
+ * counters; only an explicit caretaker cue_clear_shutoff does. Thresholds are
+ * conservative defaults and need animal-welfare review. Welfare events are
+ * queued like episodes so they stay observable.
  */
 #ifndef OPENCOLLAR_CUE_H
 #define OPENCOLLAR_CUE_H
@@ -102,7 +104,7 @@ enum welfare_event_kind {
 	WELFARE_PULSE_CUTOFF = 0,    /* Outside cue budget spent; suspended until inside */
 	WELFARE_RETURNED,            /* Clear inside after a crossing (one escape cycle) */
 	WELFARE_AUTO_SHUTOFF,        /* Escape-cycle limit hit; enforcement off */
-	WELFARE_ENFORCEMENT_RESUMED, /* Cleared by a new boundary / rearm */
+	WELFARE_ENFORCEMENT_RESUMED, /* Cleared by caretaker cue_clear_shutoff only */
 };
 
 struct welfare_event {
@@ -132,7 +134,7 @@ struct cue {
 	bool crossed_out;               /* A real crossing is open until returned */
 	uint8_t escape_cycles;          /* Completed escape→return cycles in the window */
 	int64_t escape_window_start_ms; /* Start of the current cycle window; 0 = none */
-	bool enforcement_off;           /* Auto shut-off: no cues until rearm */
+	bool enforcement_off; /* Auto shut-off: no cues until cue_clear_shutoff */
 
 	bool ep_open;
 	struct episode ep;
@@ -146,13 +148,26 @@ struct cue {
 /* Starts unarmed, in audio mode. Missing welfare fields (zero) get safe defaults. */
 void cue_init(struct cue *c, const struct cue_config *cfg);
 
-/* Call whenever a new boundary is applied: silent until the next inside fix.
- * Keeps any forced rest that is running. A running episode ends as
- * boundary_changed at the last fix's time. Clears auto shut-off. */
+/*
+ * New boundary (or boot / provision wipe of the fence arming state).
+ * Silent until the next inside fix; keeps any forced rest; ends a running
+ * episode as boundary_changed. Does NOT clear auto shut-off and does NOT
+ * reset escape-cycle counters — only cue_clear_shutoff does that.
+ */
 void cue_rearm(struct cue *c);
 
 /* cue_rearm() at now_ms */
 void cue_rearm_at(struct cue *c, int64_t now_ms);
+
+/*
+ * Explicit caretaker re-arm for this collar. Clears auto shut-off, resets
+ * escape-cycle counters, and emits enforcement_resumed when shut-off was
+ * active. A fence move must call cue_rearm, never this.
+ */
+void cue_clear_shutoff(struct cue *c);
+
+/* cue_clear_shutoff() at now_ms */
+void cue_clear_shutoff_at(struct cue *c, int64_t now_ms);
 
 /* Switch between cueing and tracking only. A running episode ends as
  * boundary_changed: the mode comes with a boundary. */
