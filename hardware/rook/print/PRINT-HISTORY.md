@@ -8,6 +8,7 @@ Printer: Bambu Lab P2S (home, Cody's LAN 192.168.1.248, cloud mode)
 | 2 | 2026-11-02 | Node V1 cap (`F2_cap.gcode.3mf`) | PLA | Done — looks great (obsolete CAD) | Same old 62 × 142 / P122 CAD. Started via Bambu Connect on Openpasture-1. See PRINTING.md. |
 | 3 | 2026-11-02 | Node V1 cap v3 (76×160, P124 pocket, gabled roof, no supports) | PLA (Bambu PLA, AMS A1) | Started | From commit `951e057`. P2S Openpasture-1. Fast-fit profile (0.28 mm, 21 mm³/s, 10% gyroid, no supports). 148 layers; estimate 3h51m, 156.27 g. Started ~3:53 PM CT via Bambu Connect on Cody's Mac. |
 | 4 | 2026-11-02 | Bases-only plate: slim `node_cap_base_saddle` + `node_pod_base` (L) + pod R mirrored | PLA | Stopped (~16 min) | Pre-aids STLs (no cradle/labels). 0.16 mm layer, 153 layers; est 5h55m, 173.3 g. Started 8:19 PM CT via Bambu Connect on Openpasture-1; Cody stopped ~8:35 PM CT to restart with assembly aids (REV AID1). **Lid screw decision: M3×16** (clamp M3×14). |
+| 5 | 2026-11-02 | Aids plate v7: slim cap base + pod L + pod R + test coupon + XYZ scale bar (main `7a3660f`, PR #18 `f906926`) | PLA | Started 10:33 PM CT, result pending | `aids_plate_0.16_PLA_p2s.gcode.3mf` (cap_set_v7), 0.16 mm, 15% gyroid, 4 walls, tree supports on pods only, 153 layers, estimate 6h55m / 192.39 g. Sent via Bambu Connect on Openpasture-1, PLA in AMS A1. 15% gyroid is a fit test only, not a strength test. |
 
 ## CAD change 2026-11-02
 
