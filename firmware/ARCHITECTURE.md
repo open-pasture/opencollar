@@ -155,3 +155,14 @@ actual build. Check all three before soldering.
 - Board: `zephyr/boards/seeed/xiao_ble/` (`xiao_ble`, plus `xiao_ble_nrf52840_sense`).
 - **No Wio-SX1262 shield** in `zephyr/boards/shields/` (only `semtech_sx1262mb2das`,
   `semtech_sx1261mb2bas`). op-fw-radio writes a `wio_sx1262` overlay in `radio/boards/`.
+
+## Per-collar docs and pairing
+Each collar folder (`firmware/rook`, `firmware/starling`) gets `README.md`, `FLASH.md`,
+`CONTROL.md` and `PROVISION.md`. Cross-collar behaviour lives in `firmware/docs/INTERFACES.md`:
+how Rook, Starling and the server talk (v1 HTTPS/JSON, LoRa gossip, signing).
+
+The pilot has no BLE. "Pairing" means provisioning the farm public key, collar id and role over
+serial; the server then registers the collar.
+
+`firmware/src/` stays in place until a migration PR after Nov 4 so in-flight draft PRs do not
+conflict. Until then, op-fw-rook-lte's work lives in `firmware/src/rook_lte`.
