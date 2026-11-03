@@ -16,6 +16,7 @@ struct mock_ctx {
 	int16_t rx_rssi;
 	int8_t rx_snr;
 	uint32_t tx_count;
+	uint32_t cad_count;
 	uint64_t rng;
 };
 
@@ -65,10 +66,17 @@ uint32_t oc_radio_mock_tx_count(void)
 	return g.tx_count;
 }
 
-static oc_radio_status_t m_cad(void *ctx, oc_radio_cad_result_t *out)
+uint32_t oc_radio_mock_cad_count(void)
+{
+	return g.cad_count;
+}
+
+static oc_radio_status_t m_cad(void *ctx, oc_radio_cad_result_t *out,
+			       uint32_t timeout_ms)
 {
 	(void)ctx;
-	g.now_us += 1000ull;
+	g.cad_count++;
+	g.now_us += timeout_ms ? (uint64_t)timeout_ms * 1000ull : 1000ull;
 	*out = g.cad_busy ? OC_RADIO_CAD_BUSY : OC_RADIO_CAD_FREE;
 	return OC_RADIO_OK;
 }

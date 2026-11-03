@@ -100,9 +100,12 @@ act as RF-switch ctrl (HIGH in TX). Overlay sets `dio2-tx-enable` and
 - TX capped at **+14 dBm** until measured. Certification / legal review
   before field deployment is Cody's call — this firmware does not claim it.
 - Hourly airtime budget ~1 %; min TX gap 100 ms; CAD before every TX.
-- HAL: `firmware/lora/include/opencollar/radio_hal.h` (`ab5350e`). Zephyr
-  bind helper before `oc_radio_init`. Remaining proto asks: CAD timeout,
-  SKIP_CAD.
+- HAL: `firmware/lora/include/opencollar/radio_hal.h` (`8f25a8e`). Zephyr
+  bind helper before `oc_radio_init`. CAD timeout via `oc_radio_cad(..., ms)`
+  (0 → `CONFIG_RADIO_CAD_TIMEOUT_MS`, default 50). `OC_RADIO_TX_FLAG_SKIP_CAD`
+  skips CAD but still enforces duty/gap (logged).
+- `rx_meta.peer_id`: SX1262 PHY has no addressing — left **0**; protocol /
+  sim fill it. Documented here so callers do not expect a radio-layer id.
 - Board CI hook: `firmware/radio/ci/build_board.sh` (called from
   op-firmware's `firmware-build.yml`, not a radio-owned workflow).
 

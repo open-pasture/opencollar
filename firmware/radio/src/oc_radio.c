@@ -5,7 +5,24 @@
 #include "opencollar/radio_sx1262.h"
 #include "radio_airtime.h"
 
+#include <stdio.h>
 #include <string.h>
+
+#ifdef __ZEPHYR__
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(oc_radio_hal, LOG_LEVEL_INF);
+#endif
+
+static void log_skip_cad(oc_radio_t *radio)
+{
+	radio->skip_cad_count++;
+#ifdef __ZEPHYR__
+	LOG_INF("SKIP_CAD (count=%u); duty/gap limits still enforced",
+		radio->skip_cad_count);
+#else
+	fprintf(stderr, "oc_radio: SKIP_CAD (count=%u)\n", radio->skip_cad_count);
+#endif
+}
 
 void oc_radio_cfg_us915_defaults(oc_radio_cfg_t *cfg, oc_radio_limits_t *lim)
 {
@@ -62,6 +79,8 @@ oc_radio_status_t oc_radio_sx1262_bind(oc_radio_t *radio,
 	radio->preamble = OC_RADIO_US915_PREAMBLE;
 	radio->tx_power_cap_dbm = OC_RADIO_US915_TX_CAP_DBM;
 	radio->cad_before_tx = true;
+	radio->cad_timeout_default_ms = CONFIG_RADIO_CAD_TIMEOUT_MS;
+	radio->skip_cad_count = 0u;
 	radio->dwell_limit_us = OC_RADIO_US915_DWELL_LIMIT_US;
 	radio->dwell_window_ms = OC_RADIO_US915_DWELL_WINDOW_MS;
 	radio->bound = true;
@@ -192,12 +211,16 @@ oc_radio_status_t oc_radio_set_power(oc_radio_t *radio, int8_t dbm)
 	return OC_RADIO_OK;
 }
 
-oc_radio_status_t oc_radio_cad(oc_radio_t *radio, oc_radio_cad_result_t *out)
+oc_radio_status_t oc_radio_cad(oc_radio_t *radio, oc_radio_cad_result_t *out,
+			       uint32_t timeout_ms)
 {
+	uint32_t t;
+
 	if (radio == NULL || !radio->inited || out == NULL) {
 		return OC_RADIO_ERR_PARAM;
 	}
-	return radio->ops.cad(radio->ops.ctx, out);
+	t = timeout_ms ? timeout_ms : radio->cad_timeout_default_ms;
+	return radio->ops.cad(radio->ops.ctx, out, t);
 }
 
 oc_radio_status_t oc_radio_recv(oc_radio_t *radio, uint8_t *buf, size_t cap,
@@ -211,8 +234,14 @@ oc_radio_status_t oc_radio_recv(oc_radio_t *radio, uint8_t *buf, size_t cap,
 	}
 	st = radio->ops.recv(radio->ops.ctx, buf, cap, out_len, out_meta,
 			     timeout_ms);
-	if (st == OC_RADIO_OK && out_meta && out_meta->t_rx_us == 0ull) {
-		out_meta->t_rx_us = now_us(radio);
+	if (st == OC_RADIO_OK && out_meta) {
+		if (out_meta->t_rx_us == 0ull) {
+			out_meta->t_rx_us = now_us(radio);
+		}
+		/*
+		 * peer_id: SX1262 PHY has no addressing. Leave 0 unless a
+		 * higher layer / sim backend fills it. Documented in RUNBOOK.
+		 */
 	}
 	return st;
 }
@@ -286,8 +315,11 @@ oc_radio_status_t oc_radio_send(oc_radio_t *radio, const uint8_t *buf,
 		return OC_RADIO_ERR_PARAM;
 	}
 
-	if (radio->cad_before_tx) {
-		st = radio->ops.cad(radio->ops.ctx, &cad);
+	if (opts && (opts->flags & OC_RADIO_TX_FLAG_SKIP_CAD)) {
+		log_skip_cad(radio);
+	} else if (radio->cad_before_tx) {
+		st = radio->ops.cad(radio->ops.ctx, &cad,
+				    radio->cad_timeout_default_ms);
 		if (st != OC_RADIO_OK) {
 			return st;
 		}

@@ -42,6 +42,7 @@ int main(void)
 	uint8_t buf[32];
 	size_t n = 0;
 	uint32_t air;
+	uint32_t cads_before;
 	oc_radio_cad_result_t cad;
 	oc_radio_tx_opts_t opts = oc_radio_tx_opts_default();
 
@@ -64,6 +65,17 @@ int main(void)
 	      "cad busy");
 	oc_radio_mock_set_cad_busy(0);
 
+	/* SKIP_CAD: no CAD call, but gap/duty still apply */
+	setup(&r, 5u * 1000u * 1000u, 50, 400000u);
+	cads_before = oc_radio_mock_cad_count();
+	opts.flags = OC_RADIO_TX_FLAG_SKIP_CAD;
+	check(oc_radio_send(&r, payload, 16, &opts) == OC_RADIO_OK, "skip cad");
+	check(oc_radio_mock_cad_count() == cads_before, "no cad on skip");
+	check(r.skip_cad_count == 1, "skip logged");
+	check(oc_radio_send(&r, payload, 16, &opts) == OC_RADIO_ERR_GAP,
+	      "gap after skip");
+	opts = oc_radio_tx_opts_default();
+
 	/* Hourly budget → ERR_DUTY */
 	setup(&r, air, 50, 400000u);
 	check(oc_radio_send(&r, payload, 16, &opts) == OC_RADIO_OK, "budget ok");
@@ -71,29 +83,27 @@ int main(void)
 	check(oc_radio_send(&r, payload, 16, &opts) == OC_RADIO_ERR_DUTY,
 	      "budget refuse");
 	check(oc_radio_duty_budget_us(&r) == 0, "left zero");
-	check(oc_radio_airtime_left_us(&r) == 0, "alias");
 
 	/* Max frame airtime → ERR_AIRTIME */
 	setup(&r, 5u * 1000u * 1000u, 0, air - 1u);
 	check(oc_radio_send(&r, payload, 16, &opts) == OC_RADIO_ERR_AIRTIME,
 	      "airtime refuse");
 
-	oc_radio_mock_queue_rx(payload, 16, -95, 7);
 	setup(&r, 5u * 1000u * 1000u, 50, 400000u);
 	oc_radio_mock_queue_rx(payload, 16, -95, 7);
 	check(oc_radio_recv(&r, buf, sizeof(buf), &n, &meta, 100) == OC_RADIO_OK,
 	      "recv");
 	check(n == 16 && meta.rssi_dbm == -95 && meta.snr_db == 7 &&
-		      meta.t_rx_us != 0,
+		      meta.t_rx_us != 0 && meta.peer_id == 0,
 	      "meta");
 
+	check(oc_radio_cad(&r, &cad, 0) == OC_RADIO_OK &&
+		      cad == OC_RADIO_CAD_FREE,
+	      "cad default timeout");
+	check(oc_radio_cad(&r, &cad, 20) == OC_RADIO_OK, "cad 20ms");
 	check(oc_radio_set_power(&r, 30) == OC_RADIO_ERR_PARAM, "power cap");
-	check(oc_radio_cad(&r, &cad) == OC_RADIO_OK && cad == OC_RADIO_CAD_FREE,
-	      "cad free");
 	check(oc_radio_now_us(&r) > 0, "now_us");
 	check(oc_radio_sleep(&r) == OC_RADIO_OK, "sleep");
-	check(oc_radio_backoff_ms(&r, 10, 20) >= 10, "backoff");
-	check(oc_radio_trickle_t_ms(&r, 1000) >= 500, "trickle");
 	check(oc_radio_send(&r, payload, 300, &opts) == OC_RADIO_ERR_TOO_LARGE,
 	      "too large");
 

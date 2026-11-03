@@ -34,8 +34,13 @@ extern "C" {
 #define OC_RADIO_US915_DWELL_WINDOW_MS 20000u
 #define OC_RADIO_US915_PREAMBLE        8u
 
+#ifndef CONFIG_RADIO_CAD_TIMEOUT_MS
+#define CONFIG_RADIO_CAD_TIMEOUT_MS 50u
+#endif
+
 typedef struct oc_radio_hw_ops {
-	oc_radio_status_t (*cad)(void *ctx, oc_radio_cad_result_t *out);
+	oc_radio_status_t (*cad)(void *ctx, oc_radio_cad_result_t *out,
+				 uint32_t timeout_ms);
 	oc_radio_status_t (*send)(void *ctx, const uint8_t *buf, size_t len,
 				  int8_t dbm);
 	oc_radio_status_t (*recv)(void *ctx, uint8_t *buf, size_t cap,
@@ -62,6 +67,8 @@ struct oc_radio {
 	uint32_t mtu;
 	uint8_t preamble;
 	bool cad_before_tx;
+	uint32_t cad_timeout_default_ms; /* used when oc_radio_cad(..., 0) */
+	uint32_t skip_cad_count;         /* how often SKIP_CAD was used */
 	/* Hourly budget (lim.airtime_budget_us_per_h) */
 	uint32_t duty_used_us;
 	uint64_t duty_window_start_us;
@@ -92,6 +99,7 @@ void oc_radio_mock_set_cad_busy(int busy);
 void oc_radio_mock_queue_rx(const uint8_t *buf, size_t len, int16_t rssi,
 			    int8_t snr);
 uint32_t oc_radio_mock_tx_count(void);
+uint32_t oc_radio_mock_cad_count(void);
 
 #ifdef __ZEPHYR__
 struct device;

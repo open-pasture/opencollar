@@ -168,7 +168,8 @@ int main(void)
 		case RADIO_SCHED_CAD_WAKE: {
 			oc_radio_cad_result_t c;
 
-			(void)oc_radio_cad(&g_radio, &c);
+			(void)oc_radio_cad(&g_radio, &c,
+					   CONFIG_RADIO_CAD_TIMEOUT_MS);
 			break;
 		}
 		case RADIO_SCHED_SLEEP:

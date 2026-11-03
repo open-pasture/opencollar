@@ -61,15 +61,17 @@ static oc_radio_t *as_radio(void *ctx)
 	return (oc_radio_t *)ctx;
 }
 
-static oc_radio_status_t z_cad(void *ctx, oc_radio_cad_result_t *out)
+static oc_radio_status_t z_cad(void *ctx, oc_radio_cad_result_t *out,
+			       uint32_t timeout_ms)
 {
 	oc_radio_t *r = as_radio(ctx);
 	int rc;
+	uint32_t t = timeout_ms ? timeout_ms : r->cad_timeout_default_ms;
 
 	if (apply(r, false) != 0) {
 		return OC_RADIO_ERR_IO;
 	}
-	rc = lora_cad(dev_of(r), K_MSEC(50));
+	rc = lora_cad(dev_of(r), K_MSEC(t));
 	if (rc == 0) {
 		*out = OC_RADIO_CAD_FREE;
 		return OC_RADIO_OK;
@@ -141,6 +143,8 @@ static oc_radio_status_t z_recv(void *ctx, uint8_t *buf, size_t cap,
 		meta->snr_db = snr;
 		meta->timestamp_ms = k_uptime_get_32();
 		meta->t_rx_us = k_ticks_to_us_floor64(k_uptime_ticks());
+		/* peer_id unknown at SX1262 PHY — leave 0 (protocol fills). */
+		meta->peer_id = 0;
 	}
 	return OC_RADIO_OK;
 }

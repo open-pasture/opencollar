@@ -1,7 +1,7 @@
 # firmware/radio — SX1262 Zephyr glue (op-fw-radio)
 
 Implements **`firmware/lora/include/opencollar/radio_hal.h`** (op-fw-proto,
-`ab5350e` on `proto-fence-gossip` / PR #6) on Zephyr's native SX126x driver
+`8f25a8e` on `proto-fence-gossip` / PR #6) on Zephyr's native SX126x driver
 (NCS v3.4.1). Do not fork that header — include it from `firmware/lora/include`.
 
 | Path | Contents |
@@ -18,5 +18,5 @@ Implements **`firmware/lora/include/opencollar/radio_hal.h`** (op-fw-proto,
 | `ci/build_board.sh` | Board build hook for op-firmware's firmware-build.yml |
 | `RUNBOOK.md` | Build/flash/pins/measurements |
 
-This branch carries the header at `ab5350e` so CI can compile; the rest of
+This branch carries the header at `8f25a8e` so CI can compile; the rest of
 `firmware/lora` stays on PR #6.

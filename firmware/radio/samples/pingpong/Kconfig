@@ -51,6 +51,11 @@ config RADIO_BW_KHZ_CODE
 	  Pilot default is 125 kHz (hopping-style plan). Set 2 for a later
 	  500 kHz digital-modulation preset when op-firmware enables it.
 
+config RADIO_CAD_TIMEOUT_MS
+	int "Default CAD timeout (ms); 0 in oc_radio_cad uses this"
+	default 50
+	range 1 5000
+
 config RADIO_FREQ_HZ
 	int "Center frequency (Hz)"
 	default 903900000
