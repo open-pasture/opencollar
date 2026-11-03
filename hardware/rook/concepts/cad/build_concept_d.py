@@ -1,16 +1,11 @@
-"""Rook enclosure concept D — hybrid (B technical + A radii + C height).
+"""Rook concept D3 — look-first hybrid (design / aesthetics iteration).
 
-Led by B's clean technical language: flat functional planes, one waist datum,
-even fastener grid. Softened with A's plan-corner family (R6–R8) and C's low
-cap (~18 mm, cavity ≥13). B's 45° crown chamfer becomes a 2.5 mm top-edge
-radius (no dust ledge). The waist is a real lid parting line with O-ring seat
-and ~0.5 mm reveal, same height fraction on cap / pod / tub.
-
-Does NOT touch production `stl/node_v1_*`. Concept study only — Cody approves
-any print.
+Cody: structures do NOT need to be fully printable yet. Prioritize look —
+slim tall soft-radius cap, visible waist seam, strap saddle + keeper + buckle,
+option-1 orange (open/replace only), clean lid tops, proud pod port boss.
+Hardware envelope is a rough size guide, not a hard constraint.
 
 Run:
-  cd hardware/rook/concepts/cad
   blender --background --factory-startup --python build_concept_d.py
 """
 
@@ -24,7 +19,6 @@ import struct
 import sys
 from collections import Counter
 
-import bmesh
 import bpy
 from mathutils import Vector
 
@@ -34,87 +28,49 @@ _COMMON = os.path.abspath(os.path.join(_HERE, "..", "..", "..", "common", "cad",
 sys.path.insert(0, _COMMON)
 import oc  # noqa: E402
 
-# ---------------------------------------------------------------- palette (op-brand)
-CHARCOAL = (0x26 / 255, 0x28 / 255, 0x2B / 255, 1.0)   # #26282B body
-OAT = (0xEF / 255, 0xE8 / 255, 0xD8 / 255, 1.0)         # #EFE8D8 lid variant
-ORANGE = (0xFF / 255, 0x6A / 255, 0x2B / 255, 1.0)      # #FF6A2B fasteners/latch
-BLACK = (0.08, 0.08, 0.09, 1.0)                          # strap
+# ---------------------------------------------------------------- palette
+CHARCOAL = (0x26 / 255, 0x28 / 255, 0x2B / 255, 1.0)
+OAT = (0xEF / 255, 0xE8 / 255, 0xD8 / 255, 1.0)
+ORANGE = (0xFF / 255, 0x6A / 255, 0x2B / 255, 1.0)
+BLACK = (0.07, 0.07, 0.08, 1.0)
 WORLD = (0.94, 0.93, 0.90)
 
-# ---------------------------------------------------------------- envelope (locked)
-CAP_W, CAP_L = 76.0, 160.0
+# ---------------------------------------------------------------- rough envelope (guide, not hard)
+CAP_W, CAP_L = 72.0, 156.0          # slimmed vs 76×160
 CAP_WALL = 5.0
 CAP_FLOOR = 5.0
-CAP_CAVITY_H = 13.0
-CAP_BASE_H = CAP_FLOOR + CAP_CAVITY_H  # 18
-# Lid thin enough for Instrument plugs; screws from above into base inserts.
-CAP_LID_T = 6.0
-CAP_COLS = [(sx * 29.5, y) for sx in (-1, 1) for y in (-68.0, -42.0, 42.0, 68.0)]
-CAP_CLAMP = [(sx * 20.0, sy * 28.5) for sx in (-1, 1) for sy in (-1, 1)]
+CAP_CAVITY_H = 14.0
+CAP_BASE_H = 22.0                   # slim-tall: a bit more vertical presence
+CAP_LID_T = 7.0
+CAP_COLS = [(sx * 28.0, y) for sx in (-1, 1) for y in (-64.0, -40.0, 40.0, 64.0)]
+CAP_SERVICE = [(sx * 28.0, sy * 40.0) for sx in (-1, 1) for sy in (-1, 1)]  # orange
+CAP_STRUCT = [(sx * 28.0, sy * 64.0) for sx in (-1, 1) for sy in (-1, 1)]   # charcoal
 
-POD_L, POD_W = 92.0, 68.0
-POD_WALL = 5.0
-POD_FLOOR = 3.0
-POD_CAVITY = (82.0, 58.0, 21.5)
-POD_BASE_H = POD_FLOOR + POD_CAVITY[2]  # 24.5
-POD_COLS = [(sx * 37.0, sy * 27.0) for sx in (-1, 1) for sy in (-1, 1)]
+POD_L, POD_W, POD_H = 90.0, 66.0, 26.0
+POD_LID_T = 8.0
+POD_COLS = [(sx * 35.0, sy * 25.0) for sx in (-1, 1) for sy in (-1, 1)]
 
-CW_L, CW_W = 88.0, 74.0
-CW_WALL = 5.0
-CW_FLOOR = 3.0
-CW_TUB_H = 30.0
-CW_SCREWS = [(sx * 22.0, sy * 31.5) for sx in (-1, 1) for sy in (-1, 1)]
-CW_CLAMP = [(sx * 36.0, sy * 29.5) for sx in (-1, 1) for sy in (-1, 1)]
+CW_L, CW_W, CW_H = 86.0, 72.0, 30.0
+CW_LID_T = 9.0
+CW_SCREWS = [(sx * 22.0, sy * 28.0) for sx in (-1, 1) for sy in (-1, 1)]
 
-# Shared waist fraction base/(base+lid) on all three — lids scale with bases.
-WAIST_FRAC = CAP_BASE_H / (CAP_BASE_H + CAP_LID_T)  # 0.75
-POD_LID_T = round(POD_BASE_H * (1.0 / WAIST_FRAC - 1.0), 2)  # ≈8.17
-CW_LID_T = round(CW_TUB_H * (1.0 / WAIST_FRAC - 1.0), 2)      # 10.0
-
-PLAN_R = 7.0          # one radius family (R6–R8)
-TOP_R = 2.5           # top-edge radius (replaces B's 45° chamfer)
-REVEAL = 0.5          # lid inset → ~0.5 mm flush-joint reveal
+PLAN_R = 11.0           # soft organic plan family
+REVEAL = 0.6            # visible inset seam
 CLEAR = 3.4
 INSERT_D = 4.0
-GROOVE_W, GROOVE_D = 2.9, 1.5
-CBORE_D, CBORE_H = 7.6, 2.6
-PLUG_SEAT_D, PLUG_SEAT_H = 8.4, 1.4
-PLUG_D, PLUG_H = 8.0, 1.3
-PLUG_CHAMFER = 0.35
-PORT_D, CABLE_D = 8.0, 6.0
-PORT_BOSS_T, PORT_BOSS_H = 2.2, 1.6
-LABEL_W, LABEL_L, LABEL_D = 30.0, 12.0, 0.35
-ENGRAVE_D = 0.5
-ENGRAVE_SIZE = 5.0
+PLUG_SEAT_D, PLUG_SEAT_H = 8.0, 1.3
+PLUG_D, PLUG_H = 7.8, 1.2
+PORT_D, PORT_PROUD = 8.0, 2.0
+STRAP_W, STRAP_T = 44.0, 3.5
 
-# ---------------------------------------------------------------- 5×7 mono (manifold)
-_FONT_5X7 = {
-    "A": ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
-    "B": ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
-    "C": ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
-    "D": ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
-    "E": ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
-    "K": ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
-    "O": ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
-    "R": ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
-    "0": ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
-    "1": ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
-    "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
-    " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
-}
-
-
-# ---------------------------------------------------------------- mesh helpers
+# ---------------------------------------------------------------- helpers
 
 def prepare(obj, merge=1e-4):
+    import bmesh
     bm = bmesh.new()
     bm.from_mesh(obj.data)
     bmesh.ops.triangulate(bm, faces=bm.faces)
-    bmesh.ops.dissolve_degenerate(bm, dist=merge, edges=list(bm.edges))
     bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=merge)
-    tiny = [f for f in bm.faces if f.calc_area() < 1e-8]
-    if tiny:
-        bmesh.ops.delete(bm, geom=tiny, context="FACES")
     bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
     bm.to_mesh(obj.data)
     bm.free()
@@ -123,20 +79,14 @@ def prepare(obj, merge=1e-4):
 
 
 def check_watertight(obj):
+    import bmesh
     bm = bmesh.new()
     bm.from_mesh(obj.data)
     bmesh.ops.triangulate(bm, faces=bm.faces)
     bad = sum(1 for e in bm.edges if len(e.link_faces) != 2)
-    zero = sum(1 for f in bm.faces if f.calc_area() < 1e-8)
-    loose = sum(1 for v in bm.verts if not v.link_edges)
     vol = bm.calc_volume(signed=True)
     bm.free()
-    return {
-        "watertight": bad == 0 and zero == 0 and loose == 0,
-        "bad_edges": bad,
-        "zero_area_faces": zero,
-        "normals_outward": vol > 0,
-    }
+    return {"watertight": bad == 0, "bad_edges": bad, "normals_outward": vol > 0}
 
 
 def check_stl(path, q=1e-4):
@@ -157,98 +107,99 @@ def check_stl(path, q=1e-4):
     return {"watertight": bad == 0, "bad_edges": bad, "faces": n}
 
 
-def top_edge_radius(obj, r=TOP_R, segments=5, z_tol=0.15):
-    """Bevel only the top outer perimeter edges (no dust ledge / no full-body bevel)."""
-    bm = bmesh.new()
-    bm.from_mesh(obj.data)
-    bm.edges.ensure_lookup_table()
-    bm.verts.ensure_lookup_table()
-    zmax = max(v.co.z for v in bm.verts)
-    # Outer edges near the crown: both verts near zmax, not vertical.
-    chosen = []
-    for e in bm.edges:
-        a, b = e.verts
-        if abs(a.co.z - zmax) > z_tol or abs(b.co.z - zmax) > z_tol:
-            continue
-        direction = (a.co - b.co).normalized()
-        if abs(direction.z) > 0.3:
-            continue
-        # Prefer boundary / silhouette: edge lies on the outer wall or top face pair.
-        if len(e.link_faces) != 2:
-            continue
-        n0 = e.link_faces[0].normal
-        n1 = e.link_faces[1].normal
-        # Top-face + side-face meeting → one normal ~+Z, other ~horizontal.
-        if (n0.z > 0.7 and abs(n1.z) < 0.35) or (n1.z > 0.7 and abs(n0.z) < 0.35):
-            chosen.append(e)
-    if chosen:
-        bmesh.ops.bevel(bm, geom=chosen, offset=r, segments=segments,
-                        affect="EDGES", profile=0.5)
-    bm.to_mesh(obj.data)
-    bm.free()
-    obj.data.update()
-    return obj
+def soft_shell(name, size, r, h_override=None):
+    """Soft plan-corner shell. Flat top (no crown bevel → no hairline)."""
+    sx, sy, sz = size
+    if h_override is not None:
+        sz = h_override
+    return oc.rounded_rect(name, (sx, sy, sz), min(r, min(sx, sy) / 2 - 0.5),
+                           anchor="bottom", segments=10)
 
 
-def groove_loop(name, w, l, r, z_top, inset):
-    """O-ring groove cut down from z_top; centreline `inset` from outer edge."""
-    g, gd = GROOVE_W, GROOVE_D
-    outer = oc.rounded_rect(
-        name + "_o",
-        (w - 2 * (inset - g / 2), l - 2 * (inset - g / 2), gd + 1),
-        max(r - inset + g / 2, 0.6),
-        at=(0, 0, z_top - gd),
-        anchor="bottom",
-    )
-    inner = oc.rounded_rect(
-        name + "_i",
-        (w - 2 * (inset + g / 2), l - 2 * (inset + g / 2), gd + 3),
-        max(r - inset - g / 2, 0.4),
-        at=(0, 0, z_top - gd - 1),
-        anchor="bottom",
-    )
-    return oc.cut(outer, inner)
+def cavity(body, w, l, floor, h, r=6.0):
+    oc.cut(body, oc.rounded_rect("cav", (w, l, h + 1), r,
+                                 at=(0, 0, floor), anchor="bottom"))
+    return body
 
 
-def manifold_text(name, body, size, depth, at, align="CENTER"):
+def seam_groove(body, w, l, z, depth=1.0):
+    """Visible waist shadow line on the base (reads as the parting datum)."""
+    oc.cut(body, oc.box("sx+", (depth + 0.4, l - 12, 1.0),
+                        at=(w / 2 - depth / 2, 0, z), anchor="bottom"))
+    oc.cut(body, oc.box("sx-", (depth + 0.4, l - 12, 1.0),
+                        at=(-(w / 2 - depth / 2), 0, z), anchor="bottom"))
+    oc.cut(body, oc.box("sy+", (w - 12, depth + 0.4, 1.0),
+                        at=(0, l / 2 - depth / 2, z), anchor="bottom"))
+    oc.cut(body, oc.box("sy-", (w - 12, depth + 0.4, 1.0),
+                        at=(0, -(l / 2 - depth / 2), z), anchor="bottom"))
+    return body
+
+
+def groove_oring(body, w, l, r, z_top, wall=5.0):
+    g, gd = 2.6, 1.5
+    inset = wall / 2
+    outer = oc.rounded_rect("go", (w - 2 * (inset - g / 2), l - 2 * (inset - g / 2), gd + 1),
+                            max(r - inset + g / 2, 1.0), at=(0, 0, z_top - gd), anchor="bottom")
+    inner = oc.rounded_rect("gi", (w - 2 * (inset + g / 2), l - 2 * (inset + g / 2), gd + 3),
+                            max(r - inset - g / 2, 0.8), at=(0, 0, z_top - gd - 1), anchor="bottom")
+    oc.cut(body, oc.cut(outer, inner))
+    return body
+
+
+def cols(body, positions, floor, top):
+    bosses = [oc.cylinder(f"c{i}", 7.5, top - floor,
+                          at=(x, y, floor), anchor="bottom")
+              for i, (x, y) in enumerate(positions)]
+    oc.union(body, *bosses)
+    for i, (x, y) in enumerate(positions):
+        oc.cut(body, oc.cylinder(f"ins{i}", INSERT_D, 4.5,
+                                 at=(x, y, top - 4.5), anchor="bottom"))
+    return body
+
+
+def lid_plugs(lid, positions, lid_t):
+    for i, (x, y) in enumerate(positions):
+        oc.cut(lid, oc.cylinder(f"h{i}", CLEAR, lid_t + 2, at=(x, y, -1), anchor="bottom"))
+        oc.cut(lid, oc.cylinder(f"ps{i}", PLUG_SEAT_D, PLUG_SEAT_H + 0.05,
+                                at=(x, y, lid_t - PLUG_SEAT_H), anchor="bottom"))
+    return lid
+
+
+def make_plug(name):
+    return prepare(oc.cylinder(name, PLUG_D, PLUG_H, anchor="bottom", segments=32))
+
+
+def mono_text(name, body, size, depth, at):
+    """Tiny 5×7 ROOK-001 cutter — look only."""
+    font = {
+        "R": ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
+        "O": ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
+        "K": ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
+        "0": ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
+        "1": ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
+        "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
+    }
     cell = size / 7.0
-    gap = cell * 0.2
-    cw = 5 * cell + gap
-    body = body.upper()
-    chars = list(body)
-    width = max(len(chars) * cw - gap, cell)
-    if align == "CENTER":
-        x0 = at[0] - width / 2
-    elif align == "LEFT":
-        x0 = at[0]
-    else:
-        x0 = at[0] - width
+    cw = 5 * cell + cell * 0.2
+    chars = list(body.upper())
+    width = len(chars) * cw
+    x0 = at[0] - width / 2
     y0 = at[1] - size / 2
-    z0 = at[2]
     pixels = []
     for ci, ch in enumerate(chars):
-        glyph = _FONT_5X7.get(ch, _FONT_5X7[" "])
+        glyph = font.get(ch, font["-"])
         for row, bits in enumerate(glyph):
-            col = 0
-            while col < 5:
-                if bits[col] != "1":
-                    col += 1
+            for col, bit in enumerate(bits):
+                if bit != "1":
                     continue
-                start = col
-                while col < 5 and bits[col] == "1":
-                    col += 1
-                run = col - start
-                px = x0 + ci * cw + (start + run / 2) * cell
-                py = y0 + (6 - row + 0.5) * cell
                 pixels.append(oc.box(
-                    f"{name}_{ci}_{row}_{start}",
-                    (run * cell * 0.92, cell * 0.92, depth),
-                    at=(px, py, z0), anchor="bottom"))
+                    f"{name}_{ci}_{row}_{col}",
+                    (cell * 0.9, cell * 0.9, depth),
+                    at=(x0 + ci * cw + (col + 0.5) * cell,
+                        y0 + (6 - row + 0.5) * cell, at[2]),
+                    anchor="bottom"))
     if not pixels:
-        return oc.box(name, (cell, cell, depth), at=(at[0], at[1], z0), anchor="bottom")
-    if len(pixels) == 1:
-        pixels[0].name = name
-        return pixels[0]
+        return oc.box(name, (1, 1, depth), at=at, anchor="bottom")
     for o in bpy.context.selected_objects:
         o.select_set(False)
     for p in pixels:
@@ -259,200 +210,137 @@ def manifold_text(name, body, size, depth, at, align="CENTER"):
     return pixels[0]
 
 
-def add_columns(body, cols, floor_z, top_z, through_clear=False):
-    # Flush with the waist rim (no proud boss that inflates bbox height).
-    bosses = [
-        oc.cylinder(f"col{i}", 8.0, top_z - floor_z,
-                    at=(x, y, floor_z), anchor="bottom")
-        for i, (x, y) in enumerate(cols)
-    ]
-    oc.union(body, *bosses)
-    if through_clear:
-        for i, (x, y) in enumerate(cols):
-            oc.cut(body, oc.cylinder(f"h{i}", CLEAR, top_z + 2,
-                                     at=(x, y, -1), anchor="bottom"))
-    return body
-
-
-def cut_cavity(body, size_xy_h, floor_z, r=4.0):
-    sx, sy, h = size_xy_h
-    oc.cut(body, oc.rounded_rect("cav", (sx, sy, h + 1), r,
-                                 at=(0, 0, floor_z), anchor="bottom"))
-    return body
-
-
-def lid_fastener_seats(lid, cols, lid_t):
-    """Through clearance + head cbore + flush plug seat with chamfered lead-in.
-
-    Screws enter from above into heat-set inserts in the base columns, so the
-    lid stays a thin through-plate (no blind insert pack under the plug).
-    Keep ≥1.5 mm solid under the cbore so the CLEAR→CBORE step stays manifold.
-    """
-    # Plug + button-head stack. On a 6 mm lid, >3.0 mm leaves a non-manifold
-    # CLEAR→CBORE shelf (exact boolean); keep ≥3 mm solid under the cbore.
-    head_stack = min(PLUG_SEAT_H + 1.6, lid_t - 3.0, 3.0)
-    for i, (x, y) in enumerate(cols):
-        oc.cut(lid, oc.cylinder(f"lh{i}", CLEAR, lid_t + 2, at=(x, y, -1), anchor="bottom"))
-        oc.cut(lid, oc.cylinder(f"lcb{i}", CBORE_D, head_stack + 0.05,
-                                at=(x, y, lid_t - head_stack),
-                                anchor="bottom"))
-        oc.cut(lid, oc.cylinder(f"lps{i}", PLUG_SEAT_D, PLUG_SEAT_H + 0.05,
-                                at=(x, y, lid_t - PLUG_SEAT_H),
-                                anchor="bottom"))
-        oc.cut(lid, oc.cone(f"lpc{i}", PLUG_SEAT_D + 2 * PLUG_CHAMFER, PLUG_SEAT_D,
-                            PLUG_CHAMFER + 0.05,
-                            at=(x, y, lid_t - PLUG_CHAMFER)))
-    return lid
-
-
-def make_plug(name, at=(0, 0, 0)):
-    """Separate blaze-orange flush plug body (exportable / colourable)."""
-    p = oc.cylinder(name, PLUG_D, PLUG_H, at=at, anchor="bottom")
-    # Small top chamfer so the plug seats without a proud lip.
-    oc.cut(p, oc.cone(name + "_ch", PLUG_D + 0.1, PLUG_D - 2 * PLUG_CHAMFER,
-                      PLUG_CHAMFER + 0.05,
-                      at=(at[0], at[1], at[2] + PLUG_H - PLUG_CHAMFER)))
-    return prepare(p)
-
-
-def port_boss(axis, at, hole_d, boss_od=None, height=PORT_BOSS_H):
-    """Raised annular boss around a round port (not a bare hole)."""
-    boss_od = boss_od or (hole_d + 2 * PORT_BOSS_T)
-    ring = oc.cylinder("boss", boss_od, height, at=at, axis=axis, anchor="center")
-    oc.cut(ring, oc.cylinder("bossh", hole_d, height + 2, at=at, axis=axis, anchor="center"))
-    return ring
-
-
-def port_gasket_recess(body, axis, at, hole_d, recess_d=None, depth=1.0):
-    """Optional shallow gasket counterbore on the outer face around a port."""
-    recess_d = recess_d or (hole_d + 3.0)
-    oc.cut(body, oc.cylinder("prec", recess_d, depth + 0.2, at=at, axis=axis, anchor="center"))
-    return body
-
-
-# ---------------------------------------------------------------- shells
-
-def base_column_inserts(body, cols, top_z, depth=5.0):
-    """Heat-set insert pockets opening at the waist (lid screws from above)."""
-    for i, (x, y) in enumerate(cols):
-        oc.cut(body, oc.cylinder(f"bins{i}", INSERT_D, depth + 0.2,
-                                 at=(x, y, top_z - depth), anchor="bottom"))
-    return body
-
+# ---------------------------------------------------------------- parts
 
 def d_cap_base():
-    b = oc.rounded_rect("d_cap_base", (CAP_W, CAP_L, CAP_BASE_H), PLAN_R,
-                        anchor="bottom", segments=10)
-    cut_cavity(b, (CAP_W - 2 * CAP_WALL, CAP_L - 2 * CAP_WALL, CAP_CAVITY_H + 2),
-               CAP_FLOOR, r=5.0)
-    add_columns(b, CAP_COLS, CAP_FLOOR, CAP_BASE_H)
-    # Replace through-clear with insert pockets at the waist rim.
-    base_column_inserts(b, CAP_COLS, CAP_BASE_H, depth=5.0)
-    for i, (x, y) in enumerate(CAP_CLAMP):
-        oc.cut(b, oc.cylinder(f"ci{i}", INSERT_D, 4.5, at=(x, y, -0.2), anchor="bottom"))
-    oc.cut(b, groove_loop("cg", CAP_W, CAP_L, PLAN_R, CAP_BASE_H, CAP_WALL / 2))
+    b = soft_shell("cap_base", (CAP_W, CAP_L, CAP_BASE_H), PLAN_R)
+    cavity(b, CAP_W - 2 * CAP_WALL, CAP_L - 2 * CAP_WALL, CAP_FLOOR, CAP_CAVITY_H + 2)
+    cols(b, CAP_COLS, CAP_FLOOR, CAP_BASE_H)
+    groove_oring(b, CAP_W, CAP_L, PLAN_R, CAP_BASE_H)
+    seam_groove(b, CAP_W, CAP_L, CAP_BASE_H * 0.55, depth=1.1)
     return prepare(b)
 
 
 def d_cap_lid():
+    """Clean flat top — soft plan corners only, no crown bevel (no hairline)."""
     lw, ll = CAP_W - 2 * REVEAL, CAP_L - 2 * REVEAL
-    lr = max(PLAN_R - REVEAL, 4.0)
-    lid = oc.rounded_rect("d_cap_lid", (lw, ll, CAP_LID_T), lr, anchor="bottom", segments=10)
-    lid_fastener_seats(lid, CAP_COLS, CAP_LID_T)
-    # Flat label pad 30×12, debossed mono Rook-001.
-    oc.cut(lid, oc.rounded_rect("label_pad", (LABEL_W, LABEL_L, LABEL_D + 0.1), 1.0,
-                                at=(0, 0, CAP_LID_T - LABEL_D), anchor="bottom"))
-    text = manifold_text("rook_id", "ROOK-001", ENGRAVE_SIZE, ENGRAVE_D + 0.15,
-                         at=(0, 0, CAP_LID_T - LABEL_D - ENGRAVE_D))
-    oc.cut(lid, text)
-    top_edge_radius(lid, r=TOP_R, segments=5)
+    lid = oc.rounded_rect("cap_lid", (lw, ll, CAP_LID_T), PLAN_R - 1.0,
+                          anchor="bottom", segments=10)
+    lid_plugs(lid, CAP_COLS, CAP_LID_T)
+    # Label pad; mono text as separate look cue (simple bar marks, not glyph boolean).
+    oc.cut(lid, oc.rounded_rect("pad", (28, 11, 0.5), 1.0,
+                                at=(0, 0, CAP_LID_T - 0.5), anchor="bottom"))
+    # Seven short bars reading as ROOK-001 placeholder at a glance.
+    for i, x in enumerate((-10.5, -7.0, -3.5, 0.0, 3.5, 7.0, 10.5)):
+        oc.cut(lid, oc.box(f"mark{i}", (2.2, 5.0, 0.55),
+                           at=(x, 0, CAP_LID_T - 0.5 - 0.55), anchor="bottom"))
     return prepare(lid)
 
 
 def d_pod_base():
-    b = oc.rounded_rect("d_pod_base", (POD_L, POD_W, POD_BASE_H), PLAN_R,
-                        anchor="bottom", segments=10)
-    cut_cavity(b, POD_CAVITY, POD_FLOOR, r=5.0)
-    add_columns(b, POD_COLS, POD_FLOOR, POD_BASE_H)
-    base_column_inserts(b, POD_COLS, POD_BASE_H, depth=5.0)
-    oc.cut(b, groove_loop("pg", POD_L, POD_W, PLAN_R, POD_BASE_H, POD_WALL / 2))
-    # Sound port (+Y) + cable: raised boss + gasket recess, not bare holes.
-    port_at = (20.0, POD_W / 2 - POD_WALL / 2, 11.0)
-    cable_at = (POD_L / 2 - POD_WALL / 2, -2.0, 12.0)
-    oc.union(b, port_boss("Y", port_at, PORT_D))
-    oc.union(b, port_boss("X", cable_at, CABLE_D, boss_od=CABLE_D + 2 * PORT_BOSS_T))
-    oc.cut(b, oc.cylinder("port", PORT_D, POD_WALL + PORT_BOSS_H + 4,
-                          at=port_at, axis="Y"))
-    oc.cut(b, oc.cylinder("cable", CABLE_D, POD_WALL + PORT_BOSS_H + 4,
-                          at=cable_at, axis="X"))
-    port_gasket_recess(b, "Y", (20.0, POD_W / 2 + PORT_BOSS_H / 2, 11.0), PORT_D, depth=0.8)
-    port_gasket_recess(b, "X", (POD_L / 2 + PORT_BOSS_H / 2, -2.0, 12.0), CABLE_D, depth=0.8)
+    b = soft_shell("pod_base", (POD_L, POD_W, POD_H), PLAN_R)
+    cavity(b, POD_L - 12, POD_W - 12, 3.0, POD_H)
+    cols(b, POD_COLS, 3.0, POD_H)
+    groove_oring(b, POD_L, POD_W, PLAN_R, POD_H)
+    seam_groove(b, POD_L, POD_W, POD_H * 0.55, depth=1.1)
+    # Proud port boss on +Y — clearly visible.
+    boss = oc.cylinder("pboss", PORT_D + 5.0, PORT_PROUD + 0.5,
+                       at=(16.0, POD_W / 2 + PORT_PROUD / 2, 12.0), axis="Y")
+    oc.union(b, boss)
+    oc.cut(b, oc.cylinder("phole", PORT_D, POD_W,
+                          at=(16.0, POD_W / 2, 12.0), axis="Y"))
+    oc.cut(b, oc.cylinder("pgask", PORT_D + 3.0, 0.9,
+                          at=(16.0, POD_W / 2 + PORT_PROUD - 0.4, 12.0), axis="Y"))
+    # Cable boss on +X
+    cb = oc.cylinder("cboss", 6.0 + 4.5, PORT_PROUD + 0.5,
+                     at=(POD_L / 2 + PORT_PROUD / 2, -4.0, 13.0), axis="X")
+    oc.union(b, cb)
+    oc.cut(b, oc.cylinder("chole", 6.0, POD_L,
+                          at=(POD_L / 2, -4.0, 13.0), axis="X"))
     return prepare(b)
 
 
 def d_pod_lid():
     lw, ll = POD_L - 2 * REVEAL, POD_W - 2 * REVEAL
-    lr = max(PLAN_R - REVEAL, 4.0)
-    lid = oc.rounded_rect("d_pod_lid", (lw, ll, POD_LID_T), lr, anchor="bottom", segments=10)
-    lid_fastener_seats(lid, POD_COLS, POD_LID_T)
-    top_edge_radius(lid, r=TOP_R, segments=5)
+    lid = oc.rounded_rect("pod_lid", (lw, ll, POD_LID_T), PLAN_R - 1.0,
+                          anchor="bottom", segments=10)
+    lid_plugs(lid, POD_COLS, POD_LID_T)
     return prepare(lid)
 
 
 def d_cw_tub():
-    b = oc.rounded_rect("d_cw_tub", (CW_L, CW_W, CW_TUB_H), PLAN_R,
-                        anchor="bottom", segments=10)
-    cut_cavity(b, (CW_L - 2 * CW_WALL - 2, CW_W - 2 * CW_WALL - 2, CW_TUB_H),
-               CW_FLOOR, r=4.0)
-    oc.cut(b, groove_loop("wg", CW_L, CW_W, PLAN_R, CW_TUB_H, CW_WALL / 2))
-    # Inserts open at the waist for lid screws from above.
-    for i, (x, y) in enumerate(CW_SCREWS):
-        oc.cut(b, oc.cylinder(f"cwi{i}", INSERT_D, 5.2,
-                              at=(x, y, CW_TUB_H - 5.0), anchor="bottom"))
-    for i, (x, y) in enumerate(CW_CLAMP):
-        oc.cut(b, oc.cylinder(f"cwcl{i}", CLEAR, CW_TUB_H + 2,
-                              at=(x, y, -1), anchor="bottom"))
+    b = soft_shell("cw_tub", (CW_L, CW_W, CW_H), PLAN_R)
+    cavity(b, CW_L - 14, CW_W - 14, 3.0, CW_H)
+    cols(b, CW_SCREWS, 3.0, CW_H)
+    groove_oring(b, CW_L, CW_W, PLAN_R, CW_H)
+    seam_groove(b, CW_L, CW_W, CW_H * 0.55, depth=1.1)
     return prepare(b)
 
 
 def d_cw_lid():
     lw, ll = CW_L - 2 * REVEAL, CW_W - 2 * REVEAL
-    lr = max(PLAN_R - REVEAL, 4.0)
-    lid = oc.rounded_rect("d_cw_lid", (lw, ll, CW_LID_T), lr, anchor="bottom", segments=10)
-    lid_fastener_seats(lid, CW_SCREWS, CW_LID_T)
-    top_edge_radius(lid, r=TOP_R, segments=5)
+    lid = oc.rounded_rect("cw_lid", (lw, ll, CW_LID_T), PLAN_R - 1.0,
+                          anchor="bottom", segments=10)
+    lid_plugs(lid, CW_SCREWS, CW_LID_T)
     return prepare(lid)
 
 
-def d_latch(length=14.0, width=8.0, thick=3.0):
-    """One-handed Instrument latch cue (blaze orange) — concept solid only."""
-    latch = oc.rounded_rect("d_latch", (width, length, thick), 1.5, anchor="bottom", segments=6)
-    # Finger scoop on the outer face.
-    oc.cut(latch, oc.cylinder("scoop", 5.0, thick,
-                              at=(0, length * 0.15, thick * 0.55), axis="X"))
-    return prepare(latch)
+def d_latch():
+    """Cosmetic placeholder — final = flush recessed pull, still orange."""
+    return prepare(oc.rounded_rect("latch", (7.0, 12.0, 2.5), 1.2,
+                                   anchor="bottom", segments=6))
 
 
-def d_test_corner():
-    """Small coupon: plan R7 + top-edge R2.5 for 0.12 / 0.16 mm layer print tests."""
-    s = 22.0
-    h = 10.0
-    # One rounded corner family on a square coupon.
-    c = oc.rounded_rect("d_test_corner", (s, s, h), PLAN_R, anchor="bottom", segments=12)
-    top_edge_radius(c, r=TOP_R, segments=6)
-    # Engrave layer hints on the top face (away from the radiused rim).
-    t1 = manifold_text("t012", "0.12", 3.5, 0.4, at=(0, 3.5, h - 0.4))
-    t2 = manifold_text("t016", "0.16", 3.5, 0.4, at=(0, -3.5, h - 0.4))
-    oc.cut(c, t1, t2)
-    return prepare(c)
-
-
-def d_strap(length=180.0, width=44.0, thick=4.0):
-    return prepare(oc.rounded_rect("d_strap", (width, length, thick), 2.0,
+def d_strap():
+    return prepare(oc.rounded_rect("strap", (STRAP_W, 220.0, STRAP_T), 2.0,
                                    anchor="bottom", segments=4))
 
 
-# ---------------------------------------------------------------- colour render
+def d_saddle():
+    """Printed strap saddle under the cap — slot for the strap."""
+    sw, sl, sh = CAP_W - 4, 52.0, 8.0
+    s = oc.rounded_rect("saddle", (sw, sl, sh), 4.0, anchor="bottom", segments=8)
+    # Strap channel through (slot).
+    oc.cut(s, oc.box("slot", (sw + 2, STRAP_W + 1.5, STRAP_T + 1.2),
+                     at=(0, 0, sh - STRAP_T / 2 - 0.2)))
+    # Soft lead-ins on ±X.
+    for sx in (-1, 1):
+        oc.cut(s, oc.prism_y(f"lead{sx}", [
+            (sx * (sw / 2 + 0.3), sh + 0.2),
+            (sx * (sw / 2 + 0.3), sh - STRAP_T - 0.5),
+            (sx * (sw / 2 - 4.0), sh + 0.2),
+        ], STRAP_W + 2))
+    return prepare(s)
+
+
+def d_keeper():
+    """Strap keeper loop — sits on the strap aft of the saddle."""
+    kw, kl, kh = STRAP_W + 6, 10.0, 7.0
+    k = oc.rounded_rect("keeper", (kw, kl, kh), 2.0, anchor="bottom", segments=6)
+    oc.cut(k, oc.box("kslot", (STRAP_W + 1.5, kl + 2, STRAP_T + 1.0),
+                     at=(0, 0, kh / 2 - 0.5)))
+    return prepare(k)
+
+
+def d_buckle():
+    """Collar buckle — open/replace → orange per brand option 1."""
+    bw, bl, bh = STRAP_W + 4, 28.0, 6.0
+    b = oc.rounded_rect("buckle", (bw, bl, bh), 2.5, anchor="bottom", segments=6)
+    # Frame opening.
+    oc.cut(b, oc.rounded_rect("bopen", (STRAP_W - 4, bl - 10, bh + 2), 1.5,
+                              at=(0, 0, -1), anchor="bottom"))
+    # Crossbar.
+    bar = oc.cylinder("bbar", 3.0, STRAP_W - 6, at=(0, 2.0, bh / 2), axis="X", segments=24)
+    oc.union(b, bar)
+    return prepare(b)
+
+
+def d_test_corner():
+    c = soft_shell("test_corner", (20.0, 20.0, 10.0), 8.0)
+    return prepare(c)
+
+
+# ---------------------------------------------------------------- render
 
 def _mat(name, rgba):
     mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
@@ -460,19 +348,15 @@ def _mat(name, rgba):
     return mat
 
 
-def _setup_color_render(res=(1600, 1200)):
+def _setup(res=(1600, 1200)):
     s = bpy.context.scene
     s.render.engine = "BLENDER_WORKBENCH"
     s.render.resolution_x, s.render.resolution_y = res
-    s.render.film_transparent = False
     sh = s.display.shading
-    sh.light = "STUDIO"
-    sh.color_type = "MATERIAL"
-    sh.show_cavity = True
-    sh.cavity_type = "BOTH"
+    sh.light, sh.color_type = "STUDIO", "MATERIAL"
+    sh.show_cavity, sh.cavity_type = True, "BOTH"
     sh.show_object_outline = True
-    sh.show_specular_highlight = False
-    world = bpy.data.worlds.new("wd")
+    world = bpy.data.worlds.new("w")
     world.color = WORLD
     s.world = world
     s.view_settings.view_transform = "Standard"
@@ -483,7 +367,7 @@ def _paint(obj, rgba, name):
     obj.data.materials.append(_mat(name, rgba))
 
 
-def _camera(lo, hi, direction, pad=1.15):
+def _cam(lo, hi, direction, pad=1.12):
     centre = (Vector(lo) + Vector(hi)) / 2
     extent = (Vector(hi) - Vector(lo)).length
     cam_data = bpy.data.cameras.new("cam")
@@ -502,7 +386,7 @@ def _camera(lo, hi, direction, pad=1.15):
 
 
 def render_colored(objs_colors, out_path, direction, pad=1.12):
-    _setup_color_render()
+    _setup()
     live = []
     for obj, rgba, mname in objs_colors:
         _paint(obj, rgba, mname)
@@ -510,79 +394,67 @@ def render_colored(objs_colors, out_path, direction, pad=1.12):
         live.append(obj)
     lo = [min(oc.bounds(o)[0][i] for o in live) for i in range(3)]
     hi = [max(oc.bounds(o)[1][i] for o in live) for i in range(3)]
-    cam = _camera(lo, hi, direction, pad=pad)
+    cam = _cam(lo, hi, direction, pad=pad)
     bpy.context.scene.render.filepath = out_path
     bpy.ops.render.render(write_still=True)
     bpy.data.objects.remove(cam)
-    return out_path
 
 
-# ---------------------------------------------------------------- build / export
-
-def export_part(obj, path, expect_xy=None, z_min=5.0):
+def export_part(obj, path):
+    """Look study export — watertight is reported but does not block the build."""
     prepare(obj)
     dims = oc.size(obj)
-    vol = oc.volume_mm3(obj)
     wt = check_watertight(obj)
     oc.export_stl(obj, path)
     stl = check_stl(path)
-    size_ok = True
-    if expect_xy is not None:
-        size_ok = (abs(dims[0] - expect_xy[0]) <= 1.5
-                   and abs(dims[1] - expect_xy[1]) <= 1.5
-                   and dims[2] >= z_min)
-    ok = wt["watertight"] and stl["watertight"] and wt["normals_outward"] and size_ok
-    body = {
+    ok = True  # D3 look-first: geometry for aesthetics, not print gate
+    tag = "OK" if (wt["watertight"] and stl["watertight"]) else "LOOK"
+    print(f"{tag}  {os.path.basename(path)}: {dims} mm  "
+          f"bad={wt['bad_edges']} stl_bad={stl['bad_edges']}")
+    return {
         "size_mm": dims,
-        "volume_cm3": round(vol / 1000, 2),
         "watertight": wt,
         "stl": stl,
-        "size_ok": size_ok,
         "pass": ok,
         "stl_path": os.path.relpath(path, _CONCEPTS),
     }
-    print(f"{'PASS' if ok else 'FAIL'}  {os.path.basename(path)}: {dims} mm  "
-          f"bad={wt['bad_edges']} stl_bad={stl['bad_edges']} size_ok={size_ok}")
-    return body
 
 
-def place_assembled(parts, plugs, latch, strap, explode=0.0):
-    """Family lineup: CW | Cap | Pod. Lids sit on bases; explode lifts lids/plugs."""
-    gap = 28.0
+def layout(parts, plugs, strap_bits, latch, strap, explode=0.0):
+    gap = 30.0
     cap_x = 0.0
     pod_x = CAP_W / 2 + POD_L / 2 + gap
     cw_x = -(CAP_W / 2 + CW_L / 2 + gap)
+    saddle_z = -8.0
 
     oc.move(parts["cap_base"], dx=cap_x)
     oc.move(parts["cap_lid"], dx=cap_x, dz=CAP_BASE_H + explode)
     oc.move(parts["pod_base"], dx=pod_x)
-    oc.move(parts["pod_lid"], dx=pod_x, dz=POD_BASE_H + explode)
+    oc.move(parts["pod_lid"], dx=pod_x, dz=POD_H + explode)
     oc.move(parts["cw_tub"], dx=cw_x)
-    oc.move(parts["cw_lid"], dx=cw_x, dz=CW_TUB_H + explode)
+    oc.move(parts["cw_lid"], dx=cw_x, dz=CW_H + explode)
 
-    # Cap plugs on lid top.
-    for i, (x, y) in enumerate(CAP_COLS):
-        oc.move(plugs["cap"][i],
-                dx=cap_x + x, dy=y,
-                dz=CAP_BASE_H + CAP_LID_T - PLUG_H + 0.05 + explode * 1.6)
+    for i, (x, y) in enumerate(CAP_SERVICE):
+        oc.move(plugs["service"][i], dx=cap_x + x, dy=y,
+                dz=CAP_BASE_H + CAP_LID_T - PLUG_H + explode * 1.5)
+    for i, (x, y) in enumerate(CAP_STRUCT):
+        oc.move(plugs["struct"][i], dx=cap_x + x, dy=y,
+                dz=CAP_BASE_H + CAP_LID_T - PLUG_H + explode * 1.5)
     for i, (x, y) in enumerate(POD_COLS):
-        oc.move(plugs["pod"][i],
-                dx=pod_x + x, dy=y,
-                dz=POD_BASE_H + POD_LID_T - PLUG_H + 0.05 + explode * 1.6)
+        oc.move(plugs["pod"][i], dx=pod_x + x, dy=y,
+                dz=POD_H + POD_LID_T - PLUG_H + explode * 1.5)
     for i, (x, y) in enumerate(CW_SCREWS):
-        oc.move(plugs["cw"][i],
-                dx=cw_x + x, dy=y,
-                dz=CW_TUB_H + CW_LID_T - PLUG_H + 0.05 + explode * 1.6)
+        oc.move(plugs["cw"][i], dx=cw_x + x, dy=y,
+                dz=CW_H + CW_LID_T - PLUG_H + explode * 1.5)
 
-    # Latch on +Y end of cap lid.
-    oc.move(latch, dx=cap_x, dy=CAP_L / 2 - REVEAL - 6.0,
-            dz=CAP_BASE_H + CAP_LID_T - 1.0 + explode)
-    # Strap under the cap (black).
-    oc.move(strap, dx=cap_x, dz=-4.5)
-    return cw_x, cap_x, pod_x
+    oc.move(latch, dx=cap_x, dy=CAP_L / 2 - 8, dz=CAP_BASE_H + CAP_LID_T - 1 + explode)
+    oc.move(strap_bits["saddle"], dx=cap_x, dz=saddle_z)
+    oc.move(strap, dx=cap_x, dz=saddle_z + 2.0)
+    oc.move(strap_bits["keeper"], dx=cap_x, dy=-(CAP_L / 2 + 18), dz=saddle_z + 1.5)
+    oc.move(strap_bits["buckle"], dx=cap_x, dy=-(CAP_L / 2 + 48), dz=saddle_z + 1.0)
 
 
-def colored_set(parts, plugs, latch, strap, lid_color):
+def color_opt1(parts, plugs, strap_bits, latch, strap, lid_color):
     bodies = [
         (parts["cap_base"], CHARCOAL, "body"),
         (parts["pod_base"], CHARCOAL, "body"),
@@ -590,11 +462,16 @@ def colored_set(parts, plugs, latch, strap, lid_color):
         (parts["cap_lid"], lid_color, "lid"),
         (parts["pod_lid"], lid_color, "lid"),
         (parts["cw_lid"], lid_color, "lid"),
-        (latch, ORANGE, "latch"),
+        (strap_bits["saddle"], CHARCOAL, "saddle"),
+        (strap_bits["keeper"], CHARCOAL, "keeper"),
+        (strap_bits["buckle"], ORANGE, "buckle"),   # open collar
+        (latch, ORANGE, "latch"),                     # open lid
         (strap, BLACK, "strap"),
     ]
-    for p in plugs["cap"] + plugs["pod"] + plugs["cw"]:
-        bodies.append((p, ORANGE, "plug"))
+    for p in plugs["service"]:
+        bodies.append((p, ORANGE, "svc"))
+    for p in plugs["struct"] + plugs["pod"] + plugs["cw"]:
+        bodies.append((p, CHARCOAL, "struct"))
     return bodies
 
 
@@ -602,158 +479,123 @@ def main():
     stl_dir = os.path.join(_CONCEPTS, "stl", "D_hybrid")
     rend_dir = os.path.join(_CONCEPTS, "renders", "D_hybrid")
     img_dir = os.path.join(_CONCEPTS, "images")
-    os.makedirs(stl_dir, exist_ok=True)
-    os.makedirs(rend_dir, exist_ok=True)
-    os.makedirs(img_dir, exist_ok=True)
+    for d in (stl_dir, rend_dir, img_dir):
+        os.makedirs(d, exist_ok=True)
 
-    oc.reset()
-    parts = {
-        "cap_base": d_cap_base(),
-        "cap_lid": d_cap_lid(),
-        "pod_base": d_pod_base(),
-        "pod_lid": d_pod_lid(),
-        "cw_tub": d_cw_tub(),
-        "cw_lid": d_cw_lid(),
-        "test_corner": d_test_corner(),
-        "latch": d_latch(),
-        "plug": make_plug("d_plug"),
-    }
+    # Clear stale D1/D2 plug names.
+    for stale in ("plug.stl", "plug_opt2_dark_orange.stl", "label_coupon.stl"):
+        p = os.path.join(stl_dir, stale)
+        if os.path.isfile(p):
+            os.remove(p)
 
-    report = {
-        "concept": "D_hybrid",
-        "title": "D — Hybrid technical-soft",
-        "waist_frac": WAIST_FRAC,
-        "plan_r_mm": PLAN_R,
-        "top_r_mm": TOP_R,
-        "reveal_mm": REVEAL,
-        "palette": {
-            "charcoal": "#26282B",
-            "oat": "#EFE8D8",
-            "orange": "#FF6A2B",
-            "strap": "#141416",
-        },
-        "bodies": {},
-        "pass": True,
-    }
-
-    expect = {
-        "cap_base": (CAP_W, CAP_L),
-        "cap_lid": (CAP_W - 2 * REVEAL, CAP_L - 2 * REVEAL),
-        "pod_base": (POD_L, POD_W),
-        "pod_lid": (POD_L - 2 * REVEAL, POD_W - 2 * REVEAL),
-        "cw_tub": (CW_L, CW_W),
-        "cw_lid": (CW_L - 2 * REVEAL, CW_W - 2 * REVEAL),
-        "test_corner": (22.0, 22.0),
-        "latch": None,
-        "plug": None,
-    }
-    zmin = {
-        "cap_base": CAP_BASE_H - 1.0,
-        "cap_lid": CAP_LID_T - 1.5,
-        "pod_base": POD_BASE_H - 1.0,
-        "pod_lid": POD_LID_T - 1.5,
-        "cw_tub": CW_TUB_H - 1.0,
-        "cw_lid": CW_LID_T - 1.5,
-        "test_corner": 8.0,
-        "latch": 2.0,
-        "plug": 1.0,
-    }
-
-    for name, obj in parts.items():
+    builders = [
+        ("cap_base", d_cap_base),
+        ("cap_lid", d_cap_lid),
+        ("pod_base", d_pod_base),
+        ("pod_lid", d_pod_lid),
+        ("cw_tub", d_cw_tub),
+        ("cw_lid", d_cw_lid),
+        ("saddle", d_saddle),
+        ("keeper", d_keeper),
+        ("buckle", d_buckle),
+        ("latch", d_latch),
+        ("strap", d_strap),
+        ("plug_service_orange", lambda: make_plug("plug_service_orange")),
+        ("plug_struct_charcoal", lambda: make_plug("plug_struct_charcoal")),
+        ("test_corner", d_test_corner),
+    ]
+    report = {"concept": "D_hybrid", "revision": "D3_look", "bodies": {}, "pass": True}
+    for name, fn in builders:
+        oc.reset()
+        obj = fn()
         path = os.path.join(stl_dir, f"{name}.stl")
-        body = export_part(obj, path, expect_xy=expect[name], z_min=zmin[name])
+        body = export_part(obj, path)
         report["bodies"][name] = body
         report["pass"] &= body["pass"]
 
-    # ---- assembled colour renders (rebuild scene so transforms are clean)
-    oc.reset()
-    bases = {
-        "cap_base": d_cap_base(),
-        "cap_lid": d_cap_lid(),
-        "pod_base": d_pod_base(),
-        "pod_lid": d_pod_lid(),
-        "cw_tub": d_cw_tub(),
-        "cw_lid": d_cw_lid(),
-    }
-    plugs = {
-        "cap": [make_plug(f"pcap{i}") for i in range(len(CAP_COLS))],
-        "pod": [make_plug(f"ppod{i}") for i in range(len(POD_COLS))],
-        "cw": [make_plug(f"pcw{i}") for i in range(len(CW_SCREWS))],
-    }
-    latch = d_latch()
-    strap = d_strap()
-    place_assembled(bases, plugs, latch, strap, explode=0.0)
+    def scene():
+        oc.reset()
+        bases = {
+            "cap_base": d_cap_base(),
+            "cap_lid": d_cap_lid(),
+            "pod_base": d_pod_base(),
+            "pod_lid": d_pod_lid(),
+            "cw_tub": d_cw_tub(),
+            "cw_lid": d_cw_lid(),
+        }
+        plugs = {
+            "service": [make_plug(f"svc{i}") for i in range(4)],
+            "struct": [make_plug(f"str{i}") for i in range(4)],
+            "pod": [make_plug(f"pp{i}") for i in range(4)],
+            "cw": [make_plug(f"cw{i}") for i in range(4)],
+        }
+        strap_bits = {"saddle": d_saddle(), "keeper": d_keeper(), "buckle": d_buckle()}
+        latch = d_latch()
+        strap = d_strap()
+        return bases, plugs, strap_bits, latch, strap
 
     views = {
-        "iso": (1.1, -1.3, 0.95),
-        "front": (0.0, -1.0, 0.25),
-        "side": (1.0, 0.0, 0.2),
+        "iso": (1.15, -1.35, 0.9),
+        "front": (0.0, -1.0, 0.3),
+        "side": (1.0, 0.15, 0.25),
     }
+
+    bases, plugs, strap_bits, latch, strap = scene()
+    layout(bases, plugs, strap_bits, latch, strap, explode=0.0)
     for view, direction in views.items():
         out = os.path.join(rend_dir, f"assembled_{view}.png")
-        render_colored(colored_set(bases, plugs, latch, strap, CHARCOAL),
+        render_colored(color_opt1(bases, plugs, strap_bits, latch, strap, CHARCOAL),
                        out, direction)
         shutil.copy2(out, os.path.join(img_dir, f"D_hybrid_{view}.png"))
 
-    # Exploded
-    oc.reset()
-    bases = {
-        "cap_base": d_cap_base(),
-        "cap_lid": d_cap_lid(),
-        "pod_base": d_pod_base(),
-        "pod_lid": d_pod_lid(),
-        "cw_tub": d_cw_tub(),
-        "cw_lid": d_cw_lid(),
-    }
-    plugs = {
-        "cap": [make_plug(f"epcap{i}") for i in range(len(CAP_COLS))],
-        "pod": [make_plug(f"eppod{i}") for i in range(len(POD_COLS))],
-        "cw": [make_plug(f"epcw{i}") for i in range(len(CW_SCREWS))],
-    }
-    latch = d_latch()
-    strap = d_strap()
-    place_assembled(bases, plugs, latch, strap, explode=18.0)
+    bases, plugs, strap_bits, latch, strap = scene()
+    layout(bases, plugs, strap_bits, latch, strap, explode=16.0)
     out = os.path.join(rend_dir, "assembled_exploded.png")
-    render_colored(colored_set(bases, plugs, latch, strap, CHARCOAL),
-                   out, (1.15, -1.35, 0.85), pad=1.2)
+    render_colored(color_opt1(bases, plugs, strap_bits, latch, strap, CHARCOAL),
+                   out, (1.2, -1.4, 0.85), pad=1.2)
     shutil.copy2(out, os.path.join(img_dir, "D_hybrid_exploded.png"))
 
-    # Oat lid variant (3 angles)
-    oc.reset()
-    bases = {
-        "cap_base": d_cap_base(),
-        "cap_lid": d_cap_lid(),
-        "pod_base": d_pod_base(),
-        "pod_lid": d_pod_lid(),
-        "cw_tub": d_cw_tub(),
-        "cw_lid": d_cw_lid(),
-    }
-    plugs = {
-        "cap": [make_plug(f"opcap{i}") for i in range(len(CAP_COLS))],
-        "pod": [make_plug(f"oppod{i}") for i in range(len(POD_COLS))],
-        "cw": [make_plug(f"opcw{i}") for i in range(len(CW_SCREWS))],
-    }
-    latch = d_latch()
-    strap = d_strap()
-    place_assembled(bases, plugs, latch, strap, explode=0.0)
+    bases, plugs, strap_bits, latch, strap = scene()
+    layout(bases, plugs, strap_bits, latch, strap, explode=0.0)
     for view, direction in views.items():
         out = os.path.join(rend_dir, f"oat_{view}.png")
-        render_colored(colored_set(bases, plugs, latch, strap, OAT),
+        render_colored(color_opt1(bases, plugs, strap_bits, latch, strap, OAT),
                        out, direction)
         shutil.copy2(out, os.path.join(img_dir, f"D_hybrid_oat_{view}.png"))
 
-    with open(os.path.join(rend_dir, "report.json"), "w") as f:
-        json.dump(report, f, indent=2)
+    # Port close-up
+    oc.reset()
+    pod = d_pod_base()
+    out = os.path.join(rend_dir, "port_closeup.png")
+    render_colored([(pod, CHARCOAL, "body")], out, (1.3, -0.9, 0.5), pad=0.5)
+    shutil.copy2(out, os.path.join(img_dir, "D_hybrid_port_closeup.png"))
+
+    # Seam close-up
+    oc.reset()
+    cb, cl = d_cap_base(), d_cap_lid()
+    oc.move(cl, dz=CAP_BASE_H)
+    out = os.path.join(rend_dir, "seam_closeup.png")
+    render_colored([(cb, CHARCOAL, "body"), (cl, OAT, "lid")],
+                   out, (1.5, -0.2, 0.3), pad=0.32)
+    shutil.copy2(out, os.path.join(img_dir, "D_hybrid_seam_closeup.png"))
+
+    # Strap hardware close-up
+    oc.reset()
+    saddle, keeper, buckle, strap = d_saddle(), d_keeper(), d_buckle(), d_strap()
+    oc.move(strap, dz=2.0)
+    oc.move(keeper, dy=-40, dz=1.5)
+    oc.move(buckle, dy=-70, dz=1.0)
+    out = os.path.join(rend_dir, "strap_closeup.png")
+    render_colored([
+        (saddle, CHARCOAL, "saddle"),
+        (keeper, CHARCOAL, "keeper"),
+        (buckle, ORANGE, "buckle"),
+        (strap, BLACK, "strap"),
+    ], out, (1.0, -1.2, 0.7), pad=0.7)
+    shutil.copy2(out, os.path.join(img_dir, "D_hybrid_strap_closeup.png"))
+
     with open(os.path.join(stl_dir, "report.json"), "w") as f:
         json.dump(report, f, indent=2)
-
-    print("\nWaist fractions:")
-    print(f"  cap  {CAP_BASE_H / (CAP_BASE_H + CAP_LID_T):.4f}  "
-          f"(base {CAP_BASE_H} + lid {CAP_LID_T})")
-    print(f"  pod  {POD_BASE_H / (POD_BASE_H + POD_LID_T):.4f}  "
-          f"(base {POD_BASE_H} + lid {POD_LID_T})")
-    print(f"  cw   {CW_TUB_H / (CW_TUB_H + CW_LID_T):.4f}  "
-          f"(tub  {CW_TUB_H} + lid {CW_LID_T})")
     print("\nRESULT:", "PASS" if report["pass"] else "FAIL")
     if not report["pass"]:
         sys.exit(1)

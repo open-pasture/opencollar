@@ -4,10 +4,11 @@ Design studies for the Rook collar housings. Same internal hardware envelope as
 Node V1 so the current electronics, cells, and strap clamps still fit. **Not**
 drop-in replacements for `stl/node_v1_*`.
 
-## D — Hybrid (current)
+## D — Hybrid (D3 look, current)
 
-After op-brand’s review of A/B/C: **B-led** technical-soft, **A** plan radii,
-**C** low cap. Real waist lids + O-ring, R2.5 crown, orange fastener plugs.
+op-brand direction, **look-first** iteration. Slim-tall soft-radius cap, clean
+flat lid tops, visible inset seam, strap saddle/keeper/buckle, orange =
+open/replace only. Not print-ready — design study.
 
 | | |
 | --- | --- |
@@ -17,11 +18,11 @@ After op-brand’s review of A/B/C: **B-led** technical-soft, **A** plan radii,
 
 ![D iso](images/D_hybrid_iso.png)
 
-| Assembled | Oat lids |
+| Assembled | Detail |
 | --- | --- |
-| ![front](images/D_hybrid_front.png) | ![oat iso](images/D_hybrid_oat_iso.png) |
-| ![side](images/D_hybrid_side.png) | ![oat front](images/D_hybrid_oat_front.png) |
-| ![exploded](images/D_hybrid_exploded.png) | ![oat side](images/D_hybrid_oat_side.png) |
+| ![front](images/D_hybrid_front.png) | ![port](images/D_hybrid_port_closeup.png) |
+| ![side](images/D_hybrid_side.png) | ![seam](images/D_hybrid_seam_closeup.png) |
+| ![exploded](images/D_hybrid_exploded.png) | ![oat](images/D_hybrid_oat_iso.png) |
 
 ## Prior studies (A / B / C)
 
