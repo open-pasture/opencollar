@@ -349,18 +349,24 @@ def _inside(obj, point):
 # ---------------------------------------------------------------- printability
 
 def check_printable(obj, min_wall=1.2, overhang_deg=45.0):
-    """Manifold, consistent normals, minimum wall thickness, overhang area.
+    """Manifold / watertight, consistent normals, min wall, overhang area.
 
     Thickness is measured like Blender's 3D Print Toolbox: from each face
     centre, cast a ray inward along -normal and measure the distance to the
     opposite wall.
+
+    Watertight is checked on a triangulated copy: an edge is bad when it does
+    not have exactly two faces (open or multi-face). Checking before
+    triangulation can miss glyph-boolean slivers that appear in the STL.
     """
     bm = _bm(obj)
-    non_manifold = sum(1 for e in bm.edges if not e.is_manifold)
     loose = sum(1 for v in bm.verts if not v.link_edges)
     signed_volume = bm.calc_volume(signed=True)
 
+    # Triangulate first so the manifold count matches what STL export emits.
     bmesh.ops.triangulate(bm, faces=bm.faces)
+    bad_edges = sum(1 for e in bm.edges if len(e.link_faces) != 2)
+    zero_area = sum(1 for f in bm.faces if f.calc_area() < 1e-8)
     tree = BVHTree.FromBMesh(bm)
     thin_faces, thin_area, thinnest, thinnest_at = 0, 0.0, math.inf, None
     zmin = min(v.co.z for v in bm.verts)
@@ -379,9 +385,13 @@ def check_printable(obj, min_wall=1.2, overhang_deg=45.0):
         if n.z < -cos_limit and not on_bed:
             overhang_area += f.calc_area()
     bm.free()
+    watertight = bad_edges == 0 and zero_area == 0 and loose == 0
     return {
-        "manifold": non_manifold == 0 and loose == 0,
-        "non_manifold_edges": non_manifold,
+        "manifold": watertight,
+        "watertight": watertight,
+        "bad_edges": bad_edges,
+        "zero_area_faces": zero_area,
+        "non_manifold_edges": bad_edges,
         "normals_outward": signed_volume > 0,
         "min_wall_mm": min_wall,
         "thinnest_mm": round(thinnest, 2) if thinnest != math.inf else None,
@@ -391,9 +401,55 @@ def check_printable(obj, min_wall=1.2, overhang_deg=45.0):
     }
 
 
+def check_stl_watertight(path, quantize=1e-4):
+    """Count open / multi-face edges in a binary STL (post-export check)."""
+    import struct
+    from collections import Counter
+    with open(path, "rb") as f:
+        data = f.read()
+    if len(data) < 84:
+        return {"watertight": False, "bad_edges": -1, "faces": 0}
+    n = struct.unpack_from("<I", data, 80)[0]
+    edges = Counter()
+    off = 84
+    for _ in range(n):
+        vals = struct.unpack_from("<12fH", data, off)
+        off += 50
+        vs = [vals[3:6], vals[6:9], vals[9:12]]
+        for a, b in ((0, 1), (1, 2), (2, 0)):
+            ka = tuple(round(vs[a][i] / quantize) * quantize for i in range(3))
+            kb = tuple(round(vs[b][i] / quantize) * quantize for i in range(3))
+            key = (ka, kb) if ka < kb else (kb, ka)
+            edges[key] += 1
+    bad = sum(1 for c in edges.values() if c != 2)
+    return {"watertight": bad == 0, "bad_edges": bad, "faces": n}
+
+
 # ---------------------------------------------------------------- export
 
+def prepare_for_export(obj, merge=1e-4):
+    """Triangulate and dissolve degenerate slivers before STL export / checks.
+
+    Remeshed glyph booleans and rounded-box ops can leave zero-area faces that
+    Blender still treats as manifold until triangulation + export.
+    """
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.triangulate(bm, faces=bm.faces)
+    bmesh.ops.dissolve_degenerate(bm, dist=merge, edges=list(bm.edges))
+    bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=merge)
+    tiny = [f for f in bm.faces if f.calc_area() < 1e-8]
+    if tiny:
+        bmesh.ops.delete(bm, geom=tiny, context="FACES")
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    return obj
+
+
 def export_stl(obj, path):
+    prepare_for_export(obj)
     for o in bpy.context.selected_objects:
         o.select_set(False)
     obj.select_set(True)
@@ -540,6 +596,7 @@ def finish(name, parts, spec=None, refs=(), material="ASA", min_wall=1.2,
     report = {"part": name, "material": material, "bodies": {}, "clearance": [], "pass": True}
 
     for stem, obj in parts.items():
+        prepare_for_export(obj)
         dims = size(obj)
         vol = volume_mm3(obj)
         checks = check_printable(obj, min_wall=min_wall)
@@ -550,15 +607,22 @@ def finish(name, parts, spec=None, refs=(), material="ASA", min_wall=1.2,
             "print": checks,
             "stl": os.path.relpath(os.path.join(stl_dir, f"{stem}.stl"), root),
         }
-        ok = checks["manifold"] and checks["normals_outward"] and checks["thin_area_mm2"] <= thin_area_allowed
+        ok = (checks.get("watertight", checks["manifold"])
+              and checks["normals_outward"]
+              and checks["thin_area_mm2"] <= thin_area_allowed)
         if stem in spec:
             want, tol = spec[stem]["size"], spec[stem].get("tol", 0.5)
             body["spec_size_mm"] = want
             ok = ok and all(abs(dims[i] - want[i]) <= tol for i in range(3))
+        stl_path = os.path.join(stl_dir, f"{stem}.stl")
+        export_stl(obj, stl_path)
+        stl_check = check_stl_watertight(stl_path)
+        body["stl_watertight"] = stl_check
+        if not stl_check["watertight"]:
+            ok = False
         body["pass"] = ok
         report["bodies"][stem] = body
         report["pass"] &= ok
-        export_stl(obj, os.path.join(stl_dir, f"{stem}.stl"))
 
     for ref in refs:
         for stem, obj in parts.items():
@@ -586,7 +650,11 @@ def _print_report(r):
               f"{b['volume_cm3']} cm3, ~{b['solid_mass_g']} g solid")
         if "spec_size_mm" in b:
             print(f"      spec size {b['spec_size_mm']}")
-        print(f"      manifold={p['manifold']} normals_out={p['normals_outward']} "
+        stl_w = b.get("stl_watertight") or {}
+        print(f"      manifold={p['manifold']} watertight={p.get('watertight', p['manifold'])} "
+              f"bad_edges={p.get('bad_edges', p.get('non_manifold_edges', '?'))} "
+              f"stl_bad_edges={stl_w.get('bad_edges', '?')} "
+              f"normals_out={p['normals_outward']} "
               f"thinnest={p['thinnest_mm']} mm at {p['thinnest_at']} (min {p['min_wall_mm']}), "
               f"thin area={p['thin_area_mm2']} mm2, overhang={p['overhang_area_mm2']} mm2")
     for c in r["clearance"]:

@@ -13,7 +13,7 @@
 | Battery | PKCELL LP503562, 3.7V 1200mAh LiPo | 1 | Power | 2-wire lead with connector. Polarity must be checked against the board before connecting. |
 | Jumper wires | Dupont female-female, ribbon | 1 set | Bench wiring | |
 | Cap lid screws (gable v3) | M3×40 button head ISO 7380 A2/304 + M3 bonded sealing washer | 8 | Through the 41.4 mm gabled base into lid inserts |
-| Cap lid screws (slim / saddle) | M3×18 button head ISO 7380 A2/304 + M3 bonded sealing washer | 8 | Through the 19 mm slim base into lid inserts (seat z=4; M3×20 bottoms) |
+| Cap lid screws (slim / saddle) | M3×16 button head ISO 7380 A2/304 + M3 bonded sealing washer | 8 | Through the 19 mm slim base into lid inserts (~3 mm grip, 2 mm pocket spare) |
 | Cap clamp screws (gable v3) | M3×8 button head | 4 | Cap clamp bars flush on underside |
 | Cap clamp screws (slim / saddle) | M3×14 button head | 4 | Bar+saddle+0.6 gap → mouth 10.5; tip 3.5 into blind pocket (M3×16 risks seal) |
 | Heat-set inserts | Adafruit 4255 M3×4 brass | 36 of 50 owned | Cap 12 (8 lid + 4 clamp), pods 16, CW 8. Iron ~220 °C PLA / ~245 °C ASA; press flush. |
@@ -28,5 +28,5 @@ Cap styles and stack math: `hardware/rook/cad/SADDLE.md`. Gable STLs: `hardware/
 | Qwiic to female-jumper cable (SparkFun PRT-14988) or 4-pin 0.1" header + soldering iron | Dupont jumpers can't plug into the buzzer as-is. |
 | USB-C data cable | Flashing, serial logs, charging. |
 | 8 × M3×40 button head (ISO 7380) + M3 bonded sealing washers | Gable v3 lid screws; needed for the tall 41.4 mm base fit-test set. |
-| 8 × M3×18 button head (ISO 7380) + M3 bonded sealing washers | Slim / saddle lid screws (19 mm base; see SADDLE.md). |
+| 8 × M3×16 button head (ISO 7380) + M3 bonded sealing washers | Slim / saddle lid screws (19 mm base; see SADDLE.md). |
 | 4 × M3×14 button head | Slim / saddle clamp screws (round down for blind pocket). |
