@@ -4,8 +4,8 @@
 
 | Module | Footprint / height | Notes |
 | --- | --- | --- |
-| Cap | 76 × 160; base 19 + lid 6.5 | P124-sized; brand 1.3× strap conflict flagged |
-| Pod L/R | 92 × 68; base 24.5 + lid 6 | Full cavity (taller than cap) — intentional |
+| Cap | 76 × 160; base 19 + lid 6.5 = **25.5** | P124-sized; brand 1.3× strap conflict flagged |
+| Pod L/R | 92 × 68; base 22 + lid 3 = **25.0** | Brand: pods **lower** than cap |
 | CW | 88 × 74 × 30 + lid 6 | Steel pack; **no electronics / antennas** |
 | Saddle | 76 × 96 × ~5.9 | Wider than look-study to kill overhang rock |
 | Fairings | 28 mm run, R7 | Separate from lids; print slope as WALL |
@@ -21,9 +21,10 @@ Sources: headline dims from enclosure-component-spec (V/U). Spec path on shared 
 
 ### Cap (electronics)
 
-- **Rook Connect Kit** 55.88 × 20.32 × 1.0 PCB → pocket **56.7 × 21.1 × 7.2** (≈17 w/ socketed headers). USB-C +3.26 on short end (−Y). JST +1.95 underside recess. Holes Ø1.4 inset 1.27. LTE/GNSS U.FL at antenna end; nano-SIM on board.
-- **bq24074** (Adafruit 4755) → **38.9 × 33.8 × 12**. Holes Ø2.5 @ 2.54 inset. **Do not pot solid** — leave service air gap.
-- **Wio-SX1262** → **21.8 × 18.6 × 23** (height U 21–23) + **20 mm** U.FL wire bend / strain relief toward crest.
+- **FIT HEIGHT (Cody):** free height ≈14.3 mm. Upright Wio ~23 mm and kit+headers ~17 mm **do not fit**. Options A/B/C in `FIT_HEIGHT_NOTE` / README.
+- **Rook Connect Kit** → pocket **56.7 × 21.1 × 7.2** **low-profile (no headers)**. Headers ~17 = nofit. USB-C on −Y. JST underside recess. Holes Ø1.4 inset 1.27.
+- **bq24074** (Adafruit 4755) → **38.9 × 33.8 × 12**. **Do not pot solid.**
+- **Wio-SX1262 lay-flat** → **21.8 × 18.6 × 8** (upright 23 = nofit) + **20 mm** U.FL slack along +X wall (clear of charger).
 - **USB-C** charge port + TPU gasket cap (`usbc_cap.stl`).
 - **Light pipes** Ø2.5 over kit LEDs; **press-through membranes** over buttons.
 - **Antennas on crest (+Y)**, away from neck and cells:

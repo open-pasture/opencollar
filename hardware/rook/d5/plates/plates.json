@@ -1,4 +1,5 @@
 {
+  "source": "op-maker Orca CLI review 2026-11-03 (open-cavity lip ring); times after sealed-box fix",
   "P2S_256": {
     "bed": [
       256.0,
@@ -7,115 +8,88 @@
     ],
     "pla_verify": [
       {
-        "plate": 1,
+        "plate": "P0",
         "parts": [
           "fit_coupon",
-          "label_coupon",
-          "clamp_bar\u00d72",
-          "plug_service\u00d73",
-          "latch",
-          "usbc_cap"
+          "label_coupon"
         ],
-        "est_h": 1.5
+        "est_h": 0.97,
+        "g": 27.5,
+        "note": "PRINT FIRST"
       },
       {
-        "plate": 2,
+        "plate": "P1",
         "parts": [
           "cap_base",
-          "cap_lid"
+          "cap_lid",
+          "pod_L/R base+lid"
         ],
-        "est_h": 6.5
+        "est_h": 11.42,
+        "g": 266.9,
+        "note": "merged shells object; open cavity \u2192 ~12% support (was 35%)"
       },
       {
-        "plate": 3,
-        "parts": [
-          "pod_L_base",
-          "pod_L_lid",
-          "pod_R_base",
-          "pod_R_lid"
-        ],
-        "est_h": 8.0
-      },
-      {
-        "plate": 4,
+        "plate": "P2",
         "parts": [
           "cw_tub",
           "cw_lid",
           "saddle",
-          "keeper",
-          "buckle"
+          "4 fairings",
+          "8 clamps",
+          "8 plugs",
+          "latch",
+          "2 buzz_mesh",
+          "buckle",
+          "keeper"
         ],
-        "est_h": 5.5
-      },
-      {
-        "plate": 5,
-        "parts": [
-          "fairing_cap_pod_L/R",
-          "fairing_pod_strap_L/R",
-          "clamp_bar\u00d72",
-          "plug_struct\u00d7N"
-        ],
-        "est_h": 4.0
+        "est_h": 7.52,
+        "g": 180.1
       }
     ],
-    "field_asa_petg": [
+    "field_asa": [
       {
-        "plate": 1,
-        "parts": [
-          "fit_coupon (PLA first)",
-          "spares later"
-        ],
-        "est_h": 1.5
+        "plate": "P0",
+        "est_h": 1.18,
+        "g": 29.8
       },
       {
-        "plate": 2,
-        "parts": [
-          "cap_base",
-          "cap_lid"
-        ],
-        "est_h": 8.0,
-        "note": "enclosure preheated; ASA brim 5\u20138 mm"
+        "plate": "P1",
+        "est_h": 11.12,
+        "g": 242.8
       },
       {
-        "plate": 3,
-        "parts": [
-          "both pods base+lid"
-        ],
-        "est_h": 10.0
-      },
-      {
-        "plate": 4,
-        "parts": [
-          "cw",
-          "saddle",
-          "strap hardware"
-        ],
-        "est_h": 7.0
-      },
-      {
-        "plate": 5,
-        "parts": [
-          "fairings",
-          "TPU usbc_cap+seals separate"
-        ],
-        "est_h": 5.0
+        "plate": "P2",
+        "est_h": 7.32,
+        "g": 161.4
       }
     ],
     "spares_plate": {
+      "plate": "P3",
       "parts": [
-        "cap_lid",
         "clamp_bar\u00d74",
-        "usbc_cap\u00d72",
         "plug_service\u00d73",
         "latch",
-        "oring_blank"
+        "buzz_mesh\u00d72",
+        "usbc_cap\u00d72"
       ],
-      "est_h": 1.8
+      "est_h": 0.62,
+      "g": 11.0
     },
-    "per_collar_plates_verify": 5,
-    "per_collar_hours_verify_pla": 25.5,
-    "per_collar_plates_field": 5,
-    "per_collar_hours_field": 31.5
+    "spares_cap_lid": {
+      "plate": "P3b",
+      "parts": [
+        "cap_lid"
+      ],
+      "est_h": 2.37,
+      "g": 44.7
+    },
+    "per_collar_plates_verify": 2,
+    "per_collar_hours_verify_pla": 18.93,
+    "per_collar_grams_pla": 447,
+    "per_collar_plates_field": 2,
+    "per_collar_hours_field_asa": 18.43,
+    "per_collar_grams_asa": 404,
+    "note": "P1+P2 = collar. TPU usbc_cap field print is separate. Auto-arrange splits to ~4 plates/~26 h."
   },
   "bed_220": {
     "bed": [
@@ -123,90 +97,33 @@
       220.0,
       250.0
     ],
-    "note": "Ender-class 220\u00d7220 \u2014 more plates, same parts. Cap 76\u00d7160 fits; pod pair may split.",
+    "note": "Ender 3 V3 SE PETG profile, auto-arranged (op-maker).",
     "pla_verify": [
       {
-        "plate": 1,
-        "parts": [
-          "fit_coupon",
-          "label_coupon",
-          "clamps",
-          "plugs",
-          "latch"
-        ],
-        "est_h": 1.5
+        "plate": "collar",
+        "est_h": 24.1,
+        "g": 490.5,
+        "plates": 5
       },
       {
-        "plate": 2,
-        "parts": [
-          "cap_base"
-        ],
-        "est_h": 4.0
+        "plate": "coupon",
+        "est_h": 1.57,
+        "g": 36.0
       },
       {
-        "plate": 3,
-        "parts": [
-          "cap_lid"
-        ],
-        "est_h": 2.5
+        "plate": "spares",
+        "est_h": 0.63
       },
       {
-        "plate": 4,
-        "parts": [
-          "pod_L_base",
-          "pod_L_lid"
-        ],
-        "est_h": 4.5
-      },
-      {
-        "plate": 5,
-        "parts": [
-          "pod_R_base",
-          "pod_R_lid"
-        ],
-        "est_h": 4.5
-      },
-      {
-        "plate": 6,
-        "parts": [
-          "cw_tub",
-          "cw_lid"
-        ],
-        "est_h": 3.5
-      },
-      {
-        "plate": 7,
-        "parts": [
-          "saddle",
-          "keeper",
-          "buckle",
-          "clamps"
-        ],
-        "est_h": 3.0
-      },
-      {
-        "plate": 8,
-        "parts": [
-          "fairings L"
-        ],
-        "est_h": 2.5
-      },
-      {
-        "plate": 9,
-        "parts": [
-          "fairings R",
-          "TPU caps"
-        ],
-        "est_h": 2.5
+        "plate": "spare_lid",
+        "est_h": 2.48
       }
     ],
-    "per_collar_plates_verify": 9,
-    "per_collar_hours_verify_pla": 28.5,
-    "per_collar_plates_field": 9,
-    "per_collar_hours_field": 36.0,
-    "honest": "All shells fit a 220 bed. ASA on stock Ender needs enclosure \u2014 PETG is the reproducible baseline off Bambu."
+    "per_collar_plates_verify": 5,
+    "per_collar_hours_verify_pla": 24.1,
+    "honest": "Everything fits 220\u00d7220. ASA on stock Ender needs enclosure \u2014 PETG baseline off Bambu."
   },
-  "starling_note": "Starling CAD not yet designed (skeleton only). Budget ~3 P2S plates / ~4 220 plates per Starling once CAD exists (XIAO+Wio shell + strap share).",
-  "orca_cli": false,
-  "orca_note": "OrcaSlicer CLI not available in this environment. Plate STL nests + settings committed; op-maker slices/patches 3MFs."
+  "starling_note": "Starling CAD not yet designed. Budget ~3 P2S / ~4\u00d7220 once XIAO+Wio shell exists (small cells only).",
+  "orca_cli": true,
+  "orca_note": "Times from op-maker Orca slices on open-cavity STLs. Run print/fix_bbl_3mf.py before Bambu Connect."
 }

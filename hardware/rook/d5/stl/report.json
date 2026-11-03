@@ -1,22 +1,30 @@
 {
-  "revision": "D5_production",
+  "revision": "D5_production_audit_fix",
   "assumptions": [
     "Strap thickness 4.0 mm assumed \u2014 VERIFY WITH CALIPERS before field print.",
     "P124 on cap is an OPEN Cody/strategy decision; pocket retained for study.",
-    "Cap 76 mm exceeds brand 1.3\u00d7 strap (~57.8 mm) while P124 is in play.",
+    "Cap 76 mm exceeds brand 1.3\u00d7 strap (~57.8 mm) while P124 is in play; CAP_W_SLIM=58 if panel dropped.",
     "bq24074 / GPS patch heights partially assumed \u2014 verify with calipers.",
-    "Wio-SX1262 height unverified (allow 23 mm pocket + 20 mm wire bend).",
-    "LP503562 LiPo unverified (~5\u00d735\u00d762); cell bay has +2 mm radial adjust.",
+    "Cap free height \u2248 14.3 mm (13 cavity + ~1.3 lid recess). Wio-SX1262 upright pocket needs ~23 mm + 20 mm wire bend \u2014 DOES NOT FIT. Connect Kit with socketed headers needs ~17 mm \u2014 DOES NOT FIT. Production CAD uses LAY-FLAT Wio (8 mm pocket) + LOW-PROFILE kit without headers (7.2 mm). Alternatives for Cody: (A) keep lay-flat/low-profile, (B) raise cap cavity \u226523 mm (hurts brand proportions / pod-lower look), (C) solder headers / remote radio. Flagged OPEN for Cody.",
+    "Wio production orientation = lay_flat until Cody raises cavity for upright.",
+    "LP503562 LiPo unverified (~5\u00d735\u00d762); cell bay has +1 mm radial adjust (pod height).",
     "Adafruit 353 pack is NOT approved; dual 1781 pods are plan of record.",
-    "Rook Connect Kit height 7.2 without headers / ~17 with sockets \u2014 U headers.",
+    "Rook Connect Kit fitted LOW-PROFILE 7.2 (no headers); ~17 with sockets DOES NOT FIT.",
     "LTE flex 44\u00d710 U; GNSS cover 1\u20133 mm plastic, no metal above patch.",
     "Antenna metal keepout 10\u201315 mm (CAD uses 12 mm) from inserts/screws/CW/cells.",
     "Do not pot the bq24074 charger solid \u2014 service access required.",
     "Cell swap needs only an M3 driver (pod lid orange/service screws).",
     "Counterweight tub stays free of electronics \u2014 steel pack only.",
+    "Pods stack 25.0 mm < cap stack 25.5 mm (brand: pods visibly lower).",
     "Starling: same Wio XY pocket; small cells only; separate CAD TBD.",
     "No collar on animal until welfare review (PR #2).",
     "Parts arriving Nov 4\u20136 \u2014 pockets +0.4 mm/side; fit coupon FIRST."
+  ],
+  "fit_height_note": "Cap free height \u2248 14.3 mm (13 cavity + ~1.3 lid recess). Wio-SX1262 upright pocket needs ~23 mm + 20 mm wire bend \u2014 DOES NOT FIT. Connect Kit with socketed headers needs ~17 mm \u2014 DOES NOT FIT. Production CAD uses LAY-FLAT Wio (8 mm pocket) + LOW-PROFILE kit without headers (7.2 mm). Alternatives for Cody: (A) keep lay-flat/low-profile, (B) raise cap cavity \u226523 mm (hurts brand proportions / pod-lower look), (C) solder headers / remote radio. Flagged OPEN for Cody.",
+  "cody_flags": [
+    "FIT HEIGHT: upright Wio 23 mm + kit headers 17 mm vs ~14.3 mm free \u2014 choose A/B/C in FIT_HEIGHT_NOTE.",
+    "P124 panel OPEN \u2014 keep cap 76 or drop panel and take CAP_W_SLIM 58 (brand 1.3\u00d7 strap).",
+    "Mono vs stereo buzzer; 1781 purchase (HARDWARE-FIT)."
   ],
   "layout": {
     "cap": [
@@ -58,11 +66,13 @@
         7.2
       ],
       "headers_h": 17.0,
+      "headers_fit": false,
       "at": [
         0.0,
-        -28.0
+        -24.0
       ],
-      "clear_per_side": 0.4
+      "clear_per_side": 0.4,
+      "option": "low_profile_no_headers"
     },
     "bq24074": {
       "board": [
@@ -77,7 +87,7 @@
       ],
       "at": [
         0.0,
-        22.0
+        28.0
       ],
       "do_not_pot": true
     },
@@ -93,7 +103,7 @@
         8.0
       ],
       "port_d": 8.0,
-      "mesh": true
+      "mesh_rimmed": true
     },
     "cell_18650": {
       "cell": [
@@ -103,16 +113,26 @@
       "pocket_d": 19.2,
       "pocket_l": 70.0,
       "end_clear": 3.0,
-      "bay_adjust": 2.0,
+      "bay_adjust": 0.2,
       "pack_353_approved": false
     },
     "wio": {
-      "pocket": [
+      "pocket_lay_flat": [
+        21.8,
+        18.6,
+        8.0
+      ],
+      "pocket_upright_nofit": [
         21.8,
         18.6,
         23.0
       ],
-      "wire_bend": 20.0
+      "orientation": "lay_flat",
+      "wire_bend": 20.0,
+      "at": [
+        26.0,
+        -8.0
+      ]
     },
     "starling": {
       "pocket": [
@@ -138,11 +158,17 @@
       "crest": "+Y"
     }
   },
+  "stacks_mm": {
+    "cap": 25.5,
+    "pod": 25.0,
+    "pods_lower_than_cap": true
+  },
   "waist_frac": 0.7450980392156863,
   "panel_open_decision": true,
   "cap_vs_brand_width": {
     "cap_w": 76.0,
     "brand_max_1_3x_strap": 57.8,
+    "cap_w_slim_if_no_panel": 58.0,
     "conflict": true
   },
   "bodies": {
@@ -160,7 +186,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 10952
+        "faces": 10784
       },
       "pass": true,
       "stl_path": "stl/cap_base.stl",
@@ -184,12 +210,12 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 8130
+        "faces": 9086
       },
       "pass": true,
       "stl_path": "stl/cap_lid.stl",
-      "orientation": "mating face down",
-      "load_path": "lid screws INTO base inserts; seal land on bed",
+      "orientation": "OUTER face down; landing-ring groove UP",
+      "load_path": "lid screws INTO base inserts; no full-area recess",
       "material": "ASA/PETG",
       "farmer_swappable": true,
       "rf_near_antenna": true
@@ -222,7 +248,7 @@
       "size_mm": [
         92.0,
         69.8,
-        25.7
+        23.2
       ],
       "watertight": {
         "watertight": true,
@@ -232,7 +258,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4146
+        "faces": 4436
       },
       "pass": true,
       "stl_path": "stl/pod_L_base.stl",
@@ -246,7 +272,7 @@
       "size_mm": [
         91.0,
         67.0,
-        6.0
+        3.0
       ],
       "watertight": {
         "watertight": true,
@@ -256,11 +282,11 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 3500
+        "faces": 2722
       },
       "pass": true,
       "stl_path": "stl/pod_L_lid.stl",
-      "orientation": "mating face down",
+      "orientation": "outer face down; landing ring UP",
       "load_path": "lid screws INTO base",
       "material": "ASA/PETG",
       "farmer_swappable": true,
@@ -270,7 +296,7 @@
       "size_mm": [
         92.0,
         69.8,
-        25.7
+        23.2
       ],
       "watertight": {
         "watertight": true,
@@ -280,7 +306,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4146
+        "faces": 4438
       },
       "pass": true,
       "stl_path": "stl/pod_R_base.stl",
@@ -294,7 +320,7 @@
       "size_mm": [
         91.0,
         67.0,
-        6.0
+        3.0
       ],
       "watertight": {
         "watertight": true,
@@ -304,11 +330,11 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 3500
+        "faces": 2722
       },
       "pass": true,
       "stl_path": "stl/pod_R_lid.stl",
-      "orientation": "mating face down",
+      "orientation": "outer face down; landing ring UP",
       "load_path": "mirror of L",
       "material": "ASA/PETG",
       "farmer_swappable": true,
@@ -328,7 +354,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4342
+        "faces": 4126
       },
       "pass": true,
       "stl_path": "stl/cw_tub.stl",
@@ -448,12 +474,12 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 396
+        "faces": 408
       },
       "pass": true,
       "stl_path": "stl/buckle.stl",
       "orientation": "flat",
-      "load_path": "strap open/close",
+      "load_path": "strap open/close; cross-bar fused to frame",
       "material": "ASA/PETG",
       "farmer_swappable": true,
       "rf_near_antenna": false
@@ -532,7 +558,7 @@
     },
     "fairing_cap_pod_L": {
       "size_mm": [
-        70.0,
+        69.856,
         28.0,
         12.0
       ],
@@ -544,19 +570,19 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 16
+        "faces": 988
       },
       "pass": true,
       "stl_path": "stl/fairing_cap_pod_L.stl",
-      "orientation": "long axis on bed; slope=WALL",
-      "load_path": "cosmetic blend; snap/screw to shells",
+      "orientation": "long axis on bed; slope=WALL; R7/R2.5",
+      "load_path": "28 mm blend cap\u2192pod",
       "material": "ASA/PETG",
       "farmer_swappable": true,
       "rf_near_antenna": false
     },
     "fairing_cap_pod_R": {
       "size_mm": [
-        70.0,
+        69.856,
         28.0,
         12.0
       ],
@@ -568,11 +594,11 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 16
+        "faces": 988
       },
       "pass": true,
       "stl_path": "stl/fairing_cap_pod_R.stl",
-      "orientation": "long axis on bed; slope=WALL",
+      "orientation": "long axis on bed; slope=WALL; R7/R2.5",
       "load_path": "mirror",
       "material": "ASA/PETG",
       "farmer_swappable": true,
@@ -580,7 +606,7 @@
     },
     "fairing_pod_strap_L": {
       "size_mm": [
-        50.0,
+        49.965,
         28.0,
         10.0
       ],
@@ -592,19 +618,19 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 16
+        "faces": 996
       },
       "pass": true,
       "stl_path": "stl/fairing_pod_strap_L.stl",
-      "orientation": "long axis on bed; slope=WALL",
-      "load_path": "blend into strap",
+      "orientation": "long axis on bed; slope=WALL; R7/R2.5",
+      "load_path": "28 mm blend into strap",
       "material": "ASA/PETG",
       "farmer_swappable": true,
       "rf_near_antenna": false
     },
     "fairing_pod_strap_R": {
       "size_mm": [
-        50.0,
+        49.965,
         28.0,
         10.0
       ],
@@ -616,11 +642,11 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 16
+        "faces": 996
       },
       "pass": true,
       "stl_path": "stl/fairing_pod_strap_R.stl",
-      "orientation": "long axis on bed; slope=WALL",
+      "orientation": "long axis on bed; slope=WALL; R7/R2.5",
       "load_path": "mirror",
       "material": "ASA/PETG",
       "farmer_swappable": true,
@@ -654,7 +680,7 @@
       "size_mm": [
         9.4,
         9.4,
-        0.7
+        0.8
       ],
       "watertight": {
         "watertight": true,
@@ -664,12 +690,12 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 548
+        "faces": 418
       },
       "pass": true,
       "stl_path": "stl/buzz_mesh.stl",
       "orientation": "flat",
-      "load_path": "press-in sound-port mesh disc (\u00d72)",
+      "load_path": "rimmed mesh disc \u2014 ONE part (\u00d72)",
       "material": "PETG/TPU",
       "farmer_swappable": true,
       "rf_near_antenna": false
@@ -712,7 +738,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4118
+        "faces": 3438
       },
       "pass": true,
       "stl_path": "stl/fit_coupon.stl",
@@ -725,9 +751,9 @@
   },
   "pass": true,
   "plates": {
-    "p2s_verify_h": 25.5,
-    "p2s_field_h": 31.5,
-    "bed220_verify_h": 28.5,
-    "orca_cli": false
+    "p2s_verify_h": 18.93,
+    "p2s_field_asa_h": 18.43,
+    "bed220_verify_h": 24.1,
+    "orca_cli": true
   }
 }

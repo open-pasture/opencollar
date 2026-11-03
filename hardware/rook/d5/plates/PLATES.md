@@ -1,31 +1,24 @@
-# D5 plate layouts
+# D5 plate layouts (corrected)
 
-Machine-readable: `plates.json`. **OrcaSlicer CLI is not available** in this environment — STL nests + settings are committed; **op-maker** builds 3MFs.
+Source: op-maker Orca review after open-cavity lip fix. Machine-readable: `plates.json`.
 
-## P2S 256 × 256 (per Rook collar)
+## P2S 256 — per Rook collar
 
-### Verify (PLA)
+| Plate | Parts | PLA | ASA |
+| --- | --- | --- | --- |
+| P0 | fit + label coupon (**first**) | 0h58 / 27.5 g | 1h11 / 29.8 g |
+| P1 | cap + both pods (base+lid) | 11h25 / 267 g | 11h07 / 243 g |
+| P2 | CW, saddle, fairings, clamps, plugs, latch, mesh, buckle, keeper | 7h31 / 180 g | 7h19 / 161 g |
+| **Collar (P1+P2)** | | **18h56 / 447 g** | **18h26 / 404 g** |
+| P3 spares | 4 clamps, 3 orange, latch, 2 mesh, 2 usbc | 0h37 | 0h36 |
+| P3b | spare cap_lid | 2h22 | 2h23 |
 
-1. fit_coupon, label_coupon, clamp×2, plugs, latch, usbc_cap — ~1.5 h  
-2. cap_base + cap_lid — ~6.5 h  
-3. both pods base+lid — ~8.0 h  
-4. cw + saddle + keeper + buckle — ~5.5 h  
-5. fairings + clamps + charcoal plugs — ~4.0 h  
+TPU `usbc_cap` for field = separate soft plate.
 
-**Total ~25.5 h / 5 plates.**
+## 220 bed
 
-### Field (ASA/PETG)
-
-Same five plates; expect ~31.5 h with enclosure / slower ASA. TPU caps on a separate soft plate.
-
-## 220 × 220 (Ender-class)
-
-Nine plates (~28.5 h PLA / ~36 h field). Cap 76×160 fits one plate; split pod pair. ASA on stock Ender needs an enclosure — **PETG** is the reproducible baseline off Bambu.
+Collar ~5 plates / 24h06 / 490 g (PETG profile).
 
 ## Starling
 
-CAD not designed yet. Budget **~3 P2S / ~4×220** once XIAO+Wio shell exists (small cells only; share strap hardware).
-
-## Spares
-
-See `../SPARES.md` — target **&lt; 2 h**.
+CAD TBD; ~3 P2S / ~4×220 once designed.

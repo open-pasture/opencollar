@@ -12,32 +12,40 @@ STRAP_T = 4.0            # U — design_thickness; VERIFY WITH CALIPERS
 STRAP_R = 232.0          # U — look-study collar radius (mm); form reference
 
 # Brand: cap width ≤ ~1.3 × strap → 57.8 mm. CONFLICT with P124 (66 mm panel).
-# With P124 pocket (open Cody/strategy decision) cap stays 76. Without panel,
-# slim target CAP_W_SLIM = 58. Flagged in README / PR.
+# With P124 pocket (OPEN Cody/strategy) cap stays 76. If panel dropped → CAP_W_SLIM.
 CAP_W_MAX_BRAND = round(STRAP_W * 1.3, 1)  # 57.8
+CAP_W_SLIM = 58.0                       # brand target when P124 dropped
 
 # ---------------------------------------------------------------- locked / production envelope
-CAP_W, CAP_L = 76.0, 160.0          # V — P124-sized footprint (open panel decision)
+CAP_W, CAP_L = 76.0, 160.0          # V — P124-sized footprint (OPEN panel decision)
 CAP_WALL = 5.0
 CAP_FLOOR = 6.0
-CAP_CAVITY_H = 13.0                 # ≥13 for bq + kit
+# Internal free height ≈ CAP_CAVITY_H + lid underside (~1.3) ≈ 14.3 mm.
+# UPRIGHT Wio 23 mm and kit+headers ~17 mm DO NOT FIT — see FIT_HEIGHT_NOTE / Cody.
+CAP_CAVITY_H = 13.0                 # fitted for low-profile kit (7.2) + lay-flat Wio
 CAP_BASE_H = CAP_FLOOR + CAP_CAVITY_H  # 19
 CAP_LID_T = 6.5
+CAP_STACK_H = CAP_BASE_H + CAP_LID_T  # 25.5 total
 # Taper zone shortened so central cavity stays full for kit + bq.
 CAP_TAPER_LEN = 14.0                # outer tip only; cavity flat for |y| < L/2 - TAPER
-CAP_COLS = [(sx * 29.5, y) for sx in (-1, 1) for y in (-68.0, -42.0, 42.0, 68.0)]
+# Columns at y=-42 moved outboard (x=±31.5) so Ø8 bosses clear kit pocket corner.
+CAP_COLS = [(sx * 29.5, y) for sx in (-1, 1) for y in (-68.0, 42.0, 68.0)] + \
+           [(sx * 31.5, -42.0) for sx in (-1, 1)]
 CAP_CLAMP = [(sx * 20.0, sy * 28.5) for sx in (-1, 1) for sy in (-1, 1)]
 # Orange = farmer service: 3 end screws clear of centered P124 (±56.8).
 CAP_ORANGE = [(29.5, 68.0), (-29.5, 68.0), (29.5, -68.0)]
 CAP_CHARCOAL = [c for c in CAP_COLS if c not in CAP_ORANGE]
 
-POD_CAVITY = (82.0, 58.0, 21.5)     # V — locked cell + buzzer
+# Brand: pods visibly LOWER than cap. Tight 1781 cradle + thin lid.
+# Cell Ø19.2 needs ~cav 19.5; floor 2.5 + cav 19.5 + lid 3.0 = 25.0 < cap 25.5.
+POD_CAVITY = (82.0, 58.0, 19.5)
 POD_WALL = 5.0
 POD_L = POD_CAVITY[0] + 2 * POD_WALL  # 92
 POD_W = POD_CAVITY[1] + 2 * POD_WALL  # 68
-POD_FLOOR = 3.0
-POD_BASE_H = POD_FLOOR + POD_CAVITY[2]  # 24.5
-POD_LID_T = 6.0
+POD_FLOOR = 2.5
+POD_BASE_H = POD_FLOOR + POD_CAVITY[2]  # 22.0
+POD_LID_T = 3.0
+POD_STACK_H = POD_BASE_H + POD_LID_T    # 25.0 — visibly under cap 25.5
 POD_COLS = [(sx * 37.0, sy * 27.0) for sx in (-1, 1) for sy in (-1, 1)]
 # Pods sit ~±80 mm along strap from spine (look-study).
 POD_STRAP_Y = 80.0
@@ -62,9 +70,10 @@ SADDLE_H = 2.5 + (STRAP_T - 0.6)    # roof + channel
 SADDLE_CHANNEL_W = STRAP_W + 2.0
 SADDLE_CHANNEL_D = STRAP_T - 0.6
 
-# Fairings (op-brand): 25–30 mm run into strap, constant R7, separate from lids.
-FAIRING_RUN = 28.0
-FAIRING_R = PLAN_R
+# Fairings (op-brand): 25–30 mm run into strap, R7 plan + R2.5 soft edges.
+FAIRING_RUN = 28.0                  # within 25–30 mm brand blend
+FAIRING_R = PLAN_R                  # 7.0 plan radius
+FAIRING_EDGE_R = CROWN_R            # 2.5 soft edge bevel
 
 # P124 — OPEN DECISION (Cody/strategy). Pocket kept; flag in PR.
 PANEL_POCKET = (66.6, 113.6, 2.3)
@@ -102,16 +111,16 @@ KIT_HOLE_INSET = 1.27               # V from each edge
 KIT_USB_H = 3.26                    # V side protrusion
 KIT_JST_H = 1.95                    # V underside
 KIT_POCKET_XY = pocket_xy(KIT_BOARD)  # 56.68 × 21.12 → use headline 56.7 × 21.1
-KIT_POCKET = (56.7, 21.1, 7.2)      # V headline; without headers
-KIT_POCKET_HEADERS = (56.7, 21.1, 17.0)  # U ~17 with socketed headers
-KIT_AT = (0.0, -28.0)               # −Y half of cap; USB toward −Y end
+KIT_POCKET = (56.7, 21.1, 7.2)      # V headline; LOW-PROFILE (no headers) — FITS 13 mm cavity
+KIT_POCKET_HEADERS = (56.7, 21.1, 17.0)  # U ~17 with socketed headers — DOES NOT FIT (Cody)
+KIT_AT = (0.0, -24.0)               # −Y; shifted +4 from −28 to clear column at y=−42
 
 # bq24074 Adafruit 4755 — V outline; do NOT pot charger solid
 BQ_BOARD = (38.10, 33.02, 1.6)      # V
 BQ_HOLE_D = 2.5                     # V
 BQ_HOLE_INSET = 2.54                # V
-BQ_POCKET = (38.9, 33.8, 12.0)      # V headline (= board + 0.4/side)
-BQ_AT = (0.0, 22.0)                 # +Y of centre; service access, not potted
+BQ_POCKET = (38.9, 33.8, 12.0)      # V headline (= board + 0.4/side); fits under 13 mm cav
+BQ_AT = (0.0, 28.0)                 # +Y; moved from 22 to clear U.FL channel at +X wall
 
 # Qwiic buzzer SparkFun BOB-24474 — open sound port + mesh
 BUZZ_BOARD = (25.4, 25.4, 1.6)      # V
@@ -128,14 +137,18 @@ CELL_POCKET_D = 19.2                # V headline
 CELL_POCKET_L = 70.0                # V headline
 CELL_END_CLEAR = 3.0                # ~3 mm each end for springs/leads
 CELL_BAY_L = CELL_POCKET_L + 2 * CELL_END_CLEAR  # 76
-CELL_BAY_ADJUST = 2.0               # extra radial for unverified packs / LP503562
+# Radial spare limited so Ø ≤ pod cavity height 19.5 (brand: pods lower than cap).
+CELL_BAY_ADJUST = 0.2               # Ø19.4 in 19.5 cav; LP503562 still notes U
 CELL_AT = (-2.0, -8.0)              # pod cradle centre (X along cell)
 
-# Wio-SX1262 — ~21 × 17.8; height U (21–23); allow ~20 mm wire bend
+# Wio-SX1262 — ~21 × 17.8; height U (21–23 upright). Cap cavity ~14.3 free —
+# UPRIGHT DOES NOT FIT. Production option: LAY-FLAT pocket (board in XY).
 WIO_BOARD = (21.0, 17.8)            # U
-WIO_POCKET = (21.8, 18.6, 23.0)     # V headline XY; U height
-WIO_WIRE_BEND = 20.0                # U.FL / SMA slack
-WIO_AT = (22.0, -5.0)               # +X wall; away from crest antennas
+WIO_POCKET_UPRIGHT = (21.8, 18.6, 23.0)  # headline; DOES NOT FIT current cavity
+WIO_POCKET = (21.8, 18.6, 8.0)      # LAY-FLAT option (board + connectors U) — FITS
+WIO_WIRE_BEND = 20.0                # U.FL / SMA slack along +X wall (not over bq)
+WIO_AT = (26.0, -8.0)               # +X wall, clear of bq (+Y) and kit (−Y)
+WIO_ORIENTATION = "lay_flat"        # production default until Cody raises cavity
 
 # Starling: XIAO nRF52840 + Wio stack — same XY pocket, SMALL CELLS ONLY
 STARLING_POCKET = (21.8, 18.6, 25.0)
@@ -171,23 +184,42 @@ BED_P2S = (256.0, 256.0, 256.0)
 BED_220 = (220.0, 220.0, 250.0)     # Ender-class
 BED_MK4 = (250.0, 210.0, 220.0)
 
+# Cap free height vs radio/kit — DO NOT GUESS a raised cavity; Cody decides.
+FIT_HEIGHT_NOTE = (
+    "Cap free height ≈ 14.3 mm (13 cavity + ~1.3 lid recess). "
+    "Wio-SX1262 upright pocket needs ~23 mm + 20 mm wire bend — DOES NOT FIT. "
+    "Connect Kit with socketed headers needs ~17 mm — DOES NOT FIT. "
+    "Production CAD uses LAY-FLAT Wio (8 mm pocket) + LOW-PROFILE kit without "
+    "headers (7.2 mm). Alternatives for Cody: (A) keep lay-flat/low-profile, "
+    "(B) raise cap cavity ≥23 mm (hurts brand proportions / pod-lower look), "
+    "(C) solder headers / remote radio. Flagged OPEN for Cody."
+)
+
 ASSUMPTIONS = [
     "Strap thickness 4.0 mm assumed — VERIFY WITH CALIPERS before field print.",
     "P124 on cap is an OPEN Cody/strategy decision; pocket retained for study.",
-    "Cap 76 mm exceeds brand 1.3× strap (~57.8 mm) while P124 is in play.",
+    "Cap 76 mm exceeds brand 1.3× strap (~57.8 mm) while P124 is in play; CAP_W_SLIM=58 if panel dropped.",
     "bq24074 / GPS patch heights partially assumed — verify with calipers.",
-    "Wio-SX1262 height unverified (allow 23 mm pocket + 20 mm wire bend).",
-    "LP503562 LiPo unverified (~5×35×62); cell bay has +2 mm radial adjust.",
+    FIT_HEIGHT_NOTE,
+    "Wio production orientation = lay_flat until Cody raises cavity for upright.",
+    "LP503562 LiPo unverified (~5×35×62); cell bay has +1 mm radial adjust (pod height).",
     "Adafruit 353 pack is NOT approved; dual 1781 pods are plan of record.",
-    "Rook Connect Kit height 7.2 without headers / ~17 with sockets — U headers.",
+    "Rook Connect Kit fitted LOW-PROFILE 7.2 (no headers); ~17 with sockets DOES NOT FIT.",
     "LTE flex 44×10 U; GNSS cover 1–3 mm plastic, no metal above patch.",
     "Antenna metal keepout 10–15 mm (CAD uses 12 mm) from inserts/screws/CW/cells.",
     "Do not pot the bq24074 charger solid — service access required.",
     "Cell swap needs only an M3 driver (pod lid orange/service screws).",
     "Counterweight tub stays free of electronics — steel pack only.",
+    "Pods stack 25.0 mm < cap stack 25.5 mm (brand: pods visibly lower).",
     "Starling: same Wio XY pocket; small cells only; separate CAD TBD.",
     "No collar on animal until welfare review (PR #2).",
     "Parts arriving Nov 4–6 — pockets +0.4 mm/side; fit coupon FIRST.",
+]
+
+CODY_FLAGS = [
+    "FIT HEIGHT: upright Wio 23 mm + kit headers 17 mm vs ~14.3 mm free — choose A/B/C in FIT_HEIGHT_NOTE.",
+    "P124 panel OPEN — keep cap 76 or drop panel and take CAP_W_SLIM 58 (brand 1.3× strap).",
+    "Mono vs stereo buzzer; 1781 purchase (HARDWARE-FIT).",
 ]
 
 # Layout rule (firmware): Rook pockets in CAP and PODS; CW no electronics.

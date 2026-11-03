@@ -110,7 +110,10 @@ def groove(body, w, l, r, z_top, wall):
 
 
 def reg_lip(body, w, l, r, z_top, wall, h=1.2):
-    """Registered lip inside the gasket land for lid location."""
+    """Registered lip RING inside the gasket land for lid location.
+
+    Must be a ring (not a solid plate) — a solid 1.2 mm plate seals the cavity.
+    """
     inset = wall / 2 + D.GROOVE_W / 2 + 0.6
     lip_w = w - 2 * inset
     lip_l = l - 2 * inset
@@ -119,6 +122,10 @@ def reg_lip(body, w, l, r, z_top, wall, h=1.2):
     lip = oc.rounded_rect("lip", (lip_w, lip_l, h), max(r - inset, 2.0),
                           at=(0, 0, z_top), anchor="bottom")
     oc.union(body, lip)
+    # Open the cavity: cut the lip interior so only a ~1.6 mm wall ring remains.
+    oc.cut(body, oc.rounded_rect("lipin", (lip_w - 3.2, lip_l - 3.2, h + 1.0),
+                                 max(r - inset - 1.6, 1.5),
+                                 at=(0, 0, z_top - 0.5), anchor="bottom"))
     return body
 
 
@@ -228,17 +235,16 @@ def cap_base():
     board_holes(b, D.BQ_BOARD, D.BQ_HOLE_D, D.BQ_HOLE_INSET, bq_at,
                 D.CAP_FLOOR, depth=3.0, prefix="bqh")
 
-    # --- Wio-SX1262 (+X, away from crest antennas); U.FL slack zone ---
+    # --- Wio-SX1262 LAY-FLAT (+X wall); upright 23 mm does NOT fit — see FIT_HEIGHT_NOTE ---
     wio_at = D.WIO_AT
     pocket_box(b, "wio", D.WIO_POCKET, wio_at, D.CAP_FLOOR)
-    # Wire-bend / U.FL slack channel toward crest (+Y)
-    oc.cut(b, oc.rounded_rect("uflslack", (8.0, D.WIO_WIRE_BEND, 4.0), 1.0,
-                              at=(wio_at[0] - 5.0, wio_at[1] + D.WIO_POCKET[1] / 2 + 8.0,
-                                  D.CAP_FLOOR),
+    # U.FL slack along +X wall only (x≥24) — must NOT overlap bq pocket (x to ~19.5).
+    oc.cut(b, oc.rounded_rect("uflslack", (6.0, D.WIO_WIRE_BEND, 4.0), 1.0,
+                              at=(30.0, 10.0, D.CAP_FLOOR),
                               anchor="bottom"))
-    # Strain-relief boss (cable clamp) before antenna run
+    # Strain-relief boss on +X wall before crest antenna run
     oc.cut(b, oc.cylinder("uflstrain", D.UFL_STRAIN_D, 4.0,
-                          at=(wio_at[0] - 5.0, 35.0, D.CAP_FLOOR - 0.1),
+                          at=(30.0, 35.0, D.CAP_FLOOR - 0.1),
                           anchor="bottom"))
 
     # --- USB-C charge port (kit short end → −Y wall) + gasket recess ---
@@ -275,18 +281,29 @@ def cap_base():
 
 
 def cap_lid():
-    """Print: mating face DOWN. Flat P124 landing (open decision).
+    """Print: OUTER FACE DOWN (flat bed) — mating features face UP (no support).
+
+    Replaces the old full-area underside recess (~39% tree support) with a
+    narrow landing-ring groove that receives the base reg_lip.
 
     Crest (+Y): GNSS ceramic under 1–3 mm plastic, no metal above.
-    LTE flex shelf. Keep inserts/screws ≥ ANTENNA_METAL_KEEP from antennas.
     """
     lw, ll = D.CAP_W - 2 * D.REVEAL, D.CAP_L - 2 * D.REVEAL
     lid = slab("cap_lid", lw, ll, D.CAP_LID_T, D.PLAN_R - 0.5)
     lid_fasteners(lid, D.CAP_COLS, D.CAP_LID_T)
-    oc.cut(lid, oc.rounded_rect("liprec", (lw - 8, ll - 8, 1.4), 4.0,
-                                at=(0, 0, -0.1), anchor="bottom"))
+
+    # Landing ring groove (not a solid plate recess) — printable outer-down.
+    # Matches base reg_lip ring; ~1.6 mm wide channel.
+    ring_out_w, ring_out_l = lw - 6.0, ll - 6.0
+    ring_in_w, ring_in_l = ring_out_w - 3.2, ring_out_l - 3.2
+    outer = oc.rounded_rect("lring_o", (ring_out_w, ring_out_l, 1.5), 4.0,
+                            at=(0, 0, -0.1), anchor="bottom")
+    inner = oc.rounded_rect("lring_i", (ring_in_w, ring_in_l, 2.0), 3.0,
+                            at=(0, 0, -0.2), anchor="bottom")
+    oc.cut(lid, oc.cut(outer, inner))
 
     # P124 pocket — OPEN DECISION; flat landing kept (centered; GNSS uses +Y crest).
+    # Cut from OUTER face (z = lid_t) so it lands on the bed when printed outer-down.
     px, py, pz = D.PANEL_POCKET
     oc.cut(lid, oc.rounded_rect("ppocket", (px, py, pz + 0.2), 1.2,
                                 at=(0, D.PANEL_Y, D.CAP_LID_T - pz), anchor="bottom"))
@@ -298,19 +315,17 @@ def cap_lid():
     oc.cut(lid, oc.cylinder("pwire", 4.0, D.CAP_LID_T + 2,
                             at=(0, D.PANEL_Y + py / 2 - 10, -1), anchor="bottom"))
 
-    # GNSS patch recess underside of lid at crest (+Y) — cover thickness GNSS_COVER_T
+    # GNSS patch recess on mating side at crest (+Y) — cover thickness GNSS_COVER_T
     gx, gy = D.GNSS_AT
     gsz = D.GNSS_PATCH[2] + 0.3
-    cover_z = D.CAP_LID_T - D.GNSS_COVER_T
+    # Shallow enough that outer-down print bridges or lands on thin cover wall
     oc.cut(lid, oc.rounded_rect("gnss", (D.GNSS_PATCH[0] + 0.8, D.GNSS_PATCH[1] + 0.8, gsz),
-                                1.0, at=(gx, gy, cover_z - gsz), anchor="bottom"))
-    # No metal above: skip inserts in GNSS keepout (columns at ±68 already orange/service —
-    # structural inserts at y=±42 are ≥ keepout from y=55 if keep=12 → 55-42=13 OK).
+                                1.0, at=(gx, gy, 0.3), anchor="bottom"))
 
-    # LTE flex shelf (crest, under lid, away from neck/−Y)
+    # LTE flex shelf (crest, mating side)
     lx, ly = D.LTE_AT
     oc.cut(lid, oc.rounded_rect("lte", (D.LTE_FLEX[0] + 0.8, D.LTE_FLEX[1] + 0.8, 1.2),
-                                0.8, at=(lx, ly, 0.5), anchor="bottom"))
+                                0.8, at=(lx, ly, 0.3), anchor="bottom"))
 
     # Light-pipe exits through lid over kit LEDs
     for i, dx in enumerate((-6.0, 6.0)):
@@ -322,7 +337,7 @@ def cap_lid():
         oc.cut(lid, oc.cylinder(f"btnw{i}", 5.0, D.CAP_LID_T + 2,
                                 at=(dx, D.KIT_AT[1] + 8.0, -1), anchor="bottom"))
 
-    # ROOK-001 label on −Y free end (away from crest antennas)
+    # ROOK-001 label on −Y free end (outer face)
     oc.cut(lid, oc.rounded_rect("label", (D.LABEL[0], D.LABEL[1], D.LABEL[2] + 0.05), 1.0,
                                 at=(0, -72.0, D.CAP_LID_T - D.LABEL[2]), anchor="bottom"))
     return prepare(lid)
@@ -381,12 +396,16 @@ def pod_base(side="L"):
 
 
 def pod_lid(side="L"):
-    """Print: mating face DOWN. Top face continuous with fairing plane (flat)."""
+    """Print: outer face DOWN. Landing-ring groove (not full recess) for base lip."""
     lw, ll = D.POD_L - 2 * D.REVEAL, D.POD_W - 2 * D.REVEAL
     lid = slab(f"pod_{side}_lid", lw, ll, D.POD_LID_T, D.PLAN_R - 0.5)
     lid_fasteners(lid, D.POD_COLS, D.POD_LID_T)
-    oc.cut(lid, oc.rounded_rect("liprec", (lw - 6, ll - 6, 1.4), 3.5,
-                                at=(0, 0, -0.1), anchor="bottom"))
+    ring_out_w, ring_out_l = lw - 5.0, ll - 5.0
+    outer = oc.rounded_rect("plring_o", (ring_out_w, ring_out_l, 1.3), 3.5,
+                            at=(0, 0, -0.1), anchor="bottom")
+    inner = oc.rounded_rect("plring_i", (ring_out_w - 3.0, ring_out_l - 3.0, 1.8), 2.5,
+                            at=(0, 0, -0.2), anchor="bottom")
+    oc.cut(lid, oc.cut(outer, inner))
     if side == "R":
         from mathutils import Matrix
         oc.bake(lid)
@@ -455,10 +474,12 @@ def keeper():
 
 
 def buckle():
+    """Single solid: cross-bar must penetrate the side walls (no floating island)."""
     b = oc.rounded_rect("buckle", (D.STRAP_W + 3, 26.0, 5.5), 2.2, anchor="bottom", segments=6)
     oc.cut(b, oc.rounded_rect("bopen", (D.STRAP_W - 6, 17.0, 8.0), 1.2,
                               at=(0, 0, -1), anchor="bottom"))
-    bar = oc.cylinder("bbar", 2.8, D.STRAP_W - 8, at=(0, 1.5, 2.75), axis="X", segments=20)
+    # Bar length > opening width so ends fuse into the frame (was STRAP_W-8 → floated).
+    bar = oc.cylinder("bbar", 2.8, D.STRAP_W + 1.0, at=(0, 1.5, 2.75), axis="X", segments=20)
     oc.union(b, bar)
     return prepare(b)
 
@@ -478,33 +499,39 @@ def gasket_oring_blank():
                                                                anchor="bottom", segments=24))
 
 
-# Fairings — print with long axis on bed; visible slope is a WALL (≥45° or vertical).
+# Fairings — 25–30 mm blend, R7 plan, R2.5 edges. Print long-axis on bed; slope = WALL.
 
-def fairing_cap_pod(side="L"):
-    """Bridge cap → pod. 28 mm run. Visible top slope as wall when printed on edge."""
-    run, w0, w1, h = D.FAIRING_RUN, 70.0, 55.0, 12.0
-    # Triangular prism wedge: thick at cap end, thin toward pod — print on side.
-    f = oc.prism_y(f"fairing_cap_pod_{side}", [
+def _fairing_body(name, run, w0, w1, h):
+    """Wedge with rounded plan envelope + soft edge bevel (brand R7 / R2.5)."""
+    f = oc.prism_y(name, [
         (0.0, 0.0),
         (w0 / 2, 0.0),
         (w1 / 2, h),
         (-w1 / 2, h),
         (-w0 / 2, 0.0),
     ], run)
-    # Soften by intersecting with rounded bounds (look).
-    return prepare(f)
+    # Soften plan silhouette with R7 rounded bounds (intersect).
+    bound = oc.rounded_rect(f"{name}_bnd", (max(w0, w1) + 2, run + 2, h + 2),
+                            D.FAIRING_R, at=(0, 0, -1), anchor="bottom", segments=10)
+    oc.intersect(f, bound)
+    # Soft edge (R2.5) — best-effort bevel; ignore if topology refuses.
+    try:
+        oc.bevel(f, D.FAIRING_EDGE_R, segments=3)
+        oc.apply_modifiers(f)
+    except Exception:
+        pass
+    return f
+
+
+def fairing_cap_pod(side="L"):
+    """Bridge cap → pod. 28 mm run (brand 25–30)."""
+    return prepare(_fairing_body(f"fairing_cap_pod_{side}", D.FAIRING_RUN, 70.0, 55.0, 12.0))
 
 
 def fairing_pod_strap(side="L"):
-    run, w0, w1, h = D.FAIRING_RUN, 50.0, D.STRAP_W + 4, 10.0
-    f = oc.prism_y(f"fairing_pod_strap_{side}", [
-        (0.0, 0.0),
-        (w0 / 2, 0.0),
-        (w1 / 2, h),
-        (-w1 / 2, h),
-        (-w0 / 2, 0.0),
-    ], run)
-    return prepare(f)
+    """Blend pod into strap. 28 mm run, tapers toward strap width."""
+    return prepare(_fairing_body(f"fairing_pod_strap_{side}", D.FAIRING_RUN,
+                                 50.0, D.STRAP_W + 4, 10.0))
 
 
 def usbc_cap():
@@ -513,21 +540,24 @@ def usbc_cap():
 
 
 def buzz_mesh():
-    """Press-in mesh disc for buzzer sound port (print 2×, PETG/TPU)."""
-    disc = oc.cylinder("buzz_mesh", D.BUZZ_PORT_D + 1.4, 0.7, anchor="bottom", segments=48)
-    # Slot lattice
+    """Press-in mesh disc — ONE part: outer rim holds the lattice (no loose bars)."""
+    od = D.BUZZ_PORT_D + 1.4
+    rim = 1.4                       # solid rim width; slots stay inside
+    disc = oc.cylinder("buzz_mesh", od, 0.8, anchor="bottom", segments=48)
     slot_w, pitch = 0.9, D.BUZZ_MESH_PITCH
-    n = max(1, int(D.BUZZ_PORT_D / pitch))
+    # Slot length limited so cuts stop before the rim (keeps a continuous ring).
+    inner_span = od - 2 * rim
+    n = max(1, int(inner_span / pitch))
     for i in range(-n, n + 1):
         x = i * pitch
-        if abs(x) + slot_w / 2 > D.BUZZ_PORT_D / 2 - 0.3:
+        if abs(x) + slot_w / 2 > inner_span / 2:
             continue
-        oc.cut(disc, oc.box(f"ms{i}", (slot_w, D.BUZZ_PORT_D + 1, 2.0), at=(x, 0, 0.35)))
+        oc.cut(disc, oc.box(f"ms{i}", (slot_w, inner_span, 2.0), at=(x, 0, 0.4)))
     for i in range(-n, n + 1):
         y = i * pitch
-        if abs(y) + slot_w / 2 > D.BUZZ_PORT_D / 2 - 0.3:
+        if abs(y) + slot_w / 2 > inner_span / 2:
             continue
-        oc.cut(disc, oc.box(f"msy{i}", (D.BUZZ_PORT_D + 1, slot_w, 2.0), at=(0, y, 0.35)))
+        oc.cut(disc, oc.box(f"msy{i}", (inner_span, slot_w, 2.0), at=(0, y, 0.4)))
     return prepare(disc)
 
 
@@ -551,17 +581,18 @@ def fit_coupon():
     for i, clear in enumerate(D.COUPON_CLEAR_SWEEP):
         kx = D.KIT_BOARD[0] + 2 * clear
         ky = D.KIT_BOARD[1] + 2 * clear
-        oc.cut(c, oc.rounded_rect(f"kitc{i}", (kx, ky, 3.5), 1.0,
+        # Depth 4.5 through 5 mm blank (from z=1.2) — opens the top; was sealed under a skin.
+        oc.cut(c, oc.rounded_rect(f"kitc{i}", (kx, ky, 4.5), 1.0,
                                   at=(-50 + i * 30, 18, 1.2), anchor="bottom"))
     # Kit mount hole gauge (dia 1.4)
     oc.cut(c, oc.cylinder("kithole", D.KIT_HOLE_D, 6.0, at=(-50, -5, -0.5), anchor="bottom"))
 
-    # Row 1 cont: bq / buzz / wio at nominal +0.4
-    oc.cut(c, oc.rounded_rect("bqg", (D.BQ_POCKET[0], D.BQ_POCKET[1], 3.5), 1.0,
+    # Row 1 cont: bq / buzz / wio at nominal +0.4 — open through top
+    oc.cut(c, oc.rounded_rect("bqg", (D.BQ_POCKET[0], D.BQ_POCKET[1], 4.5), 1.0,
                               at=(45, 18, 1.2), anchor="bottom"))
-    oc.cut(c, oc.rounded_rect("buzzg", (D.BUZZ_POCKET[0], D.BUZZ_POCKET[1], 3.5), 1.0,
+    oc.cut(c, oc.rounded_rect("buzzg", (D.BUZZ_POCKET[0], D.BUZZ_POCKET[1], 4.5), 1.0,
                               at=(-20, -18, 1.2), anchor="bottom"))
-    oc.cut(c, oc.rounded_rect("wiog", (D.WIO_POCKET[0], D.WIO_POCKET[1], 3.5), 1.0,
+    oc.cut(c, oc.rounded_rect("wiog", (D.WIO_POCKET[0], D.WIO_POCKET[1], 4.5), 1.0,
                               at=(15, -18, 1.2), anchor="bottom"))
 
     # Cell diameter gauges: nominal 19.2 and adjusted
@@ -579,8 +610,8 @@ def fit_coupon():
     oc.cut(c, oc.box("grv", (35.0, D.GROOVE_W, D.GROOVE_D),
                      at=(55, 0, 5.0 - D.GROOVE_D), anchor="bottom"))
 
-    # USB-C port gauge
-    oc.cut(c, oc.rounded_rect("usbcg", (D.USBC_PORT[0], D.USBC_PORT[2], 4.0), 1.0,
+    # USB-C port gauge — open through top (was sealed under 0.2–0.3 mm skin)
+    oc.cut(c, oc.rounded_rect("usbcg", (D.USBC_PORT[0], D.USBC_PORT[2], 5.0), 1.0,
                               at=(0, -5, 0.8), anchor="bottom"))
     return prepare(c)
 
@@ -590,27 +621,27 @@ def fit_coupon():
 PART_META = {
     # name: orientation, load_path, material_field, farmer_swappable, rf_near
     "cap_base": ("cavity up, bed=underside", "clamp→inserts WITH layers; walls carry drop", "ASA/PETG", False, True),
-    "cap_lid": ("mating face down", "lid screws INTO base inserts; seal land on bed", "ASA/PETG", True, True),
+    "cap_lid": ("OUTER face down; landing-ring groove UP", "lid screws INTO base inserts; no full-area recess", "ASA/PETG", True, True),
     "panel_p124": ("flat", "bonded in pocket (OPEN DECISION)", "bought", True, True),
     "pod_L_base": ("cavity up", "lid screws; cell cradle; cable strain", "ASA/PETG", False, True),
-    "pod_L_lid": ("mating face down", "lid screws INTO base", "ASA/PETG", True, True),
+    "pod_L_lid": ("outer face down; landing ring UP", "lid screws INTO base", "ASA/PETG", True, True),
     "pod_R_base": ("cavity up", "mirror of L", "ASA/PETG", False, True),
-    "pod_R_lid": ("mating face down", "mirror of L", "ASA/PETG", True, True),
+    "pod_R_lid": ("outer face down; landing ring UP", "mirror of L", "ASA/PETG", True, True),
     "cw_tub": ("cavity up", "steel pack; clamp; NO antennas", "ASA/PETG", False, False),
     "cw_lid": ("mating face down", "lid screws", "ASA/PETG", True, False),
     "saddle": ("flank on bed, channel pocket", "strap tension→rails→clamp→cap inserts ALONG layers", "ASA/PETG or PA-CF*", False, False),
     "clamp_bar": ("flat on bed", "strap clamp compression ALONG bar", "ASA/PETG or PA-CF*", True, False),
     "keeper": ("flat", "strap tail guide", "ASA/PETG/TPU", True, False),
-    "buckle": ("flat", "strap open/close", "ASA/PETG", True, False),
+    "buckle": ("flat", "strap open/close; cross-bar fused to frame", "ASA/PETG", True, False),
     "latch": ("flat", "lid open cue (orange)", "ASA/PETG", True, False),
     "plug_service": ("flat", "covers farmer screws", "ASA orange", True, False),
     "plug_struct": ("flat", "charcoal cosmetic", "ASA charcoal", True, False),
-    "fairing_cap_pod_L": ("long axis on bed; slope=WALL", "cosmetic blend; snap/screw to shells", "ASA/PETG", True, False),
-    "fairing_cap_pod_R": ("long axis on bed; slope=WALL", "mirror", "ASA/PETG", True, False),
-    "fairing_pod_strap_L": ("long axis on bed; slope=WALL", "blend into strap", "ASA/PETG", True, False),
-    "fairing_pod_strap_R": ("long axis on bed; slope=WALL", "mirror", "ASA/PETG", True, False),
+    "fairing_cap_pod_L": ("long axis on bed; slope=WALL; R7/R2.5", "28 mm blend cap→pod", "ASA/PETG", True, False),
+    "fairing_cap_pod_R": ("long axis on bed; slope=WALL; R7/R2.5", "mirror", "ASA/PETG", True, False),
+    "fairing_pod_strap_L": ("long axis on bed; slope=WALL; R7/R2.5", "28 mm blend into strap", "ASA/PETG", True, False),
+    "fairing_pod_strap_R": ("long axis on bed; slope=WALL; R7/R2.5", "mirror", "ASA/PETG", True, False),
     "usbc_cap": ("flat", "charge-port dust/gasket cap", "TPU", True, False),
-    "buzz_mesh": ("flat", "press-in sound-port mesh disc (×2)", "PETG/TPU", True, False),
+    "buzz_mesh": ("flat", "rimmed mesh disc — ONE part (×2)", "PETG/TPU", True, False),
     "label_coupon": ("flat", "0.16 mm layer label test", "ASA/PETG", False, False),
     "fit_coupon": ("flat", "FIRST print — pocket/insert/groove gauges", "PLA", False, False),
 }
@@ -678,56 +709,72 @@ def render_objs(objs_colors, path, direction, pad=1.1):
 
 
 def build_plate_layout_doc(plates_dir):
-    """Write plate layouts as JSON + markdown (Orca CLI not available)."""
+    """Plate layouts from op-maker Orca slices (REVIEW-FINDINGS, open-cavity fix)."""
     plates = {
+        "source": "op-maker Orca CLI review 2026-11-03 (open-cavity lip ring); times after sealed-box fix",
         "P2S_256": {
             "bed": list(D.BED_P2S),
             "pla_verify": [
-                {"plate": 1, "parts": ["fit_coupon", "label_coupon", "clamp_bar×2", "plug_service×3", "latch", "usbc_cap"], "est_h": 1.5},
-                {"plate": 2, "parts": ["cap_base", "cap_lid"], "est_h": 6.5},
-                {"plate": 3, "parts": ["pod_L_base", "pod_L_lid", "pod_R_base", "pod_R_lid"], "est_h": 8.0},
-                {"plate": 4, "parts": ["cw_tub", "cw_lid", "saddle", "keeper", "buckle"], "est_h": 5.5},
-                {"plate": 5, "parts": ["fairing_cap_pod_L/R", "fairing_pod_strap_L/R", "clamp_bar×2", "plug_struct×N"], "est_h": 4.0},
+                {"plate": "P0", "parts": ["fit_coupon", "label_coupon"], "est_h": 0.97, "g": 27.5,
+                 "note": "PRINT FIRST"},
+                {"plate": "P1", "parts": ["cap_base", "cap_lid", "pod_L/R base+lid"], "est_h": 11.42, "g": 266.9,
+                 "note": "merged shells object; open cavity → ~12% support (was 35%)"},
+                {"plate": "P2", "parts": ["cw_tub", "cw_lid", "saddle", "4 fairings", "8 clamps",
+                                         "8 plugs", "latch", "2 buzz_mesh", "buckle", "keeper"],
+                 "est_h": 7.52, "g": 180.1},
             ],
-            "field_asa_petg": [
-                {"plate": 1, "parts": ["fit_coupon (PLA first)", "spares later"], "est_h": 1.5},
-                {"plate": 2, "parts": ["cap_base", "cap_lid"], "est_h": 8.0, "note": "enclosure preheated; ASA brim 5–8 mm"},
-                {"plate": 3, "parts": ["both pods base+lid"], "est_h": 10.0},
-                {"plate": 4, "parts": ["cw", "saddle", "strap hardware"], "est_h": 7.0},
-                {"plate": 5, "parts": ["fairings", "TPU usbc_cap+seals separate"], "est_h": 5.0},
+            "field_asa": [
+                {"plate": "P0", "est_h": 1.18, "g": 29.8},
+                {"plate": "P1", "est_h": 11.12, "g": 242.8},
+                {"plate": "P2", "est_h": 7.32, "g": 161.4},
             ],
-            "spares_plate": {"parts": ["cap_lid", "clamp_bar×4", "usbc_cap×2", "plug_service×3", "latch", "oring_blank"], "est_h": 1.8},
-            "per_collar_plates_verify": 5,
-            "per_collar_hours_verify_pla": 25.5,
-            "per_collar_plates_field": 5,
-            "per_collar_hours_field": 31.5,
+            "spares_plate": {"plate": "P3", "parts": ["clamp_bar×4", "plug_service×3", "latch",
+                                                     "buzz_mesh×2", "usbc_cap×2"], "est_h": 0.62, "g": 11.0},
+            "spares_cap_lid": {"plate": "P3b", "parts": ["cap_lid"], "est_h": 2.37, "g": 44.7},
+            "per_collar_plates_verify": 2,
+            "per_collar_hours_verify_pla": 18.93,
+            "per_collar_grams_pla": 447,
+            "per_collar_plates_field": 2,
+            "per_collar_hours_field_asa": 18.43,
+            "per_collar_grams_asa": 404,
+            "note": "P1+P2 = collar. TPU usbc_cap field print is separate. Auto-arrange splits to ~4 plates/~26 h.",
         },
         "bed_220": {
             "bed": list(D.BED_220),
-            "note": "Ender-class 220×220 — more plates, same parts. Cap 76×160 fits; pod pair may split.",
+            "note": "Ender 3 V3 SE PETG profile, auto-arranged (op-maker).",
             "pla_verify": [
-                {"plate": 1, "parts": ["fit_coupon", "label_coupon", "clamps", "plugs", "latch"], "est_h": 1.5},
-                {"plate": 2, "parts": ["cap_base"], "est_h": 4.0},
-                {"plate": 3, "parts": ["cap_lid"], "est_h": 2.5},
-                {"plate": 4, "parts": ["pod_L_base", "pod_L_lid"], "est_h": 4.5},
-                {"plate": 5, "parts": ["pod_R_base", "pod_R_lid"], "est_h": 4.5},
-                {"plate": 6, "parts": ["cw_tub", "cw_lid"], "est_h": 3.5},
-                {"plate": 7, "parts": ["saddle", "keeper", "buckle", "clamps"], "est_h": 3.0},
-                {"plate": 8, "parts": ["fairings L"], "est_h": 2.5},
-                {"plate": 9, "parts": ["fairings R", "TPU caps"], "est_h": 2.5},
+                {"plate": "collar", "est_h": 24.1, "g": 490.5, "plates": 5},
+                {"plate": "coupon", "est_h": 1.57, "g": 36.0},
+                {"plate": "spares", "est_h": 0.63},
+                {"plate": "spare_lid", "est_h": 2.48},
             ],
-            "per_collar_plates_verify": 9,
-            "per_collar_hours_verify_pla": 28.5,
-            "per_collar_plates_field": 9,
-            "per_collar_hours_field": 36.0,
-            "honest": "All shells fit a 220 bed. ASA on stock Ender needs enclosure — PETG is the reproducible baseline off Bambu.",
+            "per_collar_plates_verify": 5,
+            "per_collar_hours_verify_pla": 24.1,
+            "honest": "Everything fits 220×220. ASA on stock Ender needs enclosure — PETG baseline off Bambu.",
         },
-        "starling_note": "Starling CAD not yet designed (skeleton only). Budget ~3 P2S plates / ~4 220 plates per Starling once CAD exists (XIAO+Wio shell + strap share).",
-        "orca_cli": False,
-        "orca_note": "OrcaSlicer CLI not available in this environment. Plate STL nests + settings committed; op-maker slices/patches 3MFs.",
+        "starling_note": "Starling CAD not yet designed. Budget ~3 P2S / ~4×220 once XIAO+Wio shell exists (small cells only).",
+        "orca_cli": True,
+        "orca_note": "Times from op-maker Orca slices on open-cavity STLs. Run print/fix_bbl_3mf.py before Bambu Connect.",
     }
     with open(os.path.join(plates_dir, "plates.json"), "w") as f:
         json.dump(plates, f, indent=2)
+    md = os.path.join(plates_dir, "PLATES.md")
+    with open(md, "w") as f:
+        f.write("# D5 plate layouts (corrected)\n\n")
+        f.write("Source: op-maker Orca review after open-cavity lip fix. "
+                "Machine-readable: `plates.json`.\n\n")
+        f.write("## P2S 256 — per Rook collar\n\n")
+        f.write("| Plate | Parts | PLA | ASA |\n| --- | --- | --- | --- |\n")
+        f.write("| P0 | fit + label coupon (**first**) | 0h58 / 27.5 g | 1h11 / 29.8 g |\n")
+        f.write("| P1 | cap + both pods (base+lid) | 11h25 / 267 g | 11h07 / 243 g |\n")
+        f.write("| P2 | CW, saddle, fairings, clamps, plugs, latch, mesh, buckle, keeper "
+                "| 7h31 / 180 g | 7h19 / 161 g |\n")
+        f.write("| **Collar (P1+P2)** | | **18h56 / 447 g** | **18h26 / 404 g** |\n")
+        f.write("| P3 spares | 4 clamps, 3 orange, latch, 2 mesh, 2 usbc | 0h37 | 0h36 |\n")
+        f.write("| P3b | spare cap_lid | 2h22 | 2h23 |\n\n")
+        f.write("TPU `usbc_cap` for field = separate soft plate.\n\n")
+        f.write("## 220 bed\n\nCollar ~5 plates / 24h06 / 490 g (PETG profile).\n\n")
+        f.write("## Starling\n\nCAD TBD; ~3 P2S / ~4×220 once designed.\n")
     return plates
 
 
@@ -766,31 +813,40 @@ def main():
     ]
 
     report = {
-        "revision": "D5_production",
+        "revision": "D5_production_audit_fix",
         "assumptions": D.ASSUMPTIONS,
+        "fit_height_note": D.FIT_HEIGHT_NOTE,
+        "cody_flags": D.CODY_FLAGS,
         "layout": D.LAYOUT,
         "pockets": {
             "kit": {"board": list(D.KIT_BOARD), "pocket": list(D.KIT_POCKET),
-                    "headers_h": D.KIT_POCKET_HEADERS[2], "at": list(D.KIT_AT),
-                    "clear_per_side": D.BOARD_CLEAR},
+                    "headers_h": D.KIT_POCKET_HEADERS[2], "headers_fit": False,
+                    "at": list(D.KIT_AT), "clear_per_side": D.BOARD_CLEAR,
+                    "option": "low_profile_no_headers"},
             "bq24074": {"board": list(D.BQ_BOARD), "pocket": list(D.BQ_POCKET),
                         "at": list(D.BQ_AT), "do_not_pot": True},
             "buzzer": {"board": list(D.BUZZ_BOARD), "pocket": list(D.BUZZ_POCKET),
-                       "port_d": D.BUZZ_PORT_D, "mesh": True},
+                       "port_d": D.BUZZ_PORT_D, "mesh_rimmed": True},
             "cell_18650": {"cell": [D.CELL_D, D.CELL_L], "pocket_d": D.CELL_POCKET_D,
                            "pocket_l": D.CELL_POCKET_L, "end_clear": D.CELL_END_CLEAR,
                            "bay_adjust": D.CELL_BAY_ADJUST, "pack_353_approved": False},
-            "wio": {"pocket": list(D.WIO_POCKET), "wire_bend": D.WIO_WIRE_BEND},
+            "wio": {"pocket_lay_flat": list(D.WIO_POCKET),
+                    "pocket_upright_nofit": list(D.WIO_POCKET_UPRIGHT),
+                    "orientation": D.WIO_ORIENTATION,
+                    "wire_bend": D.WIO_WIRE_BEND, "at": list(D.WIO_AT)},
             "starling": {"pocket": list(D.STARLING_POCKET), "note": D.STARLING_NOTE},
             "antennas": {"gnss": list(D.GNSS_PATCH), "cover_t": D.GNSS_COVER_T,
                          "lte_flex": list(D.LTE_FLEX), "metal_keepout": D.ANTENNA_METAL_KEEP,
                          "crest": "+Y"},
         },
+        "stacks_mm": {"cap": D.CAP_STACK_H, "pod": D.POD_STACK_H,
+                      "pods_lower_than_cap": D.POD_STACK_H < D.CAP_STACK_H},
         "waist_frac": D.WAIST_FRAC,
         "panel_open_decision": D.PANEL_OPEN_DECISION,
         "cap_vs_brand_width": {
             "cap_w": D.CAP_W,
             "brand_max_1_3x_strap": D.CAP_W_MAX_BRAND,
+            "cap_w_slim_if_no_panel": D.CAP_W_SLIM,
             "conflict": D.CAP_W > D.CAP_W_MAX_BRAND,
         },
         "bodies": {},
@@ -806,9 +862,9 @@ def main():
     plates = build_plate_layout_doc(plates_dir)
     report["plates"] = {
         "p2s_verify_h": plates["P2S_256"]["per_collar_hours_verify_pla"],
-        "p2s_field_h": plates["P2S_256"]["per_collar_hours_field"],
+        "p2s_field_asa_h": plates["P2S_256"]["per_collar_hours_field_asa"],
         "bed220_verify_h": plates["bed_220"]["per_collar_hours_verify_pla"],
-        "orca_cli": False,
+        "orca_cli": True,
     }
 
     # Assembled lineup render (flat printable parts — look study images also in images/)
@@ -866,8 +922,13 @@ def main():
 
     print("\nWaist frac:", round(D.WAIST_FRAC, 4))
     print("P124 open decision:", D.PANEL_OPEN_DECISION)
-    print("Cap vs brand 1.3× strap:", D.CAP_W, "vs", D.CAP_W_MAX_BRAND)
-    print("RESULT: PASS (production CAD export)")
+    print("Cap vs brand 1.3× strap:", D.CAP_W, "vs", D.CAP_W_MAX_BRAND,
+          "(slim", D.CAP_W_SLIM, "if panel dropped)")
+    print("Stacks cap/pod:", D.CAP_STACK_H, "/", D.POD_STACK_H)
+    print("Wio orientation:", D.WIO_ORIENTATION)
+    print("FIT_HEIGHT_NOTE:", D.FIT_HEIGHT_NOTE)
+    print("CODY_FLAGS:", D.CODY_FLAGS)
+    print("RESULT: PASS (production CAD audit fix)")
 
 
 if __name__ == "__main__":
