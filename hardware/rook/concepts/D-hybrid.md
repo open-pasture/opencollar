@@ -1,45 +1,77 @@
-# D — Hybrid technical-soft (D3 look)
+# D — Hybrid (D3 cow-look study)
 
-**Intent:** op-brand direction (B-led + A soft radii + C presence), iterated for
-**look and aesthetics**. Structures are plausible design studies — **not** fully
-print-ready. Envelope numbers are a rough size guide.
+Target look Cody liked: **tall slim matte-charcoal cap slab** with generous
+radii on the collar; strap with webbing slot, keeper and buckle; **small low
+counterweight**; orange only on the **latch and 2–3 screws**.
 
-## Look (D3)
+Look / proportion study on the same draft PR as D/D2. **Not print-ready.**
 
-| Cue | Spec |
+## Cap proportion (locked envelope)
+
+| Locked | D3 study |
 | --- | --- |
-| Cap | Slim-tall soft pill (~72×156×22 base + 7 lid); plan **R≈11** |
-| Lid tops | **Clean flat planes** — soft plan corners only, no crown bevel / hairline |
-| Seam | **Inset reveal ~0.6 mm**, identical on cap / pod / tub; visible waist groove |
-| Orange rule | **Orange = you can open or replace this** (option 1) |
-| Service orange | Cap battery plugs (`\|y\|=40`) + lid latch + **collar buckle** |
-| Charcoal plugs | All other screw covers (cap outer, pod, tub) |
-| Pod ports | Boss **~2 mm proud** of outer face + gasket recess |
-| Strap | Saddle (slot) under cap + keeper loop + orange buckle on black strap |
-| Label | Debossed mono `ROOK-001` on cap lid (look study) |
-| Latch | Cosmetic placeholder — final = flush recessed pull, still orange |
+| Footprint **76×160** | **Kept** |
+| Columns `(±29.5, ±68/±42)` | **Kept** |
+| Clamp `(±20, ±28.5)` | **Kept** |
+| Cavity height **≥13** | **13 mm** (floor 5 → base 18) |
+| Plan corners | Softened to **R10** (still inside 76×160) |
+| Slim profile | Visual only — long low slab + soft R + flat lid (no XY shrink) |
+| Lid tops | Clean flat planes (no crown bevel / hairline) |
+| Seam | Inset reveal **0.55 mm** |
+
+**Cap does not break the locked envelope.** Slimness is radii + proportion, not a smaller footprint.
+
+## Orange (brand option 1)
+
+Orange = open / replace:
+
+- Lid **latch** (cosmetic placeholder)
+- **3** cap service screw plugs: `(±29.5, 42)` and `(+29.5, 68)`
+- All other plugs charcoal (including pod, tub, remaining cap screws)
+- Strap buckle stays **charcoal** this round (orange budget is latch + screws)
+
+## Strap interface (indicative, separate STLs)
+
+| Part | File | Role |
+| --- | --- | --- |
+| Saddle / webbing slot | `saddle.stl` | Under-cap slot for 44 mm webbing |
+| Keeper loop | `keeper.stl` | Strap tail keeper |
+| Buckle | `buckle.stl` | Simple frame + crossbar |
+| Strap | `strap.stl` | Black webbing bar (render) |
+
+## What fits vs what doesn’t
+
+### Fits
+- Cap 76×160, columns, clamp, cavity ≥13
+- Cap soft R10 inside the locked outline
+- Pod XY outer 92×68 with cavity footprint 82×58 and columns `(±37, ±27)`
+- Inset seam language on cap / pod / tub
+- Option-1 minimal orange (latch + 3 screws)
+
+### Flagged / breaks guide (deliberate for the cow silhouette)
+| Item | Study | Guide | Why |
+| --- | --- | --- | --- |
+| Pod height | **20 mm** base | Cavity **21.5** needs ~24.5 | Low slab — pack may not fit |
+| CW outer | **80×64×22** | ~**88×74×30** | Small low counterweight look |
+| CW screws | `(±20, ±26)` | `(±22, ±31.5)` | Inboard for smaller tub |
 
 ## Colour
 
 | Role | Hex |
 | --- | --- |
-| Charcoal body / struct plugs / saddle / keeper | `#26282B` |
-| Oat lid variant | `#EFE8D8` |
-| Blaze orange (open/replace) | `#FF6A2B` |
+| Matte charcoal body / lids / strap hardware / most plugs | `#26282B` |
+| Oat lid variant (optional render) | `#EFE8D8` |
+| Blaze orange latch + 3 service plugs | `#FF6A2B` |
 | Strap | near-black |
 
-## Rough size guide
-
-Cap ~72×156 · pod ~90×66 · tub ~86×72×30 · columns near Node V1 positions.
-
-## STLs / renders
-
-[`stl/D_hybrid/`](stl/D_hybrid/) · [`images/`](images/) (iso / front / side /
-exploded / oat / port / seam / strap close-ups).
+## Build
 
 ```sh
 cd hardware/rook/concepts/cad
 blender --background --factory-startup --python build_concept_d.py
 ```
 
-**Draft concept only — do not print without Cody’s OK. Do not merge as production.**
+STLs → [`stl/D_hybrid/`](stl/D_hybrid/) · renders → [`images/`](images/).  
+Envelope audit also in `stl/D_hybrid/report.json`.
+
+**Draft only — do not merge. Do not print without Cody’s OK.**
