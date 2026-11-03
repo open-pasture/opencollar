@@ -6,9 +6,9 @@ fit. These are design studies — not drop-in replacements for `stl/node_v1_*`.
 
 | Concept | Mood | STLs | Hero |
 | --- | --- | --- | --- |
-| **A — Soft organic** | Large radii, tapered crown, continuous soft silhouette | [`stl/A_organic/`](stl/A_organic/) | ![A](renders/A_organic.png) |
-| **B — Clean technical** | Chamfered top, single accent seam at the waist | [`stl/B_technical/`](stl/B_technical/) | ![B](renders/B_technical.png) |
-| **C — Minimal low-profile** | Flush faces, hidden fastener seats, no decoration | [`stl/C_minimal/`](stl/C_minimal/) | ![C](renders/C_minimal.png) |
+| **A — Soft organic** | Large radii, continuous soft pill silhouette | [`stl/A_organic/`](stl/A_organic/) | ![A](images/A_organic.png) |
+| **B — Clean technical** | Chamfered top, single accent seam at the waist | [`stl/B_technical/`](stl/B_technical/) | ![B](images/B_technical.png) |
+| **C — Minimal low-profile** | Flush faces, hidden fastener seats, no decoration | [`stl/C_minimal/`](stl/C_minimal/) | ![C](images/C_minimal.png) |
 
 Short notes: [`A-organic.md`](A-organic.md) · [`B-technical.md`](B-technical.md) · [`C-minimal.md`](C-minimal.md).
 
@@ -29,6 +29,7 @@ in the concept builder (triangulated bad-edge count + post-export STL scan).
 ```sh
 cd hardware/rook/concepts/cad
 blender --background --factory-startup --python build_concepts.py
+# Heroes land in images/ (tracked) and renders/ (gitignored working views).
 ```
 
 ## Vs production CAD

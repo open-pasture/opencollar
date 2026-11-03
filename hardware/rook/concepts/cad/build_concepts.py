@@ -340,9 +340,12 @@ def build_one(key, meta):
     objs = layout(parts)
     oc.render_views(objs, rend_dir, section_axis="Y")
     hero_src = os.path.join(rend_dir, "iso.png")
-    hero_dst = os.path.join(_CONCEPTS, "renders", f"{key}.png")
+    # Tracked hero copy (hardware/**/renders/ is gitignored).
+    img_dir = os.path.join(_CONCEPTS, "images")
+    os.makedirs(img_dir, exist_ok=True)
     if os.path.isfile(hero_src):
-        shutil.copy2(hero_src, hero_dst)
+        shutil.copy2(hero_src, os.path.join(_CONCEPTS, "renders", f"{key}.png"))
+        shutil.copy2(hero_src, os.path.join(img_dir, f"{key}.png"))
 
     with open(os.path.join(rend_dir, "report.json"), "w") as f:
         json.dump(report, f, indent=2)
