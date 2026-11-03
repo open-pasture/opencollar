@@ -3,94 +3,102 @@
 Owned by `firmware/lora` (portable C) and `firmware/sim` (host virtual radio).
 Branch: `proto-fence-gossip` (mirrored to `cursor/proto-fence-gossip-c865` for agent PR tooling).
 
-**All field and type names are PLACEHOLDERs** (see `firmware/ARCHITECTURE.md` on
-`docs/firmware-architecture`). v2 wire ids in `protocol/v2/` are untouched.
+**Canonical names for other teams:** `oc_radio_*` (HAL) and `oc_fh_node_*` (engine).
+**All field and type names are PLACEHOLDERs.** `protocol/v2/` is not edited here.
 
 ## Protocol deviation (do not edit `lora.md`)
 
-**`protocol/v2/lora.md` §1 says: "Nodes never relay: relaying means listening, and
-listening costs more than talking."**
+**`protocol/v2/lora.md` §1 says: "Nodes never relay…"**
 
-This library intentionally contradicts that for an optional multi-hop path:
-
-| Mode | `starling_serve` (PLACEHOLDER) | Who serves verified fences | Matches `lora.md` §1? |
+| Mode | `starling_serve` (PLACEHOLDER) | Who serves | Matches §1? |
 |---|---|---|---|
-| One-hop star (default) | **OFF** (`OC_FH_STARLING_SERVE_DEFAULT`) | Rooks only | Yes |
-| Multi-hop gossip | ON | Any node holding a verified fence | **No — deliberate product deviation** |
+| One-hop star (**default**) | **OFF** | Rooks only | Yes |
+| Multi-hop gossip | ON | Any verified holder | **No — deliberate; protocol owner decides** |
 
-- Default is **OFF** until Starling listen energy is measured (ARCHITECTURE.md).
-- Rooks **always** serve.
-- Pilot **telemetry** stays one hop to the Rook (`lora.md` §8); only fence
-  manifests/fragments may multi-hop when the flag is on.
-- **`lora.md` is not edited in this PR.** The protocol owner decides whether to
-  amend §1 or keep gossip as a firmware-only optional mode.
+Default OFF until Starling listen energy is measured. Rooks always serve. Pilot
+telemetry stays one hop to the Rook. **`lora.md` is not edited in this PR.**
 
-## Mapping to protocol and product names
+## PILOT DECISION — opaque payload inject (Rook has no farm signing key)
 
-| Product (Cody) | Protocol v2 (`lora.md`) | This library |
-|---|---|---|
-| Rook (LTE-M + GPS base) | Active anchor (role 2) that also gets fences from the server | `is_rook=1`; may `inject_local`; always may serve |
-| Starling (LoRa collar) | Node (role 1) | `is_rook=0`; serves only if `starling_serve=1` |
-| Fence / boundary | Boundary command (messages.md type 1) | Opaque payload + signed **manifest** |
+The Rook in the pilot does **not** hold a farm/server Ed25519 key that can seal
+gossip manifests. Therefore:
 
-Symmetric node protocol: Rook and Starling run the same exchange. A Rook is just a node that also receives the fence from the server.
+| Path | API | Envelope | Authenticity | Rollback key |
+|---|---|---|---|---|
+| **Pilot (now)** | `oc_fh_inject_opaque` | `OC_FH_MSG_MANIFEST_LOCAL` = type + body (**unsigned**) | Payload’s own Ed25519 (e.g. v1 signed JSON), checked by injectable `oc_fh_payload_verify_fn` **after full reassembly** | payload version = `fence_seq` |
+| **Later / server** | `oc_fh_inject_local` | `OC_FH_MSG_MANIFEST` = type + sig + body (farm-signed) | Manifest Ed25519 over `oc/fh/manifest/1 \|\| body` | `fence_seq` in manifest |
 
-## Spec ambiguities reconciled here
+- Relays re-serve the **same wire bytes** (local or sealed) unchanged.
+- A forged/tampered opaque payload fails `payload_verify` and never becomes active
+  (`test_pilot`).
+- Keep the sealed path for when the server issues manifests.
 
-1. **Relay vs no-relay** — see deviation table above (`starling_serve`).
+## Freshness record (`oc_fh_freshness_t`) — canonical for op-fw-starling
 
-2. **Manifest vs full COSE boundary.**  
-   Collar firmware today verifies v1 canonical-JSON Ed25519 (Monocypher). Protocol v2 uses COSE_Sign1. This library uses a **compact binary manifest** signed with Ed25519 over `oc/fh/manifest/1 || body`, injectable verify callback. Production may later wrap or replace with the COSE boundary bytes as the opaque payload; the gossip plane stays the same. Hashes are Blake2b (Monocypher-native), not SHA-256 — deliberate pilot choice.
+Defined in `fence_manifest.h`. Exact layout (host endian for integers in RAM;
+wire uses big-endian elsewhere):
 
-3. **Fragment size.**  
-   `lora.md` uses ≤209 data bytes in kind `0x22` frames. Gossip fragment data max is configurable (`frag_data_max`, default 209). Tests use smaller sizes to force multi-fragment paths.
+| Field | Type | Width | Meaning |
+|---|---|---|---|
+| `farm_id` | `uint8_t[]` | **8** | Farm identifier |
+| `fence_seq` | `uint32_t` | **4** | Monotonic fence version; **0 = none** |
+| `poly_hash` | `uint8_t[]` | **32** | Blake2b-256 of full fence payload |
+| `received_at_ms` | `uint32_t` | **4** | Local monotonic ms when activated |
+| `source_id` | `uint16_t` | **2** | Node id that served us (or self on inject) |
 
-4. **Beacons.**  
-   Herd LoRa beacons (`0x20`) are HMAC-authenticated. Gossip freshness beacons (`OC_FH_MSG_BEACON`) are **unauthenticated hints**: they may only schedule a bounded NEED/serve, never change the active fence. Rate-limited. Covered by `test_forged_beacon`.
+Total packed logical size: 50 bytes. Do not rename fields without coordinating;
+widths are part of the store blob contract.
 
-5. **Version / rollback.**  
-   `messages.md` §4.6: reject version ≤ held (`stale`). We use monotonic `fence_seq`; reject `seq <= current`. Equal versions ⇒ no transfer. Last-good remains active until a newer fence is fully reassembled **and** signature-checked.
+## Manifest wire buffer
 
-6. **Hop counter.**  
-   Reserved on beacons (`hop_reserved`); always 0 on the fence path. No TTL — each hop is a fresh exchange.
+`OC_FH_MANIFEST_WIRE_MAX` = **1140** (= 1 + 64 + body with 64 fragment hashes),
+derived from `OC_FH_MAX_FRAGMENTS` with compile-time static asserts.
+Oversized wire → `OC_FH_ERR_MANIFEST_WIRE`, `stats.manifest_wire_ovf`, event
+`OC_FH_EV_MANIFEST_WIRE_OVF` (no silent drop).  
+Note: a 1140 B sealed frame exceeds LoRa MTU 255; `test_maxfrag` raises sim MTU
+to exercise storage/re-serve. Production multi-frame manifests are future work.
 
-7. **Identifiers are placeholders.**  
-   All message type ids and names live in `include/opencollar/fence_ids.h`.
+## Persistence (`oc_fh_store_t`)
+
+Apps implement NVS-backed `get_hwm` / `set_hwm` / `save_active` / `load_active`.
+Host: `oc_fh_store_ram`. Rollback uses `max(active.fence_seq, hwm)` so reboot
+cannot accept an older fence. `oc_fh_node_restore` reloads the active blob so a
+restored node can serve.
+
+## Unsigned beacon anti-DoS
+
+Beacons never change the active fence. NEED requests while awaiting a real
+manifest are capped per peer and per time window (`OC_FH_NEED_HINT_MAX`,
+`OC_FH_NEED_WINDOW_*`). Flood → `stats.need_capped`, bounded `need_tx`/airtime
+(`test_security` forged-beacon flood).
+
+## Spec ambiguities (short)
+
+- Blake2b hashes (Monocypher); sealed domain `oc/fh/manifest/1`.
+- Placeholder msg types in `fence_ids.h` (`0xA0`–`0xA5`).
+- `frag_data_max` default 209 (`lora.md`).
 
 ## Crypto / license
 
-- Ed25519 via existing `firmware/third_party/monocypher` (BSD-2-Clause OR CC0) — compatible with Apache-2.0.
-- No GPL code. No Meshtastic code, structure, or constants. Trickle timer implemented from RFC 6206 description only.
+Monocypher (BSD-2-Clause OR CC0). No GPL / no Meshtastic code. Trickle from RFC 6206 only.
 
-## API for later relay without redesign
+## HAL (`radio_hal.h`) — for op-fw-radio
 
-- Any node that holds a **verified** fence stores the sealed manifest wire bytes and can re-transmit them unchanged (fleet/farm signature, not the relayer’s).
-- `oc_fh_may_serve()` gates on `starling_serve || is_rook`.
-- Freshness log: `fence_seq`, poly hash, `received_at`, `source_id`.
-- N-node sim topologies: full mesh, chain, per-link loss, partition/heal.
-
-## HAL (`radio_hal.h`) — reconciliation note for op-fw-radio
-
-First commit shipped the agreed send/recv/CAD/set_power/airtime/duty/backoff shape.
-Follow-up (this change) adds ARCHITECTURE.md sketch surface **without renaming** the
-agreed `oc_radio_*` symbols:
-
-| Architecture sketch | This header | Notes |
+| Sketch / request | This header | Notes |
 |---|---|---|
-| `rhal_init(cfg, lim)` | `oc_radio_init` | cfg + limits (max frame airtime, hourly budget, min TX gap) |
-| `rhal_set_power` | `oc_radio_set_power` | unchanged |
-| `rhal_airtime_us` | `oc_radio_airtime_us` | unchanged |
-| `rhal_send(..., at_us)` | `oc_radio_send` + `opts.at_us` | keeps per-packet TX power opts |
-| `rhal_recv` | `oc_radio_recv` | meta now also has `t_rx_us` |
-| `rhal_cad` | `oc_radio_cad` | unchanged |
-| `rhal_sleep` | `oc_radio_sleep` | **added** |
-| `rhal_now_us` | `oc_radio_now_us` | **added** |
-| `rhal_airtime_left_us` | `oc_radio_duty_budget_us` / alias `oc_radio_airtime_left_us` | same meaning |
-| limits | `oc_radio_limits_t` | max_frame_airtime_us, airtime_budget_us_per_h, min_tx_gap_ms |
-| — | `OC_RADIO_ERR_GAP`, `OC_RADIO_ERR_AIRTIME` | **added** status codes |
-
-Existing call sites that only used send/recv/CAD/power/airtime/duty/backoff remain source-compatible (`oc_radio_tx_opts_t` gained a trailing `at_us` field; zero-init still means “now”).
+| `rhal_init` | `oc_radio_init` | cfg + limits |
+| `rhal_set_power` | `oc_radio_set_power` | |
+| `rhal_airtime_us` | `oc_radio_airtime_us` | |
+| `rhal_send` + `at_us` | `oc_radio_send` + `opts.at_us` | + per-packet TX power |
+| `SKIP_CAD` | `OC_RADIO_TX_FLAG_SKIP_CAD` | **added** in `opts.flags` |
+| `rhal_recv` | `oc_radio_recv` | + `t_rx_us`, **`peer_id`** |
+| `rhal_cad(timeout)` | `oc_radio_cad(radio, out, timeout_ms)` | **timeout added** (0 = backend default / 50 ms on SX1262) |
+| `rhal_sleep` | `oc_radio_sleep` | |
+| `rhal_now_us` | `oc_radio_now_us` | |
+| `rhal_airtime_left_us` | `oc_radio_duty_budget_us` / alias | |
+| limits | `oc_radio_limits_t` | max frame airtime, hourly budget, min TX gap |
+| errors | `ERR_GAP`, `ERR_AIRTIME` | |
 
 ## native_sim (Zephyr)
 
-Stub only. Host `firmware/sim` covers milestones; a Zephyr `native_sim` target can wrap the same library later if needed.
+Stub only. Host `firmware/sim` covers milestones.
