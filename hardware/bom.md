@@ -9,7 +9,7 @@
 | GPS antenna | Ceramic patch, 1575R-A, U.FL | 1 | GNSS | Connects to the `GPS` U.FL. Ceramic face points at the sky. |
 | Buzzer | SparkFun Qwiic Buzzer (BOB-24474) | 1 (owned) | Audio cue | I2C default 0x34; a second board’s address is set in software with `setAddress()` (JP1 is volume only). CAD draws one per pod; mono vs stereo is Cody’s open call. |
 | Battery | Adafruit 1781 protected 18650 | 2 (pending Cody’s purchase approval) | Collar power | One cell per dual-cell pod — plan of record. |
-| Battery | Adafruit 353 3.7 V 6600 mAh | 1 (owned) | Spare | PROPOSED ALTERNATIVE, NOT APPROVED (battery/cue pods under `exports/alt_pods_unapproved/`); dual-cell pods remain the plan of record. |
+| Battery | Adafruit 353 3.7 V 6600 mAh | 1 (owned) | Spare | PROPOSED ALTERNATIVE, NOT APPROVED (battery/cue pods under `hardware/rook/stl/alt_pods_unapproved/`); dual-cell pods remain the plan of record. |
 | Battery | PKCELL LP503562, 3.7V 1200mAh LiPo | 1 | Power | 2-wire lead with connector. Polarity must be checked against the board before connecting. |
 | Jumper wires | Dupont female-female, ribbon | 1 set | Bench wiring | |
 | Cap lid screws | M3×40 button head ISO 7380 A2/304 + M3 bonded sealing washer | 8 | Through the 41.4 mm base columns into lid inserts |

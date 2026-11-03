@@ -16,7 +16,7 @@ Rev A 2026-09-26; **rev A2 the same day**, after the first-principles collar dec
 
 The carrier is a 2-layer board inside the V1-alpha test box (draft 1 of the shell). The boards we already own plug into it. On the board itself: the solar charger, the strap-harness port, the connectors and the test pads. It has no radio circuits: the antennas stay on the Connect Kit and the MAX-M10S.
 
-Sources, all kept locally in `mechanical/reference/vendor/` or `/tmp/ds` during the work:
+Sources, all kept locally in `hardware/common/reference/vendor/` or `/tmp/ds` during the work:
 
 | Ref | Document |
 | --- | --- |
@@ -29,7 +29,7 @@ Sources, all kept locally in `mechanical/reference/vendor/` or `/tmp/ds` during 
 | [UBX] | u-blox MAX-M10S data sheet, UBX-20035208 R08 |
 | [P124] | Voltaic P124 datasheet, Aug 2026 |
 | [SF] | SparkFun MAX-M10S and Qwiic Buzzer Eagle board files, Adafruit LSM6DSOX/ISM330 board file |
-| [SHELL] | `mechanical/lib/collar.py` and `dims.py` (V1-alpha draft 1) |
+| [SHELL] | `hardware/common/cad/lib/collar.py` and `dims.py` (V1-alpha draft 1) |
 | [MAX] | Analog Devices MAX17260 datasheet (fuel gauge, rev A3) |
 | [W25Q] | Winbond W25Q128JV datasheet, rev F (SPI flash, rev A3) |
 | [AO] | Alpha & Omega AO3401A datasheet (P-FET, rev A3) |
@@ -341,7 +341,7 @@ The Adafruit 4755 charger board we bought is no longer needed in the collar. It 
 Decided 2026-09-26: rectangle board (was question 1); the harness carries the battery, not 5 V (replaces question 2).
 
 To buy when you're ready (not ordered):
-1. **Adafruit 1781 protected 18650 ×2** (pending Cody’s purchase approval) for the original dual-cell pods — plan of record. The Adafruit 353 battery-pod / cue-pod redesign is a **PROPOSED ALTERNATIVE, NOT APPROVED** (`exports/alt_pods_unapproved/`). A second SparkFun Qwiic Buzzer (BOB-24474) and Qwiic cables if stereo cues are chosen; **mono vs stereo is Cody’s open call**. Second-buzzer I2C address is set in software with `setAddress()` (JP1 is volume only; see Example_10_Buzz_Multiple.ino).
+1. **Adafruit 1781 protected 18650 ×2** (pending Cody’s purchase approval) for the original dual-cell pods — plan of record. The Adafruit 353 battery-pod / cue-pod redesign is a **PROPOSED ALTERNATIVE, NOT APPROVED** (`hardware/rook/stl/alt_pods_unapproved/`). A second SparkFun Qwiic Buzzer (BOB-24474) and Qwiic cables if stereo cues are chosen; **mono vs stereo is Cody’s open call**. Second-buzzer I2C address is set in software with `setAddress()` (JP1 is volume only; see Example_10_Buzz_Multiple.ino).
 2. **M8 8-pin harness:** a high-flex PUR female-to-male cordset and two panel-mount sockets with leads (one on the box, one on the bottom module). Length once the bottom module is drawn (section 12).
 3. Pre-crimped pigtails: JST-SH 3-pin ×1 (panels); JST-PH 8-pin ×2 (harness, and a bench lead to the pack and NTC).
 
@@ -362,7 +362,7 @@ Before ordering:
 Not needed now:
 11. The Kit's USB VBUS could feed the charger for bench charging. Left out: a diode on VBUS leaks back at high temperature and can wake the Kit's own charger. Bench-charge through J_SOLA with the bench supply at 6 V, 0.5 A limit instead.
 
-## 12. Test-box changes this implies (for `mechanical/`)
+## 12. Test-box changes this implies (for `hardware/common` / `hardware/rook`)
 
 The V1-alpha test box is draft 1 of the shell, adapted:
 - Remove the battery locators and the per-board standoffs; add four posts under the carrier's H1–H4 (section 8). Raise the board plane from z = 18 to **z = 20**, because a centred board sits over the strap channel, where the floor is at 18.8.

@@ -350,7 +350,7 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - **Why now:** a builder asked on LinkedIn when the repo would have licences, because they want to port the firmware to Rust. Until today the repo had no licence files, so it was all rights reserved.
 - **Cody asked for** licences as permissive as possible, with protection against someone taking the collar and keeping it closed. Chosen to match:
   - Firmware, scripts and the protocol: **Apache-2.0** (`LICENSE`).
-  - Hardware and CAD in `hardware/` and `mechanical/`: **CERN-OHL-W-2.0** (`LICENSES/`), changed from the CERN-OHL-P planned in `STRATEGY.md`. Anyone can build and sell the boards; a shipped modified version must publish its changes to these files. Hardware starts at W because loosening later is possible and tightening a released version isn't.
+  - Hardware and CAD in `hardware/` (formerly also `mechanical/`): **CERN-OHL-W-2.0** (`LICENSES/`), changed from the CERN-OHL-P planned in `STRATEGY.md`. Anyone can build and sell the boards; a shipped modified version must publish its changes to these files. Hardware starts at W because loosening later is possible and tightening a released version isn't.
   - Docs, photos and renders: **CC BY 4.0**.
   - `NOTICE`: copyright Cody Menefee (openpasture); the names openpasture and OpenCollar and the logo aren't licensed.
   - `CONTRIBUTING.md`: contributions take the licence of the files they touch, and contributors grant openpasture the right to relicense them, so outside improvements can go into openpasture's own collars.
