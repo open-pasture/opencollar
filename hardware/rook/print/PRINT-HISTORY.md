@@ -7,6 +7,7 @@ Printer: Bambu Lab P2S (home, Cody's LAN 192.168.1.248, cloud mode)
 | 1 | 2026-11-01 | Node V1 cap (node_cap_*) | PLA | Done (obsolete CAD) | First print on the new P2S. **Old geometry:** 62 × 142 mm cap with dual Voltaic P122 pockets (panels never bought). File/settings not fully captured. |
 | 2 | 2026-11-02 | Node V1 cap (`F2_cap.gcode.3mf`) | PLA | Done — looks great (obsolete CAD) | Same old 62 × 142 / P122 CAD. Started via Bambu Connect on Openpasture-1. See PRINTING.md. |
 | 3 | 2026-11-02 | Node V1 cap v3 (76×160, P124 pocket, gabled roof, no supports) | PLA (Bambu PLA, AMS A1) | Started | From commit `951e057`. P2S Openpasture-1. Fast-fit profile (0.28 mm, 21 mm³/s, 10% gyroid, no supports). 148 layers; estimate 3h51m, 156.27 g. Started ~3:53 PM CT via Bambu Connect on Cody's Mac. |
+| 4 | 2026-11-02 | Bases-only plate: slim `node_cap_base_saddle` + `node_pod_base` (L) + pod R mirrored | PLA | Stopped (~16 min) | Pre-aids STLs (no cradle/labels). 0.16 mm layer, 153 layers; est 5h55m, 173.3 g. Started 8:19 PM CT via Bambu Connect on Openpasture-1; Cody stopped ~8:35 PM CT to restart with assembly aids (REV AID1). **Lid screw decision: M3×16** (clamp M3×14). |
 
 ## CAD change 2026-11-02
 
@@ -26,14 +27,14 @@ Offline Orca on earlier **76×160×29** STLs: stock PLA supports on 4h41m/140 g,
 
 ## Template notes — slim cap + assembly aids (REV AID1)
 
-**Next print plate (bases):** slim `node_cap_base_saddle` + `node_pod_base` + `node_pod_base_R` (+ optional `test_coupon` / `scale_bar_100`). PLA fit, supports off, brim for ASA later.
+**Next print plate (bases, restart after #4):** slim `node_cap_base_saddle` + `node_pod_base` + `node_pod_base_R` (+ optional `test_coupon` / `scale_bar_100`). PLA fit, supports off, brim for ASA later. Watertight STLs (bed face flat; labels on inside floor / outer wall).
 
 | Callout | Value |
 | --- | --- |
-| Cap lid / clamp | **M3×16** / **M3×14** |
+| Cap lid / clamp | **M3×16** / **M3×14** (M3×18 can bottom in the 5 mm lid pocket) |
 | Pod lid | **M3×25** |
 | Inserts | M3×4 (Adafruit 4255) |
-| Cap / pod labels | Bed-face engraved `REV AID1` — see `cad/ASSEMBLY-AIDS.md` |
+| Cap / pod labels | `REV AID1` — see `cad/ASSEMBLY-AIDS.md` (4.5 × 0.7 mm; not on bed face) |
 | Aids budget | ~15 g PLA / ~30 min on the bases plate (locators + engraving + coupon) |
 
-Log the real plate here when started (file, material, layers, estimate, route).
+Log the restart plate here when started (file, material, layers, estimate, route).
