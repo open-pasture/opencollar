@@ -21,6 +21,8 @@ arrive.
 
 ## Host tests (no hardware, CI)
 
+`make` must be installed (CI installs it explicitly). Then:
+
 ```bash
 make -C firmware/starling/tests/host
 ```
@@ -32,9 +34,23 @@ serve-to-older, reject peer when `starling_serve` off), `ubx_nmea`, `demo`
 
 ## Zephyr / nRF52840 build
 
-Needs nRF Connect SDK (Rook uses NCS v3.4.1) and `west`:
+Needs nRF Connect SDK **v3.4.1** and `west`. **Set `ZEPHYR_BASE` explicitly** —
+`firmware/starling/build.sh` only falls back to `/opt/nordic/ncs/v3.4.1/zephyr`
+when it is unset.
+
+Verified on NCS v3.4.1 (commit `c53eb49`): **0 warnings**, FLASH **98336 B** of
+788 KB (**12.19%**), RAM **46716 B** of 256 KB (**17.82%**). From the repo root:
 
 ```bash
+export PATH=$HOME/.nrfutil/bin:$PATH
+export ZEPHYR_BASE=$HOME/ncs/v3.4.1/zephyr
+nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 -- west build -b xiao_ble/nrf52840 firmware/starling --build-dir /workspace/starling-build -p
+```
+
+Wrapper (same board; still set `ZEPHYR_BASE` first):
+
+```bash
+export ZEPHYR_BASE=$HOME/ncs/v3.4.1/zephyr   # or your NCS path
 nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 -- \
   firmware/starling/build.sh
 # flash:
@@ -45,21 +61,21 @@ nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 -- \
 Default board: `xiao_ble/nrf52840` (Seeed XIAO nRF52840 + Wio-SX1262). Override
 with `BOARD=...`.
 
-If `ZEPHYR_BASE` / NCS is missing (typical cloud VM), host tests still run; the
-Zephyr build is skipped with exit 2 from `build.sh`.
-
-## Config flags
+## Default `prj.conf`
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
-| `CONFIG_STARLING_GNSS_FAKE` | y | Scripted track backend |
-| `CONFIG_STARLING_SERVE` | n | Multi-hop serve to Starling neighbors; off = Rook one-hop only |
-| `CONFIG_STARLING_BENCH_FENCE` | y | Demo fence when NVS empty |
+| `CONFIG_STARLING_GNSS_FAKE` | **y** | Fake GNSS on (scripted track) |
+| `CONFIG_STARLING_SERVE` | **n** | Multi-hop serve off (Rook one-hop only) |
+| `CONFIG_STARLING_BENCH_FENCE` | **y** | Demo fence when NVS empty |
 
 ## Open items
 
-- op-firmware: `firmware/ARCHITECTURE.md`, CI hook for nRF52840 image, coordinated `firmware/src` → `firmware/core` move.
-- op-fw-proto: real `firmware/lora` Trickle gossip + beacon fields (`fence_seq` / hash vs existing `bver`).
+- op-firmware: `firmware/ARCHITECTURE.md`, CI west hook for nRF52840 image (set
+  `ZEPHYR_BASE` explicitly in that job), coordinated `firmware/src` →
+  `firmware/core` move.
+- op-fw-proto: real `firmware/lora` Trickle gossip + beacon fields (`fence_seq` /
+  hash vs existing `bver`).
 - op-fw-radio: SX1262 behind `radio_hal`.
 - Cody: welfare PLACEHOLDER caps (PR #2) — see PR description.
 - Real MAX-M10S UART wiring when module arrives; I2C optional later.
