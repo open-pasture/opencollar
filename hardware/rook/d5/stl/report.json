@@ -1,0 +1,733 @@
+{
+  "revision": "D5_production",
+  "assumptions": [
+    "Strap thickness 4.0 mm assumed \u2014 VERIFY WITH CALIPERS before field print.",
+    "P124 on cap is an OPEN Cody/strategy decision; pocket retained for study.",
+    "Cap 76 mm exceeds brand 1.3\u00d7 strap (~57.8 mm) while P124 is in play.",
+    "bq24074 / GPS patch heights partially assumed \u2014 verify with calipers.",
+    "Wio-SX1262 height unverified (allow 23 mm pocket + 20 mm wire bend).",
+    "LP503562 LiPo unverified (~5\u00d735\u00d762); cell bay has +2 mm radial adjust.",
+    "Adafruit 353 pack is NOT approved; dual 1781 pods are plan of record.",
+    "Rook Connect Kit height 7.2 without headers / ~17 with sockets \u2014 U headers.",
+    "LTE flex 44\u00d710 U; GNSS cover 1\u20133 mm plastic, no metal above patch.",
+    "Antenna metal keepout 10\u201315 mm (CAD uses 12 mm) from inserts/screws/CW/cells.",
+    "Do not pot the bq24074 charger solid \u2014 service access required.",
+    "Cell swap needs only an M3 driver (pod lid orange/service screws).",
+    "Counterweight tub stays free of electronics \u2014 steel pack only.",
+    "Starling: same Wio XY pocket; small cells only; separate CAD TBD.",
+    "No collar on animal until welfare review (PR #2).",
+    "Parts arriving Nov 4\u20136 \u2014 pockets +0.4 mm/side; fit coupon FIRST."
+  ],
+  "layout": {
+    "cap": [
+      "Rook Connect Kit",
+      "bq24074",
+      "Wio-SX1262",
+      "GNSS patch",
+      "LTE flex",
+      "915 LoRa U.FL/SMA",
+      "USB-C + gasket cap",
+      "light pipes",
+      "button membranes"
+    ],
+    "pod_L": [
+      "18650 1781",
+      "Qwiic buzzer + mesh port",
+      "cable to cap"
+    ],
+    "pod_R": [
+      "18650 1781",
+      "Qwiic buzzer + mesh port",
+      "cable to cap"
+    ],
+    "cw": [
+      "steel counterweight only \u2014 NO electronics / antennas"
+    ],
+    "starling": "Starling shares Wio XY pocket 21.8\u00d718.6; stack height U. Small cells only \u2014 no 18650 dual-pod plan. Separate CAD TBD."
+  },
+  "pockets": {
+    "kit": {
+      "board": [
+        55.88,
+        20.32,
+        1.0
+      ],
+      "pocket": [
+        56.7,
+        21.1,
+        7.2
+      ],
+      "headers_h": 17.0,
+      "at": [
+        0.0,
+        -28.0
+      ],
+      "clear_per_side": 0.4
+    },
+    "bq24074": {
+      "board": [
+        38.1,
+        33.02,
+        1.6
+      ],
+      "pocket": [
+        38.9,
+        33.8,
+        12.0
+      ],
+      "at": [
+        0.0,
+        22.0
+      ],
+      "do_not_pot": true
+    },
+    "buzzer": {
+      "board": [
+        25.4,
+        25.4,
+        1.6
+      ],
+      "pocket": [
+        26.2,
+        26.2,
+        8.0
+      ],
+      "port_d": 8.0,
+      "mesh": true
+    },
+    "cell_18650": {
+      "cell": [
+        18.4,
+        69.0
+      ],
+      "pocket_d": 19.2,
+      "pocket_l": 70.0,
+      "end_clear": 3.0,
+      "bay_adjust": 2.0,
+      "pack_353_approved": false
+    },
+    "wio": {
+      "pocket": [
+        21.8,
+        18.6,
+        23.0
+      ],
+      "wire_bend": 20.0
+    },
+    "starling": {
+      "pocket": [
+        21.8,
+        18.6,
+        25.0
+      ],
+      "note": "Starling shares Wio XY pocket 21.8\u00d718.6; stack height U. Small cells only \u2014 no 18650 dual-pod plan. Separate CAD TBD."
+    },
+    "antennas": {
+      "gnss": [
+        25.0,
+        25.0,
+        4.0
+      ],
+      "cover_t": 2.0,
+      "lte_flex": [
+        44.0,
+        10.0,
+        0.8
+      ],
+      "metal_keepout": 12.0,
+      "crest": "+Y"
+    }
+  },
+  "waist_frac": 0.7450980392156863,
+  "panel_open_decision": true,
+  "cap_vs_brand_width": {
+    "cap_w": 76.0,
+    "brand_max_1_3x_strap": 57.8,
+    "conflict": true
+  },
+  "bodies": {
+    "cap_base": {
+      "size_mm": [
+        76.0,
+        160.0,
+        20.2
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 10952
+      },
+      "pass": true,
+      "stl_path": "stl/cap_base.stl",
+      "orientation": "cavity up, bed=underside",
+      "load_path": "clamp\u2192inserts WITH layers; walls carry drop",
+      "material": "ASA/PETG",
+      "farmer_swappable": false,
+      "rf_near_antenna": true
+    },
+    "cap_lid": {
+      "size_mm": [
+        75.0,
+        159.0,
+        7.2
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 8130
+      },
+      "pass": true,
+      "stl_path": "stl/cap_lid.stl",
+      "orientation": "mating face down",
+      "load_path": "lid screws INTO base inserts; seal land on bed",
+      "material": "ASA/PETG",
+      "farmer_swappable": true,
+      "rf_near_antenna": true
+    },
+    "panel_p124": {
+      "size_mm": [
+        66.0,
+        113.0,
+        2.6
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 140
+      },
+      "pass": true,
+      "stl_path": "stl/panel_p124.stl",
+      "orientation": "flat",
+      "load_path": "bonded in pocket (OPEN DECISION)",
+      "material": "bought",
+      "farmer_swappable": true,
+      "rf_near_antenna": true
+    },
+    "pod_L_base": {
+      "size_mm": [
+        92.0,
+        69.8,
+        25.7
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 4146
+      },
+      "pass": true,
+      "stl_path": "stl/pod_L_base.stl",
+      "orientation": "cavity up",
+      "load_path": "lid screws; cell cradle; cable strain",
+      "material": "ASA/PETG",
+      "farmer_swappable": false,
+      "rf_near_antenna": true
+    },
+    "pod_L_lid": {
+      "size_mm": [
+        91.0,
+        67.0,
+        6.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 3500
+      },
+      "pass": true,
+      "stl_path": "stl/pod_L_lid.stl",
+      "orientation": "mating face down",
+      "load_path": "lid screws INTO base",
+      "material": "ASA/PETG",
+      "farmer_swappable": true,
+      "rf_near_antenna": true
+    },
+    "pod_R_base": {
+      "size_mm": [
+        92.0,
+        69.8,
+        25.7
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 4146
+      },
+      "pass": true,
+      "stl_path": "stl/pod_R_base.stl",
+      "orientation": "cavity up",
+      "load_path": "mirror of L",
+      "material": "ASA/PETG",
+      "farmer_swappable": false,
+      "rf_near_antenna": true
+    },
+    "pod_R_lid": {
+      "size_mm": [
+        91.0,
+        67.0,
+        6.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 3500
+      },
+      "pass": true,
+      "stl_path": "stl/pod_R_lid.stl",
+      "orientation": "mating face down",
+      "load_path": "mirror of L",
+      "material": "ASA/PETG",
+      "farmer_swappable": true,
+      "rf_near_antenna": true
+    },
+    "cw_tub": {
+      "size_mm": [
+        88.0,
+        74.0,
+        31.2
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 4342
+      },
+      "pass": true,
+      "stl_path": "stl/cw_tub.stl",
+      "orientation": "cavity up",
+      "load_path": "steel pack; clamp; NO antennas",
+      "material": "ASA/PETG",
+      "farmer_swappable": false,
+      "rf_near_antenna": false
+    },
+    "cw_lid": {
+      "size_mm": [
+        87.0,
+        73.0,
+        6.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 3284
+      },
+      "pass": true,
+      "stl_path": "stl/cw_lid.stl",
+      "orientation": "mating face down",
+      "load_path": "lid screws",
+      "material": "ASA/PETG",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "saddle": {
+      "size_mm": [
+        76.0,
+        96.0,
+        7.4
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 2266
+      },
+      "pass": true,
+      "stl_path": "stl/saddle.stl",
+      "orientation": "flank on bed, channel pocket",
+      "load_path": "strap tension\u2192rails\u2192clamp\u2192cap inserts ALONG layers",
+      "material": "ASA/PETG or PA-CF*",
+      "farmer_swappable": false,
+      "rf_near_antenna": false
+    },
+    "clamp_bar": {
+      "size_mm": [
+        10.0,
+        70.0,
+        4.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 76
+      },
+      "pass": true,
+      "stl_path": "stl/clamp_bar.stl",
+      "orientation": "flat on bed",
+      "load_path": "strap clamp compression ALONG bar",
+      "material": "ASA/PETG or PA-CF*",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "keeper": {
+      "size_mm": [
+        49.45,
+        9.0,
+        6.5
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 124
+      },
+      "pass": true,
+      "stl_path": "stl/keeper.stl",
+      "orientation": "flat",
+      "load_path": "strap tail guide",
+      "material": "ASA/PETG/TPU",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "buckle": {
+      "size_mm": [
+        47.45,
+        26.0,
+        5.5
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 396
+      },
+      "pass": true,
+      "stl_path": "stl/buckle.stl",
+      "orientation": "flat",
+      "load_path": "strap open/close",
+      "material": "ASA/PETG",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "latch": {
+      "size_mm": [
+        6.5,
+        11.0,
+        2.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 108
+      },
+      "pass": true,
+      "stl_path": "stl/latch.stl",
+      "orientation": "flat",
+      "load_path": "lid open cue (orange)",
+      "material": "ASA/PETG",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "plug_service": {
+      "size_mm": [
+        8.0,
+        8.0,
+        1.25
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 124
+      },
+      "pass": true,
+      "stl_path": "stl/plug_service.stl",
+      "orientation": "flat",
+      "load_path": "covers farmer screws",
+      "material": "ASA orange",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "plug_struct": {
+      "size_mm": [
+        8.0,
+        8.0,
+        1.25
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 124
+      },
+      "pass": true,
+      "stl_path": "stl/plug_struct.stl",
+      "orientation": "flat",
+      "load_path": "charcoal cosmetic",
+      "material": "ASA charcoal",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "fairing_cap_pod_L": {
+      "size_mm": [
+        70.0,
+        28.0,
+        12.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 16
+      },
+      "pass": true,
+      "stl_path": "stl/fairing_cap_pod_L.stl",
+      "orientation": "long axis on bed; slope=WALL",
+      "load_path": "cosmetic blend; snap/screw to shells",
+      "material": "ASA/PETG",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "fairing_cap_pod_R": {
+      "size_mm": [
+        70.0,
+        28.0,
+        12.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 16
+      },
+      "pass": true,
+      "stl_path": "stl/fairing_cap_pod_R.stl",
+      "orientation": "long axis on bed; slope=WALL",
+      "load_path": "mirror",
+      "material": "ASA/PETG",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "fairing_pod_strap_L": {
+      "size_mm": [
+        50.0,
+        28.0,
+        10.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 16
+      },
+      "pass": true,
+      "stl_path": "stl/fairing_pod_strap_L.stl",
+      "orientation": "long axis on bed; slope=WALL",
+      "load_path": "blend into strap",
+      "material": "ASA/PETG",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "fairing_pod_strap_R": {
+      "size_mm": [
+        50.0,
+        28.0,
+        10.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 16
+      },
+      "pass": true,
+      "stl_path": "stl/fairing_pod_strap_R.stl",
+      "orientation": "long axis on bed; slope=WALL",
+      "load_path": "mirror",
+      "material": "ASA/PETG",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "usbc_cap": {
+      "size_mm": [
+        12.0,
+        10.0,
+        3.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 108
+      },
+      "pass": true,
+      "stl_path": "stl/usbc_cap.stl",
+      "orientation": "flat",
+      "load_path": "charge-port dust/gasket cap",
+      "material": "TPU",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "buzz_mesh": {
+      "size_mm": [
+        9.4,
+        9.4,
+        0.7
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 548
+      },
+      "pass": true,
+      "stl_path": "stl/buzz_mesh.stl",
+      "orientation": "flat",
+      "load_path": "press-in sound-port mesh disc (\u00d72)",
+      "material": "PETG/TPU",
+      "farmer_swappable": true,
+      "rf_near_antenna": false
+    },
+    "label_coupon": {
+      "size_mm": [
+        38.0,
+        20.0,
+        3.5
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 382
+      },
+      "pass": true,
+      "stl_path": "stl/label_coupon.stl",
+      "orientation": "flat",
+      "load_path": "0.16 mm layer label test",
+      "material": "ASA/PETG",
+      "farmer_swappable": false,
+      "rf_near_antenna": false
+    },
+    "fit_coupon": {
+      "size_mm": [
+        150.0,
+        70.0,
+        5.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 4118
+      },
+      "pass": true,
+      "stl_path": "stl/fit_coupon.stl",
+      "orientation": "flat",
+      "load_path": "FIRST print \u2014 pocket/insert/groove gauges",
+      "material": "PLA",
+      "farmer_swappable": false,
+      "rf_near_antenna": false
+    }
+  },
+  "pass": true,
+  "plates": {
+    "p2s_verify_h": 25.5,
+    "p2s_field_h": 31.5,
+    "bed220_verify_h": 28.5,
+    "orca_cli": false
+  }
+}
