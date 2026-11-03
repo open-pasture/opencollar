@@ -3,7 +3,7 @@ Copyright 2026 Cody Menefee (openpasture)
 
 This repository is open source under several licences:
   - Firmware, scripts and the device protocol: Apache License 2.0 (LICENSE)
-  - Hardware and CAD in hardware/ and mechanical/: CERN Open Hardware
+  - Hardware and CAD in hardware/: CERN Open Hardware
     Licence Version 2, Weakly Reciprocal (LICENSES/CERN-OHL-W-2.0.txt)
   - Docs, photos and renders: Creative Commons Attribution 4.0
     International (LICENSES/CC-BY-4.0.txt)

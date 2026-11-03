@@ -99,7 +99,7 @@ With the battery at the bottom, the harness carries the pack itself, not a 5 V b
 1. ~~Decisions~~ (done, above).
 2. **Rotation test before any shell:** a strap with ~270 g on top (split crest / pods) and ~505 g at the bottom, worn by a person, then a steer. Does it stay upright? Cheap, fast, and it checks the 1.8 : 1 rule.
 3. Carrier schematic (rev A2 spec: rectangle, battery and NTC on an 8-pin harness, two cue ports).
-4. Draw the crest unit, ear pods and battery module in `mechanical/`; draft 1 stays as the alpha test box.
+4. Draw the crest unit, ear pods and battery module in `hardware/` (shared under `common/`, Rook under `rook/`); draft 1 stays as the alpha test box.
 5. Integrated board outline from the crest unit.
 6. Freedom-to-operate check on Halter's patents before production.
 

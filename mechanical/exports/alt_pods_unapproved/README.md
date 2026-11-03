@@ -1,1 +1,0 @@
-PROPOSED ALTERNATIVE, NOT APPROVED: battery pod (Adafruit 353) + cue pod (buzzer only); formerly exports/node_v1_pod_battery and node_v1_pod_cue. Dual-cell exports/node_v1_pod/ (2 x Adafruit 1781) remains the plan of record.
