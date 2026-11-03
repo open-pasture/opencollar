@@ -1,0 +1,215 @@
+{
+  "concept": "D_hybrid",
+  "title": "D \u2014 Hybrid technical-soft",
+  "waist_frac": 0.75,
+  "plan_r_mm": 7.0,
+  "top_r_mm": 2.5,
+  "reveal_mm": 0.5,
+  "palette": {
+    "charcoal": "#26282B",
+    "oat": "#EFE8D8",
+    "orange": "#FF6A2B",
+    "strap": "#141416"
+  },
+  "bodies": {
+    "cap_base": {
+      "size_mm": [
+        76.0,
+        160.0,
+        18.0
+      ],
+      "volume_cm3": 92.13,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "zero_area_faces": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 5840
+      },
+      "size_ok": true,
+      "pass": true,
+      "stl_path": "stl/D_hybrid/cap_base.stl"
+    },
+    "cap_lid": {
+      "size_mm": [
+        75.0,
+        159.0,
+        6.0
+      ],
+      "volume_cm3": 68.98,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "zero_area_faces": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 10998
+      },
+      "size_ok": true,
+      "pass": true,
+      "stl_path": "stl/D_hybrid/cap_lid.stl"
+    },
+    "pod_base": {
+      "size_mm": [
+        92.0,
+        68.0,
+        24.5
+      ],
+      "volume_cm3": 51.58,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "zero_area_faces": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 3236
+      },
+      "size_ok": true,
+      "pass": true,
+      "stl_path": "stl/D_hybrid/pod_base.stl"
+    },
+    "pod_lid": {
+      "size_mm": [
+        91.0,
+        67.0,
+        8.17
+      ],
+      "volume_cm3": 48.29,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "zero_area_faces": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 4740
+      },
+      "size_ok": true,
+      "pass": true,
+      "stl_path": "stl/D_hybrid/pod_lid.stl"
+    },
+    "cw_tub": {
+      "size_mm": [
+        88.0,
+        74.0,
+        30.0
+      ],
+      "volume_cm3": 65.43,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "zero_area_faces": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 2424
+      },
+      "size_ok": true,
+      "pass": true,
+      "stl_path": "stl/D_hybrid/cw_tub.stl"
+    },
+    "cw_lid": {
+      "size_mm": [
+        87.0,
+        73.0,
+        10.0
+      ],
+      "volume_cm3": 61.85,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "zero_area_faces": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 4746
+      },
+      "size_ok": true,
+      "pass": true,
+      "stl_path": "stl/D_hybrid/cw_lid.stl"
+    },
+    "test_corner": {
+      "size_mm": [
+        22.0,
+        22.0,
+        10.0
+      ],
+      "volume_cm3": 4.31,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "zero_area_faces": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 1472
+      },
+      "size_ok": true,
+      "pass": true,
+      "stl_path": "stl/D_hybrid/test_corner.stl"
+    },
+    "latch": {
+      "size_mm": [
+        8.0,
+        14.0,
+        3.0
+      ],
+      "volume_cm3": 0.29,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "zero_area_faces": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 232
+      },
+      "size_ok": true,
+      "pass": true,
+      "stl_path": "stl/D_hybrid/latch.stl"
+    },
+    "plug": {
+      "size_mm": [
+        8.0,
+        8.0,
+        1.3
+      ],
+      "volume_cm3": 0.05,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "zero_area_faces": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 636
+      },
+      "size_ok": true,
+      "pass": true,
+      "stl_path": "stl/D_hybrid/plug.stl"
+    }
+  },
+  "pass": true
+}
