@@ -28,26 +28,25 @@ CAP_LID_T = 6.5
 CAP_STACK_H = CAP_BASE_H + CAP_LID_T  # 25.5 total
 # Taper zone shortened so central cavity stays full for kit + bq.
 CAP_TAPER_LEN = 14.0                # outer tip only; cavity flat for |y| < L/2 - TAPER
-# Columns at y=-42 moved outboard (x=±31.5) so Ø8 bosses clear kit pocket corner.
+# Columns at y=-48, x=±32 — clear kit pocket + bracket (was ±31.5,-42 clip).
 CAP_COLS = [(sx * 29.5, y) for sx in (-1, 1) for y in (-68.0, 42.0, 68.0)] + \
-           [(sx * 31.5, -42.0) for sx in (-1, 1)]
+           [(sx * 32.0, -48.0) for sx in (-1, 1)]
 CAP_CLAMP = [(sx * 20.0, sy * 28.5) for sx in (-1, 1) for sy in (-1, 1)]
 # Orange = farmer service: 3 end screws clear of centered P124 (±56.8).
 CAP_ORANGE = [(29.5, 68.0), (-29.5, 68.0), (29.5, -68.0)]
 CAP_CHARCOAL = [c for c in CAP_COLS if c not in CAP_ORANGE]
 
-# Brand: pods visibly LOWER than cap. Tight 1781 cradle + thin lid.
-# Cell Ø19.2 needs ~cav 19.5; floor 2.5 + cav 19.5 + lid 3.0 = 25.0 < cap 25.5.
+# Durability: pod lid ≥4.0 mm (2.5 mm at gasket groove). Stack 26.0 vs cap 25.5 —
+# 0.5 mm brand tension accepted for lid strength (Cody durability review).
 POD_CAVITY = (82.0, 58.0, 19.5)
 POD_WALL = 5.0
 POD_L = POD_CAVITY[0] + 2 * POD_WALL  # 92
 POD_W = POD_CAVITY[1] + 2 * POD_WALL  # 68
 POD_FLOOR = 2.5
 POD_BASE_H = POD_FLOOR + POD_CAVITY[2]  # 22.0
-POD_LID_T = 3.0
-POD_STACK_H = POD_BASE_H + POD_LID_T    # 25.0 — visibly under cap 25.5
+POD_LID_T = 4.0                     # was 3.0; ≥4.0 durability
+POD_STACK_H = POD_BASE_H + POD_LID_T    # 26.0
 POD_COLS = [(sx * 37.0, sy * 27.0) for sx in (-1, 1) for sy in (-1, 1)]
-# Pods sit ~±80 mm along strap from spine (look-study).
 POD_STRAP_Y = 80.0
 
 CW_L, CW_W, CW_H = 88.0, 74.0, 30.0  # steel pack; no electronics
@@ -60,26 +59,46 @@ WAIST_FRAC = CAP_BASE_H / (CAP_BASE_H + CAP_LID_T)
 REVEAL = 0.5
 PLAN_R = 7.0
 CROWN_R = 2.5                       # look; print as clean flat + soft plan (no dust ledge)
-GROOVE_W, GROOVE_D = 2.6, 1.5       # 2 mm cord
+# Groove: 2.0 mm cord; inner land ≥2.0 mm (was 1.2 with W=2.6 mid-wall).
+GROOVE_W, GROOVE_D = 2.0, 1.5
+GROOVE_INNER_LAND = 2.0             # plastic between cavity and groove
+GROOVE_OUTER_LAND = 1.0             # plastic outside groove
 MIN_LAND = 1.5
+POCKET_CORNER_R = 2.0               # R1–R2 fillets on internal pockets / ports
 
-# Saddle — wider than look-study to stop ~58 mm overhang rock each side.
+# Saddle — wider than look-study to stop overhang rock.
+# Prior roof was ~0.8 mm (centered channel boolean bug) — NOT intentional.
+# Target roof ≥1.6 mm above channel.
 SADDLE_W = CAP_W
-SADDLE_L = 96.0                     # covers clamp ±28.5 + overhang support
-SADDLE_H = 2.5 + (STRAP_T - 0.6)    # roof + channel
+SADDLE_L = 96.0
 SADDLE_CHANNEL_W = STRAP_W + 2.0
-SADDLE_CHANNEL_D = STRAP_T - 0.6
+SADDLE_CHANNEL_D = STRAP_T - 0.6    # 3.4
+SADDLE_ROOF = 1.6                   # intentional minimum roof
+SADDLE_H = SADDLE_ROOF + SADDLE_CHANNEL_D  # 5.0
+
+# Clamp bar — T/channel section (durability); metal ≥12 mm from LoRa crest.
+CLAMP_L = 70.0
+CLAMP_FLANGE_W = 10.0               # strap-bearing flange width
+CLAMP_DEPTH = 8.0                   # section depth (≥8)
+CLAMP_WEB = 3.0                     # web thickness
+CLAMP_ORIENTATION = (
+    "Print: flange flat on bed, web/walls rising in +Z (channel opens up). "
+    "Load path: strap compression along bar length (Y) WITH layers — never peel across layers."
+)
 
 # Fairings (op-brand): 25–30 mm run into strap, R7 plan + R2.5 soft edges.
 FAIRING_RUN = 28.0                  # within 25–30 mm brand blend
 FAIRING_R = PLAN_R                  # 7.0 plan radius
 FAIRING_EDGE_R = CROWN_R            # 2.5 soft edge bevel
 
-# P124 — OPEN DECISION (Cody/strategy). Pocket kept; flag in PR.
-PANEL_POCKET = (66.6, 113.6, 2.3)
+# P124 — OPEN keep-or-drop (Cody). Pocket kept; ≥2.0 mm lid under panel.
+PANEL_POCKET = (66.6, 113.6, 2.3)   # depth from outer face; lid under = CAP_LID_T-2.3=4.2≥2
 PANEL_SIZE = (66.0, 113.0, 2.6)
-PANEL_Y = 0.0                       # centered; GPS patch takes −Y cavity end if panel confirmed
+PANEL_Y = 0.0
 PANEL_OPEN_DECISION = True
+PANEL_MIN_LID_UNDER = 2.0
+# Frame flush/recessed to panel top (was proud); chamfer look via low frame.
+PANEL_FRAME_PROUD = -0.4            # mm relative to lid outer (negative = recessed)
 
 # Label (op-brand)
 LABEL = (30.0, 12.0, 0.5)
@@ -128,7 +147,7 @@ BUZZ_POCKET = (26.2, 26.2, 8.0)     # V headline
 BUZZ_PORT_D = 8.0
 BUZZ_MESH_PITCH = 1.6               # print-in mesh bars across port
 BUZZ_MESH_BAR = 0.6
-BUZZ_AT = (18.0, 12.0)              # per HARDWARE-FIT pod layout
+BUZZ_AT = (18.0, 15.0)              # +3 Y vs prior 12 — clear ~2.2 mm cell overlap
 
 # Protected 18650 Adafruit 1781 (V). Adafruit 353 pack NOT approved.
 # Flat LiPo LP503562 ~5×35×62 U — cell bay adjustable.
@@ -147,8 +166,10 @@ WIO_BOARD = (21.0, 17.8)            # U
 WIO_POCKET_UPRIGHT = (21.8, 18.6, 23.0)  # headline; DOES NOT FIT current cavity
 WIO_POCKET = (21.8, 18.6, 8.0)      # LAY-FLAT option (board + connectors U) — FITS
 WIO_WIRE_BEND = 20.0                # U.FL / SMA slack along +X wall (not over bq)
-WIO_AT = (26.0, -8.0)               # +X wall, clear of bq (+Y) and kit (−Y)
+# +X outer = 38; need ≥3 mm wall → pocket max x ≤ 35 → AT_x ≤ 35 - 10.9 = 24.1
+WIO_AT = (22.0, -8.0)               # was 26 (left only 1.1 mm wall)
 WIO_ORIENTATION = "lay_flat"        # production default until Cody raises cavity
+WIO_MIN_WALL = 3.0
 
 # Starling: XIAO nRF52840 + Wio stack — same XY pocket, SMALL CELLS ONLY
 STARLING_POCKET = (21.8, 18.6, 25.0)
@@ -163,18 +184,33 @@ GNSS_PATCH = (25.0, 25.0, 4.0)      # ceramic; sky-facing under 1–3 mm plastic
 GNSS_COVER_T = 2.0                  # plastic over patch (1–3 mm)
 LTE_FLEX = (44.0, 10.0, 0.8)        # U flex footprint
 LORA_915 = "U.FL or SMA"            # crest; not toward neck
+LORA_AT = (0.0, 64.0)               # crest LoRa U.FL/SMA approx (metal keepout ref)
 ANTENNA_METAL_KEEP = 12.0           # mid of 10–15 mm keepout
-# Cap crest = +Y lid / outer (sky). GNSS shelf under lid at +Y free of P124 if panel −Y.
-GNSS_AT = (0.0, 55.0)               # crest; ≥ keepout from columns at y=±68,±42
-LTE_AT = (0.0, 40.0)                # crest flex shelf
+# GNSS past panel +Y end (±56.8) so panel pocket need not go shallow over patch.
+GNSS_AT = (0.0, 64.0)               # was 55 (under panel → cover conflict)
+LTE_AT = (0.0, 40.0)                # crest flex shelf (under panel OK — shallow shelf)
+
+# Cap lid support posts (between kit and bq). Centres ≥ Ø apart (no kissing cylinders).
+LID_SUPPORT_POSTS = [(0.0, 5.0), (0.0, -8.0)]  # 13 mm apart; ≥1 mm from board envelopes
+LID_SUPPORT_D = 8.0
 
 # USB-C charge port + gasket cap; light pipe; button membranes; U.FL strain
 USBC_PORT = (10.0, 8.0, 6.0)
 USBC_CAP = (12.0, 10.0, 3.0)
-LIGHTPIPE_D = 2.5                   # over kit / charger LEDs
-BTN_MEMBRANE = (8.0, 8.0, 1.2)      # press-through TPU over buttons
-UFL_STRAIN_D = 3.5                  # cable strain relief boss ID
-UFL_SLACK = 20.0                    # mm free length before clamp
+LIGHTPIPE_D = 2.5
+# Light pipes / buttons OUT from under P124 (|y|<56.8) — near −Y free end.
+LIGHTPIPE_AT = [(sx * 8.0, -70.0) for sx in (-1, 1)]
+BTN_MEMBRANE = (8.0, 8.0, 1.2)
+BTN_AT = [(sx * 18.0, -62.0) for sx in (-1, 1)]
+UFL_STRAIN_D = 3.5
+UFL_SLACK = 20.0
+UFL_SLACK_AT = (28.0, 10.0)         # +X wall, clear of bq; inside ≥3 mm wall
+
+# Colourway — pending op-brand review (not locked).
+COLOURWAY_PROPOSAL = (
+    "Light-gray shell colourway proposed (durability/field-soil review). "
+    "PENDING op-brand review — charcoal #26282B + orange #FF6A2B remain current locked accents."
+)
 
 # Fit coupon clearances to sweep (print FIRST)
 COUPON_CLEAR_SWEEP = (0.2, 0.4, 0.6)  # per-side board clear options
@@ -210,7 +246,9 @@ ASSUMPTIONS = [
     "Do not pot the bq24074 charger solid — service access required.",
     "Cell swap needs only an M3 driver (pod lid orange/service screws).",
     "Counterweight tub stays free of electronics — steel pack only.",
-    "Pods stack 25.0 mm < cap stack 25.5 mm (brand: pods visibly lower).",
+    "Pod lid 4.0 mm for durability → pod stack 26.0 vs cap 25.5 (0.5 mm brand tension).",
+    "Saddle roof ≥1.6 mm (prior ~0.8 mm from centered channel cut was NOT intentional).",
+    "Light-gray colourway PENDING op-brand review.",
     "Starling: same Wio XY pocket; small cells only; separate CAD TBD.",
     "No collar on animal until welfare review (PR #2).",
     "Parts arriving Nov 4–6 — pockets +0.4 mm/side; fit coupon FIRST.",
@@ -218,8 +256,9 @@ ASSUMPTIONS = [
 
 CODY_FLAGS = [
     "FIT HEIGHT: upright Wio 23 mm + kit headers 17 mm vs ~14.3 mm free — choose A/B/C in FIT_HEIGHT_NOTE.",
-    "P124 panel OPEN — keep cap 76 or drop panel and take CAP_W_SLIM 58 (brand 1.3× strap).",
+    "P124 solar panel KEEP-OR-DROP OPEN — keep cap 76 or drop panel and take CAP_W_SLIM 58 (brand 1.3× strap).",
     "Mono vs stereo buzzer; 1781 purchase (HARDWARE-FIT).",
+    "Light-gray colourway proposal — pending op-brand.",
 ]
 
 # Layout rule (firmware): Rook pockets in CAP and PODS; CW no electronics.

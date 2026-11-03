@@ -1,5 +1,5 @@
 {
-  "source": "op-maker Orca CLI review 2026-11-03 (open-cavity lip ring); times after sealed-box fix",
+  "source": "op-maker Orca baseline 2026-11-03 + durability-rev ESTIMATE deltas",
   "P2S_256": {
     "bed": [
       256.0,
@@ -15,35 +15,35 @@
         ],
         "est_h": 0.97,
         "g": 27.5,
-        "note": "PRINT FIRST"
+        "note": "PRINT FIRST \u2014 unchanged"
       },
       {
         "plate": "P1",
         "parts": [
-          "cap_base",
+          "cap_base (+posts)",
           "cap_lid",
-          "pod_L/R base+lid"
+          "pod_L/R base+lid\u22654"
         ],
-        "est_h": 11.42,
-        "g": 266.9,
-        "note": "merged shells object; open cavity \u2192 ~12% support (was 35%)"
+        "est_h": 12.1,
+        "g": 283,
+        "note": "EST +6% vs 11h25/267g (thicker pod lids, lid posts)"
       },
       {
         "plate": "P2",
         "parts": [
-          "cw_tub",
-          "cw_lid",
-          "saddle",
+          "cw",
+          "saddle roof\u22651.6",
           "4 fairings",
-          "8 clamps",
-          "8 plugs",
+          "8 channel clamps",
+          "plugs",
           "latch",
           "2 buzz_mesh",
           "buckle",
           "keeper"
         ],
-        "est_h": 7.52,
-        "g": 180.1
+        "est_h": 8.1,
+        "g": 195,
+        "note": "EST +8% vs 7h31/180g (T-clamps, saddle roof)"
       }
     ],
     "field_asa": [
@@ -54,26 +54,26 @@
       },
       {
         "plate": "P1",
-        "est_h": 11.12,
-        "g": 242.8
+        "est_h": 11.8,
+        "g": 257
       },
       {
         "plate": "P2",
-        "est_h": 7.32,
-        "g": 161.4
+        "est_h": 7.9,
+        "g": 174
       }
     ],
     "spares_plate": {
       "plate": "P3",
       "parts": [
-        "clamp_bar\u00d74",
+        "clamp_bar\u00d74 (channel)",
         "plug_service\u00d73",
         "latch",
         "buzz_mesh\u00d72",
         "usbc_cap\u00d72"
       ],
-      "est_h": 0.62,
-      "g": 11.0
+      "est_h": 0.85,
+      "g": 16
     },
     "spares_cap_lid": {
       "plate": "P3b",
@@ -84,12 +84,12 @@
       "g": 44.7
     },
     "per_collar_plates_verify": 2,
-    "per_collar_hours_verify_pla": 18.93,
-    "per_collar_grams_pla": 447,
+    "per_collar_hours_verify_pla": 20.2,
+    "per_collar_grams_pla": 478,
     "per_collar_plates_field": 2,
-    "per_collar_hours_field_asa": 18.43,
-    "per_collar_grams_asa": 404,
-    "note": "P1+P2 = collar. TPU usbc_cap field print is separate. Auto-arrange splits to ~4 plates/~26 h."
+    "per_collar_hours_field_asa": 19.7,
+    "per_collar_grams_asa": 431,
+    "note": "P1+P2 = collar. Times ESTIMATED from Orca baseline + durability volume; op-maker re-slice before print."
   },
   "bed_220": {
     "bed": [
@@ -97,12 +97,12 @@
       220.0,
       250.0
     ],
-    "note": "Ender 3 V3 SE PETG profile, auto-arranged (op-maker).",
+    "note": "Prior Orca 24h06/490g + ~6% durability EST \u2192 ~25.5 h / 520 g.",
     "pla_verify": [
       {
         "plate": "collar",
-        "est_h": 24.1,
-        "g": 490.5,
+        "est_h": 25.5,
+        "g": 520,
         "plates": 5
       },
       {
@@ -112,7 +112,7 @@
       },
       {
         "plate": "spares",
-        "est_h": 0.63
+        "est_h": 0.9
       },
       {
         "plate": "spare_lid",
@@ -120,10 +120,10 @@
       }
     ],
     "per_collar_plates_verify": 5,
-    "per_collar_hours_verify_pla": 24.1,
-    "honest": "Everything fits 220\u00d7220. ASA on stock Ender needs enclosure \u2014 PETG baseline off Bambu."
+    "per_collar_hours_verify_pla": 25.5,
+    "honest": "Everything fits 220\u00d7220. Re-slice after durability CAD before quoting farmers."
   },
   "starling_note": "Starling CAD not yet designed. Budget ~3 P2S / ~4\u00d7220 once XIAO+Wio shell exists (small cells only).",
-  "orca_cli": true,
-  "orca_note": "Times from op-maker Orca slices on open-cavity STLs. Run print/fix_bbl_3mf.py before Bambu Connect."
+  "orca_cli": false,
+  "orca_note": "Durability times are ESTIMATES. Re-run Orca on new STLs; fix_bbl_3mf.py before Bambu Connect."
 }

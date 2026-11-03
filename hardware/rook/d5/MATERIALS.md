@@ -9,16 +9,27 @@
 | **Forbidden near RF** | Carbon fiber, metal foil, large metal plates | Cap crest, GNSS cover, LTE/LoRa runs | Keep inserts/screws/CW/cells 10–15 mm from antennas |
 | Verify | **PLA** | `fit_coupon`, `label_coupon` first | Do not field PLA shells |
 | Cosmetic | ASA charcoal `#26282B` / orange `#FF6A2B` | Plugs, latch | Orange = service |
+| Colourway (proposed) | Light-gray shells | Cap/pod/CW/fairings | **PENDING op-brand review** — not locked; charcoal+orange accents stay |
+
+## Colourway proposal (pending op-brand)
+
+Light-gray shell colourway was floated in the durability / field-soil review (hides dust better than charcoal in some pastures). **Not approved.** Until op-brand signs off, print study parts in charcoal ASA/PETG with orange `#FF6A2B` service accents. Do not quote light-gray as the production colour.
 
 ## RF keepout
 
-- GNSS: sky-facing, **1–3 mm plastic** above patch, **no metal** in the cover stack.
-- Crest antennas opposite neck; cells live in pods, steel in CW — both ≥ keepout from crest.
-- No CF filament in cap lid / antenna shelves.
+- GNSS: sky-facing, **1–3 mm plastic** above patch, **no metal** in the cover stack. Recess opens into cavity from z=0.
+- Crest antennas opposite neck; cells in pods, steel in CW — both ≥12 mm from crest / LoRa.
+- Clamp bars (channel section) under saddle at \|y\|≤28.5 — LoRa at y≈64 → clearance ≫12 mm.
+- No CF filament in cap lid / antenna shelves. PA-CF only on saddle/clamps away from RF.
+
+## Clamp print orientation / load path
+
+Flange flat on bed, channel opens +Z. Strap compression along bar length **WITH layers** — never peel across layer lines. Farmer-swappable.
 
 ## Settings (starting points for op-maker)
 
 - 0.4 mm nozzle; 0.2 mm layer shells; 0.16 mm label coupon.
 - ASA: enclosure, brim 5–8 mm, dry filament.
-- Walls ≥3; infill 30–40% gyroid on load parts (saddle, clamps, bases).
+- Walls ≥3; infill 30–40% gyroid on load parts (saddle, **channel clamps**, bases).
 - TPU: 0.24–0.28 mm, slow, no cooling blast.
+- Gasket groove: 2.0 mm cord; ≥2 mm inner land.

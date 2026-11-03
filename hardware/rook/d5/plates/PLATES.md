@@ -1,24 +1,24 @@
-# D5 plate layouts (corrected)
+# D5 plate layouts (durability revision)
 
-Source: op-maker Orca review after open-cavity lip fix. Machine-readable: `plates.json`.
+Baseline: op-maker Orca open-cavity. **Times/grams below are ESTIMATED** (+~6–8% for thicker pod lids, channel clamps, support posts, saddle roof). Re-slice before print.
 
 ## P2S 256 — per Rook collar
 
-| Plate | Parts | PLA | ASA |
+| Plate | Parts | PLA (est) | ASA (est) |
 | --- | --- | --- | --- |
 | P0 | fit + label coupon (**first**) | 0h58 / 27.5 g | 1h11 / 29.8 g |
-| P1 | cap + both pods (base+lid) | 11h25 / 267 g | 11h07 / 243 g |
-| P2 | CW, saddle, fairings, clamps, plugs, latch, mesh, buckle, keeper | 7h31 / 180 g | 7h19 / 161 g |
-| **Collar (P1+P2)** | | **18h56 / 447 g** | **18h26 / 404 g** |
-| P3 spares | 4 clamps, 3 orange, latch, 2 mesh, 2 usbc | 0h37 | 0h36 |
+| P1 | cap (+posts) + both pods (lid≥4) | ~12h06 / ~283 g | ~11h48 / ~257 g |
+| P2 | CW, saddle≥1.6 roof, fairings, channel clamps, … | ~8h06 / ~195 g | ~7h54 / ~174 g |
+| **Collar (P1+P2)** | | **~20h12 / ~478 g** | **~19h42 / ~431 g** |
+| P3 spares | 4 channel clamps, orange, latch, mesh, usbc | ~0h51 | ~0h50 |
 | P3b | spare cap_lid | 2h22 | 2h23 |
 
-TPU `usbc_cap` for field = separate soft plate.
+TPU `usbc_cap` = separate soft plate.
 
 ## 220 bed
 
-Collar ~5 plates / 24h06 / 490 g (PETG profile).
+Collar ~5 plates / ~25.5 h / ~520 g (est).
 
-## Starling
+## Clamp print orientation
 
-CAD TBD; ~3 P2S / ~4×220 once designed.
+Print: flange flat on bed, web/walls rising in +Z (channel opens up). Load path: strap compression along bar length (Y) WITH layers — never peel across layers.
