@@ -89,10 +89,10 @@ const struct gnss_ops *gnss_fake_ops(void)
  */
 static const struct gnss_track_point DEMO[] = {
 	{0, 36.00050, -86.00050, 2.0, true, true, 1762128000},	   /* inside */
-	{2000, 35.99910, -86.00050, 2.0, true, true, 1762128002},  /* approach / warn */
+	{2000, 35.99903, -86.00050, 2.0, true, true, 1762128002},  /* approach / warn (~3 m) */
 	{4000, 35.99870, -86.00050, 2.5, true, true, 1762128004},  /* cross south */
 	{6000, 35.99840, -86.00050, 2.5, true, true, 1762128006},  /* outside */
-	{8000, 35.99910, -86.00050, 2.0, true, true, 1762128008},  /* return warn */
+	{8000, 35.99903, -86.00050, 2.0, true, true, 1762128008},  /* return warn */
 	{10000, 36.00050, -86.00050, 2.0, true, true, 1762128010}, /* inside */
 	{12000, 0, 0, 99.0, false, false, 0},			   /* fix loss */
 	{14000, 36.00050, -86.00050, 3.0, true, true, 1762128014}, /* recover */
