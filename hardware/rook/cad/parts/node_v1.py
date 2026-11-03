@@ -61,7 +61,7 @@ n.set_cap_style(style)
 
 # Engraved glyphs leave knife-edge wedges; allow the same class of thin area
 # as fit_test (labels only — structural walls stay ≥1 mm elsewhere).
-AID_THIN = 350.0  # engraved glyph corners (same class as fit_test labels)
+AID_THIN = 800.0  # 5×7 bitmap glyph corners (pixel gaps ≈0.06 mm walls)
 
 oc.reset()
 if part in ("all", "cap"):
@@ -144,10 +144,11 @@ if part in ("all", "coupon"):
     oc.finish(
         "test_coupon",
         {"test_coupon": coupon, "scale_bar_100": scale},
-        # Block 40 + pin plinth (+16) + screw-gauge strip (+10) → ~66 in X.
-        spec={"test_coupon": {"size": (n.COUPON_OVERALL_X, n.COUPON_L, n.COUPON_H), "tol": 2.0},
+        # Block + plinth + stepped gauge + free e-foot → 68.5×37.5×18.
+        spec={"test_coupon": {"size": (n.COUPON_OVERALL_X, n.COUPON_OVERALL_Y,
+                                       n.COUPON_GAUGE_MAX_H), "tol": 2.0},
               "scale_bar_100": {"size": (100.0, 10.0, 2.0), "tol": 0.5}},
         material="PA12", min_wall=0.8, thin_area_allowed=AID_THIN,
         notes=("Assembly-aid coupon + 100 mm scale bar. Insert Ø3.9/4.0/4.1, "
                "blind tap/clear 4/5/6, pin sockets, sample pins, bridge, "
-               "M3x14/16/18 gauge pilots, 1 mm elephant-foot pad. See ASSEMBLY-AIDS.md."))
+               "stepped M3x14/16/18 blind gauge, free 1 mm elephant-foot pad."))

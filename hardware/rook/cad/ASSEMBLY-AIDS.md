@@ -19,14 +19,16 @@ STLs: `stl/node_v1_cap_saddle/`, `stl/node_v1_pod/` (includes `node_pod_base_R`)
 
 | Aid | Use |
 | --- | --- |
-| Inside-floor `CAP BASE`, `REV AID1` (4.5 × 0.7) | Identify the part during assembly |
+| Inside-floor `CAP BASE`, `REV AID1` (5 × 0.8) | Identify the part during assembly |
 | `M3x14 CLAMP`, `M3x16 LID`, `M3x4 INSERT` | Grab the right fasteners without the BOM |
 | `PIN` | Match the saddle roof pins |
 | Floor arrow → +Y | Orient GPS / free end of the spine |
 | Ø1 × 0.4 dimples on the bed face by lid columns | Visual / finger registration when starting inserts |
 
 Bed face stays planar (dimples only — glyph cuts into z=0 left STL slivers).
-Print outside-face down, cavity up, no supports.
+Inside-floor glyphs are 5 mm × 0.8 mm 5×7 box-bitmap stamps (manifold without
+font remesh) so letterforms stay ≥0.6 mm deep. Print outside-face down, cavity
+up, no supports.
 
 ## Pod base (L and R)
 
@@ -37,8 +39,7 @@ Print outside-face down, cavity up, no supports.
 | Floor cable grooves (3 × 1.2) | Route cell and buzzer leads to the Ø6 crest entry before potting |
 | Floor box-stamps at cell / buzzer / stud / port | Tactile cues without font slivers |
 | Floor arrow → crest cable (±X) | Orient the pod before potting |
-| Outer −Y wall: `POD BASE`, `L`/`R`, rev, port, `BUZZER`, `M3x25 LID`, `M3x4 INSERT` | Readable callouts (bed face left flat) |
-| Column dimples | Start heat-set inserts on the right bosses |
+| Outer −Y wall (separate rows, z 21 / 16 / 11 / 5.5): `POD BASE`, `L`/`R`+rev, port+`BUZZER`, `M3x25 LID`+`M3x4 INSERT` | Readable callouts into the wall (bed face left flat) |
 
 `node_pod_base.stl` is the left pod; `node_pod_base_R.stl` is a dedicated right
 (asymmetric features + label). You can still mirror L if preferred.
@@ -52,8 +53,8 @@ Print outside-face down, cavity up, no supports.
 | Pin sockets Ø4.2 / 4.35 / 4.5 × 2 mm | Match saddle pin fit |
 | Sample pins Ø4.0 × 1.5 on plinth | Press into the winning socket |
 | 20 mm bridge (2 mm roof) | Spot bridging before the real saddle |
-| M3×14 / ×16 / ×18 Ø2.8 gauge pilots | Tip-fit / length feel before grabbing the BOM bag |
-| 1×1×0.8 mm elephant-foot pad | Measure first-layer spread vs 1 mm |
+| Stepped M3×14 / ×16 / ×18 Ø2.8 blind pilots (1 mm floor) | Drop screw in — head flush on the matching step |
+| Free 1×1×0.8 mm elephant-foot pad (off the block) | Measure first-layer spread vs 1 mm |
 | `scale_bar_100.stl` | 100 mm bar with a 20 mm step — measure shrink |
 
 ## Lid screw (slim cap)
@@ -81,11 +82,13 @@ side print for fit learning.
 
 ## Intentional omissions
 
-- Bed-face glyph engraving: removed (remeshed font into z=0 left multi-face
-  STL slivers). IDs live on the inside floor (cap) or outer −Y wall (pod).
+- **Bed-face glyph engraving: dropped.** Font cuts into z=0 left multi-face STL
+  slivers and could not be made reliable quickly. IDs live on the cap inside
+  floor and the pod outer −Y wall (5 mm × 0.8 mm 5×7 box-bitmap stamps).
 - Raised nest lip on saddle: still deferred (knife edges in earlier try).
 - Pod electrode polarity beyond `STUD`: studs are unwired on unit #1.
 - Coupon hole-size callouts are bar stamps (not font glyphs) so the top face
   stays watertight; sizes are documented here and in the build notes.
+- Pod column dimples removed (read as buried 1 mm cubes; cbore is enough).
 - Cap lid-screw length engraved as `M3x16` (not M3×18): tip spare in the 5 mm
   lid pocket; see § Lid screw above.

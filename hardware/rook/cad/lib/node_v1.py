@@ -197,8 +197,8 @@ def lid_screw_stack_mm(style=None):
 # See cad/ASSEMBLY-AIDS.md.
 
 AID_REV = "AID1"
-ENGRAVE_D = 0.7             # ≥0.6 mm so glyphs stay readable after slice
-ENGRAVE_SIZE = 4.5          # 4–5 mm height
+ENGRAVE_D = 0.8             # ≥0.6 mm; deeper so remesh glyphs survive the slice
+ENGRAVE_SIZE = 5.0          # ≥4 mm height
 ENGRAVE_OVER = 0.5          # cutter past the face so booleans stay clean
 CRADLE_H = 2.5              # cell ribs; ≤3 mm into cavity
 CRADLE_R = 9.4              # arc seat (~cell R 9.2 + 0.2 clearance)
@@ -211,49 +211,147 @@ DIMPLE_D = 1.0
 DIMPLE_DEPTH = 0.4
 
 
+# 5×7 bitmap glyphs (rows top→bottom). Built from boxes so engraving booleans
+# stay manifold without remesh — Blender font curves + remesh either destroyed
+# letterforms (SMOOTH) or left bad_edges (VOXEL) on the real cap/pod bodies.
+_FONT_5X7 = {
+    "A": ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
+    "B": ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
+    "C": ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
+    "D": ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
+    "E": ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
+    "F": ["11111", "10000", "10000", "11110", "10000", "10000", "10000"],
+    "G": ["01111", "10000", "10000", "10011", "10001", "10001", "01111"],
+    "H": ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
+    "I": ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
+    "J": ["00111", "00010", "00010", "00010", "00010", "10010", "01100"],
+    "K": ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
+    "L": ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
+    "M": ["10001", "11011", "10101", "10001", "10001", "10001", "10001"],
+    "N": ["10001", "11001", "10101", "10011", "10001", "10001", "10001"],
+    "O": ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
+    "P": ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
+    "R": ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
+    "S": ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
+    "T": ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
+    "U": ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
+    "V": ["10001", "10001", "10001", "10001", "10001", "01010", "00100"],
+    "W": ["10001", "10001", "10001", "10001", "10101", "11011", "10001"],
+    "X": ["10001", "10001", "01010", "00100", "01010", "10001", "10001"],
+    "Y": ["10001", "10001", "01010", "00100", "00100", "00100", "00100"],
+    "Z": ["11111", "00001", "00010", "00100", "01000", "10000", "11111"],
+    "0": ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
+    "1": ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
+    "2": ["01110", "10001", "00001", "00010", "00100", "01000", "11111"],
+    "3": ["11110", "00001", "00001", "01110", "00001", "00001", "11110"],
+    "4": ["00010", "00110", "01010", "10010", "11111", "00010", "00010"],
+    "5": ["11111", "10000", "11110", "00001", "00001", "10001", "01110"],
+    "6": ["01110", "10000", "10000", "11110", "10001", "10001", "01110"],
+    "7": ["11111", "00001", "00010", "00100", "01000", "01000", "01000"],
+    "8": ["01110", "10001", "10001", "01110", "10001", "10001", "01110"],
+    "9": ["01110", "10001", "10001", "01111", "00001", "00001", "01110"],
+    "+": ["00000", "00100", "00100", "11111", "00100", "00100", "00000"],
+    "x": ["00000", "10001", "01010", "00100", "01010", "10001", "00000"],
+    "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
+    " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
+}
+
+
 def _manifold_text(name, body, size, depth, at, align="CENTER"):
-    """Font mesh remeshed so the boolean stays manifold (Blender 4 curve text
-    alone leaves hundreds of non-manifold edges on this toolchain)."""
-    obj = oc.text(name, body, size, depth, at=at, align=align)
-    m = obj.modifiers.new("aid_remesh", "REMESH")
-    m.mode = "SMOOTH"
-    m.octree_depth = 7
-    m.scale = 0.9
-    oc.apply_modifiers(obj)
-    return obj
+    """Manifold 5×7 box-bitmap text cutter (no font-curve remesh).
+
+    `size` is the capital height in mm (≥4). Depth is the extrusion along +Z,
+    with the mesh sitting on z=at[2] (bottom) up to z=at[2]+depth — matching
+    oc.text's footprint so `_engrave_cut` placements stay valid. Bed-face (−Z)
+    engraving is still avoided (z≈0 slivers).
+    """
+    import bpy
+    cell = size / 7.0
+    gap = cell * 0.2
+    cw = 5 * cell + gap  # character pitch
+    body = body.upper().replace("×", "x")
+    chars = list(body)
+    width = max(len(chars) * cw - gap, cell)
+    # Origin: same as oc.text CENTER — mid-glyph in XY, bottom at at[2].
+    if align == "CENTER":
+        x0 = at[0] - width / 2
+    elif align == "LEFT":
+        x0 = at[0]
+    else:
+        x0 = at[0] - width
+    y0 = at[1] - size / 2
+    z0 = at[2]
+    pixels = []
+    for ci, ch in enumerate(chars):
+        glyph = _FONT_5X7.get(ch, _FONT_5X7[" "])
+        for row, bits in enumerate(glyph):
+            # Merge contiguous runs into one box per run (fewer shells).
+            col = 0
+            while col < 5:
+                if bits[col] != "1":
+                    col += 1
+                    continue
+                start = col
+                while col < 5 and bits[col] == "1":
+                    col += 1
+                run = col - start
+                px = x0 + ci * cw + (start + run / 2) * cell
+                py = y0 + (6 - row + 0.5) * cell  # row0 at top
+                # 0.92× cell: small gap keeps cubes as separate manifold shells
+                # so join+difference stays watertight (abut/overlap both failed).
+                pixels.append(oc.box(
+                    f"{name}_{ci}_{row}_{start}",
+                    (run * cell * 0.92, cell * 0.92, depth),
+                    at=(px, py, z0), anchor="bottom"))
+    if not pixels:
+        return oc.box(name, (cell, cell, depth), at=(at[0], at[1], z0), anchor="bottom")
+    if len(pixels) == 1:
+        pixels[0].name = name
+        return pixels[0]
+    # Join disconnected manifold cubes — boolean-safe, no remesh.
+    for o in bpy.context.selected_objects:
+        o.select_set(False)
+    for p in pixels:
+        p.select_set(True)
+    bpy.context.view_layer.objects.active = pixels[0]
+    bpy.ops.object.join()
+    pixels[0].name = name
+    return pixels[0]
 
 
 def _engrave_cut(name, body, size, at, z_face, depth=ENGRAVE_D, into="+Z"):
     """Text cutter for engraving into a face.
 
-    into='+Z': cut downward from z_face (inside floor / top face). Cutter
-    protrudes past the face so the boolean does not graze coplanar.
-    into='-Y'/into='+Y'/into='-X'/into='+X': vertical outer-wall engraving
-    (preferred over bed-face cuts — bed-face glyph booleans leave z≈0 slivers).
+    into='+Z': cut downward from z_face (inside floor / top face).
+    into='-Y'/'+Y'/'-X'/'+X': outer-wall engraving. Depth axis points *into*
+    the part (e.g. -Y wall → cutter grows +Y). Bed-face (-Z) engraving is
+    intentionally unsupported — glyph booleans into z=0 left STL slivers.
     """
     if into == "+Z":
         return _manifold_text(name, body, size, depth + ENGRAVE_OVER,
                               at=(at[0], at[1], z_face - depth))
-    # Vertical wall: build text along +Z, rotate so depth points into the part.
+    # Build text along +Z, rotate so +Z becomes the inward wall normal.
     txt = _manifold_text(name, body, size, depth + ENGRAVE_OVER, at=(0, 0, 0))
     ax, ay = at[0], at[1]
     az = at[2] if len(at) > 2 else z_face
+    # Blender +90° about X maps +Z → −Y; −90° maps +Z → +Y.
     if into == "-Y":
-        oc.rotate(txt, 90.0, "X")
-        oc.bake(txt)
-        oc.move(txt, dx=ax, dy=ay - ENGRAVE_OVER, dz=az)
-    elif into == "+Y":
         oc.rotate(txt, -90.0, "X")
         oc.bake(txt)
-        oc.move(txt, dx=ax, dy=ay + ENGRAVE_OVER, dz=az)
-    elif into == "-X":
-        oc.rotate(txt, -90.0, "Y")
+        # Origin just outside the face; depth grows +Y into the wall.
+        oc.move(txt, dx=ax, dy=ay - 0.2, dz=az)
+    elif into == "+Y":
+        oc.rotate(txt, 90.0, "X")
         oc.bake(txt)
-        oc.move(txt, dx=ax - ENGRAVE_OVER, dy=ay, dz=az)
-    elif into == "+X":
+        oc.move(txt, dx=ax, dy=ay + 0.2, dz=az)
+    elif into == "-X":
         oc.rotate(txt, 90.0, "Y")
         oc.bake(txt)
-        oc.move(txt, dx=ax + ENGRAVE_OVER, dy=ay, dz=az)
+        oc.move(txt, dx=ax - 0.2, dy=ay, dz=az)
+    elif into == "+X":
+        oc.rotate(txt, -90.0, "Y")
+        oc.bake(txt)
+        oc.move(txt, dx=ax + 0.2, dy=ay, dz=az)
     else:
         raise ValueError(f"unsupported engrave into={into!r}")
     oc.bake(txt)
@@ -533,7 +631,9 @@ POD_COLS = [(sx * 37.0, sy * 27.0) for sx in (-1, 1) for sy in (-1, 1)]
 POD_CLAMP = [(sx * 32.0, sy * 29.5) for sx in (-1, 1) for sy in (-1, 1)]
 POD_BAR = (10.0, 70.0, 4.0)
 CELL_AT = (-2.0, -13.0)
-BUZZER_AT = (20.0, 15.0)   # board centre
+# Board edge at x = BUZZER_AT[0] + 12.7; column (37,27) surface at x=33.
+# Keep ≥0.5 mm clear → centre ≤ 19.8. Use 19.5 for margin.
+BUZZER_AT = (19.5, 15.0)   # board centre
 ELECTRODES = [(-30.0, 15.0), (-8.0, 15.0)]
 POD_LID_SCREW = 25.0       # M3×25 through pod base into lid inserts
 
@@ -620,31 +720,28 @@ def _pod_assembly_aids(b, side="L"):
     oc.cut(b, *_arrow_stamp(f"parrow{side}", (sx * 22.0, -2.0),
                             toward=("+X" if side == "L" else "-X"),
                             z_face=POD_FLOOR, length=10.0, width=6.0))
+    # Outer −Y wall labels: separate rows inside z∈[3, 22] (POD_BASE_H=24.5).
+    # at=(x, wall_y, z_center); cutter grows +Y into the wall.
     wall_y = -(POD_W / 2)
-    wall_z = POD_BASE_H / 2
     wall = [
         _engrave_cut(f"pname{side}", "POD BASE", ENGRAVE_SIZE,
-                     (0, wall_y, wall_z + 6), wall_z, into="-Y"),
-        _engrave_cut(f"pside{side}", side, ENGRAVE_SIZE + 1.5,
-                     (sx * 28.0, wall_y, wall_z + 1), wall_z, into="-Y"),
+                     (0, wall_y, 21.0), 21.0, into="-Y"),
+        _engrave_cut(f"pside{side}", side, ENGRAVE_SIZE + 1.0,
+                     (sx * 30.0, wall_y, 16.0), 16.0, into="-Y"),
         _engrave_cut(f"prev{side}", f"REV {AID_REV}", ENGRAVE_SIZE,
-                     (0, wall_y, wall_z - 4), wall_z, into="-Y"),
-        _engrave_cut(f"plid{side}", f"M3x{POD_LID_SCREW:.0f} LID", ENGRAVE_SIZE,
-                     (0, wall_y, wall_z - 9), wall_z, into="-Y"),
-        _engrave_cut(f"pins{side}", "M3x4 INSERT", ENGRAVE_SIZE,
-                     (0, wall_y, wall_z - 14), wall_z, into="-Y"),
+                     (0, wall_y, 16.0), 16.0, into="-Y"),
         _engrave_cut(f"pportw{side}", "+X PORT" if side == "L" else "-X PORT",
-                     ENGRAVE_SIZE, (sx * 20.0, wall_y, wall_z + 6), wall_z, into="-Y"),
+                     ENGRAVE_SIZE, (sx * 22.0, wall_y, 11.0), 11.0, into="-Y"),
         _engrave_cut(f"pbuzzw{side}", "BUZZER", ENGRAVE_SIZE,
-                     (sx * -20.0, wall_y, wall_z + 6), wall_z, into="-Y"),
+                     (sx * -22.0, wall_y, 11.0), 11.0, into="-Y"),
+        _engrave_cut(f"plid{side}", f"M3x{POD_LID_SCREW:.0f} LID", ENGRAVE_SIZE,
+                     (sx * 18.0, wall_y, 5.5), 5.5, into="-Y"),
+        _engrave_cut(f"pins{side}", "M3x4 INSERT", ENGRAVE_SIZE,
+                     (sx * -18.0, wall_y, 5.5), 5.5, into="-Y"),
     ]
     oc.cut(b, *wall)
-
-    # (5) Alignment dimples at screw columns (inside floor).
-    for i, (x, y) in enumerate(POD_COLS):
-        oc.cut(b, oc.cylinder(f"pdim{side}{i}", DIMPLE_D, DIMPLE_DEPTH + ENGRAVE_OVER,
-                              at=(x + (6.0 if x > 0 else -6.0), y, POD_FLOOR - DIMPLE_DEPTH),
-                              anchor="bottom"))
+    # Dimples omitted — short Ø1 bosses inside the columns read as buried
+    # 1 mm cubes and did not help insert starting more than the cbore does.
     return b
 
 
@@ -769,20 +866,22 @@ def steel_mass_g():
 COUPON_W, COUPON_L, COUPON_H = 40.0, 34.0, 6.0
 
 
-# Coupon overall X after plinth (+14 @ +9) and screw-gauge strip (−10 @ −side).
+# Coupon overall: block + pin plinth (+X) + stepped screw gauge (−X) + free e-foot.
+# Gauge outer x = −(W/2 + GAUGE_W); e-foot outer = W/2 + 9 + 9 + 0.5.
 COUPON_GAUGE_W = 10.0
-COUPON_OVERALL_X = COUPON_W + 16.0 + COUPON_GAUGE_W  # ~66
+COUPON_GAUGE_MAX_H = 18.0   # tallest step (M3×18)
+COUPON_OVERALL_X = (COUPON_W / 2 + COUPON_GAUGE_W) + (COUPON_W / 2 + 18.5)  # 68.5
+COUPON_OVERALL_Y = COUPON_L + 3.5  # e-foot at −(L/2+3) ±0.5 → 37.5
 
 
 def test_coupon():
-    """~40×34×6 block + pin plinth + M3 screw-depth gauge strip.
+    """~40×34×6 block + pin plinth + stepped M3 screw-depth gauge + free e-foot.
 
-    Insert Ø, blind depths, pin sockets, sample pins, bridge, elephant-foot
-    1 mm pad, and Ø2.8 pilots for M3×14 / ×16 / ×18. Target ~6–10 g printed.
+    Gauge: three steps of height 14 / 16 / 18 mm with Ø2.8 blind pilots
+    (1 mm floor). Drop the screw in from the top — head flush ⇒ that length.
     """
     p = oc.rounded_rect("test_coupon", (COUPON_W, COUPON_L, COUPON_H), 2.0, anchor="bottom")
-    # Sample pins first: sink into the plinth, remesh the stick so the pin/plinth
-    # union is a single watertight solid, then join to the block.
+    # Sample pins first: sink into the plinth, remesh, then join.
     px = COUPON_W / 2 + 9.0
     plinth = oc.box("pin_plinth", (14.0, 12.0, 2.0), at=(px, 2.0, 0), anchor="bottom")
     for i in range(3):
@@ -796,18 +895,25 @@ def test_coupon():
     oc.apply_modifiers(plinth)
     oc.union(p, plinth)
 
-    # Screw-depth gauge strip (−X): three Ø2.8 pilots + length ticks for
-    # M3×14 / ×16 / ×18. Drop the screw tip in; seat depth tells the length.
+    # Stepped screw-depth gauge (−X): heights = screw lengths.
     gx = -(COUPON_W / 2 + COUPON_GAUGE_W / 2)
-    gauge = oc.box("screw_gauge", (COUPON_GAUGE_W, 30.0, COUPON_H),
-                   at=(gx, 0, 0), anchor="bottom")
-    oc.union(p, gauge)
-    # 1 mm elephant-foot check pad on the bed (measure spread after first layer).
+    tools, labels = [], []
+    for i, length in enumerate((14.0, 16.0, 18.0)):
+        y = -12.0 + i * 12.0
+        step = oc.box(f"gstep{i}", (COUPON_GAUGE_W, 10.0, length),
+                      at=(gx, y, 0), anchor="bottom")
+        oc.union(p, step)
+        # Blind pilot: leave 1 mm floor → engagement depth = length − 1.
+        tools.append(oc.cylinder(f"gpilot{i}", 2.8, length - 1.0 + ENGRAVE_OVER,
+                                 at=(gx, y, 1.0 - ENGRAVE_OVER), anchor="bottom"))
+        labels.append(oc.box(f"glen{i}", (length / 4.0, 1.0, ENGRAVE_D + ENGRAVE_OVER),
+                             at=(gx, y + 4.0, length - ENGRAVE_D), anchor="bottom"))
+
+    # Free-standing 1 mm elephant-foot pad past the pin plinth (+X, −Y).
     oc.union(p, oc.box("efoot", (1.0, 1.0, 0.8),
-                       at=(COUPON_W / 2 - 2.0, -(COUPON_L / 2 - 2.0), 0),
+                       at=(px + 9.0, -(COUPON_L / 2 + 3.0), 0),
                        anchor="bottom"))
 
-    tools, labels = [], []
     for i, dia in enumerate((3.9, 4.0, 4.1)):
         x = -12.0 + i * 12.0
         tools.append(oc.cylinder(f"ins{i}", dia, 5.0 + ENGRAVE_OVER,
@@ -832,24 +938,12 @@ def test_coupon():
                              at=(x, -12.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
     labels.append(oc.box("pinlbl", (8.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
                          at=(px, 10.0, 2.0 - ENGRAVE_D), anchor="bottom"))
-    # Inset bridge pocket (20 mm span, 2 mm roof).
     tools.append(oc.box("bridge", (18.0, 6.0, 4.0 + ENGRAVE_OVER),
                         at=(0, -10.0, -ENGRAVE_OVER), anchor="bottom"))
     labels.append(oc.box("brl", (8.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
                          at=(0, COUPON_L / 2 - 2.2, COUPON_H - ENGRAVE_D), anchor="bottom"))
     labels.append(oc.box("title", (8.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
                          at=(0, 0.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
-    # Gauge pilots: through Ø2.8 for M3 tap feel; adjacent length ticks 14/16/18.
-    for i, length in enumerate((14.0, 16.0, 18.0)):
-        y = -10.0 + i * 10.0
-        tools.append(oc.cylinder(f"gpilot{i}", 2.8, COUPON_H + 2,
-                                 at=(gx, y, -1), anchor="bottom"))
-        # Length tick: bar whose X-extent encodes 14/16/18 (1 mm per 2 mm of screw).
-        labels.append(oc.box(f"glen{i}", (length / 4.0, 1.0, ENGRAVE_D + ENGRAVE_OVER),
-                             at=(gx, y + 3.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
-    labels.append(oc.box("efoot_mark", (1.0, 0.6, ENGRAVE_D + ENGRAVE_OVER),
-                         at=(COUPON_W / 2 - 2.0, -(COUPON_L / 2 - 3.5),
-                             COUPON_H - ENGRAVE_D), anchor="bottom"))
     oc.cut(p, *tools)
     oc.cut(p, *labels)
     return p
