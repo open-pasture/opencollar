@@ -63,9 +63,9 @@ glyph cuts into z=0; column dimples removed).
 | --- | --- |
 | `#2 POD L` / `#3 POD R` on −Y wall | Identify L vs R (into wall ~1 mm; +90°X, no X mirror) |
 | `POD BASE` + side letter | Mid wall row |
-| `REV AID1` on its own row | Kept ≥1.5 mm from neighbors |
-| `+X PORT` / `−X PORT` + `BUZZER` at x±34 | Port vs buzzer side (bottom band) |
-| `M3x25 LID` / `M3x4 INS` at x±10 | Fastener callouts (same band, ≥2 mm from PORT) |
+| `REV AID1` on its own row | Kept clear of PORT row below |
+| `+X PORT` / `BUZZER` at x±22, z≈9 | Own row; inside x±40; ≥2 mm apart |
+| `M3x25 LID` / `M3x4 INS` at x±18, z≈3.5 | Own row; ≥1.5 mm above bed; ≥2 mm apart |
 | Cell cradle (2× R9.4 arc ribs, 2.5 mm) | Seat Ø18.4 1781 |
 | Buzzer L-corners + ±Y slot rails | Seat / hold 25.4 Qwiic board; ≥0.5 mm to column (37,27) |
 | Floor grooves + arrow | Route leads; orient crest cable |

@@ -829,30 +829,38 @@ def _pod_assembly_aids(b, side="L"):
     oc.cut(b, *_arrow_stamp(f"parrow{side}", (sx * 22.0, -2.0),
                             toward=("+X" if side == "L" else "-X"),
                             z_face=POD_FLOOR, length=10.0, width=6.0))
-    # Outer −Y wall labels. REV alone on its own row so it cannot run into
-    # PORT/BUZZER. Row bbox gaps ≥1.5 mm; horizontal gaps ≥2 mm. PORT/M3
-    # share the bottom band at different x (±32 / ±10) so four content
-    # bands fit under the size-5 title. Clear of columns at x=±37.
+    # Outer −Y wall labels. Four ~25 mm labels cannot share one row on the
+    # 92 mm wall — PORT/BUZZER and M3 LID/INS get separate rows. All glyphs
+    # stay inside x∈[-40, +40], ≥2 mm horizontal gap, ≥1.5 mm row gap, and
+    # ≥1.5 mm above z=0 (bed). REV moves up so the two bottom rows fit.
     wall_y = -(POD_W / 2)
     pod_num = "#2 POD L" if side == "L" else "#3 POD R"
-    # z/size: 21.5/5 title · 15.5/4 POD BASE · 10.0/4 REV · 4.5/3.5 PORT+M3
+    # size-4 rows from the bed up (bbox gaps ≥1.5 mm where the two new
+    # bottom rows meet; upper bands nestle ≤0.5 mm as before):
+    #   M3 @3.5 → [1.5, 5.5]  (bed clearance 1.5)
+    #   PORT @9.0 → [7.0, 11.0]  (~7 raised so it clears M3 by 1.5)
+    #   REV @13.5 → [11.5, 15.5]
+    #   POD @17.5 → [15.5, 19.5]
+    #   title @22.0/5 → [19.5, 24.5]
+    # x±22 / ±18 keep halves inside ±40 and ≥2 mm apart (PORT↔BUZZ ≈25 mm,
+    # LID↔INS ≈11 mm).
     wall = [
         _engrave_cut(f"pnum{side}", pod_num, ENGRAVE_SIZE,
-                     (0, wall_y, 21.5), 21.5, into="-Y"),
+                     (0, wall_y, 22.0), 22.0, into="-Y"),
         _engrave_cut(f"pname{side}", "POD BASE", ENGRAVE_SIZE - 1.0,
-                     (0, wall_y, 15.5), 15.5, into="-Y"),
+                     (0, wall_y, 17.5), 17.5, into="-Y"),
         _engrave_cut(f"pside{side}", side, ENGRAVE_SIZE,
-                     (sx * 30.0, wall_y, 15.5), 15.5, into="-Y"),
+                     (sx * 30.0, wall_y, 17.5), 17.5, into="-Y"),
         _engrave_cut(f"prev{side}", f"REV {AID_REV}", ENGRAVE_SIZE - 1.0,
-                     (0, wall_y, 10.0), 10.0, into="-Y"),
+                     (0, wall_y, 13.5), 13.5, into="-Y"),
         _engrave_cut(f"pportw{side}", "+X PORT" if side == "L" else "-X PORT",
-                     ENGRAVE_SIZE - 1.5, (sx * 34.0, wall_y, 4.5), 4.5, into="-Y"),
-        _engrave_cut(f"pbuzzw{side}", "BUZZER", ENGRAVE_SIZE - 1.5,
-                     (sx * -34.0, wall_y, 4.5), 4.5, into="-Y"),
-        _engrave_cut(f"plid{side}", f"M3x{POD_LID_SCREW:.0f} LID", ENGRAVE_SIZE - 1.5,
-                     (sx * 10.0, wall_y, 4.5), 4.5, into="-Y"),
-        _engrave_cut(f"pins{side}", "M3x4 INS", ENGRAVE_SIZE - 1.5,
-                     (sx * -10.0, wall_y, 4.5), 4.5, into="-Y"),
+                     ENGRAVE_SIZE - 1.0, (sx * 22.0, wall_y, 9.0), 9.0, into="-Y"),
+        _engrave_cut(f"pbuzzw{side}", "BUZZER", ENGRAVE_SIZE - 1.0,
+                     (sx * -22.0, wall_y, 9.0), 9.0, into="-Y"),
+        _engrave_cut(f"plid{side}", f"M3x{POD_LID_SCREW:.0f} LID", ENGRAVE_SIZE - 1.0,
+                     (sx * 18.0, wall_y, 3.5), 3.5, into="-Y"),
+        _engrave_cut(f"pins{side}", "M3x4 INS", ENGRAVE_SIZE - 1.0,
+                     (sx * -18.0, wall_y, 3.5), 3.5, into="-Y"),
     ]
     oc.cut(b, *wall)
     return b
