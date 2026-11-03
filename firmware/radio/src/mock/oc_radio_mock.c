@@ -7,7 +7,7 @@
 #include <string.h>
 
 struct mock_ctx {
-	uint32_t now_ms;
+	uint64_t now_us;
 	int cad_busy;
 	uint8_t last_tx[255];
 	size_t last_tx_len;
@@ -29,14 +29,14 @@ void oc_radio_mock_reset(void)
 	g.rx_snr = 5;
 }
 
-void oc_radio_mock_set_time_ms(uint32_t ms)
+void oc_radio_mock_set_time_us(uint64_t us)
 {
-	g.now_ms = ms;
+	g.now_us = us;
 }
 
-void oc_radio_mock_advance_ms(uint32_t ms)
+void oc_radio_mock_advance_us(uint64_t us)
 {
-	g.now_ms += ms;
+	g.now_us += us;
 }
 
 void oc_radio_mock_set_cad_busy(int busy)
@@ -68,7 +68,7 @@ uint32_t oc_radio_mock_tx_count(void)
 static oc_radio_status_t m_cad(void *ctx, oc_radio_cad_result_t *out)
 {
 	(void)ctx;
-	g.now_ms += 1u;
+	g.now_us += 1000ull;
 	*out = g.cad_busy ? OC_RADIO_CAD_BUSY : OC_RADIO_CAD_FREE;
 	return OC_RADIO_OK;
 }
@@ -84,7 +84,7 @@ static oc_radio_status_t m_send(void *ctx, const uint8_t *buf, size_t len,
 	memcpy(g.last_tx, buf, len);
 	g.last_tx_len = len;
 	g.tx_count++;
-	g.now_ms += 5u;
+	g.now_us += 5000ull;
 	return OC_RADIO_OK;
 }
 
@@ -93,8 +93,8 @@ static oc_radio_status_t m_recv(void *ctx, uint8_t *buf, size_t cap,
 				uint32_t timeout_ms)
 {
 	(void)ctx;
-	if (timeout_ms != UINT32_MAX) {
-		g.now_ms += timeout_ms ? timeout_ms : 0u;
+	if (timeout_ms != 0u && timeout_ms != UINT32_MAX) {
+		g.now_us += (uint64_t)timeout_ms * 1000ull;
 	}
 	if (g.rx_len == 0u) {
 		return OC_RADIO_ERR_TIMEOUT;
@@ -108,7 +108,8 @@ static oc_radio_status_t m_recv(void *ctx, uint8_t *buf, size_t cap,
 		memset(meta, 0, sizeof(*meta));
 		meta->rssi_dbm = g.rx_rssi;
 		meta->snr_db = g.rx_snr;
-		meta->timestamp_ms = g.now_ms;
+		meta->timestamp_ms = (uint32_t)(g.now_us / 1000ull);
+		meta->t_rx_us = g.now_us;
 	}
 	g.rx_len = 0u;
 	return OC_RADIO_OK;
@@ -127,10 +128,10 @@ static oc_radio_status_t m_sleep(void *ctx)
 	return OC_RADIO_OK;
 }
 
-static uint32_t m_now(void *ctx)
+static uint64_t m_now(void *ctx)
 {
 	(void)ctx;
-	return g.now_ms;
+	return g.now_us;
 }
 
 static uint32_t m_rand(void *ctx)
@@ -154,7 +155,7 @@ void oc_radio_mock_ops(oc_radio_hw_ops_t *ops)
 	ops->recv = m_recv;
 	ops->set_power = m_set_power;
 	ops->sleep = m_sleep;
-	ops->now_ms = m_now;
+	ops->now_us = m_now;
 	ops->rand32 = m_rand;
 	ops->ctx = &g;
 }

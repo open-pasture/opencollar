@@ -98,8 +98,9 @@ act as RF-switch ctrl (HIGH in TX). Overlay sets `dio2-tx-enable` and
 - TX capped at **+14 dBm** until conducted power is measured.
 - Hourly airtime budget ~1 %; min TX gap 100 ms; CAD before every TX.
 - HAL header is `firmware/lora/include/opencollar/radio_hal.h` (PR #6 /
-  `proto-fence-gossip`). Radio implements it; sleep/now live as
-  `oc_radio_sx1262_*` extras until the header gains them.
+  `ab5350e`): `oc_radio_init` / `sleep` / `now_us` / limits / `ERR_GAP` /
+  `ERR_AIRTIME`. Zephyr needs `oc_radio_sx1262_bind_zephyr` before init
+  (device pointer). Remaining header asks: CAD timeout arg, SKIP_CAD flag.
 
 ## Measurement plans (hardware-dependent — do not guess)
 

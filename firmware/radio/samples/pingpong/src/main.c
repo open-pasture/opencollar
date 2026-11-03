@@ -1,5 +1,5 @@
 /*
- * Symmetric ping/pong link test — uses opencollar/radio_hal.h exactly.
+ * Symmetric ping/pong — opencollar/radio_hal.h (init/sleep/now_us/limits).
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <zephyr/device.h>
@@ -81,13 +81,14 @@ static void handle_rx(uint32_t window_ms)
 	}
 	if (p.kind == KIND_PING) {
 		g_rx_ping++;
-		LOG_INF("rx PING seq=%u rssi=%d snr=%d | tx=%u/%u ping=%u pong=%u",
-			p.seq, meta.rssi_dbm, meta.snr_db, g_tx_ok, g_tx_fail,
+		LOG_INF("rx PING seq=%u rssi=%d snr=%d t_us=%llu | tx=%u/%u p=%u/%u",
+			p.seq, meta.rssi_dbm, meta.snr_db,
+			(unsigned long long)meta.t_rx_us, g_tx_ok, g_tx_fail,
 			g_rx_ping, g_rx_pong);
 		send_pkt(KIND_PONG, p.seq);
 	} else if (p.kind == KIND_PONG) {
 		g_rx_pong++;
-		LOG_INF("rx PONG seq=%u rssi=%d snr=%d | tx=%u/%u ping=%u pong=%u",
+		LOG_INF("rx PONG seq=%u rssi=%d snr=%d | tx=%u/%u p=%u/%u",
 			p.seq, meta.rssi_dbm, meta.snr_db, g_tx_ok, g_tx_fail,
 			g_rx_ping, g_rx_pong);
 	}
@@ -97,21 +98,26 @@ int main(void)
 {
 	const struct device *lora = DEVICE_DT_GET(DT_ALIAS(lora0));
 	oc_radio_cfg_t cfg;
+	oc_radio_limits_t lim;
 	struct radio_sched_cfg scfg;
 	uint32_t next_ping_ms = 0;
 	uint32_t now_ms, wake_ms;
 	enum radio_sched_action act;
 	oc_radio_status_t st;
 
-	oc_radio_cfg_us915_defaults(&cfg);
+	oc_radio_cfg_us915_defaults(&cfg, &lim);
 	cfg.freq_hz = CONFIG_RADIO_FREQ_HZ;
 	cfg.sf = CONFIG_RADIO_SF;
-	cfg.tx_power_dbm = CONFIG_RADIO_TX_CAP_DBM;
-	cfg.tx_power_cap_dbm = CONFIG_RADIO_TX_CAP_DBM;
+	cfg.tx_dbm = CONFIG_RADIO_TX_CAP_DBM;
 
-	st = oc_radio_sx1262_open_zephyr(&g_radio, &cfg, lora);
+	st = oc_radio_sx1262_bind_zephyr(&g_radio, lora);
 	if (st != OC_RADIO_OK) {
-		LOG_ERR("open failed %d — check overlay/shield", (int)st);
+		LOG_ERR("bind failed %d — check overlay/shield", (int)st);
+		return 0;
+	}
+	st = oc_radio_init(&g_radio, &cfg, &lim);
+	if (st != OC_RADIO_OK) {
+		LOG_ERR("init failed %d", (int)st);
 		return 0;
 	}
 
@@ -125,9 +131,9 @@ int main(void)
 	scfg.cad_before_beacon = true;
 	radio_sched_init(&g_sched, &scfg, k_uptime_get_32());
 
-	LOG_INF("pingpong sf=%u freq=%u initiator=%d air16=%u", cfg.sf,
-		cfg.freq_hz, IS_ENABLED(CONFIG_RADIO_PINGPONG_INITIATOR),
-		oc_radio_airtime_us(&g_radio, 16));
+	LOG_INF("pingpong sf=%u freq=%u now_us=%llu initiator=%d", cfg.sf,
+		cfg.freq_hz, (unsigned long long)oc_radio_now_us(&g_radio),
+		IS_ENABLED(CONFIG_RADIO_PINGPONG_INITIATOR));
 
 	if (IS_ENABLED(CONFIG_RADIO_PINGPONG_INITIATOR)) {
 		next_ping_ms = k_uptime_get_32() + 500;
@@ -166,7 +172,7 @@ int main(void)
 		}
 		case RADIO_SCHED_SLEEP:
 		default:
-			(void)oc_radio_sx1262_sleep(&g_radio);
+			(void)oc_radio_sleep(&g_radio);
 			if (wake_ms > now_ms) {
 				k_msleep(wake_ms - now_ms);
 			} else {
