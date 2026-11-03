@@ -21,6 +21,15 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - run: make -C firmware/tests/host
 
+  # op-fw-radio: airtime / duty / scheduler / HAL mock (no NCS required).
+  # Board builds (xiao_ble + nrf9151) need NCS v3.4.1 — see firmware/radio/ci/.
+  radio:
+    name: Radio host tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - run: make -C firmware/radio/tests/host
+
   vectors:
     name: Protocol vectors
     runs-on: ubuntu-24.04
