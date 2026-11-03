@@ -144,10 +144,10 @@ if part in ("all", "coupon"):
     oc.finish(
         "test_coupon",
         {"test_coupon": coupon, "scale_bar_100": scale},
-        # Block 40 wide + 14 plinth centred 9 past the rim → overall ~56 in X.
-        spec={"test_coupon": {"size": (n.COUPON_W + 16.0, n.COUPON_L, n.COUPON_H), "tol": 1.5},
+        # Block 40 + pin plinth (+16) + screw-gauge strip (+10) → ~66 in X.
+        spec={"test_coupon": {"size": (n.COUPON_OVERALL_X, n.COUPON_L, n.COUPON_H), "tol": 2.0},
               "scale_bar_100": {"size": (100.0, 10.0, 2.0), "tol": 0.5}},
         material="PA12", min_wall=0.8, thin_area_allowed=AID_THIN,
         notes=("Assembly-aid coupon + 100 mm scale bar. Insert Ø3.9/4.0/4.1, "
-               "blind tap/clear depths 4/5/6, pin sockets Ø4.2/4.35/4.5, "
-               "sample pins Ø4.0×1.5, 20 mm bridge. See cad/ASSEMBLY-AIDS.md."))
+               "blind tap/clear 4/5/6, pin sockets, sample pins, bridge, "
+               "M3x14/16/18 gauge pilots, 1 mm elephant-foot pad. See ASSEMBLY-AIDS.md."))

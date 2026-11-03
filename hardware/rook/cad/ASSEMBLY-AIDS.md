@@ -22,6 +22,7 @@ STLs: `stl/node_v1_cap_saddle/`, `stl/node_v1_pod/` (includes `node_pod_base_R`)
 | Inside-floor `CAP BASE`, `REV AID1` (4.5 × 0.7) | Identify the part during assembly |
 | `M3x14 CLAMP`, `M3x16 LID`, `M3x4 INSERT` | Grab the right fasteners without the BOM |
 | `PIN` | Match the saddle roof pins |
+| Floor arrow → +Y | Orient GPS / free end of the spine |
 | Ø1 × 0.4 dimples on the bed face by lid columns | Visual / finger registration when starting inserts |
 
 Bed face stays planar (dimples only — glyph cuts into z=0 left STL slivers).
@@ -35,6 +36,7 @@ Print outside-face down, cavity up, no supports.
 | Buzzer L-corners (1.2 × 1.5, +0.3 clear; +X/+Y trimmed) | Seat the 25.4 Qwiic board; ≥0.5 mm clear of column (37,27) |
 | Floor cable grooves (3 × 1.2) | Route cell and buzzer leads to the Ø6 crest entry before potting |
 | Floor box-stamps at cell / buzzer / stud / port | Tactile cues without font slivers |
+| Floor arrow → crest cable (±X) | Orient the pod before potting |
 | Outer −Y wall: `POD BASE`, `L`/`R`, rev, port, `BUZZER`, `M3x25 LID`, `M3x4 INSERT` | Readable callouts (bed face left flat) |
 | Column dimples | Start heat-set inserts on the right bosses |
 
@@ -50,6 +52,8 @@ Print outside-face down, cavity up, no supports.
 | Pin sockets Ø4.2 / 4.35 / 4.5 × 2 mm | Match saddle pin fit |
 | Sample pins Ø4.0 × 1.5 on plinth | Press into the winning socket |
 | 20 mm bridge (2 mm roof) | Spot bridging before the real saddle |
+| M3×14 / ×16 / ×18 Ø2.8 gauge pilots | Tip-fit / length feel before grabbing the BOM bag |
+| 1×1×0.8 mm elephant-foot pad | Measure first-layer spread vs 1 mm |
 | `scale_bar_100.stl` | 100 mm bar with a 20 mm step — measure shrink |
 
 ## Lid screw (slim cap)
@@ -67,10 +71,12 @@ pocket floor. Clamp stays **M3×14**. See `SADDLE.md`.
 | Pod cable grooves | −0.5 g each base (cut) |
 | Cap / pod engraving + dimples | −0.05 g each base |
 | Net on bases plate (cap + 2 pods) | ≈ 0 g (cuts ≈ adds) |
-| `test_coupon.stl` | ~9.4 g solid (~5–7 g @ typical infill) |
+| Orientation arrows (cuts) | ≈ 0 g (removed) |
+| Coupon gauge strip + e-foot pad | ≈ +1.6 g on the coupon |
+| `test_coupon.stl` | ~11.5 g solid (~6–8 g @ typical infill) |
 | `scale_bar_100.stl` | ~2.2 g solid |
 
-Aids stay inside the ~15 g / ~30 min plate budget; the coupon is an optional
+Bases-plate aids net ≈ 0 g (under the ~12 g budget). Coupon is an optional
 side print for fit learning.
 
 ## Intentional omissions

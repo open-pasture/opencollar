@@ -267,6 +267,30 @@ def _l_corner(name, cx, cy, z, sx, sy, t=LOCATOR_T, h=LOCATOR_H, arm=4.0):
     return oc.union(a, b)
 
 
+def _arrow_stamp(name, tip, toward="+X", z_face=0.0, length=10.0, width=6.0, depth=ENGRAVE_D):
+    """Engraved chevron (box stamps) pointing toward a cable/port axis.
+
+    toward: '+X' | '-X' | '+Y' | '-Y'. Tip is the arrow point XY.
+    """
+    tx, ty = tip
+    half = width / 2
+    shaft_w = width * 0.35
+    # Shaft rectangle + triangular tip approximated by a short wide box.
+    if toward in ("+X", "-X"):
+        s = 1.0 if toward == "+X" else -1.0
+        shaft = oc.box(f"{name}_s", (length * 0.55, shaft_w, depth + ENGRAVE_OVER),
+                       at=(tx - s * (length * 0.35), ty, z_face - depth), anchor="bottom")
+        head = oc.box(f"{name}_h", (length * 0.35, width, depth + ENGRAVE_OVER),
+                      at=(tx - s * (length * 0.15), ty, z_face - depth), anchor="bottom")
+    else:
+        s = 1.0 if toward == "+Y" else -1.0
+        shaft = oc.box(f"{name}_s", (shaft_w, length * 0.55, depth + ENGRAVE_OVER),
+                       at=(tx, ty - s * (length * 0.35), z_face - depth), anchor="bottom")
+        head = oc.box(f"{name}_h", (width, length * 0.35, depth + ENGRAVE_OVER),
+                      at=(tx, ty - s * (length * 0.15), z_face - depth), anchor="bottom")
+    return [shaft, head]
+
+
 def stack_height_strap_to_lid_mm(style=None):
     """Overall height from strap bottom to lid top (panel proud ignored)."""
     s = style or CAP_STYLE
@@ -376,6 +400,9 @@ def _cap_assembly_aids(b):
         _engrave_cut("cap_pins", "PIN", ENGRAVE_SIZE, (0, 0), floor),
     ]
     oc.cut(b, *labels)
+    # Orientation arrow on the floor: points +Y (GPS / free end of the spine).
+    oc.cut(b, *_arrow_stamp("cap_arrow", (0, 32), toward="+Y", z_face=floor,
+                            length=12.0, width=7.0))
     # Bed-face dimples only (simple cylinders — no glyph slivers).
     for i, (x, y) in enumerate(CAP_COLS):
         oc.cut(b, oc.cylinder(f"cdim{i}", DIMPLE_D, DIMPLE_DEPTH + 0.1,
@@ -589,6 +616,10 @@ def _pod_assembly_aids(b, side="L"):
                    POD_FLOOR - ENGRAVE_D), anchor="bottom"),
     ]
     oc.cut(b, *floor_marks)
+    # Orientation arrow on the floor toward the crest cable entry (±X).
+    oc.cut(b, *_arrow_stamp(f"parrow{side}", (sx * 22.0, -2.0),
+                            toward=("+X" if side == "L" else "-X"),
+                            z_face=POD_FLOOR, length=10.0, width=6.0))
     wall_y = -(POD_W / 2)
     wall_z = POD_BASE_H / 2
     wall = [
@@ -738,9 +769,17 @@ def steel_mass_g():
 COUPON_W, COUPON_L, COUPON_H = 40.0, 34.0, 6.0
 
 
+# Coupon overall X after plinth (+14 @ +9) and screw-gauge strip (−10 @ −side).
+COUPON_GAUGE_W = 10.0
+COUPON_OVERALL_X = COUPON_W + 16.0 + COUPON_GAUGE_W  # ~66
+
+
 def test_coupon():
-    """~40×34×6 block + 14 mm pin plinth (overall ~56×34×6): insert Ø, blind
-    depths, pin sockets, sample pins, short bridge. Target ~5–8 g printed."""
+    """~40×34×6 block + pin plinth + M3 screw-depth gauge strip.
+
+    Insert Ø, blind depths, pin sockets, sample pins, bridge, elephant-foot
+    1 mm pad, and Ø2.8 pilots for M3×14 / ×16 / ×18. Target ~6–10 g printed.
+    """
     p = oc.rounded_rect("test_coupon", (COUPON_W, COUPON_L, COUPON_H), 2.0, anchor="bottom")
     # Sample pins first: sink into the plinth, remesh the stick so the pin/plinth
     # union is a single watertight solid, then join to the block.
@@ -757,12 +796,22 @@ def test_coupon():
     oc.apply_modifiers(plinth)
     oc.union(p, plinth)
 
+    # Screw-depth gauge strip (−X): three Ø2.8 pilots + length ticks for
+    # M3×14 / ×16 / ×18. Drop the screw tip in; seat depth tells the length.
+    gx = -(COUPON_W / 2 + COUPON_GAUGE_W / 2)
+    gauge = oc.box("screw_gauge", (COUPON_GAUGE_W, 30.0, COUPON_H),
+                   at=(gx, 0, 0), anchor="bottom")
+    oc.union(p, gauge)
+    # 1 mm elephant-foot check pad on the bed (measure spread after first layer).
+    oc.union(p, oc.box("efoot", (1.0, 1.0, 0.8),
+                       at=(COUPON_W / 2 - 2.0, -(COUPON_L / 2 - 2.0), 0),
+                       anchor="bottom"))
+
     tools, labels = [], []
     for i, dia in enumerate((3.9, 4.0, 4.1)):
         x = -12.0 + i * 12.0
         tools.append(oc.cylinder(f"ins{i}", dia, 5.0 + ENGRAVE_OVER,
                                  at=(x, 12.0, COUPON_H - 5.0), anchor="bottom"))
-        # Small box-digit labels (no remesh font) keep the top face watertight.
         labels.append(oc.box(f"insl{i}", (6.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
                              at=(x, 7.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
     labels.append(oc.box("insrow", (14.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
@@ -790,6 +839,17 @@ def test_coupon():
                          at=(0, COUPON_L / 2 - 2.2, COUPON_H - ENGRAVE_D), anchor="bottom"))
     labels.append(oc.box("title", (8.0, 1.2, ENGRAVE_D + ENGRAVE_OVER),
                          at=(0, 0.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
+    # Gauge pilots: through Ø2.8 for M3 tap feel; adjacent length ticks 14/16/18.
+    for i, length in enumerate((14.0, 16.0, 18.0)):
+        y = -10.0 + i * 10.0
+        tools.append(oc.cylinder(f"gpilot{i}", 2.8, COUPON_H + 2,
+                                 at=(gx, y, -1), anchor="bottom"))
+        # Length tick: bar whose X-extent encodes 14/16/18 (1 mm per 2 mm of screw).
+        labels.append(oc.box(f"glen{i}", (length / 4.0, 1.0, ENGRAVE_D + ENGRAVE_OVER),
+                             at=(gx, y + 3.5, COUPON_H - ENGRAVE_D), anchor="bottom"))
+    labels.append(oc.box("efoot_mark", (1.0, 0.6, ENGRAVE_D + ENGRAVE_OVER),
+                         at=(COUPON_W / 2 - 2.0, -(COUPON_L / 2 - 3.5),
+                             COUPON_H - ENGRAVE_D), anchor="bottom"))
     oc.cut(p, *tools)
     oc.cut(p, *labels)
     return p
