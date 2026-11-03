@@ -180,6 +180,46 @@ int main(void)
 		CHECK(oc_fh_store_ram_hwm(&ram2) == 21);
 	}
 
+	/* Both A/B copies valid, primary points at older → higher seq wins. */
+	{
+		oc_fh_store_ram_t ram3;
+		oc_fh_node_t na, nb;
+		node_mem_t ma, mb;
+		uint8_t p_lo[80], p_hi[80];
+		oc_fh_built_t blo, bhi;
+		uint8_t old_primary;
+
+		memset(p_lo, 0x10, sizeof(p_lo));
+		memset(p_hi, 0x20, sizeof(p_hi));
+		oc_fh_store_ram_init(&ram3);
+		memset(&na, 0, sizeof(na));
+		memset(&ma, 0, sizeof(ma));
+		setup(&na, &cfg, &ma, sim_radio(&world, 0), &kp, &world, &ram3.api);
+		CHECK(oc_fh_build_signed(&blo, farm, 30, 30, p_lo, sizeof(p_lo), 50, test_sign,
+		                         &kp) == 0);
+		CHECK(oc_fh_build_signed(&bhi, farm, 31, 31, p_hi, sizeof(p_hi), 50, test_sign,
+		                         &kp) == 0);
+		CHECK(oc_fh_inject_local(&na, blo.sealed, blo.sealed_len, p_lo, sizeof(p_lo)) ==
+		      OC_FH_OK);
+		CHECK(oc_fh_inject_local(&na, bhi.sealed, bhi.sealed_len, p_hi, sizeof(p_hi)) ==
+		      OC_FH_OK);
+		CHECK(oc_fh_store_ram_have_active(&ram3));
+		CHECK(ram3.slot[0].occupied && ram3.slot[1].occupied);
+		/* Flip primary to the older slot; restore must still load seq 31. */
+		old_primary = ram3.primary;
+		ram3.primary = (uint8_t)((old_primary ^ 1u) & 1u);
+		CHECK(ram3.slot[ram3.primary].fr.fence_seq == 30);
+		CHECK(ram3.slot[(ram3.primary ^ 1u) & 1u].fr.fence_seq == 31);
+
+		memset(&nb, 0, sizeof(nb));
+		memset(&mb, 0, sizeof(mb));
+		setup(&nb, &cfg, &mb, sim_radio(&world, 0), &kp, &world, &ram3.api);
+		CHECK(oc_fh_node_restore(&nb) == OC_FH_OK);
+		CHECK(oc_fh_active(&nb)->fence_seq == 31);
+		CHECK(memcmp(mb.active, p_hi, sizeof(p_hi)) == 0);
+		CHECK(oc_fh_store_ram_hwm(&ram3) == 31);
+	}
+
 	if (failures) {
 		printf("test_persist: %d failure(s)\n", failures);
 		return 1;

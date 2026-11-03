@@ -12,9 +12,12 @@
  *   3. `save_active` is the durable commit. Callers must treat a non-zero
  *      return as failure and must not promote the fence in RAM
  *      (`persist_fence` in fence_node.c).
- *   4. `get_hwm` reads the HWM from the committed A/B record (fallback copy
- *      if primary is torn). `set_hwm` is optional / soft only — durable
- *      backends may no-op it; do not rely on it for power-cut safety.
+ *   4. `get_hwm` / `load_active` read from a valid A/B copy. If **both**
+ *      copies are CRC-valid, pick the one with the **higher `fence_seq`**
+ *      (do not trust a separately stored primary pointer — it can be stale
+ *      or point at the older slot after an unusual power cut).
+ *   5. `set_hwm` is optional / soft only — durable backends may no-op it;
+ *      do not rely on it for power-cut safety.
  *
  * PLACEHOLDER names. SPDX-License-Identifier: Apache-2.0
  */

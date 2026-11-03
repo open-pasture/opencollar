@@ -45,11 +45,20 @@ static const oc_fh_store_ram_slot_t *best_slot(const oc_fh_store_ram_t *r)
 {
 	uint8_t pri = (uint8_t)(r->primary & 1u);
 	uint8_t alt = (uint8_t)(pri ^ 1u);
+	int ok_pri = slot_ok(&r->slot[pri]);
+	int ok_alt = slot_ok(&r->slot[alt]);
 
-	if (slot_ok(&r->slot[pri])) {
+	/* Both valid → higher fence_seq wins (ignore stale primary pointer). */
+	if (ok_pri && ok_alt) {
+		if (r->slot[alt].fr.fence_seq > r->slot[pri].fr.fence_seq) {
+			return &r->slot[alt];
+		}
 		return &r->slot[pri];
 	}
-	if (slot_ok(&r->slot[alt])) {
+	if (ok_pri) {
+		return &r->slot[pri];
+	}
+	if (ok_alt) {
 		return &r->slot[alt];
 	}
 	return NULL;
@@ -166,21 +175,17 @@ static int ram_load(oc_fh_store_t *s, oc_fh_freshness_t *fr, uint8_t *payload,
                     size_t wire_cap, size_t *out_mlen, oc_fh_manifest_t *manifest)
 {
 	oc_fh_store_ram_t *r = (oc_fh_store_ram_t *)s->ctx;
-	uint8_t pri;
-	uint8_t alt;
+	const oc_fh_store_ram_slot_t *sl;
 
 	if (!r || !fr || !payload || !out_plen || !manifest_wire || !out_mlen || !manifest) {
 		return -1;
 	}
-	pri = (uint8_t)(r->primary & 1u);
-	alt = (uint8_t)(pri ^ 1u);
-	if (load_from_slot(&r->slot[pri], fr, payload, payload_cap, out_plen, manifest_wire,
-	                   wire_cap, out_mlen, manifest) == 0) {
-		return 0;
+	sl = best_slot(r);
+	if (!sl) {
+		return -1;
 	}
-	/* Torn primary → fall back to the other copy. */
-	return load_from_slot(&r->slot[alt], fr, payload, payload_cap, out_plen, manifest_wire,
-	                      wire_cap, out_mlen, manifest);
+	return load_from_slot(sl, fr, payload, payload_cap, out_plen, manifest_wire, wire_cap,
+	                      out_mlen, manifest);
 }
 
 void oc_fh_store_ram_init(oc_fh_store_ram_t *ram)

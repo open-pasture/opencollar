@@ -50,7 +50,8 @@ $(BUILD)/monocypher.o: $(MONO)/monocypher.c | $(BUILD)
 $(BUILD)/monocypher-ed25519.o: $(MONO)/monocypher-ed25519.c | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
-TESTS := test_vectors test_onehop test_chain test_security test_persist test_pilot test_maxfrag
+TESTS := test_vectors test_onehop test_chain test_security test_persist test_pilot test_maxfrag \
+	test_latejoin
 
 $(BUILD)/test_vectors: tests/test_vectors.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
@@ -73,12 +74,16 @@ $(BUILD)/test_pilot: tests/test_pilot.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
 $(BUILD)/test_maxfrag: tests/test_maxfrag.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
+$(BUILD)/test_latejoin: tests/test_latejoin.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
+
 test: $(TESTS:%=$(BUILD)/%)
 	@for t in $(TESTS); do echo "== $$t =="; $(BUILD)/$$t || exit 1; done
 
-# Convenience: run the 30% loss suite and print the summary line.
-loss: $(BUILD)/test_onehop
+# Long 30% loss sweeps (one-hop + late-joiner multi-hop).
+loss: $(BUILD)/test_onehop $(BUILD)/test_latejoin
 	$(BUILD)/test_onehop --loss30
+	$(BUILD)/test_latejoin --loss30
 
 clean:
 	rm -rf $(BUILD)
