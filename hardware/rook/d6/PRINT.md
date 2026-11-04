@@ -1,4 +1,4 @@
-# D7r3 print plan — Rook collar (ASA, P2S 256)
+# D7r4 print plan — Rook collar (ASA, P2S 256)
 
 Material: **ASA**. Bed: **Bambu P2S 256×256×256**. **Brim 8 mm** on every ASA
 shell. Enclosure closed; dry filament. PLA floor coupons = fit-check only.
@@ -9,10 +9,10 @@ Times/grams are **estimates**. Re-slice before any real plate.
 
 | STL | Print bbox (mm) | Vol (cm³) | Qty | Bed / notes |
 | --- | --- | --- | ---: | --- |
-| `cap_base` | 76.0 × 186.9 × 20.2 | 123.1 | 1 | cavity UP; **Y+brim=202.9 ≤256** (26.5 mm margin/end) |
-| `cap_lid` | 75.0 × 163.0 × 12.0 | 112.6 | 1 | mating DOWN |
-| `pod_L_base` / `pod_R_base` | **68.0 × 98.8 × 23.4** | 45.1 each | 1+1 | cavity UP; D7r2 narrow |
-| `pod_L_lid` / `pod_R_lid` | 67.0 × 96.0 × 4.15 | 23.9 each | 1+1 | outer DOWN + crown |
+| `cap_base` | 76.0 × 186.9 × 27.2 | ~130 | 1 | cavity UP + strap skirts; **Y+brim=202.9 ≤256** |
+| `cap_lid` | 75.0 × 163.0 × 13.15 | ~110 | 1 | mating DOWN; lower crown/nose |
+| `pod_L_base` / `pod_R_base` | **68.0 × 98.8 × 30.4** | ~59 each | 1+1 | cavity UP + strap skirts |
+| `pod_L_lid` / `pod_R_lid` | 67.0 × 96.0 × 6.0 | ~24 each | 1+1 | outer DOWN; public ID `001` |
 | `cw_tub` | 89.1 × 116.0 × 19.2 | 59.9 | 1 | cavity UP; 2×2 steel |
 | `cw_lid` | 88.4 × 114.8 × 6.35 | 46.3 | 1 | mating DOWN |
 | `saddle` | 76.0 × 96.0 × 6.5 | 20.9 | 1 | channel along Y |

@@ -90,6 +90,10 @@ POD_GROOVE_Y = CAV_Y + 2 * POD_WALL          # 92
 POD_COLS = [(sx * 22.0, sy * 36.0) for sx in (-1, 1) for sy in (-1, 1)]
 POD_TAPER_LEN = 20.0                         # D7r3: slightly longer tip run
 POD_TAPER_DROP = 6.0                         # D7r3: roof tip drop ~6 mm to fairing
+# D7r4: flared strap skirt under shell (body colour); channel kept 46.45×3.4
+POD_SKIRT_H = 7.0
+POD_SKIRT_FLARE = 7.0                        # mm flare toward strap width
+POD_PUBLIC_ID = "001"                        # low-relief mono on lid outer
 
 # Cap↔pod M3 joint (matches cap.py pad) — recess on +Y mount face
 POD_MOUNT_SIZE = A.POD_MOUNT_SIZE            # 36×4×14
@@ -270,6 +274,31 @@ def top_perimeter_chamfer(body, w, l, h, r=POD_TOP_EDGE_R, y0=0.0):
     return body
 
 
+def strap_flare_skirt(body, w, l, y0=0.0, h=POD_SKIRT_H, flare=POD_SKIRT_FLARE):
+    """Flared skirt under the shell that wraps the strap (D4 one-form read).
+
+    Extends below z=0 by `h`, flares ~`flare` mm toward the strap width, and
+    keeps a 46.45×3.4 channel so clamp bars stay accessible. normalize_z0
+    after export lifts the bed to the skirt underside.
+    """
+    ch_w = float(A.SADDLE_CHANNEL_W)
+    ch_d = float(A.SADDLE_CHANNEL_D)
+    skirt_w = min(w - 2.0, ch_w + 2.0 * flare)
+    skirt_l = min(l * 0.62, 64.0)
+    sk = oc.rounded_rect(
+        "strap_skirt", (skirt_w, skirt_l, h), 4.0,
+        at=(0.0, y0, -h), anchor="bottom", segments=8,
+    )
+    # Strap channel through the skirt (roof ≥1.4 mm) — clamp bars stay accessible
+    roof = max(1.4, h - ch_d - 0.2)
+    oc.cut(sk, oc.box(
+        "skirt_ch", (ch_w, skirt_l + 4.0, ch_d + 0.4),
+        at=(0.0, y0, -h + roof), anchor="bottom",
+    ))
+    oc.union(body, sk)
+    return body
+
+
 def soft_crown_edges(body, w, l, h, edge_r=2.0):
     """Skipped on bases — boolean stack + bevel leaves non-manifold edges."""
     return body
@@ -420,6 +449,8 @@ def pod_base(side="L"):
                    y0=POD_Y0)
     # No top_perimeter_chamfer on bases — boolean stack leaves non-manifold
     # corners (same reason soft_crown_edges is a no-op). R6 lives on the lid.
+    # D7r4: flared strap skirt under the shell (body colour, channel kept).
+    strap_flare_skirt(b, POD_L, POD_LEN, y0=POD_Y0)
 
     if side == "R":
         mirror_for_R(b)
@@ -470,6 +501,22 @@ def pod_lid(side="L"):
                    POD_TAPER_LEN * 0.85, min(POD_TAPER_DROP * 0.55, 3.5), y0=POD_Y0)
     top_perimeter_chamfer(lid, lx_max, ll, POD_LID_T + POD_LID_CROWN,
                           r=min(POD_TOP_EDGE_R, 4.0), y0=POD_Y0)
+
+    # D7r4: public ID — low-relief mono "001" on outer face (~9 mm tall, 0.5 mm)
+    # Recessed into outer (+Z) so outer-down print stays clean on the bed.
+    try:
+        z_outer = POD_LID_T + POD_LID_CROWN
+        glyph = d5._text_mesh(POD_PUBLIC_ID, 18.0, 0.7)  # ~9 mm capital height
+        lo, hi = oc.bounds(glyph)
+        oc.move(
+            glyph,
+            dx=0.0 - (lo[0] + hi[0]) / 2.0,
+            dy=POD_Y0 + 8.0 - (lo[1] + hi[1]) / 2.0,
+            dz=(z_outer - 0.5) - lo[2],
+        )
+        oc.cut(lid, glyph)
+    except Exception as exc:
+        print(f"  public ID emboss skipped: {exc}")
 
     if side == "R":
         mirror_for_R(lid)

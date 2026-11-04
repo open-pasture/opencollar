@@ -121,7 +121,7 @@
       "size_mm": [
         68.0,
         98.799,
-        23.4
+        30.4
       ],
       "watertight": {
         "watertight": true,
@@ -131,7 +131,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 334664
+        "faces": 421334
       },
       "pass": true,
       "stl_path": "stl/pod_L_base.stl",
@@ -156,22 +156,22 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4546
+        "faces": 6718
       },
       "pass": true,
       "stl_path": "stl/pod_L_lid.stl",
       "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 0.0,
+      "bed_face_area_mm2": 26.0,
       "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X on export)",
       "load_path": "lid screws; ribs"
     },
     "pod_R_base": {
       "size_mm": [
         68.0,
-        98.799,
-        23.4
+        98.79,
+        30.385
       ],
       "watertight": {
         "watertight": true,
@@ -181,7 +181,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 334702
+        "faces": 241052
       },
       "pass": true,
       "stl_path": "stl/pod_R_base.stl",
@@ -206,14 +206,14 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4546
+        "faces": 6718
       },
       "pass": true,
       "stl_path": "stl/pod_R_lid.stl",
       "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 0.0,
+      "bed_face_area_mm2": 26.0,
       "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X on export)",
       "load_path": "true mirror of L"
     },
@@ -231,7 +231,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 204
+        "faces": 208
       },
       "pass": true,
       "stl_path": "stl/fairing_cap_pod_L.stl",
@@ -256,7 +256,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 204
+        "faces": 208
       },
       "pass": true,
       "stl_path": "stl/fairing_cap_pod_R.stl",
@@ -346,12 +346,12 @@
   "pass": true,
   "lid_print": {
     "pod_L_lid": {
-      "bed_face_area_mm2": 0.0,
+      "bed_face_area_mm2": 26.0,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
       "note": "Outer-down; soft tip taper only \u2014 not a deep crown"
     },
     "pod_R_lid": {
-      "bed_face_area_mm2": 0.0,
+      "bed_face_area_mm2": 26.0,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
       "note": "Outer-down; soft tip taper only \u2014 not a deep crown"
     }

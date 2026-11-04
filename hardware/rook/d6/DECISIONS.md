@@ -36,11 +36,14 @@ still tapers to **52** along run **28**. CW run **32**, H **18** / CW **14**,
 edge fillet **R ≥ 4**. Loft in `fairing.py`; `FAIRING_*` in `assembly.py`.
 `FAIRING_BEVEL_OVERSIZE` keeps seam ≤ 0.5 mm. World poses from `FAIRING_CENTRES`.
 
-## Orange accents (review blend)
+## Review palette + orange (D7r4)
 
-Brand orange **#FF6A2B** only on small parts: clamp endcaps at long-axis ends,
-pod strap-block saddles, pod-top dots/cue tabs, latch, screw heads, service
-plugs. Body / bars / fairings stay calm gray `#C9CBCC`.
+DEFAULT review palette = **charcoal** (~`#3A3C3E`, roughness 0.6) matching
+D4_contoured_v3 body; `--palette light` (`#C9CBCC`) is secondary. Brand orange
+**#FF6A2B** only on: one small dot per pod lid, one collar tab, tiny screw
+heads, latch. No orange saddles / clamp endcaps. Strap = slim flat YZ band
+through the saddle channel and under the CW clamp; D4 buckle + keeper in dark
+gray.
 
 ## CW lid print orientation
 

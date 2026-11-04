@@ -10,7 +10,7 @@
   {
    "check": "cap_base: volume>0",
    "ok": true,
-   "measured": 123122,
+   "measured": 145439,
    "expected": ">0",
    "note": ""
   },
@@ -27,7 +27,7 @@
    "measured": [
     76.0,
     186.91,
-    20.2
+    27.2
    ],
    "expected": "<=256",
    "note": ""
@@ -74,7 +74,7 @@
   {
    "check": "cap_lid: volume>0",
    "ok": true,
-   "measured": 112997,
+   "measured": 111335,
    "expected": ">0",
    "note": ""
   },
@@ -91,7 +91,7 @@
    "measured": [
     75.0,
     163.0,
-    13.95
+    13.15
    ],
    "expected": "<=256",
    "note": ""
@@ -234,7 +234,7 @@
   {
    "check": "fairing_cap_pod_L: volume>0",
    "ok": true,
-   "measured": 16754,
+   "measured": 14948,
    "expected": ">0",
    "note": ""
   },
@@ -266,7 +266,7 @@
   {
    "check": "fairing_cap_pod_R: volume>0",
    "ok": true,
-   "measured": 16754,
+   "measured": 14948,
    "expected": ">0",
    "note": ""
   },
@@ -426,7 +426,7 @@
   {
    "check": "pod_L_base: volume>0",
    "ok": true,
-   "measured": 43461,
+   "measured": 58840,
    "expected": ">0",
    "note": ""
   },
@@ -443,7 +443,7 @@
    "measured": [
     68.0,
     98.8,
-    23.4
+    30.4
    ],
    "expected": "<=256",
    "note": ""
@@ -458,7 +458,7 @@
   {
    "check": "pod_L_lid: volume>0",
    "ok": true,
-   "measured": 25106,
+   "measured": 25104,
    "expected": ">0",
    "note": ""
   },
@@ -490,7 +490,7 @@
   {
    "check": "pod_R_base: volume>0",
    "ok": true,
-   "measured": 43461,
+   "measured": 58968,
    "expected": ">0",
    "note": ""
   },
@@ -506,8 +506,8 @@
    "ok": true,
    "measured": [
     68.0,
-    98.8,
-    23.4
+    98.79,
+    30.38
    ],
    "expected": "<=256",
    "note": ""
@@ -522,7 +522,7 @@
   {
    "check": "pod_R_lid: volume>0",
    "ok": true,
-   "measured": 25106,
+   "measured": 25104,
    "expected": ">0",
    "note": ""
   },
@@ -961,7 +961,7 @@
   {
    "check": "CW tub height lower than pod base",
    "ok": true,
-   "measured": "cw_tub H=19.2 vs pod_L_base H=23.4",
+   "measured": "cw_tub H=19.2 vs pod_L_base H=30.4",
    "expected": "CW < pod",
    "note": ""
   },
@@ -1003,28 +1003,28 @@
   {
    "check": "fairing_cap_pod_L near a body (not floating)",
    "ok": true,
-   "measured": "nearest cap_base gap/overlap=-20.2",
+   "measured": "nearest cap_base gap/overlap=-20.1",
    "expected": "<5 mm",
    "note": ""
   },
   {
    "check": "fairing_cap_pod_R near a body (not floating)",
    "ok": true,
-   "measured": "nearest cap_base gap/overlap=-20.2",
+   "measured": "nearest cap_base gap/overlap=-20.1",
    "expected": "<5 mm",
    "note": ""
   },
   {
    "check": "fairing_pod_strap_L near a body (not floating)",
    "ok": true,
-   "measured": "nearest pod_L_lid gap/overlap=-9.3",
+   "measured": "nearest pod_L_base gap/overlap=-9.7",
    "expected": "<5 mm",
    "note": ""
   },
   {
    "check": "fairing_pod_strap_R near a body (not floating)",
    "ok": true,
-   "measured": "nearest pod_R_lid gap/overlap=-9.3",
+   "measured": "nearest pod_R_base gap/overlap=-9.6",
    "expected": "<5 mm",
    "note": ""
   },
@@ -1146,61 +1146,49 @@
   {
    "a": "cap_base",
    "b": "cap_lid",
-   "mm3": 168.3,
+   "mm3": 17638.9,
    "class": "expected lip/groove engagement"
   },
   {
    "a": "cap_base",
-   "b": "pod_L_base",
-   "mm3": 68.9,
-   "class": "expected mount pad/recess engagement"
-  },
-  {
-   "a": "cap_base",
-   "b": "pod_R_base",
-   "mm3": 68.8,
-   "class": "expected mount pad/recess engagement"
-  },
-  {
-   "a": "cap_base",
    "b": "fairing_cap_pod_L",
-   "mm3": 3368.9,
+   "mm3": 2700.1,
    "class": "fairing blend (OK)"
   },
   {
    "a": "cap_base",
    "b": "fairing_cap_pod_R",
-   "mm3": 3386.0,
+   "mm3": 2700.1,
    "class": "fairing blend (OK)"
   },
   {
    "a": "cap_lid",
    "b": "fairing_cap_pod_L",
-   "mm3": 62.8,
+   "mm3": 61.4,
    "class": "fairing blend (OK)"
   },
   {
    "a": "cap_lid",
    "b": "fairing_cap_pod_R",
-   "mm3": 62.8,
+   "mm3": 61.4,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_L_base",
    "b": "pod_L_lid",
-   "mm3": 733.2,
+   "mm3": 5198.6,
    "class": "expected lip/groove engagement"
   },
   {
    "a": "pod_L_base",
    "b": "fairing_cap_pod_L",
-   "mm3": 1882.6,
+   "mm3": 1009.7,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_L_base",
    "b": "fairing_pod_strap_L",
-   "mm3": 1533.9,
+   "mm3": 5035.2,
    "class": "fairing blend (OK)"
   },
   {
@@ -1212,19 +1200,19 @@
   {
    "a": "pod_R_base",
    "b": "pod_R_lid",
-   "mm3": 733.1,
+   "mm3": 5234.1,
    "class": "expected lip/groove engagement"
   },
   {
    "a": "pod_R_base",
    "b": "fairing_cap_pod_R",
-   "mm3": 1882.6,
+   "mm3": 1002.6,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_R_base",
    "b": "fairing_pod_strap_R",
-   "mm3": 1907.3,
+   "mm3": 6217.9,
    "class": "fairing blend (OK)"
   },
   {

@@ -112,6 +112,7 @@ FAIRING_BEVEL_OVERSIZE_CAP_POD = 0.0
 FAIRING_PLAN_R0 = max(FAIRING_POD_PLAN_R, 8.0)
 FAIRING_PLAN_R1 = max(FAIRING_CAP_PLAN_R, 6.0)
 FAIRING_TOP_CROWN = 0.0                 # D7r3: no crown cuts → no crease lines
+FAIRING_RAMP_DROP = 3.5                 # D7r4: roof slope toward pod (mm)
 FAIRING_INTERFERE_TOL = 0.2
 FAIRING_SEAM_STEP_MAX = 0.5              # mm — plan/height step at fairing joins
 FAIRING_LID_SEAM_MAX = 0.3              # mm — top vs lid roof at seam

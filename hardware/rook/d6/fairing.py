@@ -162,20 +162,19 @@ def fairing_body(name: str,
 
 
 def fairing_cap_pod(side: str = "L"):
-    """Cap↔pod bridge: short rounded nose flush with pod tip (no sail/crease).
+    """Cap↔pod bridge: short rounded nose + roof ramp (cap shoulder → pod roof).
 
-    D7r3: run ~16 (D4 ~16.6), W1≈W0 so top view is a low rounded nose ending
-    at the pod outline — not a flat flap past the tip. TOP_CROWN=0 kills the
-    long-edge crease lines that read as sail ribs.
+    D7r4: constant-width stadium (no sail), TOP_CROWN=0 (no crease), then a
+    longitudinal roof cut so the top slopes from the taller cap end down to the
+    pod roof — one smooth band instead of a ledge + overhanging tip.
     """
     run = float(getattr(A, "FAIRING_RUN_CAP_POD", 16.0))
     w0 = float(A.FAIRING_W0)
     w1 = float(getattr(A, "FAIRING_W1_CAP_POD", w0))
     h = float(getattr(A, "FAIRING_H_CAP_POD", A.FAIRING_H))
     over = float(getattr(A, "FAIRING_BEVEL_OVERSIZE_CAP_POD", 0.0))
-    # Soft stadium nose: plan R as large as the short run allows.
     r_nose = min(max(A.FAIRING_PLAN_R0, 6.0), run / 2.2, w0 / 2.0 - 0.5)
-    return fairing_body(
+    f = fairing_body(
         f"fairing_cap_pod_{side}",
         run=run, w0=w0, w1=w1, h=h,
         plan_r0=r_nose,
@@ -183,6 +182,32 @@ def fairing_cap_pod(side: str = "L"):
         top_crown=0.0,
         bevel_oversize=over,
     )
+    # Roof ramp: full H toward cap (inboard), drop toward pod tip (outboard).
+    # L fairing at −Y: cap = +Y local. R fairing at +Y: cap = −Y local (flip).
+    drop = float(getattr(A, "FAIRING_RAMP_DROP", 3.5))
+    if drop > 0.2:
+        y0, y1 = -run / 2.0, run / 2.0
+        if side == "R":
+            # High at −Y (cap), low at +Y (pod)
+            profile = [
+                (y0 - 1.0, h + 2.0),
+                (y0, h + 0.05),
+                (y1, h - drop),
+                (y1 + 1.0, h + 2.0),
+                (y0 - 1.0, h + 2.0),
+            ]
+        else:
+            # High at +Y (cap), low at −Y (pod)
+            profile = [
+                (y0 - 1.0, h + 2.0),
+                (y0, h - drop),
+                (y1, h + 0.05),
+                (y1 + 1.0, h + 2.0),
+                (y0 - 1.0, h + 2.0),
+            ]
+        oc.cut(f, oc.prism_x(f"fairing_cap_pod_{side}_ramp", profile, w0 + 8.0))
+        oc.bake(f)
+    return f
 
 
 def fairing_pod_strap(side: str = "L"):
