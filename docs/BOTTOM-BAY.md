@@ -92,9 +92,16 @@ Budget: in summer, solar surplus of a few Wh/day covers roughly an hour of recor
 - **Power-path circuitry** on the main board that can charge and draw from an external LiFePO4 pack through the strap.
 - **Firmware** that detects the pack and adds it to the energy and telemetry reports.
 
-## Electric pulse: top unit, not the bay
+## Electric pulse: placement OPEN
 
-The pulse has to reach the animal reliably on every collar, whichever module is in the bay. It goes on an **add-on board inside the top unit**, with electrodes on the underside of the top unit resting on the top of the neck. The top unit shell reserves the space, the electrode openings and the connector from V1, so adding the pulse means fitting a board, not redesigning the collar.
+Earlier text here put the pulse add-on board in the **top unit** (electrodes
+on its underside). Node V1 fit notes instead reserve **electrode studs in
+the side pods** (`hardware/rook/bom/HARDWARE-FIT.md`). **Cody decides**;
+neither is treated as settled. Interface reservation (connectors, dual
+enable, reports) is in
+[`SHOCK-MODULE-INTERFACE.md`](SHOCK-MODULE-INTERFACE.md) and does not pick a
+side. Whichever mechanical home wins, every collar must still leave room for
+the completed production module even when it is unfitted at first.
 
 ## Camera module: first iteration
 

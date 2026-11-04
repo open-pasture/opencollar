@@ -1,5 +1,14 @@
 # Build log
 
+## 2026-11-04
+
+### Shock / pulse module interface reserved (docs + enum header only)
+- Cody standing rule (typed 2026-11-04): one production design; module may be unfitted at first; leave room and reserve interfaces. Welfare gating unchanged; Record H still blocks live use.
+- op-architect record O: sense + ID chip; report nothing when unfitted; `health.module` only when fitted; dual enable (firmware + hardware gate latch after signed revocable country-rule capability; reset closes latch); HW current limit (TBD welfare reviewer) + independent kill + HW watchdog; fault names; cue kind `pulse` reserved; v2 must not reuse fence `armed` for the module.
+- Placement OPEN: `BOTTOM-BAY.md` (top unit) vs Node V1 pods (electrode studs) — Cody decides. Wording updated in `BOTTOM-BAY.md`; normative reservation in `docs/SHOCK-MODULE-INTERFACE.md`.
+- Protocol: `registry.md` / `README.md` / `CHANGELOG.md` — RESERVED names only, no behaviour.
+- Optional `firmware/src/shock_iface.h` (enums + string constants only) + host `test_shock_iface`. No driver code; no cue behaviour change; nothing ran on hardware.
+
 ## 2026-11-03
 
 ### Auto shut-off: caretaker re-arm only (Cody)
