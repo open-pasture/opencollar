@@ -51,8 +51,8 @@ Pod agent builds the mating pod face / fairing to these anchors.
 
 | Orient | Bed-face area (mm²) | Downward/support ceiling (mm²) |
 | --- | --- | --- |
-| Mating-down | 10157.4 | 1857.6 |
-| Outer-down | 1130.7 | 10849.6 |
+| Mating-down | 10157.4 | 2051.4 |
+| Outer-down | 193.8 | 12182.2 |
 | **Picked** | **mating_down** | |
 
 Mating-down: panel pocket +Z, GNSS/LTE are bed recesses (small trees OK). Outer-down: flat panel land on bed; mating bosses become ceilings. Crown is shallow (2.7 mm) outside the land.

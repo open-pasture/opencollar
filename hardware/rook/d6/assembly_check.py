@@ -527,13 +527,15 @@ LID_SEAM = float(getattr(A, "FAIRING_LID_SEAM_MAX", 0.3))
 # Cap–pod / pod–strap: outer width + fairing height reaches lid band
 pod_outer_w = float(A.POD_L)
 fairing_h = float(A.FAIRING_H)
+fairing_h_cap = float(getattr(A, "FAIRING_H_CAP_POD", A.FAIRING_H))
 for n in ("fairing_cap_pod_L", "fairing_cap_pod_R",
           "fairing_pod_strap_L", "fairing_pod_strap_R"):
     if n not in mesh:
         continue
     e = mesh[n].extents
+    h_expect = fairing_h_cap if "cap_pod" in n else fairing_h
     w_step = abs(float(max(e[0], e[1])) - pod_outer_w)
-    h_step = abs(float(e[2]) - fairing_h)
+    h_step = abs(float(e[2]) - h_expect)
     chk(
         f"seam step {n} width vs pod outer ≤ {SEAM_MAX} mm",
         w_step <= SEAM_MAX + 1e-3,
@@ -543,7 +545,7 @@ for n in ("fairing_cap_pod_L", "fairing_cap_pod_R",
     chk(
         f"seam step {n} height vs FAIRING_H ≤ {SEAM_MAX} mm",
         h_step <= SEAM_MAX + 1e-3,
-        f"Δh={h_step:.2f} (fairing {e[2]:.1f} vs H {fairing_h:.1f})",
+        f"Δh={h_step:.2f} (fairing {e[2]:.1f} vs H {h_expect:.1f})",
         f"≤{SEAM_MAX}",
     )
 # Fairing top vs pod lid roof at the seam: sample both meshes in a shared

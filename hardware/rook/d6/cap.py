@@ -505,6 +505,14 @@ def cap_lid():
 
     # Perimeter wrap step (z≥0) — low-seam read without hanging skirt
     add_wrap_step(lid, lw, ll, LID_WRAP_STEP, LID_H, r=PLAN_R - 1.0)
+
+    # D7r3: D4-style raised rear lip / drip rim across the −Y (label) end.
+    # Small proud strip (~2 mm high × ~3 mm deep) so the tail reads in side/iso.
+    lip_h, lip_d = 2.0, 3.0
+    lip_y = -(ll / 2.0) + lip_d / 2.0 + 0.8
+    oc.union(lid, oc.rounded_rect(
+        "rear_lip", (lw - 10.0, lip_d, lip_h), 1.2,
+        at=(0.0, lip_y, LID_H - 0.05), anchor="bottom"))
     return prepare(lid)
 
 

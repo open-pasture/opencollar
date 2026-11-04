@@ -19,23 +19,28 @@ were a cross-strap leftover: with strap-along-Y those inserts sit inside the
 
 ## Pod envelope vs D4
 
-D4 pods are ~67×97×19.4. D5 cavity **82×58×19.5** forces outer X ≥ **92**
-(5 mm walls) — cannot recover D4's 67 mm width without relocating the cells.
-D6 keeps cavity and tilt; uses outer **92×92×~23** and shifts anchors to
-**y=±126, z=−21.9** (from D4 ±113.8 / −27.8) so cap/pod bodies clear with a
-fairing-bridged gap while the pad/recess joint still meets. Cap pad tilt
-matches pod/D4: L **+29.142°**, R **−29.142°**. Cap pads and pod ends share
-a 36×4×14 M3 joint (4× clear).
+D4 pods are ~67×97×19.4. D5 cavity **82×58×19.5** was first placed with 82
+across X → outer **92** wide. **D7r2** rotates the cavity so **82 runs along Y**
+and **58 across X** → outer **~68 × 97** (wall 5.0 ≥ 3.5), narrower than cap 76,
+matching D4's plan ratio. Mount face local Y stays **+46** (locked); the
+strap-end grows to make length ~97. Anchors remain **y=±126, z=−21.9**, tilt
+L **+29.142°** / R **−29.142°**, 36×4×14 M3 joint. R pods mirror X then Y so
+the mount face points at the cap.
 
-## Fairings (D7 continuous wedge)
+## Fairings (D7r3 continuous wedge)
 
-Wide end = slim pod tip **70** (cap↔pod / pod↔strap) or CW outer **89.4**;
-taper to **56** *along the run* (not a vertical trapezoid block). Run **28**
-(cap↔pod **18**, CW **32**), H **14** / CW **12**, edge fillet **R ≥ 4**.
-Loft in `fairing.py`; `FAIRING_*` in `assembly.py` follow pod/cap/CW outline
-constants. `FAIRING_BEVEL_OVERSIZE` compensates edge-bevel plan shrink so the
-finished outer still kisses the mate (seam ≤ 0.5 mm). Bridges the ~1.3 mm
-cap–pod body gap; world poses from bridge centres in `assembly.py`.
+Wide end = slim pod outer **68** (cap↔pod / pod↔strap) or CW outer **89.4**.
+Cap↔pod: short rounded nose — run **16**, **W1=W0** (no sail taper),
+**TOP_CROWN=0** (no crease), flush with tilted pod tip outline. Pod↔strap
+still tapers to **52** along run **28**. CW run **32**, H **18** / CW **14**,
+edge fillet **R ≥ 4**. Loft in `fairing.py`; `FAIRING_*` in `assembly.py`.
+`FAIRING_BEVEL_OVERSIZE` keeps seam ≤ 0.5 mm. World poses from `FAIRING_CENTRES`.
+
+## Orange accents (review blend)
+
+Brand orange **#FF6A2B** only on small parts: clamp endcaps at long-axis ends,
+pod strap-block saddles, pod-top dots/cue tabs, latch, screw heads, service
+plugs. Body / bars / fairings stay calm gray `#C9CBCC`.
 
 ## CW lid print orientation
 

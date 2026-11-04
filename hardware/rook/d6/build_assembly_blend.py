@@ -1,11 +1,12 @@
 """Build review/d6_assembly.blend + 4 assembly renders from world STLs.
 
-D7 palette: calm light-gray ASA body; orange (#FF6A2B) only on small functional
-accents (latch, screw heads, cue/service dots, tiny clamp-bar end caps).
-Clamp bars + fairings use the body colour.
+D7r3 palette: near-white/light-gray ASA body (#C9CBCC); orange (#FF6A2B) only
+on small brand accents — clamp-bar end caps at bar ENDS, pod strap-block
+saddles, pod-top dots/cue tabs, latch, screw heads, service plugs. Bars and
+fairings stay body gray.
 
-Review-only details (not print STLs): solar panel, strap loop + buckle/keeper,
-orange screw heads, latch + service dot, rib lines, recessed glyph panel.
+Review-only details (not print STLs): solar panel, strap loop, orange accents,
+rib lines, recessed glyph panel.
 
 D4 ghost: repo has no real D4_contoured_v3 mesh/blend — keep wbbox placeholders
 from out/d4_ghost/. Do NOT mirror a duplicate D4_pod_R.
@@ -88,10 +89,11 @@ def _bbox_centre(obj):
 
 
 def _add_box(collection, name, size, loc, rgb, rot=(0, 0, 0)):
+    # Blender 4: size=1 cube has edge length 1; scale = full mm size.
     bpy.ops.mesh.primitive_cube_add(size=1.0, location=loc)
     o = bpy.context.active_object
     o.name = name
-    o.scale = (size[0] / 2, size[1] / 2, size[2] / 2)
+    o.scale = (float(size[0]), float(size[1]), float(size[2]))
     o.rotation_euler = rot
     bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
     for cc in list(o.users_collection):
@@ -159,26 +161,40 @@ orange_mat = mat("accent_orange", ORANGE)
 # World STLs
 for f in sorted(glob.glob(os.path.join(WORLD, "*.stl"))):
     o = imp_stl(f, d6)
-    # All structural parts → body colour (clamps + fairings included)
+    # All structural parts → body colour (clamps + fairings + main saddle)
     o.data.materials.clear()
     o.data.materials.append(body_mat)
-    # Tiny orange end caps on clamp bars (not the whole bar)
+    # Orange end caps at clamp-bar ENDS (longest bbox axis — x=±35 for
+    # bars 1–6 rotated 90° Z; y ends for CW bars 7–8). ~12×10×3 proud.
     if o.name.startswith("clamp_bar"):
-        # ~12×10 mm orange end caps so the accent reads in iso
         bb = [o.matrix_world @ Vector(c) for c in o.bound_box]
-        ys = sorted(v.y for v in bb)
         xs = sorted(v.x for v in bb)
+        ys = sorted(v.y for v in bb)
         zs = sorted(v.z for v in bb)
+        dx, dy, dz = xs[-1] - xs[0], ys[-1] - ys[0], zs[-1] - zs[0]
         mid_x = 0.5 * (xs[0] + xs[-1])
+        mid_y = 0.5 * (ys[0] + ys[-1])
         mid_z = 0.5 * (zs[0] + zs[-1])
-        for i, y in enumerate((ys[0], ys[-1])):
-            _add_box(
-                details,
-                f"{o.name}_endcap_{i}",
-                (10.0, 3.0, 12.0),
-                (mid_x, y, mid_z),
-                ORANGE,
-            )
+        if dx >= dy:
+            # Long axis along X → endcaps at x ends (bars 1–6 ≈ ±35)
+            for i, x in enumerate((xs[0], xs[-1])):
+                _add_box(
+                    details,
+                    f"{o.name}_endcap_{i}",
+                    (3.0, 12.0, 10.0),
+                    (x, mid_y, mid_z),
+                    ORANGE,
+                )
+        else:
+            # Long axis along Y → endcaps at y ends (CW bars 7–8)
+            for i, y in enumerate((ys[0], ys[-1])):
+                _add_box(
+                    details,
+                    f"{o.name}_endcap_{i}",
+                    (12.0, 3.0, 10.0),
+                    (mid_x, y, mid_z),
+                    ORANGE,
+                )
 
 # D4 ghost — bounding boxes only (no real D4 mesh in repo). Skip mirror.
 gm = mat("d4_ghost", GHOST, 0.25)
@@ -218,17 +234,24 @@ elif panel_c is not None:
     sz = _wbbox_size("cap_panel_p124") or Vector((66.6, 113.6, 2.3))
     _add_box(details, "cap_panel_p124", (sz.x, sz.y, sz.z), panel_c, PANEL_GLASS)
 
-# Latch (orange) + service cue dots (orange)
+# Latch (orange, thumbnail-readable ~14×8) + service cue dots (Ø5)
 latch_path = _find_detail("latch.stl")
 latch_c = _wbbox_centre("latch")
 if latch_path and latch_c is not None:
     L = imp_stl(latch_path, details, name="latch")
     Lc = _bbox_centre(L)
     L.location = latch_c - Lc
+    # Scale up slightly so the accent reads at review distance
+    L.scale = (1.35, 1.25, 1.15)
+    bpy.ops.object.select_all(action="DESELECT")
+    L.select_set(True)
+    bpy.context.view_layer.objects.active = L
+    bpy.ops.object.make_single_user(object=True, obdata=True)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     L.data.materials.clear()
     L.data.materials.append(orange_mat)
 elif latch_c is not None:
-    _add_box(details, "latch", (6.0, 11.0, 8.0), latch_c, ORANGE)
+    _add_box(details, "latch", (8.0, 14.0, 8.0), latch_c, ORANGE)
 
 for nm in (
     "cap_plug_service_orange_n68p",
@@ -246,7 +269,7 @@ for nm in (
         pl.data.materials.clear()
         pl.data.materials.append(orange_mat)
     else:
-        _add_cyl(details, nm, radius=3.5, depth=1.3, loc=c, rgb=ORANGE)
+        _add_cyl(details, nm, radius=5.0, depth=1.6, loc=c, rgb=ORANGE)
 
 # Strap loop (torus-ish from d4 wbbox) + buckle + keeper
 strap_c = _wbbox_centre("strap_loop")
@@ -274,18 +297,50 @@ if strap_c is not None and strap_sz is not None:
 # view. Hide until a strap-path pose is authored (do not import).
 # (Intentionally skipped — see INTEGRATION.md rough edges.)
 
-# Orange screw heads on cap orange columns + CW lid screws (approx world)
-# Cap orange screws from d5_dims-style positions at lid top
+# Orange screw heads — Ø7 so they read at thumbnail / review distance
 cap_z = 19.0  # approx lid top in world (CAP_Z0 + CAP_BASE_H)
 for i, (x, y) in enumerate([(29.5, 68.0), (-29.5, 68.0), (29.5, -68.0)]):
-    _add_cyl(details, f"screw_cap_orange_{i}", radius=2.8, depth=1.6,
+    _add_cyl(details, f"screw_cap_orange_{i}", radius=3.5, depth=1.8,
              loc=(x, y, cap_z + 0.5), rgb=ORANGE)
 # CW screw heads (world: CW flipped 180° X at z≈-465.75)
-# Assembled lid outer faces -Z; screws near (±22, ±54) in print → mirrored in world Y
 cw_lid_z = -465.75 - 3.2 - 18.0 - 7.5 + 1.0  # rough outer
 for i, (x, y) in enumerate([(22, 54), (-22, 54), (22, -54), (-22, -54)]):
-    _add_cyl(details, f"screw_cw_{i}", radius=2.4, depth=1.4,
+    _add_cyl(details, f"screw_cw_{i}", radius=3.5, depth=1.6,
              loc=(x, y, cw_lid_z), rgb=ORANGE)
+
+# D7r3 A: orange strap-block / saddle under each pod end (D4 saddle proportion
+# ~70×51×7.4, scaled to slim pod; separate ASA colour part in review blend).
+_POD_TILT = math.radians(29.1418)
+for side, sy in (("L", -1.0), ("R", 1.0)):
+    # Sit in the strap channel under the pod body (between shell and clamps)
+    saddle_loc = (0.0, sy * 126.0, -21.9 - 10.5)
+    _add_box(
+        details,
+        f"pod_{side}_saddle_orange",
+        (60.0, 50.0, 7.4),
+        saddle_loc,
+        ORANGE,
+        rot=(_POD_TILT * (-sy), 0.0, 0.0),
+    )
+    # Small orange dot on each pod lid TOP (proud of outer at ~y=±110, z≈15)
+    _add_cyl(
+        details,
+        f"pod_{side}_dot_orange",
+        radius=5.0,
+        depth=2.2,
+        loc=(0.0, sy * 110.0, 15.5),
+        rgb=ORANGE,
+        rot=(_POD_TILT * (-sy), 0.0, 0.0),
+    )
+    # Cue tab on each pod lid (~14×6×2) — thumbnail brand accent
+    _add_box(
+        details,
+        f"pod_{side}_cue_tab",
+        (14.0, 6.0, 2.0),
+        (0.0, sy * 105.0, 16.0),
+        ORANGE,
+        rot=(_POD_TILT * (-sy), 0.0, 0.0),
+    )
 
 # Rib lines (review) — shallow strips on cap lid top
 for i, y in enumerate((-50.0, -25.0, 25.0, 50.0)):

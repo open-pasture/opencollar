@@ -110,7 +110,8 @@ def fairing_body(name: str,
                  edge_r: float | None = None,
                  plan_r0: float | None = None,
                  plan_r1: float | None = None,
-                 top_crown: float | None = None):
+                 top_crown: float | None = None,
+                 bevel_oversize: float | None = None):
     """Continuous D4-style fairing wedge.
 
     Prints flat on its widest face (z=0 bed); slope walls need no large supports.
@@ -127,7 +128,12 @@ def fairing_body(name: str,
         top_crown if top_crown is not None else getattr(A, "FAIRING_TOP_CROWN", 1.2)
     )
     # Bevel shrinks plan width; grow loft so finished outer ≈ design W0/W1.
-    over = float(getattr(A, "FAIRING_BEVEL_OVERSIZE", 0.0))
+    # Cap↔pod stadium (constant W, large plan R) barely shrinks — pass 0 there.
+    over = float(
+        bevel_oversize
+        if bevel_oversize is not None
+        else getattr(A, "FAIRING_BEVEL_OVERSIZE", 0.0)
+    )
     w0 = w0 + over
     w1 = w1 + over
 
@@ -156,13 +162,26 @@ def fairing_body(name: str,
 
 
 def fairing_cap_pod(side: str = "L"):
-    """Cap↔pod bridge: short run, wide end kisses slim pod tip (~70)."""
-    run = float(getattr(A, "FAIRING_RUN_CAP_POD", 18.0))
+    """Cap↔pod bridge: short rounded nose flush with pod tip (no sail/crease).
+
+    D7r3: run ~16 (D4 ~16.6), W1≈W0 so top view is a low rounded nose ending
+    at the pod outline — not a flat flap past the tip. TOP_CROWN=0 kills the
+    long-edge crease lines that read as sail ribs.
+    """
+    run = float(getattr(A, "FAIRING_RUN_CAP_POD", 16.0))
+    w0 = float(A.FAIRING_W0)
+    w1 = float(getattr(A, "FAIRING_W1_CAP_POD", w0))
+    h = float(getattr(A, "FAIRING_H_CAP_POD", A.FAIRING_H))
+    over = float(getattr(A, "FAIRING_BEVEL_OVERSIZE_CAP_POD", 0.0))
+    # Soft stadium nose: plan R as large as the short run allows.
+    r_nose = min(max(A.FAIRING_PLAN_R0, 6.0), run / 2.2, w0 / 2.0 - 0.5)
     return fairing_body(
         f"fairing_cap_pod_{side}",
-        run=run, w0=A.FAIRING_W0, w1=A.FAIRING_W1, h=A.FAIRING_H,
-        plan_r0=A.FAIRING_PLAN_R0,
-        plan_r1=A.FAIRING_PLAN_R1,
+        run=run, w0=w0, w1=w1, h=h,
+        plan_r0=r_nose,
+        plan_r1=r_nose,
+        top_crown=0.0,
+        bevel_oversize=over,
     )
 
 

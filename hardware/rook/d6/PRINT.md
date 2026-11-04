@@ -1,4 +1,4 @@
-# D7r2 print plan — Rook collar (ASA, P2S 256)
+# D7r3 print plan — Rook collar (ASA, P2S 256)
 
 Material: **ASA**. Bed: **Bambu P2S 256×256×256**. **Brim 8 mm** on every ASA
 shell. Enclosure closed; dry filament. PLA floor coupons = fit-check only.
@@ -17,7 +17,7 @@ Times/grams are **estimates**. Re-slice before any real plate.
 | `cw_lid` | 88.4 × 114.8 × 6.35 | 46.3 | 1 | mating DOWN |
 | `saddle` | 76.0 × 96.0 × 6.5 | 20.9 | 1 | channel along Y |
 | `clamp_bar` | 10.0 × 70.0 × 8.0 | 4.1 | **8** | flange on bed |
-| `fairing_cap_pod_L/R` | 68.4 × 18.0 × 18.0 | 18.6 each | 1+1 | long face on bed |
+| `fairing_cap_pod_L/R` | 68.0 × 16.0 × 16.0 | 16.8 each | 1+1 | short rounded nose |
 | `fairing_pod_strap_L/R` | 68.2 × 28.0 × 18.0 | 29.0 each | 1+1 | long face on bed |
 | `fairing_cw_L/R` | 89.5 × 32.0 × 14.0 | 30.4 each | 1+1 | long face on bed |
 | `*_floor_layout` | coupons | — | 3 | **PLA** |

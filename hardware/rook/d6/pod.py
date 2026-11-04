@@ -76,9 +76,10 @@ POD_FLOOR = A.POD_FLOOR                      # 1.5
 POD_BASE_H = A.POD_BASE_H                    # 22.2 mating plane
 POD_LID_T = 4.0                              # locked durability
 POD_STACK_H = POD_BASE_H + POD_LID_T         # ~26.2
-POD_LID_CROWN = 1.4                          # spherical sagitta on lid outer
+POD_LID_CROWN = 1.8                          # convex dome sagitta (1.5–2.0)
 PLAN_R = 8.0
 PLAN_R_SWELL = 10.0
+POD_TOP_EDGE_R = 6.0                         # R6 along top perimeter (D7r3)
 # Full-width band covers most of the long cavity; soft tip taper only
 POD_Y_SWELL = 38.0                           # half-length of full-width band
 POD_SHOULDER_RUN = 8.0                       # 68→66 shoulder run
@@ -87,8 +88,8 @@ POD_GROOVE_X = CAV_X + 2 * POD_WALL          # 68
 POD_GROOVE_Y = CAV_Y + 2 * POD_WALL          # 92
 # Screw bosses inset from oriented cavity corners
 POD_COLS = [(sx * 22.0, sy * 36.0) for sx in (-1, 1) for sy in (-1, 1)]
-POD_TAPER_LEN = 18.0
-POD_TAPER_DROP = 4.0                         # softer tip roof (narrow pod)
+POD_TAPER_LEN = 20.0                         # D7r3: slightly longer tip run
+POD_TAPER_DROP = 6.0                         # D7r3: roof tip drop ~6 mm to fairing
 
 # Cap↔pod M3 joint (matches cap.py pad) — recess on +Y mount face
 POD_MOUNT_SIZE = A.POD_MOUNT_SIZE            # 36×4×14
@@ -247,32 +248,57 @@ def end_taper_skin(body, w, l, h, taper_len, drop, y0=0.0):
     return body
 
 
+def top_perimeter_chamfer(body, w, l, h, r=POD_TOP_EDGE_R, y0=0.0):
+    """R6-ish soft top perimeter: cut a 45° chamfer band around the roof edge."""
+    r = min(float(r), h * 0.35, w * 0.12)
+    if r < 1.0:
+        return body
+    # Four side wedges: drop the outer roof edge by `r` over run `r`
+    for sx in (-1.0, 1.0):
+        oc.cut(body, oc.prism_y(f"topch_x{int(sx+2)}", [
+            (sx * (w / 2.0 + 1.0), h + 0.5),
+            (sx * (w / 2.0 - r), h + 0.5),
+            (sx * (w / 2.0 + 1.0), h - r),
+        ], l + 6.0))
+    for sy in (-1.0, 1.0):
+        tip = y0 + sy * (l / 2.0)
+        oc.cut(body, oc.prism_x(f"topch_y{int(sy+2)}", [
+            (tip + sy * 1.0, h + 0.5),
+            (tip - sy * r, h + 0.5),
+            (tip + sy * 1.0, h - r),
+        ], w + 6.0))
+    return body
+
+
 def soft_crown_edges(body, w, l, h, edge_r=2.0):
     """Skipped on bases — boolean stack + bevel leaves non-manifold edges."""
     return body
 
 
 def smooth_lid_crown(lid, w, l, h, sagitta=POD_LID_CROWN, y0=0.0):
-    """Single-curvature barrel crown along Y — G1, keeps ≥4.0 mm lid thickness.
+    """Closed convex dome — rises `sagitta` (1.5–2 mm) toward centre, no dish.
 
-    Adds a shallow cylindrical vault ON TOP of the flat lid (peak = h + sagitta
-    locally before normalize), then the export flip puts that outer on the bed.
-    No cross-facet pyramid: longitudinal ribs only on the mating face.
+    Spherical cap unioned onto the flat lid outer (+Z). No barrel, no dual bowls.
     """
-    sagitta = min(float(sagitta), 1.6)
-    a = w * 0.38
-    if sagitta < 0.25 or a < 4.0:
+    sagitta = max(1.5, min(float(sagitta), 2.0))
+    a = min(w, l) * 0.40
+    if a < 4.0:
         return lid
     R = (a * a + sagitta * sagitta) / (2.0 * sagitta)
-    # Cylinder peaks at z = h + sagitta; axis below
-    zc = (h + sagitta) - R
-    cyl = oc.cylinder("crown_cyl", R, l - 8.0,
-                      at=(0.0, y0, zc), axis="Y", segments=64)
-    # Only keep the segment above the flat lid top
-    blank = oc.box("crown_blank", (w - 4.0, l - 10.0, sagitta + 0.6),
+    zc = h + sagitta - R
+    # UV sphere via bpy (oc has no sphere helper). oc.intersect may consume sph.
+    bpy.ops.mesh.primitive_uv_sphere_add(
+        radius=R, location=(0.0, y0, zc), segments=48, ring_count=24)
+    sph = bpy.context.active_object
+    sph.name = "crown_sph"
+    blank = oc.box("crown_blank", (w - 3.0, l - 6.0, sagitta + 0.8),
                    at=(0.0, y0, h + sagitta / 2.0), anchor="center")
-    oc.intersect(blank, cyl)
-    if oc.volume_mm3(blank) > 50.0:
+    oc.intersect(blank, sph)
+    try:
+        bpy.data.objects.remove(sph, do_unlink=True)
+    except ReferenceError:
+        pass  # boolean already consumed the sphere
+    if oc.volume_mm3(blank) > 40.0:
         oc.union(lid, blank)
     return lid
 
@@ -392,6 +418,8 @@ def pod_base(side="L"):
 
     end_taper_skin(b, POD_L, POD_LEN, POD_BASE_H, POD_TAPER_LEN, POD_TAPER_DROP,
                    y0=POD_Y0)
+    # No top_perimeter_chamfer on bases — boolean stack leaves non-manifold
+    # corners (same reason soft_crown_edges is a no-op). R6 lives on the lid.
 
     if side == "R":
         mirror_for_R(b)
@@ -436,9 +464,12 @@ def pod_lid(side="L"):
                            anchor="bottom", segments=16)
         oc.union(lid, post)
 
-    # Smooth single-curvature outer crown (G1) — no X-facet pyramid
+    # Closed convex dome (1.5–2 mm rise); tip drop + R6 perimeter for D4 shoulder
     smooth_lid_crown(lid, lx_max, ll, POD_LID_T, sagitta=POD_LID_CROWN, y0=POD_Y0)
-    end_taper_skin(lid, lx_max, ll, POD_LID_T, POD_TAPER_LEN * 0.6, 0.8, y0=POD_Y0)
+    end_taper_skin(lid, lx_max, ll, POD_LID_T + POD_LID_CROWN,
+                   POD_TAPER_LEN * 0.85, min(POD_TAPER_DROP * 0.55, 3.5), y0=POD_Y0)
+    top_perimeter_chamfer(lid, lx_max, ll, POD_LID_T + POD_LID_CROWN,
+                          r=min(POD_TOP_EDGE_R, 4.0), y0=POD_Y0)
 
     if side == "R":
         mirror_for_R(lid)
@@ -521,16 +552,14 @@ def export_part(obj, path, meta_key=None):
     if (meta_key in GLYPH_EXPORT_WELD or (meta_key and "base" in meta_key)) and not wt["watertight"]:
         print(f"  remesh {meta_key}: bad_edges={wt['bad_edges']}")
         # 0.32 balances taper retention vs manifold; retry coarser if still open
-        remesh_manifold(obj, voxel=0.32)
-        heal(obj, merge=0.03)
-        normalize_z0(obj)
-        wt = check_wt(obj)
-        if not wt["watertight"]:
-            print(f"  remesh-retry {meta_key}: bad_edges={wt['bad_edges']}")
-            remesh_manifold(obj, voxel=0.40)
-            heal(obj, merge=0.03)
+        for vx in (0.32, 0.42, 0.55):
+            remesh_manifold(obj, voxel=vx)
+            heal(obj, merge=max(0.03, vx * 0.08))
             normalize_z0(obj)
             wt = check_wt(obj)
+            print(f"  remesh@{vx}: bad_edges={wt['bad_edges']} wt={wt['watertight']}")
+            if wt["watertight"]:
+                break
     dims = list(oc.size(obj))
     bed_area = bed_face_area_xy(obj) if flipped or (meta_key and "lid" in meta_key) else None
     oc.export_stl(obj, path)

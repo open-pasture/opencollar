@@ -97,7 +97,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 45610
+        "faces": 45612
       },
       "print": "cavity UP; bed=underside z=0"
     },
@@ -112,22 +112,22 @@
         "max": [
           37.5,
           81.5,
-          12.0
+          13.95
         ],
         "size": [
           75.0,
           163.0,
-          12.0
+          13.95
         ]
       },
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 7692
+        "faces": 7896
       },
       "print": "mating_down",
       "bed_face_mm2": 10157.4,
-      "support_ceiling_mm2": 1857.6
+      "support_ceiling_mm2": 2051.4
     },
     "cap_floor_layout": {
       "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/cap_floor_layout.stl",
@@ -148,11 +148,11 @@
   "orient": {
     "mating_down": {
       "bed_face_mm2": 10157.4,
-      "support_ceiling_mm2": 1857.6
+      "support_ceiling_mm2": 2051.4
     },
     "outer_down": {
-      "bed_face_mm2": 1130.7,
-      "support_ceiling_mm2": 10849.6
+      "bed_face_mm2": 193.8,
+      "support_ceiling_mm2": 12182.2
     },
     "picked": "mating_down",
     "note": "Mating-down: panel pocket +Z, GNSS/LTE are bed recesses (small trees OK). Outer-down: flat panel land on bed; mating bosses become ceilings. Crown is shallow (2.7 mm) outside the land."

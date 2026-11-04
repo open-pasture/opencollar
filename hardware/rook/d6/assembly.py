@@ -78,7 +78,7 @@ SADDLE_CHANNEL_D = STRAP_T
 SADDLE_ROOF = 1.6
 SADDLE_H = SADDLE_ROOF + SADDLE_CHANNEL_D
 
-# Fairings (D7r2) — kiss narrower pod (~68) and CW; top meets lid roof.
+# Fairings (D7r3) — short rounded cap↔pod noses flush with pod tip; CW unchanged.
 FAIRING_POD_OUTER_X = POD_L              # 68 swell
 FAIRING_POD_TIP_X = POD_X_END            # 66 — join width at ±Y ends
 FAIRING_POD_OUTER_Y = POD_W
@@ -87,34 +87,43 @@ FAIRING_CAP_W = CAP_W                    # 76
 FAIRING_CAP_PLAN_R = 7.0
 FAIRING_CW_OUTER = CW_L                  # 89.4
 FAIRING_RUN = 28.0
-FAIRING_RUN_CAP_POD = 18.0
+# D7r3: D4-like short rounded nose (~16.6); must not sail past pod tip outline.
+FAIRING_RUN_CAP_POD = 16.0
 FAIRING_RUN_CW = 32.0                    # longer blend saddle ↔ lower CW
 # Wide end = pod outer (narrower than cap); fairing_cw() overrides W0 to CW.
 FAIRING_W0 = FAIRING_POD_OUTER_X         # 68 — kiss swell / tip band
-FAIRING_W1 = 52.0                        # narrow end toward strap / mate
+FAIRING_W1 = 52.0                        # narrow end toward strap / mate (strap+CW)
+# Cap↔pod: nearly constant width (no sail taper / creases at tip).
+FAIRING_W1_CAP_POD = FAIRING_W0          # 68 — flush rounded nose, not a flap
 FAIRING_W0_CW = FAIRING_CW_OUTER         # 89.4 — wide end = CW outer (no plan step)
 FAIRING_W1_CW = FAIRING_W1               # 52
 # Tall enough that the top lands on the pod lid roof at the seam (~base+lid).
 # Height spans pad band up into the lid roof at the seam (~18–22 world Z).
 FAIRING_H = 18.0
+# Cap↔pod: slightly lower so top meets tip-dropped lid roof (Δz ≤ 0.3).
+FAIRING_H_CAP_POD = 16.0
 FAIRING_H_CW = 14.0                      # CW lid band
 FAIRING_EDGE_R = 4.0
 # Edge bevel pulls the plan silhouette in ~0.5–0.7 mm; oversize the loft so the
 # finished outer width still kisses POD_L / CW_L (seam ≤ FAIRING_SEAM_STEP_MAX).
 FAIRING_BEVEL_OVERSIZE = 0.75
+# Cap↔pod stadium (W1=W0, large plan R) barely shrinks under bevel — skip oversize.
+FAIRING_BEVEL_OVERSIZE_CAP_POD = 0.0
 FAIRING_PLAN_R0 = max(FAIRING_POD_PLAN_R, 8.0)
 FAIRING_PLAN_R1 = max(FAIRING_CAP_PLAN_R, 6.0)
-FAIRING_TOP_CROWN = 1.4                 # match pod lid crown sagitta
+FAIRING_TOP_CROWN = 0.0                 # D7r3: no crown cuts → no crease lines
 FAIRING_INTERFERE_TOL = 0.2
 FAIRING_SEAM_STEP_MAX = 0.5              # mm — plan/height step at fairing joins
 FAIRING_LID_SEAM_MAX = 0.3              # mm — top vs lid roof at seam
 FAIRING_CAP_POD_GAP = 1.3
 
 # Explicit world centres — bridge the 1.3 mm joint; top aligns with lid roof.
-# Cap–pod: nudge into bodies (overlap); Z so fairing top ≈ lid outer (~19–21).
+# Cap–pod: centre so run outboard ≈ tilted pod tip (~±94.5), not past it.
+# Z nudged so H_CAP_POD=16 top meets tip-dropped lid (~16.8 world).
 FAIRING_CENTRES = {
-    "fairing_cap_pod_L": (0.0, -86.5, -2.0),
-    "fairing_cap_pod_R": (0.0, 86.5, -2.0),
+    # Nudged inboard so tilted outboard end ≈ pod tip roof (~±94.5), not past it.
+    "fairing_cap_pod_L": (0.0, -84.0, -2.1),
+    "fairing_cap_pod_R": (0.0, 84.0, -2.1),
     "fairing_pod_strap_L": (0.0, -184.0, -38.0),
     "fairing_pod_strap_R": (0.0, 184.0, -38.0),
     # CW half-length ≈57.9; place just outboard so the wedge kisses tub + saddle
@@ -179,7 +188,12 @@ def world_poses():
     # Fairings at explicit bridge centres. Print STL has bed at z=0..H; place so
     # the mid-height sits at the centre, then tilt about that centre (not origin).
     for name, (x, y, z) in FAIRING_CENTRES.items():
-        h = FAIRING_H_CW if "fairing_cw" in name else FAIRING_H
+        if "fairing_cw" in name:
+            h = FAIRING_H_CW
+        elif "cap_pod" in name:
+            h = FAIRING_H_CAP_POD
+        else:
+            h = FAIRING_H
         # T_center @ R @ T_to_local_origin : rotate about mid-height, then place
         P = T([x, y, z]) @ T([0, 0, h / 2.0])
         if "cap_pod_L" in name:
