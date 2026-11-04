@@ -27,6 +27,30 @@ and `margin_m`; `health.dropped`. Key `roster` is **reserved** for a Starling fr
 summary (`firmware/rook/src/rook_roster.h`, stub). No v2 names used; `fence_seq` is a local
 placeholder name for v1 `version`.
 
+### Checked against the real ingest (openpasture `crates/op-ingest/src/device.rs`, 2026-11-03)
+- Auth `Authorization: Bearer <64-hex key>`; 401 missing/unknown key, 403 when the body
+  `collar_id` isn't the key's (report and ack). The Rook sends its provisioned `collar_id`.
+- Report: `accuracy_m` in every fix; `battery` a 0..1 fraction (volts only in
+  `health.battery_v`); times RFC 3339 UTC `...Z`. Any fix more than **10 min ahead** of the
+  server clock is a 400 for the whole report (and a 400 drops the batch), so the Rook keeps the
+  server's clock from each response's `Date` and leaves out fixes > 9 min ahead of it, plus any
+  fix stamped before 2024 (GNSS time not set). They count in `health.dropped`.
+- `device` is always sent: `fw`, `caps` `holes slots collar_id cue_mode config` (no caps means
+  LEGACY limits), `limits` (from the core's slot store), `config_version`, `config_reject` once;
+  plus the full `slots` list. The reply's `config` is applied by the core (`app_config`) on the
+  main thread; its `endpoint` and `report_s` are used from the next cycle (the endpoint trial
+  and 24 h fallback are the core's `config_report_result`).
+- `GET /boundary?have=&free=&free_bytes=` from the slot store; 200 command, 204 nothing new,
+  **409 = the server's safety gate refuses it**: treated as nothing new (no backoff).
+- Ack: `at` is required by the server; the ack's GNSS time, else the server `Date`, else
+  `1970-01-01T00:00:00Z`. 204 on success.
+- Provisioning `e` = `https://<host>/collar/v1`: the Rook appends `/report`, `/boundary`,
+  `/ack` (a trailing `/` is dropped). Port 443 unless given.
+- TLS to the Cloudflare tunnel hostname: SNI and hostname check use the `e` host; the CA in
+  sec tag 42 must be the root that signs **Cloudflare's edge certificate** for that hostname
+  (not the origin, which is plain http on 7878 behind the tunnel). Chunked responses (a proxy
+  may re-chunk) are decoded.
+
 ## Fence sink and persistence
 - Sink signature (unchanged): `void sink(void *ctx, uint32_t fence_seq, const char *signed_wire,
   size_t len)`. `signed_wire`/`len` is the v1 signed JSON boundary command exactly as the server
@@ -47,7 +71,8 @@ placeholder name for v1 `version`.
 
 ## Proposed additions to v1 report (for op-software to accept)
 v1 servers ignore unknown fields, so these are backward compatible; none are v2 names.
-- `collar_id` (top level, string): the Rook's own id, so one endpoint can serve several Rooks.
+- `collar_id` (top level, string): already accepted by the real ingest (optional, 403 on a
+  mismatch with the key), so this one needs no change.
 - `fence` (per fix, `none|inside|warn|outside`): fence state at that fix.
 - `margin_m` (per fix, number): signed distance to the boundary in metres (negative = outside).
 - `health.dropped` (integer): samples lost from the offline queue since boot.
@@ -70,15 +95,19 @@ Host tests: `make -C firmware/rook/tests/host` (or `firmware/rook/tests/host/run
 ## Mock server
 ```
 cd firmware/rook/tests/mock_server
-python3 server.py --port 8080                       # needs: pip install cryptography
+python3 server.py --port 7878                       # needs: pip install cryptography
 python3 server.py --port 8443 --tls cert.pem key.pem
-curl -X POST localhost:8080/mock/boundary -d '{}'   # stage the next signed version
-curl -X POST localhost:8080/mock/fail -d '{"status":503,"count":2,"retry_after":5}'
-curl localhost:8080/mock/state                      # reports and acks received
+curl -X POST localhost:7878/mock/boundary -d '{}'   # stage the next signed version
+curl -X POST localhost:7878/mock/fail -d '{"status":503,"count":2,"retry_after":5}'
+curl -X POST localhost:7878/mock/gate -d '{"refuse":true}'   # boundary -> 409
+curl -X POST localhost:7878/mock/config -d '{"version":3,"report_s":30}'  # signed config in replies
+curl localhost:7878/mock/state                      # reports, acks, queries, legacy, slots
 ```
 Signed with the **dev key** (seed 00..1f, public key `A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg=`,
-same as `protocol/vectors`). Provision the bench collar with that `s` and the token
-`0123456789abcdef0123456789abcdef`. Samples: `samples/boundary_v{1,2}.json`, `boundary_tampered.json`.
+same as `protocol/vectors`). Provision the bench collar with that `s`, collar id
+`col_01J9SIMCOLLAR` and the key `0123456789abcdef` ×4 (64 hex). It mirrors the real ingest's
+checks (bearer 401, collar 403, accuracy_m, battery 0..1, 10-min-ahead 400, ack `at`, LEGACY
+without caps). `tests/host/run.sh` also runs `test_live`: the firmware encoders against it. Samples: `samples/boundary_v{1,2}.json`, `boundary_tampered.json`.
 A device on LTE needs a public address for the mock (e.g. a tunnel); set it in `rook-mock.conf`.
 
 ## Pointing a real Rook at Hologram (once Cody activates the SIM)
@@ -97,6 +126,23 @@ A device on LTE needs a public address for the mock (e.g. a tunnel); set it in `
    - `AT+CNEC=24` then retry, for attach reject causes
 5. Expect `report: N fixes ... -> 200` and `boundary: ...` in the log.
 
+## Battery for the first report
+- `CONFIG_ROOK_BATTERY_MAX17260` is off by default and the **bare Connect Kit has no fuel gauge
+  and no battery divider**, so reports omit `battery` (the app shows no battery; position still
+  shows). Nothing is faked.
+- With the carrier rev A3: `CONFIG_ROOK_BATTERY_MAX17260=y` plus a carrier devicetree overlay
+  naming its I2C bus (missing: the overlay and the bus label; `i2c2` is a placeholder).
+- Proposed fallback without the carrier: a VBAT divider into one nRF9151 AIN pin read by the
+  Zephyr ADC (`zephyr,user` `io-channels`) and a LiPo voltage-to-fraction curve. Missing: the
+  divider (two resistors and the pin, hardware), the overlay, and a curve. Not implemented.
+  The modem's `%XVBAT` is the regulated supply, not the battery: not used.
+
+## Shortest path to a first report in the app
+1. Activate the SIM (Cody). 2. Put the root CA for the tunnel hostname's Cloudflare edge
+certificate in sec tag 42. 3. Provision over serial 115200 with the server's `provision {...}`
+line. 4. Flash the `rook.conf` build (MAX17260 on only with the carrier). 5. First GNSS fix,
+then the next cycle posts it; the server's `Date` arrives on that first response.
+
 ## Unverified (honest list)
 - Anything on air: attach, APN, PSM grant, TLS handshake with the modem, DNS. Not run.
 - Coexistence: LTE attach while GNSS is tracking (time-shared on the nRF9151; GNSS fixes will
@@ -108,5 +154,8 @@ A device on LTE needs a public address for the mock (e.g. a tunnel); set it in `
 - Fence persistence: host-tested on `store_ram.c` only; not yet exercised on real NVS flash.
 - Pending acks from `app.acks` (NVS) are not resent by the reporter yet; only the ack for the
   command just downloaded is posted.
-- Config command in the report response (`config`) is not applied yet (cap not advertised).
+- Config: applied through the core and host-tested with a mock-signed config; the endpoint
+  switch and `report_s` cadence on the device are not exercised on hardware. `poll_s` is not
+  used separately (the boundary is fetched every report cycle).
+- `device_class` is not sent (optional; the Rook's class in the herd network isn't decided).
 - 413 split: the next cycle relies on `CONFIG_ROOK_LTE_MAX_FIXES`/body cap, not a real halving.
