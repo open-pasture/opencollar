@@ -6,8 +6,8 @@ D7r4 review pack (op-brand):
     D6_PALETTE). Orange accents unchanged (#FF6A2B).
   - Strap: slim flat band (≈44.45 × 3.0) on a YZ ring through the saddle
     channel and under the CW clamp; D4-style buckle + keeper.
-  - Orange only: one small dot per pod lid, one small collar tab, tiny
-    screw heads + latch. No orange saddles / clamp endcaps.
+  - Orange only: one small dot per pod lid (no collar tab; latch charcoal).
+    No orange saddles / clamp endcaps / screw dashes.
 
 Usage:
   blender --background --factory-startup --python build_assembly_blend.py -- \\
@@ -433,63 +433,56 @@ def _lerp_table(rows, key_x, key_y, x):
     return ys[-1]
 
 
-def _flared_section_xz(hw_lid, hw_skirt, z_bot, z_top, corner_r=4.0, n_side=4):
-    """Closed CCW section: flat crisp lid over a wider flared skirt (D4 language).
+def _flared_section_xz(hw_lid, hw_skirt, z_bot, z_top, chamfer=1.2, n_side=6):
+    """Closed CCW section: crisp flat lid + small chamfer + flared skirt (D4).
 
-    Top edge is flat (lid); sides ease out to hw_skirt near the strap; bottom
-    closes under the strap outer face. No rolling roof.
+    Sharp lid edge (tiny chamfer, not a soft sleeve). Lower sides flare to a
+    wide skirt at the strap; bottom closes under the strap outer face.
     """
-    cr = min(corner_r, hw_lid * 0.30, max(0.5, 0.20 * (z_top - z_bot)))
-    z_sh = z_top - max(3.5, 0.16 * (z_top - z_bot))  # short shoulder
+    ch = min(chamfer, hw_lid * 0.08, max(0.6, 0.04 * (z_top - z_bot)))
+
+    def flare_hw(s_from_top):
+        # Hold lid width for top 35%, then ease to skirt
+        if s_from_top <= 0.35:
+            return hw_lid
+        u = (s_from_top - 0.35) / 0.65
+        u = u * u * (3.0 - 2.0 * u)
+        return hw_lid + (hw_skirt - hw_lid) * u
+
     pts = []
-
-    def arc(cx, cz, a0, a1, n):
-        out = []
-        for k in range(n + 1):
-            a = a0 + (a1 - a0) * (k / n)
-            out.append((cx + cr * math.cos(a), cz + cr * math.sin(a)))
-        return out
-
-    # TR lid corner: east→north (flat roof starts after)
-    pts += arc(hw_lid - cr, z_top - cr, 0.0, math.pi / 2.0, n_side)
-    # TL lid corner
-    pts += arc(-hw_lid + cr, z_top - cr, math.pi / 2.0, math.pi, n_side)[1:]
-    # Left side: lid → skirt, top→bottom
+    # Flat lid (crisp top)
+    pts.append((-hw_lid + ch, z_top))
+    pts.append((hw_lid - ch, z_top))
+    pts.append((hw_lid, z_top - ch))  # right chamfer
+    # Right wall top → bottom
     for k in range(1, n_side + 1):
         t = k / n_side
         s = t * t * (3.0 - 2.0 * t)
-        z = z_sh + (z_bot + cr - z_sh) * s
-        hw = hw_lid + (hw_skirt - hw_lid) * s
-        pts.append((-hw, z))
-    # BL corner
-    pts += arc(-hw_skirt + cr, z_bot + cr, math.pi, 3.0 * math.pi / 2.0, n_side)[1:]
-    # BR corner
-    pts += arc(hw_skirt - cr, z_bot + cr, 3.0 * math.pi / 2.0, 2.0 * math.pi, n_side)[1:]
-    # Right side: skirt → lid, bottom→top
+        z = (z_top - ch) + (z_bot + 0.6 - (z_top - ch)) * s
+        pts.append((flare_hw(s), z))
+    # Closed underside
+    pts.append((hw_skirt - ch, z_bot))
+    pts.append((-hw_skirt + ch, z_bot))
+    # Left wall bottom → top
     for k in range(1, n_side + 1):
         t = k / n_side
         s = t * t * (3.0 - 2.0 * t)
-        z = (z_bot + cr) + (z_sh - (z_bot + cr)) * s
-        hw = hw_skirt + (hw_lid - hw_skirt) * s
-        pts.append((hw, z))
-    # drop near-duplicate close
-    if len(pts) > 1 and abs(pts[0][0] - pts[-1][0]) < 1e-5 and abs(pts[0][1] - pts[-1][1]) < 1e-5:
-        pts.pop()
+        z = (z_bot + 0.6) + ((z_top - ch) - (z_bot + 0.6)) * s
+        pts.append((-flare_hw(1.0 - s), z))
+    pts.append((-hw_lid, z_top - ch))  # left chamfer
     return pts
 
 
 def _add_d4_loft_shell(details_col, body_rgb):
-    """D7r11: one lofted review shell — per-region heights, D4 shape language.
+    """D7r12: slim lofted review shell — crisp lid, flared skirt, 001 deboss.
 
-    Cap roof ≈48–50 mm (panel land z=41.4 minimum); pods ≈30–34 mm (base+lid);
-    softened cap→pod step; closed underside at −4.5 mm; solar opening so navy
-    strips show; 001 debossed on pod lid faces. Print STLs unchanged.
+    Cap stays at true min ~48.2 mm (panel land); pods target ~25 mm (≈1.4× D4).
+    Shallow shadowed step at solar/pod join. Print STLs unchanged.
     """
     import bmesh
 
     profile, profile_path = _load_d4_profile()
     stations = profile["stations"]
-    roofline = profile["roofline"]
     end_sh = profile.get("end_shoulder", {})
     d4_r_out = float(profile["strap"]["r_outer"])
     d4_ang0 = float(profile["housing_angle_range_deg"][0])
@@ -501,37 +494,40 @@ def _add_d4_loft_shell(details_col, body_rgb):
     r_out = major_r + STRAP_T / 2.0  # ≈228.5
     strap_outer_z0 = zc + r_out       # ≈ -5.35 at a=0
 
-    # ---- per-region heights (review silhouette, not max mesh AABB) --------
+    # ---- per-region heights ------------------------------------------------
     PANEL_LAND_Z = 41.4
-    # Minimum cap height set by panel land (+1.5 mm shell skin over land)
+    # True min with current internals — cannot hit 1.4×D4 (39) without lowering land
     CAP_H = PANEL_LAND_Z - strap_outer_z0 + 1.5  # ≈48.25
-    CAP_H_DRIVER = "cap_lid panel land z=41.4 (+1.5 skin)"
-    # Pod: base ≈23.4 + lid ≈4 + clearance ≈4 → ~31–32 mm above strap
-    POD_H = 32.0
-    POD_H_MID = 30.0   # slight mid-pod dip (D4 15.2/17.5)
-    POD_H_DRIVER = "pod_base≈23.4 + lid≈4 + clearance≈4.6"
-    BOTTOM = -4.9      # closed wrap like D4 shoulder fairings (no dark openings)
+    CAP_H_DRIVER = (
+        "cap_lid panel land z=41.4 (+1.5 skin); cannot reach ~39 mm (1.4×D4) "
+        "without lowering the land / lid stack — see review/height_options.md"
+    )
+    # Pods: 1.4× D4 17.5 ≈ 24.5 → 25 mm review silhouette (lids hidden)
+    POD_H = 25.0
+    POD_H_MID = 24.0
+    POD_H_DRIVER = "review target ≈1.4× D4 pod (print lids hidden; STL stack still 26.2)"
+    BOTTOM = -4.9
 
-    # Widths: D4 language, sized to D6 envelope floors (not 1.3× fat)
-    POD_LID_W = 68.0   # crisp lid = pod outer
-    POD_SKIRT_W = 74.0  # short flared shoulder
+    # Widths: crisp lid, wide flared skirt (D4 side has wide base under housing)
+    POD_LID_W = 68.0
+    POD_SKIRT_W = 78.0   # wide flare at strap
     CAP_LID_W = 76.0
-    CAP_SKIRT_W = 78.0
+    CAP_SKIRT_W = 80.0
 
     pod_tip_y = 187.0
     d6_body = math.degrees(math.asin(min(0.999, pod_tip_y / major_r)))
     d6_body0, d6_body1 = -d6_body, +d6_body
-    # End drop: D4 L ~9 mm / R ~18 mm arc — short steep fall, rounded plan R≈8
-    drop_tail = 2.8
+    # Short tangent shoulder into strap + rounded end (D4 L~9 mm / R~18 mm)
+    drop_tail = 2.6
     d6_ang0 = d6_body0 - drop_tail
     d6_ang1 = d6_body1 + drop_tail
     END_PLAN_R = 8.0
 
-    # Region angles (strap arc)
-    A_CAP = 16.0       # |a| < this → full cap height
-    A_TRANS0 = 18.0    # start of cap→pod fairing
-    A_TRANS1 = 28.0    # end of fairing (pod plateau)
-    A_POD_MID = 38.0   # mid-pod dip centre
+    # Stepped silhouette: hold cap, then short step down to pod (not soft sleeve)
+    A_CAP = 17.0
+    A_TRANS0 = 18.5
+    A_TRANS1 = 24.0    # shorter transition → visible step
+    A_POD_MID = 38.0
 
     def d4_angle_to_d6(a_d4):
         t = (a_d4 - d4_ang0) / max(d4_ang1 - d4_ang0, 1e-9)
@@ -551,45 +547,35 @@ def _add_d4_loft_shell(details_col, body_rgb):
         aa = abs(a_d6)
         if aa <= A_CAP:
             return CAP_H, CAP_H_DRIVER
+        if aa < A_TRANS0:
+            return CAP_H, CAP_H_DRIVER
         if aa < A_TRANS1:
-            # Softened cap→pod like fairing_cap_pod
+            # Short eased step (visible stepped silhouette, not one soft sleeve)
             t = _smoothstep((aa - A_TRANS0) / max(A_TRANS1 - A_TRANS0, 1e-9))
-            if aa < A_TRANS0:
-                return CAP_H, CAP_H_DRIVER
+            # Bias toward a quicker drop (more step-like)
+            t = t * t
             h = CAP_H + (POD_H - CAP_H) * t
-            return h, "cap→pod fairing transition"
-        # Pod plateau with slight mid dip
-        # dip peaks near A_POD_MID
-        dip_t = abs(aa - A_POD_MID) / 10.0
+            return h, "cap→pod shallow step"
+        dip_t = abs(aa - A_POD_MID) / 12.0
         dip = (1.0 - _smoothstep(min(1.0, dip_t))) * (POD_H - POD_H_MID)
         return POD_H - dip, POD_H_DRIVER
 
     def widths_at_d6_angle(a_d6):
         aa = abs(a_d6)
-        a_d4 = d6_angle_to_d4(a_d6)
-        # D4 width curve as relative shoulder cue, floored to D6 envelope
-        w_d4 = _lerp_table(stations, "angle_deg", "width_mm", a_d4)
         if aa <= A_CAP:
-            lid, skirt = CAP_LID_W, CAP_SKIRT_W
-        elif aa < A_TRANS1:
-            t = _smoothstep((aa - A_TRANS0) / max(A_TRANS1 - A_TRANS0, 1e-9))
+            return CAP_LID_W, CAP_SKIRT_W
+        if aa < A_TRANS1:
             if aa < A_TRANS0:
-                lid, skirt = CAP_LID_W, CAP_SKIRT_W
-            else:
-                lid = CAP_LID_W + (POD_LID_W - CAP_LID_W) * t
-                skirt = CAP_SKIRT_W + (POD_SKIRT_W - CAP_SKIRT_W) * t
-        else:
-            lid, skirt = POD_LID_W, POD_SKIRT_W
-            # End shoulder flare (D4 77–79) just before drop
-            if aa > 48.0:
-                u = _smoothstep((aa - 48.0) / 6.0)
-                skirt = POD_SKIRT_W + (78.0 - POD_SKIRT_W) * u
-                lid = POD_LID_W + (72.0 - POD_LID_W) * u * 0.5
-        # Keep D4 relative widen without going fat
-        skirt = max(skirt, min(w_d4, 78.0))
-        return lid, skirt
+                return CAP_LID_W, CAP_SKIRT_W
+            t = _smoothstep((aa - A_TRANS0) / max(A_TRANS1 - A_TRANS0, 1e-9))
+            lid = CAP_LID_W + (POD_LID_W - CAP_LID_W) * t
+            skirt = CAP_SKIRT_W + (POD_SKIRT_W - CAP_SKIRT_W) * t
+            return lid, skirt
+        # Hold pod widths; tip rounding is handled in the end-drop below
+        return POD_LID_W, POD_SKIRT_W
 
-    n_stat = 64
+    # Dense stations → fair lower edge, no end faceting
+    n_stat = 72
     angles_d6 = [d6_ang0 + (d6_ang1 - d6_ang0) * i / (n_stat - 1) for i in range(n_stat)]
 
     bm = bmesh.new()
@@ -599,22 +585,26 @@ def _add_d4_loft_shell(details_col, body_rgb):
         hw_lid, hw_skirt = widths_at_d6_angle(a_d6)
         h_bot = BOTTOM
         aa = abs(a_d6)
-        if aa > d6_body - 1.0:
-            # Start drop 1° before tip; quadratic fall (steeper than smoothstep)
-            t_end = min(1.0, max(0.0, (aa - (d6_body - 1.0)) / (drop_tail + 1.0)))
-            s = t_end * t_end  # concave-up → short steep nose
-            h_top = h_top * (1.0 - s) + 1.4 * s
-            # Plan rounds toward R8 tip (not a blunt block)
-            tip_w = 2.0 * END_PLAN_R
-            hw_lid = hw_lid * (1.0 - s) + tip_w * 0.5 * s
-            hw_skirt = hw_skirt * (1.0 - s) + (tip_w * 0.65) * s
-            h_bot = BOTTOM * (1.0 - s) + (-1.0) * s
+        if aa > d6_body - 1.2:
+            # Short tangent shoulder into strap + rounded end (D4 L ~9 mm arc)
+            # Hold width through the shoulder, then round plan to tip — no horns.
+            t_end = min(1.0, max(0.0, (aa - (d6_body - 1.2)) / (drop_tail + 1.2)))
+            s = t_end * t_end * (3.0 - 2.0 * t_end)  # smoothstep
+            s3 = s * s * s  # steeper height drop after shoulder
+            h_top = h_top * (1.0 - s3) + 1.5 * s3
+            tip_w = 2.0 * END_PLAN_R  # ≈16 mm round plan
+            # Fair lower edge: lid and skirt converge together (no skirt flare-out)
+            hw_lid = hw_lid * (1.0 - s) + tip_w * 0.55 * s
+            hw_skirt = hw_skirt * (1.0 - s) + tip_w * 0.85 * s
+            if hw_skirt < hw_lid:
+                hw_skirt = hw_lid
+            h_bot = BOTTOM * (1.0 - s) + (-0.8) * s
 
         a = math.radians(a_d6)
         cy = r_out * math.sin(a)
         cz = zc + r_out * math.cos(a)
         ny, nz = math.sin(a), math.cos(a)
-        peri = _flared_section_xz(hw_lid * 0.5, hw_skirt * 0.5, h_bot, h_top)
+        peri = _flared_section_xz(hw_lid * 0.5, hw_skirt * 0.5, h_bot, h_top, chamfer=1.1)
         ring = []
         for lx, lz in peri:
             ring.append(bm.verts.new((lx, cy + ny * lz, cz + nz * lz)))
@@ -641,12 +631,15 @@ def _add_d4_loft_shell(details_col, body_rgb):
     except ValueError:
         pass
 
+    # Weld + consistent normals before subdiv (kills end faceting / lit seams)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.05)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     mesh = bpy.data.meshes.new("review_shell_mesh")
     bm.to_mesh(mesh)
     bm.free()
     obj = bpy.data.objects.new("review_shell", mesh)
     details_col.objects.link(obj)
-    obj.data.materials.append(mat("m_review_shell", body_rgb, rough=0.6))
+    obj.data.materials.append(mat("m_review_shell", body_rgb, rough=0.55))
 
     bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
@@ -658,12 +651,14 @@ def _add_d4_loft_shell(details_col, body_rgb):
         bpy.ops.object.modifier_apply(modifier=sub.name)
     except Exception as exc:
         print(f"  subdiv warn: {exc}")
-    try:
-        bpy.ops.object.shade_smooth()
-    except Exception:
-        pass
+    bpy.ops.object.shade_smooth()
     for poly in obj.data.polygons:
         poly.use_smooth = True
+    # Clear custom split normals so workbench doesn't light coplanar edges
+    try:
+        bpy.ops.mesh.customdata_custom_splitnormals_clear()
+    except Exception:
+        pass
 
     def _bool_cut(cutter, tag):
         bpy.ops.object.select_all(action="DESELECT")
@@ -693,19 +688,22 @@ def _add_d4_loft_shell(details_col, body_rgb):
     details_col.objects.link(solar_cut)
     _bool_cut(solar_cut, "solar_open")
 
-    # Thin shadow groove at cap–pod (height step already does the work;
-    # keep a shallow recess only — no deep boolean slot / dashes)
+    # Cap–pod lid seam: real narrow groove with shadow (not a lit coplanar line)
     for side, sy in (("L", -1.0), ("R", 1.0)):
-        a_joint = math.radians(sy * 22.0)
+        a_deg = sy * 21.0
+        a_joint = math.radians(a_deg)
         cy = r_out * math.sin(a_joint)
         cz = zc + r_out * math.cos(a_joint)
-        h_j, _ = roof_at_d6_angle(sy * 22.0)
-        loc = Vector((0.0, cy + math.sin(a_joint) * (h_j - 0.8),
-                      cz + math.cos(a_joint) * (h_j - 0.8)))
+        h_j, _ = roof_at_d6_angle(a_deg)
+        # Cutter sits on the roof and cuts a V-ish trench downward
+        loc = Vector((0.0,
+                      cy + math.sin(a_joint) * (h_j + 0.2),
+                      cz + math.cos(a_joint) * (h_j + 0.2)))
         bpy.ops.mesh.primitive_cube_add(size=1.0, location=loc)
         g = bpy.context.active_object
         g.name = f"_tmp_seam_{side}"
-        g.scale = (70.0, 0.9, 2.2)
+        # Narrow along strap (1.4 mm), deep enough to shadow, across lid width
+        g.scale = (64.0, 1.4, 3.5)
         g.rotation_euler = (-a_joint, 0.0, 0.0)
         bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
         for cc in list(g.users_collection):
@@ -713,39 +711,26 @@ def _add_d4_loft_shell(details_col, body_rgb):
         details_col.objects.link(g)
         _bool_cut(g, f"seam_{side}")
 
-    # "001" on each pod lid — recessed pit + high-contrast raised glyph.
-    # Baseline across strap width (local +X). Sized for hero readability.
+    # "001" deboss: same charcoal as lid, 0.6 mm deep, H=9.5 mm.
+    # Baseline along +X → reads L→R in TOP view (strap horizontal / across neck).
+    # Centred under the orange-dot station so side view keeps it under the dot.
     font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-    glyph_rgb = (0.72, 0.73, 0.74)  # light charcoal vs body — readable deboss
     for side, sy in (("L", -1.0), ("R", 1.0)):
-        a_pod = sy * 36.0  # mid-pod lid face, clear of orange dot at ~28°
+        a_pod = sy * 28.0  # under orange dot
         a = math.radians(a_pod)
         h_p, _ = roof_at_d6_angle(a_pod)
         cy = r_out * math.sin(a)
         cz = zc + r_out * math.cos(a)
         ny, nz = math.sin(a), math.cos(a)
-        # Recess pit
-        pad_loc = Vector((0.0, cy + ny * (h_p - 0.2), cz + nz * (h_p - 0.2)))
-        bpy.ops.mesh.primitive_cube_add(size=1.0, location=pad_loc)
-        pad = bpy.context.active_object
-        pad.name = f"_tmp_001pad_{side}"
-        pad.scale = (34.0, 16.0, 3.2)
-        pad.rotation_euler = (-a, 0.0, 0.0)
-        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-        for cc in list(pad.users_collection):
-            cc.objects.unlink(pad)
-        details_col.objects.link(pad)
-        _bool_cut(pad, f"id_pad_{side}")
-
-        # Glyph: build in XY, then place on lid facing outward
         bpy.ops.object.text_add(location=(0, 0, 0))
         txt = bpy.context.active_object
         td = txt.data
         td.body = "001"
         td.align_x = "CENTER"
         td.align_y = "CENTER"
-        td.size = 14.0
-        td.extrude = 1.3
+        td.size = 9.5
+        td.extrude = 1.2  # solid cutter; boolean pit targeted at 0.6 mm
+        td.offset = -0.05
         if os.path.exists(font_path):
             try:
                 td.font = bpy.data.fonts.load(font_path)
@@ -753,21 +738,19 @@ def _add_d4_loft_shell(details_col, body_rgb):
                 pass
         bpy.ops.object.convert(target="MESH")
         txt = bpy.context.active_object
-        txt.name = f"pod_{side}_id_001"
+        txt.name = f"_tmp_001cut_{side}"
         bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY", center="BOUNDS")
-        # Text in XY: baseline +X (across strap), extrude +Z.
-        # Rot X by -a maps +Z → outward normal (0,sin a,cos a); +X unchanged.
+        # Baseline +X (across strap) → L→R in top view; local +Z → outward normal
         txt.rotation_euler = (-a, 0.0, 0.0)
         bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
-        glyph_loc = Vector((0.0, cy + ny * (h_p + 0.8), cz + nz * (h_p + 0.8)))
-        txt.location = glyph_loc
+        # Place so the cutter straddles the lid: ~0.6 mm into the shell
+        txt.location = Vector((0.0, cy + ny * (h_p - 0.3), cz + nz * (h_p - 0.3)))
         for cc in list(txt.users_collection):
             cc.objects.unlink(txt)
         details_col.objects.link(txt)
-        txt.data.materials.clear()
-        txt.data.materials.append(mat(f"m_001_{side}", glyph_rgb, rough=0.5))
-        print(f"  001 {side}: loc=({glyph_loc.x:.1f},{glyph_loc.y:.1f},{glyph_loc.z:.1f}) "
-              f"dims={[round(d,1) for d in txt.dimensions]}")
+        _bool_cut(txt, f"id_001_{side}")
+        print(f"  001 deboss {side}: a={a_pod:.1f}° under orange-dot station; "
+              f"reads L→R in TOP view (baseline +X)")
 
     # Hide print bodies the shell replaces; keep solar + accents visible
     hide_names = []
@@ -794,11 +777,14 @@ def _add_d4_loft_shell(details_col, body_rgb):
         h_d6, driver = roof_at_d6_angle(a_d6)
         hw_lid, hw_skirt = widths_at_d6_angle(a_d6)
         aa = abs(a_d6)
-        if aa > d6_body - 1.0:
-            t_end = min(1.0, max(0.0, (aa - (d6_body - 1.0)) / (drop_tail + 1.0)))
-            s = t_end * t_end
-            h_d6 = h_d6 * (1.0 - s) + 1.4 * s
-            hw_lid = hw_lid * (1.0 - s) + END_PLAN_R * s
+        if aa > d6_body - 1.2:
+            t_end = min(1.0, max(0.0, (aa - (d6_body - 1.2)) / (drop_tail + 1.2)))
+            s = t_end * t_end * (3.0 - 2.0 * t_end)
+            s3 = s * s * s
+            h_d6 = h_d6 * (1.0 - s3) + 1.5 * s3
+            tip_w = 2.0 * END_PLAN_R
+            hw_lid = hw_lid * (1.0 - s) + tip_w * 0.55 * s
+            hw_skirt = hw_skirt * (1.0 - s) + tip_w * 0.85 * s
             driver = "end_drop"
         compare.append({
             "angle_d4_deg": round(a_d4, 2),
@@ -815,7 +801,7 @@ def _add_d4_loft_shell(details_col, body_rgb):
         })
 
     meta = {
-        "round": "D7r11",
+        "round": "D7r12",
         "profile_path": profile_path,
         "d4_r_outer": d4_r_out,
         "d6_r_outer": r_out,
@@ -826,12 +812,18 @@ def _add_d4_loft_shell(details_col, body_rgb):
         "pod_height_driver": POD_H_DRIVER,
         "d4_cap_max_mm": D4_CAP_MAX,
         "bottom_rel_mm": BOTTOM,
+        "id_001": {
+            "depth_mm": 0.6,
+            "height_mm": 9.5,
+            "material": "same charcoal as lid (boolean deboss)",
+            "reads_in": "TOP view L→R (baseline +X, strap horizontal across neck)",
+            "side_view": "centred under orange dot at a≈±28°",
+        },
         "cap_roof_note": (
-            f"Min cap height {CAP_H:.1f} mm set by {CAP_H_DRIVER} "
-            f"(strap outer z0={strap_outer_z0:.2f}). "
-            f"Pods {POD_H:.0f} mm ({POD_H_DRIVER}), mid-dip {POD_H_MID:.0f}. "
-            f"D4 cap max was {D4_CAP_MAX}. Solar opening keeps navy strips visible; "
-            f"001 debossed on shell pod lid faces."
+            f"Cap {CAP_H:.1f} mm — true min with current panel land z=41.4 "
+            f"(cannot hit ~39 mm / 1.4×D4 without lowering land; see height_options.md). "
+            f"Pods {POD_H:.0f} mm ≈1.4× D4. Crisp lid + flared skirt; "
+            f"001 same-material 0.6 mm deboss reads L→R in TOP view."
         ),
         "n_stations_loft": n_stat,
         "hidden": hide_names,
@@ -839,8 +831,8 @@ def _add_d4_loft_shell(details_col, body_rgb):
         "end_shoulder_d4": end_sh,
     }
     print(
-        f"  review_shell r11: angles {d6_ang0:.1f}→{d6_ang1:.1f} "
-        f"cap={CAP_H:.1f} ({CAP_H_DRIVER}) pod={POD_H:.0f}"
+        f"  review_shell r12: angles {d6_ang0:.1f}→{d6_ang1:.1f} "
+        f"cap={CAP_H:.1f} pod={POD_H:.0f}"
     )
     print(f"  hidden under shell: {hide_names}")
     return obj, meta
@@ -1032,6 +1024,7 @@ _add_box(
 )
 solar_meta = _add_solar_review_detail(details, panel_c, Vector((66.6, 113.6, 2.0)))
 
+# D7r12: orange ONLY on the two lid dots — latch in body charcoal (no orange tab)
 latch_path = _find_detail("latch.stl")
 latch_c = _wbbox_centre("latch")
 if latch_path and latch_c is not None:
@@ -1039,48 +1032,42 @@ if latch_path and latch_c is not None:
     Lc = _bbox_centre(L)
     L.location = latch_c - Lc
     L.data.materials.clear()
-    L.data.materials.append(orange_mat)
-    # Ensure ≥2 mm in every dim for hygiene
+    L.data.materials.append(body_mat)
     if min(L.dimensions) < 2.0 - 1e-6:
         bpy.data.objects.remove(L, do_unlink=True)
-        _add_box(details, "latch", (6.0, 11.0, 2.2), latch_c, ORANGE)
+        _add_box(details, "latch", (6.0, 11.0, 2.2), latch_c, BODY)
 elif latch_c is not None:
-    _add_box(details, "latch", (6.0, 11.0, 2.2), latch_c, ORANGE)
+    _add_box(details, "latch", (6.0, 11.0, 2.2), latch_c, BODY)
 
-plug_c = _wbbox_centre("cap_plug_service_orange_p68p")
-if plug_c is not None:
-    # ≥2 mm thick solid — no thin plate artifact
-    _add_cyl(details, "collar_orange_tab", radius=3.0, depth=2.2, loc=plug_c, rgb=ORANGE)
-
+# D7r12: orange ONLY on the two lid dots — tab dropped
 _add_strap_loop(details)
 _add_buckle_keeper(details)
 _purge_curves_and_wires()
 
-# D7r11: lofted shell first (hides print lids; solar opening; 001 on shell)
 _shell_obj, _shell_meta = _add_d4_loft_shell(details, BODY)
-_shell_report_path = os.path.join(OUT, "d7r11_stations_vs_d4.json")
+_shell_report_path = os.path.join(OUT, "d7r12_stations_vs_d4.json")
 json.dump(_shell_meta, open(_shell_report_path, "w"), indent=2)
 shutil.copy2(
     _shell_report_path,
-    os.path.join(_HERE, "review", "d7r11_stations_vs_d4.json"),
+    os.path.join(_HERE, "review", "d7r12_stations_vs_d4.json"),
 )
 
-# Orange dots on shell pod lids — offset inward from the 001 pad (a≈33.5°)
+# Orange dots on shell pod lids — centred over 001 deboss (a≈±28°)
 _zc, _r_out = -233.85, 227.0 + STRAP_T / 2.0
 for side, sy in (("L", -1.0), ("R", 1.0)):
-    a = math.radians(sy * 28.0)  # toward cap, clear of 001
-    h_pod = float(_shell_meta.get("pod_roof_mm", 32.0))
+    a = math.radians(sy * 28.0)
+    h_pod = float(_shell_meta.get("pod_roof_mm", 25.0))
     cy = _r_out * math.sin(a)
     cz = _zc + _r_out * math.cos(a)
     loc = (
         0.0,
-        cy + math.sin(a) * (h_pod + 1.3),
-        cz + math.cos(a) * (h_pod + 1.3),
+        cy + math.sin(a) * (h_pod + 1.2),
+        cz + math.cos(a) * (h_pod + 1.2),
     )
     _add_cyl(
         details,
         f"pod_{side}_dot_orange",
-        radius=4.5,
+        radius=4.0,
         depth=2.2,
         loc=loc,
         rgb=ORANGE,
@@ -1094,13 +1081,10 @@ note["ghost_note"] = ghost_note
 note["palette"] = _palette
 note["solar_shade"] = solar_meta.get("shade_note", "")
 note["solar_rib_w_mm"] = float(solar_meta.get("rib_w_mm", 0))
-note["cap_crown_before_mm"] = 1.0
-note["cap_crown_after_mm"] = 3.5
-note["cap_nose_tip_before_mm"] = 4.5
-note["cap_nose_tip_after_mm"] = 3.0
-note["review_shell"] = "d4_loft_r11"
+note["review_shell"] = "d4_loft_r12"
 note["cap_roof_note"] = _shell_meta.get("cap_roof_note", "")
 note["cap_height_driver"] = _shell_meta.get("cap_height_driver", "")
+note["id_001"] = "deboss 0.6mm same charcoal; reads L→R in TOP view"
 details.objects.link(note)
 
 hygiene_path = os.path.join(OUT, "geometry_hygiene.json")
