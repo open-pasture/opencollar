@@ -34,6 +34,7 @@ make -C firmware/lora loss    # one-hop 1000@30% + latejoin multi-hop sweeps
 | `test_pilot` | Opaque inject (`accept_local_air`); valid activates; tamper/evil sig fail; older rejected |
 | `test_maxfrag` | 64-fragment sealed fence re-served by relay (`starling_serve` ON) |
 | `test_latejoin` | 3/5-node late join (empty/older), supersede mid-catchup, mid pushes newer (`starling_serve` ON). Fast in `test`; `--loss30` long sweeps via `make loss` |
+| `test_integration_snippets` | Rook/Starling INTEGRATION.md setup (own buffers each); init + poll |
 
 ### Clean
 

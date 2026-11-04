@@ -51,7 +51,7 @@ $(BUILD)/monocypher-ed25519.o: $(MONO)/monocypher-ed25519.c | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 TESTS := test_vectors test_onehop test_chain test_security test_persist test_pilot test_maxfrag \
-	test_latejoin
+	test_latejoin test_integration_snippets
 
 $(BUILD)/test_vectors: tests/test_vectors.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
@@ -75,6 +75,9 @@ $(BUILD)/test_maxfrag: tests/test_maxfrag.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
 $(BUILD)/test_latejoin: tests/test_latejoin.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
+
+$(BUILD)/test_integration_snippets: tests/test_integration_snippets.c $(LIB_OBJ) $(SIM_OBJ) $(MONO_OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
 test: $(TESTS:%=$(BUILD)/%)

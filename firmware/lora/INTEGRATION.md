@@ -127,14 +127,17 @@ Node does not heap-allocate; app provides buffers.
 
 ---
 
-## Minimal usage (pseudo-C against headers)
+## Minimal usage (against headers)
+
+These snippets are exercised by `tests/test_integration_snippets.c`
+(init + one `poll` each). Apps replace the infinite loops with sleep/IRQ.
 
 ### Rook (pilot)
 
 ```c
-static uint8_t active[2048], pending[2048], rx[256], tx[1500];
-static oc_fh_node_t node;
-static oc_fh_store_ram_t store; /* replace with NVS-backed oc_fh_store_t */
+static uint8_t rook_active[2048], rook_pending[2048], rook_rx[256], rook_tx[1500];
+static oc_fh_node_t rook_node;
+static oc_fh_store_ram_t rook_store; /* replace with NVS-backed oc_fh_store_t */
 
 void rook_main(oc_radio_t *radio, const uint8_t farm[8],
                oc_fh_verify_fn farm_verify, void *farm_ctx,
@@ -143,8 +146,8 @@ void rook_main(oc_radio_t *radio, const uint8_t farm[8],
 {
 	oc_fh_config_t cfg = {0};
 	oc_fh_buffers_t buf = {
-		active, sizeof active, pending, sizeof pending,
-		rx, sizeof rx, tx, sizeof tx
+		rook_active, sizeof rook_active, rook_pending, sizeof rook_pending,
+		rook_rx, sizeof rook_rx, rook_tx, sizeof rook_tx
 	};
 	cfg.node_id = 1;
 	cfg.is_rook = 1;
@@ -153,16 +156,17 @@ void rook_main(oc_radio_t *radio, const uint8_t farm[8],
 	memcpy(cfg.farm_id, farm, 8);
 	cfg.frag_data_max = 209;
 
-	oc_fh_store_ram_init(&store); /* app: wire NVS ops instead */
-	oc_fh_node_init(&node, &cfg, &buf, radio, farm_verify, farm_ctx, now_ms, clock);
-	oc_fh_node_set_store(&node, &store.api);
-	oc_fh_node_set_payload_verify(&node, pv, pv_ctx);
-	(void)oc_fh_node_restore(&node);
+	oc_fh_store_ram_init(&rook_store); /* app: wire NVS ops instead */
+	oc_fh_node_init(&rook_node, &cfg, &buf, radio, farm_verify, farm_ctx, now_ms,
+	                clock);
+	oc_fh_node_set_store(&rook_node, &rook_store.api);
+	oc_fh_node_set_payload_verify(&rook_node, pv, pv_ctx);
+	(void)oc_fh_node_restore(&rook_node);
 
 	for (;;) {
 		/* When core delivers a new v1-signed command: */
-		/* oc_fh_inject_opaque(&node, cmd, cmd_len, version, issued_at); */
-		oc_fh_node_poll(&node);
+		/* oc_fh_inject_opaque(&rook_node, cmd, cmd_len, version, issued_at); */
+		oc_fh_node_poll(&rook_node);
 		/* sleep / yield; wake on radio IRQ or timer */
 	}
 }
@@ -171,26 +175,35 @@ void rook_main(oc_radio_t *radio, const uint8_t farm[8],
 ### Starling
 
 ```c
+/* Own node + buffers — do not reuse the Rook's. Same sizes as Rook example. */
+static uint8_t star_active[2048], star_pending[2048], star_rx[256], star_tx[1500];
+static oc_fh_node_t star_node;
+
 void starling_main(oc_radio_t *radio, const uint8_t farm[8],
                    oc_fh_verify_fn farm_verify, void *farm_ctx,
                    oc_fh_payload_verify_fn pv, void *pv_ctx,
                    uint32_t (*now_ms)(void *), void *clock)
 {
 	oc_fh_config_t cfg = {0};
-	oc_fh_buffers_t buf = { /* same layout as Rook */ };
+	oc_fh_buffers_t buf = {
+		star_active, sizeof star_active, star_pending, sizeof star_pending,
+		star_rx, sizeof star_rx, star_tx, sizeof star_tx
+	};
 	cfg.node_id = 2;
 	cfg.is_rook = 0;
 	cfg.starling_serve = OC_FH_STARLING_SERVE_DEFAULT; /* OFF = one-hop */
 	/* Multi-hop gossip (explicit): cfg.starling_serve = 1; */
 	cfg.accept_local_air = 1; /* pilot LOCAL from Rook */
 	memcpy(cfg.farm_id, farm, 8);
+	cfg.frag_data_max = 209;
 
-	oc_fh_node_init(&node, &cfg, &buf, radio, farm_verify, farm_ctx, now_ms, clock);
-	oc_fh_node_set_payload_verify(&node, pv, pv_ctx);
-	/* optional store + restore */
+	oc_fh_node_init(&star_node, &cfg, &buf, radio, farm_verify, farm_ctx, now_ms,
+	                clock);
+	oc_fh_node_set_payload_verify(&star_node, pv, pv_ctx);
+	/* optional: oc_fh_node_set_store + oc_fh_node_restore */
 	for (;;) {
-		oc_fh_node_poll(&node);
-		/* apply oc_fh_active(&node) to geofence when stats.applied bumps */
+		oc_fh_node_poll(&star_node);
+		/* apply oc_fh_active(&star_node) to geofence when stats.applied bumps */
 	}
 }
 ```
