@@ -1,0 +1,37 @@
+{
+  "round": "D7r11",
+  "head_base": "db151ef",
+  "verdict_r10": "one band finally, but ~2–2.5× D4 height, lumpy roof, blunt ends, open underside gaps, covered solar/001, stray sliver + roof dashes",
+  "items": {
+    "1_per_region_height": {
+      "cap_mm": 48.25,
+      "cap_driver": "cap_lid panel land z=41.4 (+1.5 skin over strap outer z0≈-5.35)",
+      "pod_mm": 32.0,
+      "pod_mid_dip_mm": 30.0,
+      "pod_driver": "pod_base≈23.4 + lid≈4 + clearance≈4.6",
+      "transition": "softened cap→pod fairing 18–28° (like fairing_cap_pod)",
+      "note": "No longer one max 55–65 mm everywhere"
+    },
+    "2_d4_shape": {
+      "change": "Flat crisp lid over wider flared skirt cross-section; short shoulder; pod roof flat with slight mid dip; end drop short/steep with plan R≈8"
+    },
+    "3_closed_underside": {
+      "bottom_rel_mm": -4.9,
+      "change": "Shell bottom edge wraps past strap outer face; no open dark gaps"
+    },
+    "4_solar_and_001": {
+      "solar": "Boolean opening 68×116 over cap so navy edge strips + charcoal rib show",
+      "id_001": "Recessed pad + raised light-charcoal '001' (H≈14 review, across strap width) on each shell pod lid face; print lids hidden under shell"
+    },
+    "5_cleanup": {
+      "change": "Removed groove mega-cuts / screw_cap_orange roof dashes; hygiene PASS on shell; thin seam only at cap–pod"
+    },
+    "6_orange": {
+      "change": "Two lid dots + collar tab kept; dots offset inward from 001 pads"
+    }
+  },
+  "stations_report": "review/d7r11_stations_vs_d4.json",
+  "mount_interface": "untouched",
+  "print_stls": "unchanged",
+  "assembly_check": "144/144 PASS"
+}
