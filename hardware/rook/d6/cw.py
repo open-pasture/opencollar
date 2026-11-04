@@ -1,12 +1,14 @@
-"""D6 counterweight + clamp set — D4 contoured skin around D5 internals.
+"""D7 counterweight + clamp set — low continuous profile, D5 mass retained.
 
 Scope (CW agent): cw_tub, cw_lid (domed), saddle, fairing_cw_L/R, clamp_bar,
-cw_floor_layout. Cap/pods are other agents.
+cw_floor_layout. Cap/pods are other agents (do not edit pod.py / cap.py).
 
-CHOICE (mass): keep D5 envelope 88×74×30 mm tub. D4's ~59×85×24 cannot hold the
-required steel pack (4× 76.2×50.8×6.35 mm flat bar ≈ 772 g). Lid takes D4's
-domed ~12.7 mm look. Print orientation: mating-face-down (less support than
-outer-down; same rule as cap_lid). Rotation only — never flip_normals().
+CHOICE (mass / silhouette — D7):
+  Keep 4× 76.2×50.8×6.35 mm mild-steel flat bar (771.8 g) + 1.5 mm foam +
+  O-ring seal, but rearrange as a 2×2 pack (2 high × 2 along strap/Y) so the
+  tub reads longer along the strap and shallower than D5's 88×74×30 tower.
+  Outer corners R≥10; sides taper; lid dome lowered with a soft blend into
+  the strap channel. Clamp holes stay at y=±28.5 (assembly.CW_CLAMP).
 
 Print orientation (bed at z=0):
   cw_tub           — cavity UP
@@ -44,32 +46,49 @@ import oc  # noqa: E402
 import d5_dims as D  # noqa: E402
 import assembly as A  # noqa: E402
 
-CHARCOAL = (0x26 / 255, 0x28 / 255, 0x2B / 255, 1.0)
-ORANGE = (0xFF / 255, 0x6A / 255, 0x2B / 255, 1.0)
+# Calm light-gray ASA body; orange only on tiny functional accents (renders /
+# review blend). Print STLs are geometry-only.
+BODY_ASA = (0.78, 0.79, 0.80, 1.0)
+ORANGE = (0xFF / 255, 0x6A / 255, 0x2B / 255, 1.0)   # #FF6A2B accents only
 STEEL_GREY = (0.55, 0.55, 0.57, 1.0)
-WORLD = (0.94, 0.93, 0.90)
+WORLD = (0.92, 0.92, 0.91)
+# Back-compat alias (older render call sites)
+CHARCOAL = BODY_ASA
 
-# ---------------------------------------------------------------- dimensions / CHOICE
-# D5 mass envelope kept; D4 look on the lid only.
-CW_L, CW_W, CW_H = D.CW_L, D.CW_W, D.CW_H          # 88 × 74 × 30
-CW_FLOOR = 3.0
-CW_WALL = 6.0
-CW_LID_T = 12.7                                     # D4 domed lid height
-CW_LID_FLAT = 4.0                                   # mating slab thickness
-CW_CROWN_RISE = CW_LID_T - CW_LID_FLAT              # ~8.7 mm dome above flat
-CW_CROWN_LAND = (42.0, 36.0)                        # flat land on dome apex (X,Y)
-CW_SCREWS = list(D.CW_SCREWS)                       # (±22, ±31.5)
-# D6: unify Y with clamp_bar holes (±28.5); X stays ±36 (see assembly.py)
-CW_CLAMP = list(A.CW_CLAMP)                         # (±36, ±28.5)
-PLAN_R = D.PLAN_R
-CAP_CLAMP = list(A.CAP_CLAMP)                       # (±28.5, ±20) strap-along-Y
-
-# Steel pack (node_v1 / D5 required mass)
+# ---------------------------------------------------------------- dimensions / CHOICE (D7)
+# Steel pack rearranged: 2 high × 2 along Y (strap) → longer / shallower tub.
 STEEL_PIECE = (76.2, 50.8, 6.35)                    # 3 in of 2×1/4 in flat bar
 STEEL_N = 4
+STEEL_STACK_N = 2                                   # plates high
+STEEL_ALONG_Y = 2                                   # packs along strap
+STEEL_GAP_Y = 1.0                                   # gap between side-by-side packs
 STEEL_DENSITY = 7.85                                # g/cm³ mild steel
-STEEL_CLEAR = 1.2                                   # pocket oversize per side of pack XY
+STEEL_CLEAR = 1.2                                   # pocket oversize on pack XY
 FOAM_PAD_T = 1.5                                    # foam above steel under lid
+
+CW_FLOOR = 3.0
+CW_WALL = 6.0
+# Pack footprint + clearance + walls
+_PACK_X = STEEL_PIECE[0]
+_PACK_Y = STEEL_ALONG_Y * STEEL_PIECE[1] + (STEEL_ALONG_Y - 1) * STEEL_GAP_Y
+_PACK_Z = STEEL_STACK_N * STEEL_PIECE[2]
+CW_L = round(_PACK_X + STEEL_CLEAR + 2 * CW_WALL, 1)   # 89.4 → 89.4
+CW_W = round(_PACK_Y + STEEL_CLEAR + 2 * CW_WALL, 1)   # 115.8 → 115.8
+CW_H = round(CW_FLOOR + _PACK_Z + FOAM_PAD_T + 0.8, 1)  # 18.0
+# Soft plan: brand asked R≥10 outer vertical corners (was D5 PLAN_R=7)
+PLAN_R = 10.0
+# Lower dome than D4/D6's 12.7 — still a crown, but visually quieter
+CW_LID_T = 7.5
+CW_LID_FLAT = 3.0
+CW_CROWN_RISE = CW_LID_T - CW_LID_FLAT              # 4.5
+CW_CROWN_LAND = (36.0, 48.0)                        # land elongated along Y
+# Screws sit in the Y-end land outside the 2×2 pack (|y|≥ pack_y/2 + boss)
+CW_SCREWS = [(sx * 22.0, sy * 54.0) for sx in (-1, 1) for sy in (-1, 1)]
+# Clamp bar holes stay y=±28.5; X stays ±36 (see assembly.py)
+CW_CLAMP = list(A.CW_CLAMP)                         # (±36, ±28.5)
+CAP_CLAMP = list(A.CAP_CLAMP)                       # (±28.5, ±20) strap-along-Y
+CW_TAPER_INSET = 2.2                                # top plan inset per side
+CW_TAPER_LAYERS = 7
 
 # Strap interface (bottom of loop) — channel width across X, run along Y
 CHANNEL_W = A.SADDLE_CHANNEL_W                      # STRAP_W + 2 = 46.45
@@ -79,14 +98,11 @@ SADDLE_L = A.SADDLE_L
 SADDLE_ROOF = A.SADDLE_ROOF
 SADDLE_H = A.SADDLE_H
 
-# Fairings — D7 continuous wedge (assembly.py FAIRING_* + fairing.py loft)
+# Fairings — widen to span CW X (assembly.py W0=88; CW_L≈89)
 FAIRING_RUN = A.FAIRING_RUN
 FAIRING_W0 = A.FAIRING_W0
 FAIRING_W1 = A.FAIRING_W1
 FAIRING_H = A.FAIRING_H
-FAIRING_EDGE_R = A.FAIRING_EDGE_R
-
-import fairing as F  # noqa: E402
 
 # Glyphs — same spec as D5 build_d5.py @ 6b1f882
 FLOOR_GLYPHS = True
@@ -131,15 +147,20 @@ def steel_mass_g():
     return steel_volume_mm3() / 1000.0 * STEEL_DENSITY
 
 
+def pack_footprint_xy():
+    """XY footprint of the 2×2 steel pack (piece X × 2-along-Y)."""
+    return (_PACK_X, _PACK_Y)
+
+
 def cavity_xy():
-    """Steel pack pocket XY (piece + clearance)."""
-    sx, sy, _ = STEEL_PIECE
+    """Steel pack pocket XY (pack footprint + clearance)."""
+    sx, sy = pack_footprint_xy()
     return (sx + STEEL_CLEAR, sy + STEEL_CLEAR)
 
 
 def cavity_h():
     """Clear height above floor for steel stack + foam."""
-    return STEEL_N * STEEL_PIECE[2] + FOAM_PAD_T + 0.5  # ~27.4
+    return _PACK_Z + FOAM_PAD_T + 0.5  # ~14.7
 
 
 # ---------------------------------------------------------------- mesh helpers (from D5)
@@ -224,7 +245,64 @@ def bed_face_area_mm2(obj, z_tol=0.05):
 
 
 def slab(name, w, l, h, r=PLAN_R):
-    return oc.rounded_rect(name, (w, l, h), r, anchor="bottom", segments=10)
+    return oc.rounded_rect(name, (w, l, h), r, anchor="bottom", segments=12)
+
+
+def tapered_slab(name, w, l, h, r=PLAN_R, inset_top=CW_TAPER_INSET, layers=CW_TAPER_LAYERS):
+    """Rounded plan with a soft continuous draft (no visible layer rings).
+
+    Full R-rounded slab, then four prism wedges shave the outer walls so the
+    top plan insets by `inset_top` while the bottom footprint (and wall stock
+    at z=0) stay intact.
+    """
+    del layers  # kept in signature for call-site compat
+    body = oc.rounded_rect(name, (w, l, h), r, anchor="bottom", segments=14)
+    if inset_top <= 0.05 or h < 1.0:
+        return body
+    # +X / -X: prism extruded along Y. Profile in XZ — keep wall at z=0,
+    # cut inboard by inset_top at z=h.
+    for sx in (-1.0, 1.0):
+        x0 = sx * (w / 2)
+        # Order CCW in XZ looking along +Y
+        if sx > 0:
+            profile = [
+                (x0 - 0.02, -1.0),
+                (x0 + 8.0, -1.0),
+                (x0 + 8.0, h + 1.0),
+                (x0 - inset_top, h + 1.0),
+            ]
+        else:
+            profile = [
+                (x0 + 0.02, -1.0),
+                (x0 + inset_top, h + 1.0),
+                (x0 - 8.0, h + 1.0),
+                (x0 - 8.0, -1.0),
+            ]
+        oc.cut(body, oc.prism_y(f"{name}_dx{int(sx)}", profile, l + 10.0))
+    # +Y / -Y: prism extruded along X. Profile in YZ.
+    for sy in (-1.0, 1.0):
+        y0 = sy * (l / 2)
+        if sy > 0:
+            profile = [
+                (y0 - 0.02, -1.0),
+                (y0 + 8.0, -1.0),
+                (y0 + 8.0, h + 1.0),
+                (y0 - inset_top, h + 1.0),
+            ]
+        else:
+            profile = [
+                (y0 + 0.02, -1.0),
+                (y0 + inset_top, h + 1.0),
+                (y0 - 8.0, h + 1.0),
+                (y0 - 8.0, -1.0),
+            ]
+        oc.cut(body, oc.prism_x(f"{name}_dy{int(sy)}", profile, w + 10.0))
+    try:
+        oc.bevel(body, 1.0, segments=3)
+        oc.apply_modifiers(body)
+    except Exception:
+        pass
+    return body
 
 
 def cut_cav(body, w, l, floor, h, r=4.0):
@@ -448,38 +526,34 @@ def _uv_sphere(name, radius, segments=32, rings=16):
 
 
 def _domed_lid_solid(name, w, l, flat_h, total_h, plan_r, land_xy):
-    """Mating slab + truncated ellipsoid dome with flat crown land (bed face).
+    """Mating slab + low truncated ellipsoid dome with flat crown land.
 
-    Modeled mating at z=0, outer +Z. Export flips 180° about X.
+    Modeled mating at z=0, outer +Z. Lower crown than D6; soft plan R.
     """
     body = slab(name, w, l, flat_h, plan_r)
-    # Ellipsoid sized so it peaks near total_h and covers the plan
-    rx, ry = w * 0.62, l * 0.62
-    rz = CW_CROWN_RISE * 1.35
-    sph = _uv_sphere(f"{name}_sph", 1.0, segments=28, rings=14)
+    # Wider/lower ellipsoid so the crown blends toward the strap channel
+    rx, ry = w * 0.72, l * 0.72
+    rz = CW_CROWN_RISE * 1.15
+    sph = _uv_sphere(f"{name}_sph", 1.0, segments=32, rings=16)
     oc.bake(sph)
-    # scale to ellipsoid
     for v in sph.data.vertices:
         v.co.x *= rx
         v.co.y *= ry
         v.co.z *= rz
     sph.data.update()
-    # Centre so equator sits near flat_h; upper hemisphere forms the dome
-    oc.move(sph, dz=flat_h)
-    # Keep only the part above flat_h - 0.5 and inside plan
+    oc.move(sph, dz=flat_h * 0.55)
     keep = oc.box(f"{name}_keep", (w + 2, l + 2, total_h + 4),
-                  at=(0, 0, flat_h - 0.5), anchor="bottom")
+                  at=(0, 0, flat_h - 0.8), anchor="bottom")
     oc.intersect(sph, keep)
     bound = oc.rounded_rect(f"{name}_bnd", (w, l, total_h + 2), plan_r,
-                            at=(0, 0, -0.5), anchor="bottom", segments=10)
+                            at=(0, 0, -0.5), anchor="bottom", segments=12)
     oc.intersect(sph, bound)
     oc.union(body, sph)
-    # Flat crown land (printable bed face after flip)
+    # Flat crown land (printable bed face if ever flipped; also soft apex)
     lw, ll = land_xy
-    land = oc.rounded_rect(f"{name}_land", (lw, ll, 1.2), 3.0,
-                           at=(0, 0, total_h - 1.0), anchor="bottom", segments=8)
+    land = oc.rounded_rect(f"{name}_land", (lw, ll, 0.9), 4.0,
+                           at=(0, 0, total_h - 0.85), anchor="bottom", segments=8)
     oc.union(body, land)
-    # Trim anything above total_h
     oc.cut(body, oc.box(f"{name}_cap", (w + 4, l + 4, 6),
                         at=(0, 0, total_h), anchor="bottom"))
     return body
@@ -488,53 +562,54 @@ def _domed_lid_solid(name, w, l, flat_h, total_h, plan_r, land_xy):
 # ---------------------------------------------------------------- parts
 
 def cw_tub():
-    """Print: cavity UP. Steel only. Floor ribs + embossed glyphs."""
-    b = slab("cw_tub", CW_L, CW_W, CW_H, PLAN_R)
+    """Print: cavity UP. 2×2 steel pack. Tapered R10 shell + floor glyphs."""
+    b = tapered_slab("cw_tub", CW_L, CW_W, CW_H, PLAN_R,
+                     inset_top=CW_TAPER_INSET, layers=CW_TAPER_LAYERS)
     cx, cy = cavity_xy()
     ch = max(cavity_h(), CW_H - CW_FLOOR)
-    # Cavity must fit steel; also leave wall for groove (use max of steel pocket, CW-12)
-    cav_w = max(cx, CW_L - 2 * CW_WALL)
-    cav_l = max(cy, CW_W - 2 * CW_WALL)
-    # Prefer steel-sized pocket so pack seats; walls stay ≥ (outer-steel)/2
     cav_w, cav_l = cx, cy
-    cut_cav(b, cav_w, cav_l, CW_FLOOR, ch + 1, r=3.0)
+    cut_cav(b, cav_w, cav_l, CW_FLOOR, ch + 1, r=4.0)
     columns(b, CW_SCREWS, CW_FLOOR, CW_H, d=8.0)
-    groove(b, CW_L, CW_W, PLAN_R, CW_H, CW_WALL)
-    reg_lip(b, CW_L, CW_W, PLAN_R, CW_H, CW_WALL)
-    # Clamp through-holes (bars under saddle at CW bottom)
+    # Groove / lip follow the (untapered) plan so the lid still seats
+    groove(b, CW_L - 2 * CW_TAPER_INSET, CW_W - 2 * CW_TAPER_INSET,
+           max(PLAN_R - CW_TAPER_INSET, 4.0), CW_H, CW_WALL - 0.5)
+    reg_lip(b, CW_L - 2 * CW_TAPER_INSET, CW_W - 2 * CW_TAPER_INSET,
+            max(PLAN_R - CW_TAPER_INSET, 4.0), CW_H, CW_WALL - 0.5)
+    # Clamp through-holes — y=±28.5 locked
     for i, (x, y) in enumerate(CW_CLAMP):
         oc.cut(b, oc.cylinder(f"cwcl{i}", D.CLEAR, CW_H + 2, at=(x, y, -1), anchor="bottom"))
 
-    # Floor ribs — steel pack fence
-    locate_rib_rect(b, "steel", (STEEL_PIECE[0], STEEL_PIECE[1]), (0, 0),
-                    CW_FLOOR, h=2.5, wall=1.4)
+    # Floor ribs — fence around each of the two side-by-side packs
+    pack_x, pack_y_piece = STEEL_PIECE[0], STEEL_PIECE[1]
+    y_off = (pack_y_piece + STEEL_GAP_Y) / 2.0
+    for j, sy in enumerate((-1.0, 1.0)):
+        locate_rib_rect(b, f"steel{j}", (pack_x, pack_y_piece), (0.0, sy * y_off),
+                        CW_FLOOR, h=2.5, wall=1.4)
     # Cross ribs under pack for stiffness
-    for i, dy in enumerate((-18.0, 0.0, 18.0)):
+    for i, dy in enumerate((-40.0, -20.0, 0.0, 20.0, 40.0)):
         oc.union(b, oc.box(f"rib_y{i}", (cav_w - 8, 1.6, 2.0),
                            at=(0, dy, CW_FLOOR), anchor="bottom"))
     for i, dx in enumerate((-22.0, 22.0)):
         oc.union(b, oc.box(f"rib_x{i}", (1.6, cav_l - 8, 2.0),
                            at=(dx, 0, CW_FLOOR), anchor="bottom"))
 
-    # Embossed glyphs (DejaVu Bold / stroke) — fill line, screw order, arrows
+    # Embossed glyphs — fill line, screw order, arrows (in pack / land gaps)
     fz = CW_FLOOR
-    emboss_label(b, "STEEL", (0.0, 14.0, fz))
-    emboss_label(b, "ONLY", (0.0, -14.0, fz))
-    emboss_label(b, "FILL", (0.0, 0.0, fz))
-    emboss_label(b, "PIN1", (28.0, 0.0, fz), rot_z=-90.0)
+    emboss_label(b, "STEEL", (0.0, 0.0, fz))
+    emboss_label(b, "ONLY", (0.0, -y_off, fz))
+    emboss_label(b, "FILL", (0.0, y_off, fz))
+    emboss_label(b, "PIN1", (30.0, 0.0, fz), rot_z=-90.0)
     for key, (sx, sy) in (("SCR1", (1, 1)), ("SCR2", (-1, 1)),
                           ("SCR3", (1, -1)), ("SCR4", (-1, -1))):
-        emboss_label(b, key, (sx * 30.0, sy * 24.0, fz))
+        emboss_label(b, key, (sx * 30.0, sy * 48.0, fz))
     return prepare(b)
 
 
 def cw_lid():
-    """Domed D4-look lid. Mating@z=0; PRINT mating-face-down (no outer flip).
+    """Low domed lid. Mating@z=0; PRINT mating-face-down (no outer flip).
 
-    Compared outer-down (~787 mm² bed / ~5544 mm² support) vs mating-down
-    (large bed face / far less support) — picked mating-down like cap_lid.
-    Seal: lid mates to tub O-ring land; 4× M3 button into tub inserts;
-    foam pad compresses steel. Strap channel on OUTER (+Z) face, width across X.
+    Soft crown + stepped strap channel (wide shallow → deep) for a smoother
+    tangent into the strap 'saddle' face. Seal: O-ring land, 4× M3, foam.
     """
     lw, ll = CW_L - 2 * D.REVEAL, CW_W - 2 * D.REVEAL
     lid = _domed_lid_solid("cw_lid", lw, ll, CW_LID_FLAT, CW_LID_T,
@@ -543,42 +618,53 @@ def cw_lid():
     # Landing ring on mating face
     ring_w = 1.6
     ring_out_w, ring_out_l = lw - 6.0, ll - 6.0
-    r_o = 4.0
+    r_o = 5.0
     r_i = r_o - ring_w
     outer = oc.rounded_rect("lring_o", (ring_out_w, ring_out_l, 1.5), r_o,
                             at=(0, 0, -0.1), anchor="bottom")
     inner = oc.rounded_rect("lring_i", (ring_out_w - 2 * ring_w, ring_out_l - 2 * ring_w, 2.0),
                             r_i, at=(0, 0, -0.2), anchor="bottom")
     oc.cut(lid, oc.cut(outer, inner))
-    # Strap channel on OUTER face — width along X, run along Y (strap-along-Y)
+    # Strap channel on OUTER face — soft stepped mouth into the dome
+    # (wide shallow first, then full-depth channel) ≈ tangent blend
+    oc.cut(lid, oc.box("cwchan_soft",
+                       (CHANNEL_W + 6.0, ll + 2, max(1.2, CHANNEL_D * 0.45)),
+                       at=(0, 0, CW_LID_T - max(1.2, CHANNEL_D * 0.45)),
+                       anchor="bottom"))
     oc.cut(lid, oc.box("cwchan",
-                       (CHANNEL_W, ll + 2, CHANNEL_D + 0.3),
+                       (CHANNEL_W, ll + 2, CHANNEL_D + 0.2),
                        at=(0, 0, CW_LID_T - CHANNEL_D), anchor="bottom"))
-    # Clamp insert seats on outer (toward strap) — bars clamp through saddle
+    # Clamp insert seats on outer (toward strap)
     for i, (x, y) in enumerate(CW_CLAMP):
         if abs(x) > lw / 2 - 4 or abs(y) > ll / 2 - 4:
             continue
-        oc.cut(lid, oc.cylinder(f"cwci{i}", D.INSERT_D, 4.8 + 0.5,
-                                at=(x, y, CW_LID_T - 4.8), anchor="bottom"))
+        depth = min(4.8, CW_LID_T - 2.0)
+        oc.cut(lid, oc.cylinder(f"cwci{i}", D.INSERT_D, depth + 0.5,
+                                at=(x, y, CW_LID_T - depth), anchor="bottom"))
     return prepare(lid)
 
 
 def saddle():
     """Strap saddle. Roof on bed; channel +Z. Strap along Y: width across X.
 
-    Channel 46.45 × 3.4; body 76 wide; holes at CAP_CLAMP (±28.5, ±20).
+    Geometry locked from d6-integrate: channel 46.45 × 3.4; body 76 wide;
+    holes at CAP_CLAMP (±28.5, ±20). Softened plan R only (visual).
     """
-    s = oc.rounded_rect("saddle", (SADDLE_W, SADDLE_L, SADDLE_H), 3.0,
-                        anchor="bottom", segments=8)
-    # Channel: width = CHANNEL_W along X, run along Y (was D5 cross-strap)
+    s = oc.rounded_rect("saddle", (SADDLE_W, SADDLE_L, SADDLE_H), 5.0,
+                        anchor="bottom", segments=10)
+    # Channel: width = CHANNEL_W along X, run along Y (d6-integrate)
     oc.cut(s, oc.box("schan",
                      (CHANNEL_W, SADDLE_L + 2, CHANNEL_D + 0.2),
                      at=(0, 0, SADDLE_ROOF), anchor="bottom"))
-    # Lead-ins at ±Y ends (strap entry/exit) — chamfer the channel mouths
+    # Soft lead-ins at ±Y ends (strap entry/exit)
     for sy in (-1, 1):
         oc.cut(s, oc.box(
-            f"lead{sy}", (CHANNEL_W + 2, 5.0, SADDLE_H),
+            f"lead{sy}", (CHANNEL_W + 3.0, 6.0, SADDLE_H),
             at=(0, sy * (SADDLE_L / 2 - 1.0), SADDLE_ROOF - 0.2), anchor="bottom"))
+        # Slightly wider shallow mouth for a softer channel entry
+        oc.cut(s, oc.box(
+            f"leadsoft{sy}", (CHANNEL_W + 5.0, 4.0, CHANNEL_D * 0.5),
+            at=(0, sy * (SADDLE_L / 2 - 2.0), SADDLE_ROOF), anchor="bottom"))
     # Clamp holes — D6 CAP_CLAMP (±28.5, ±20)
     for i, (x, y) in enumerate(CAP_CLAMP):
         oc.cut(s, oc.cylinder(f"scl{i}", D.CLEAR, SADDLE_H + 2, at=(x, y, -1), anchor="bottom"))
@@ -610,9 +696,28 @@ def clamp_bar():
     return prepare(flange)
 
 
+def _fairing_body(name, run, w0, w1, h):
+    f = oc.prism_y(name, [
+        (0.0, 0.0),
+        (w0 / 2, 0.0),
+        (w1 / 2, h),
+        (-w1 / 2, h),
+        (-w0 / 2, 0.0),
+    ], run)
+    bound = oc.rounded_rect(f"{name}_bnd", (max(w0, w1) + 2, run + 2, h + 2),
+                            D.FAIRING_R, at=(0, 0, -1), anchor="bottom", segments=10)
+    oc.intersect(f, bound)
+    try:
+        oc.bevel(f, D.FAIRING_EDGE_R, segments=3)
+        oc.apply_modifiers(f)
+    except Exception:
+        pass
+    return f
+
+
 def fairing_cw(side="L"):
-    """CW↔strap fairing at bottom of loop. Continuous W0→W1 wedge, R≥4."""
-    f = prepare(F.fairing_cw(side))
+    """CW↔strap fairing at bottom of loop. W0=88→W1=66 × run 28 × H 14."""
+    f = prepare(_fairing_body(f"fairing_cw_{side}", FAIRING_RUN, FAIRING_W0, FAIRING_W1, FAIRING_H))
     if side == "R":
         # Mirror of L across X (matches pod fairings)
         oc.bake(f)
@@ -628,18 +733,22 @@ def fairing_cw(side="L"):
 
 
 def cw_floor_layout():
-    """PLA coupon: steel outline + glyphs from FLOOR_LABEL_TABLE."""
-    w, l = 78.0, 58.0
-    floor = oc.rounded_rect("cw_floor", (w, l, 2.0), 3.0, anchor="bottom", segments=6)
-    locate_rib_rect(floor, "steel", (STEEL_PIECE[0], STEEL_PIECE[1]), (0, 0), 2.0,
-                    h=2.5, wall=1.5)
-    emboss_label(floor, "STEEL", (0, 16, 2.0))
-    emboss_label(floor, "ONLY", (0, -16, 2.0))
-    emboss_label(floor, "FILL", (0, 0, 2.0))
+    """PLA coupon: 2×2 steel outline + glyphs from FLOOR_LABEL_TABLE."""
+    px, py = pack_footprint_xy()
+    w, l = px + 6.0, py + 6.0
+    floor = oc.rounded_rect("cw_floor", (w, l, 2.0), 4.0, anchor="bottom", segments=6)
+    pack_x, pack_y_piece = STEEL_PIECE[0], STEEL_PIECE[1]
+    y_off = (pack_y_piece + STEEL_GAP_Y) / 2.0
+    for j, sy in enumerate((-1.0, 1.0)):
+        locate_rib_rect(floor, f"steel{j}", (pack_x, pack_y_piece), (0.0, sy * y_off),
+                        2.0, h=2.5, wall=1.5)
+    emboss_label(floor, "STEEL", (0, 0, 2.0))
+    emboss_label(floor, "ONLY", (0, -y_off, 2.0))
+    emboss_label(floor, "FILL", (0, y_off, 2.0))
     emboss_label(floor, "PIN1", (30, 0, 2.0), rot_z=-90.0)
     for key, (sx, sy) in (("SCR1", (1, 1)), ("SCR2", (-1, 1)),
                           ("SCR3", (1, -1)), ("SCR4", (-1, -1))):
-        emboss_label(floor, key, (sx * 28.0, sy * 20.0, 2.0))
+        emboss_label(floor, key, (sx * 28.0, sy * 48.0, 2.0))
     return normalize_z0(prepare(floor))
 
 
@@ -654,8 +763,8 @@ PART_META = {
                "strap→rails→clamp ALONG layers", "ASA/PETG or PA-CF*", False),
     "clamp_bar": ("PRINT: flange on bed z=0; channel +Z; load ALONG Y WITH layers",
                   "strap compression; holes y=±28.5", "ASA/PETG or PA-CF*", True),
-    "fairing_cw_L": ("PRINT: widest face on bed z=0; walls=slope", "D7 continuous 88→66×28×14", "ASA/PETG", True),
-    "fairing_cw_R": ("PRINT: widest face on bed z=0; walls=slope", "mirror of L", "ASA/PETG", True),
+    "fairing_cw_L": ("PRINT: long axis on bed; slope=WALL", "88→66×28×14 CW↔strap", "ASA/PETG", True),
+    "fairing_cw_R": ("PRINT: long axis on bed; slope=WALL", "mirror of L", "ASA/PETG", True),
     "cw_floor_layout": ("PRINT: floor underside z=0; ribs/glyphs UP",
                         "PLA steel-pack + fill/screw glyphs", "PLA", False),
 }
@@ -793,14 +902,21 @@ def main():
     mass_g = steel_mass_g()
     vol_mm3 = steel_volume_mm3()
 
+    px, py = pack_footprint_xy()
     report = {
-        "revision": "D6_cw_d4_skin_d5_mass",
+        "revision": "D7_cw_long_shallow_2x2_pack",
         "choice": {
-            "envelope": f"{CW_L}×{CW_W}×{CW_H} tub (D5 mass envelope)",
-            "lid": f"D4-style dome {CW_LID_T} mm with flat crown land {CW_CROWN_LAND}",
-            "why_not_d4_tub": (
-                f"D4 tub ~59×85×24 cannot fit steel pack {STEEL_PIECE}×{STEEL_N} "
-                f"(stack H={STEEL_N * STEEL_PIECE[2]} mm, XY {STEEL_PIECE[0]}×{STEEL_PIECE[1]})"
+            "envelope": f"{CW_L}×{CW_W}×{CW_H} tub (2×2 pack, longer along strap)",
+            "plan_r_mm": PLAN_R,
+            "taper_inset_top_mm": CW_TAPER_INSET,
+            "lid": f"low dome {CW_LID_T} mm with flat crown land {CW_CROWN_LAND}",
+            "pack_layout": (
+                f"{STEEL_STACK_N} high × {STEEL_ALONG_Y} along Y; "
+                f"footprint {px}×{py}×{_PACK_Z} mm (still {STEEL_N}× piece)"
+            ),
+            "why_not_stacked_4": (
+                "D5/D6 4-high stack forced 30 mm tub; 2×2 keeps 771.8 g steel "
+                "but drops visual height and stretches along the strap"
             ),
             "fill_material": (
                 f"{STEEL_N}× mild steel flat bar {STEEL_PIECE[0]}×{STEEL_PIECE[1]}×"
@@ -813,6 +929,10 @@ def main():
                 "2.0 mm O-ring groove in tub rim + registered lip; "
                 "4× M3 button-head screws through lid into heat-set inserts; "
                 "foam pad compresses steel pack under lid"
+            ),
+            "colour_rule": (
+                "Body: one calm light-gray ASA; orange (#FF6A2B) only on small "
+                "functional accents (latch, screw heads, cue tab, clamp end caps)"
             ),
         },
         "clamp_lora_clear_mm": round(lora_clear, 2),
@@ -857,24 +977,34 @@ def main():
     oc.move(fL, dy=CW_W / 2 + FAIRING_RUN / 2 + 5)
     fR = fairing_cw("R")
     oc.move(fR, dy=-(CW_W / 2 + FAIRING_RUN / 2 + 5))
+    # Tiny orange accents on the review layout (screw heads + clamp end caps)
+    accents = []
+    for i, (x, y) in enumerate(CW_SCREWS):
+        cap = oc.cylinder(f"scr_or_{i}", 5.2, 1.4,
+                          at=(x, y, CW_H + 2 + CW_LID_T - 0.2), anchor="bottom")
+        accents.append((cap, ORANGE, f"scr{i}"))
+    for i, sy in enumerate((-1.0, 1.0)):
+        tip = oc.cylinder(f"bar_tip_{i}", 3.2, 2.0,
+                          at=(CW_L / 2 + 20, sy * 35.0, 4.0), anchor="bottom")
+        accents.append((tip, ORANGE, f"tip{i}"))
     colors = [
-        (tub, CHARCOAL, "tub"),
-        (lid, CHARCOAL, "lid"),
-        (sad, CHARCOAL, "saddle"),
-        (bar, STEEL_GREY, "bar"),
-        (fL, CHARCOAL, "fL"),
-        (fR, CHARCOAL, "fR"),
-    ]
+        (tub, BODY_ASA, "tub"),
+        (lid, BODY_ASA, "lid"),
+        (sad, BODY_ASA, "saddle"),
+        (bar, BODY_ASA, "bar"),
+        (fL, BODY_ASA, "fL"),
+        (fR, BODY_ASA, "fR"),
+    ] + accents
     render_objs(colors, os.path.join(RENDER_DIR, "cw_iso.png"), (1.3, -1.4, 0.9))
     render_objs(colors, os.path.join(RENDER_DIR, "cw_top.png"), (0.01, 0.01, 1.0), pad=1.25)
     render_objs(colors, os.path.join(RENDER_DIR, "cw_side.png"), (1.0, 0.01, 0.15), pad=1.2)
 
-    # Section through tub+lid
+    # Section through tub+lid (lid stays body colour — orange is accents only)
     oc.reset()
     tub2 = cw_tub()
     lid2 = cw_lid()
     oc.move(lid2, dz=CW_H)
-    render_section([(tub2, CHARCOAL, "t"), (lid2, ORANGE, "l")],
+    render_section([(tub2, BODY_ASA, "t"), (lid2, BODY_ASA, "l")],
                    os.path.join(RENDER_DIR, "cw_section.png"), axis="X")
 
     # ---- review .blend (assembly in print-ish layout) ----
@@ -909,7 +1039,8 @@ def main():
                 "Orientation: flange flat on bed, channel opens +Z.\n"
                 f"LoRa clearance from clamp |y|≤28.5 to LoRa y≈64 = {lora_clear:.1f} mm.\n")
 
-    print("\nCHOICE: D5 envelope", CW_L, CW_W, CW_H, "+ D4 dome lid", CW_LID_T)
+    print("\nCHOICE: D7 long/shallow", CW_L, CW_W, CW_H,
+          f"R={PLAN_R} lid={CW_LID_T} pack={px}×{py}×{_PACK_Z}")
     print(f"STEEL MASS: {mass_g:.1f} g  volume {vol_mm3:.0f} mm³ ({vol_mm3/1000:.1f} cm³)")
     print(f"LoRa clamp clearance: {lora_clear:.1f} mm (need ≥15, contract cites 35.5)")
     print("RESULT:", "PASS" if report["pass"] else "LOOK — check watertight")
