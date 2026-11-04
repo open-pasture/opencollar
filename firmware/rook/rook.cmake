@@ -10,6 +10,7 @@ if(CONFIG_ROOK_LTE)
     ${ROOK_DIR}/src/rook_report.c
     ${ROOK_DIR}/src/rook_http.c
     ${ROOK_DIR}/src/rook_fence.c
+    ${ROOK_DIR}/src/rook_state.c
     ${ROOK_DIR}/src/rook_battery_math.c
     ${ROOK_DIR}/src/rook_battery_max17260.c
   )

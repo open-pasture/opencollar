@@ -17,6 +17,7 @@
 #include "rook_http.h"
 #include "rook_queue.h"
 #include "rook_report.h"
+#include "rook_state.h"
 
 LOG_MODULE_REGISTER(rook_lte, LOG_LEVEL_INF);
 
@@ -29,11 +30,22 @@ static uint32_t boundary_version;         /* under lock */
 static struct k_poll_signal sig = K_POLL_SIGNAL_INITIALIZER(sig);
 static K_SEM_DEFINE(fence_done, 0, 1);
 
-/* Hand-off of one downloaded command to the main thread */
+/* Hand-offs to the main thread (it owns struct app); the reporter waits */
+enum job { JOB_NONE, JOB_BOUNDARY, JOB_REPORTED };
 static char rx[RX_CAP];
-static const char *fence_wire;
-static size_t fence_len;
+static volatile enum job job;
+static const char *job_wire; /* JOB_BOUNDARY: the command; JOB_REPORTED: config or NULL */
+static size_t job_len;
+static bool job_ok, job_reject_sent;
 static struct rook_fence_result fence_res;
+static enum reject_code config_res;
+static struct rook_dev_state dev;   /* under lock, refreshed on the main thread */
+static struct rook_dev_state mine;  /* the reporter's copy for one cycle */
+
+/* Server clock from the last Date header, carried on uptime (reporter only) */
+static bool has_server_clock;
+static int64_t server_clock_s, server_clock_ms;
+static char ep_cur[PROTO_MAX_ENDPOINT_BYTES + 1];
 
 static struct rook_url url;
 static char token[PROVISION_KEY_MAX + 1];
@@ -41,6 +53,7 @@ static char collar_id[PROTO_MAX_ID_BYTES + 1];
 static char body[BODY_CAP];
 static char head[512];
 static struct rook_backoff backoff;
+static uint32_t bad_time; /* under lock: fixes left out for a bad clock */
 
 static uint32_t rnd(void *ctx)
 {
@@ -74,6 +87,7 @@ void rook_lte_on_fix(const struct app *a, const struct app_fix_in *in,
 			  : out->cmd.active ? ROOK_FENCE_WARN : ROOK_FENCE_INSIDE;
 	}
 	k_mutex_lock(&lock, K_FOREVER);
+	rook_state_take(a, &dev);
 	boundary_version = out->fenced ? out->version : 0;
 	/* Thin the 1 Hz fixes: one sample per sample period */
 	{
@@ -90,12 +104,55 @@ void rook_lte_on_fix(const struct app *a, const struct app_fix_in *in,
 
 void rook_lte_service(struct app *a)
 {
-	if (!fence_wire) {
+	int64_t now_ms = k_uptime_get();
+
+	switch (job) {
+	case JOB_BOUNDARY:
+		fence_res = rook_fence_download(a, job_wire, job_len, now_ms);
+		break;
+	case JOB_REPORTED: {
+		int64_t now = 0;
+		bool has_now = app_now(a, now_ms, &now);
+
+		config_res = REJECT_NONE;
+		config_report_result(&a->cfg, job_ok, has_now, now);
+		if (job_ok && job_reject_sent) {
+			a->cfg.has_reject = false; /* reported once */
+		}
+		if (job_wire) {
+			config_res = app_config(a, job_wire, job_len, now_ms);
+		}
+		break;
+	}
+	default:
+		k_mutex_lock(&lock, K_FOREVER);
+		rook_state_take(a, &dev);
+		k_mutex_unlock(&lock);
 		return;
 	}
-	fence_res = rook_fence_download(a, fence_wire, fence_len, k_uptime_get());
-	fence_wire = NULL;
+	k_mutex_lock(&lock, K_FOREVER);
+	rook_state_take(a, &dev);
+	k_mutex_unlock(&lock);
+	job = JOB_NONE;
 	k_sem_give(&fence_done);
+}
+
+static void run_job(enum job j, const char *wire, size_t len)
+{
+	job_wire = wire;
+	job_len = len;
+	job = j;
+	k_poll_signal_raise(&sig, 1);
+	k_sem_take(&fence_done, K_FOREVER);
+}
+
+static bool server_now(int64_t *t)
+{
+	if (!has_server_clock) {
+		return false;
+	}
+	*t = server_clock_s + (k_uptime_get() - server_clock_ms) / 1000;
+	return true;
 }
 
 /* ---- One HTTP exchange: connect, send, read all, close ---- */
@@ -153,6 +210,11 @@ static int exchange(const char *method, const char *suffix, const char *req_body
 	}
 	rx[total] = 0;
 	k = rook_http_parse(rx, total, resp) == 0 ? 0 : -EBADMSG;
+	if (k == 0 && resp->has_date) {
+		has_server_clock = true;
+		server_clock_s = resp->date;
+		server_clock_ms = k_uptime_get();
+	}
 out:
 	zsock_close(fd);
 	return k;
@@ -174,7 +236,7 @@ static int do_report(void)
 	};
 	struct rook_battery bat;
 	struct rook_http_resp r;
-	uint16_t n;
+	uint16_t n, skipped;
 	int len, err, st;
 
 	if (rook_battery_read(&bat) == 0) {
@@ -184,26 +246,47 @@ static int do_report(void)
 		info.has_charging = true;
 		info.charging = bat.charging;
 	}
+	info.dev = mine.provisioned ? &mine : NULL;
+	info.has_server_now = server_now(&info.server_now);
 	k_mutex_lock(&lock, K_FOREVER);
 	info.boundary_version = boundary_version;
-	info.dropped = queue.overwritten;
-	len = rook_report_encode(&info, &queue, CONFIG_ROOK_LTE_MAX_FIXES, body, sizeof(body), &n);
+	info.dropped = queue.overwritten + bad_time;
+	len = rook_report_encode(&info, &queue, CONFIG_ROOK_LTE_MAX_FIXES, body, sizeof(body), &n,
+				 &skipped);
 	k_mutex_unlock(&lock);
 	if (len < 0) {
 		return -ENOMEM;
 	}
+	job_ok = true;
+	job_reject_sent = info.dev && info.dev->has_config_reject;
 	err = exchange("POST", "/report", body, len, &r);
 	st = status_of(err, &r);
-	LOG_INF("report: %u fixes, %d bytes -> %d", n, len, st);
+	LOG_INF("report: %u fixes (%u bad time), %d bytes -> %d", n - skipped, skipped, len, st);
 	switch (rook_http_action(st, 0)) {
 	case ROOK_ACT_DONE:
 	case ROOK_ACT_DROP:
 		k_mutex_lock(&lock, K_FOREVER);
 		rook_queue_drop(&queue, n); /* the oldest n are the ones sent */
+		bad_time += skipped;
 		k_mutex_unlock(&lock);
 		break;
 	default:
 		break; /* SPLIT: the next cycle sends fewer (MAX_FIXES / body cap) */
+	}
+	if (st >= 200 && st < 300) {
+		size_t off, vl;
+		bool cfg = r.body_len && rook_json_member(r.body, r.body_len, "config", &off,
+							  &vl) == 0 &&
+			   r.body[off] == '{';
+
+		run_job(JOB_REPORTED, cfg ? r.body + off : NULL, cfg ? vl : 0);
+		job_reject_sent = false;
+		if (cfg) {
+			LOG_INF("config -> %s", reject_str(config_res));
+		}
+	} else if (rook_http_action(st, 0) == ROOK_ACT_RETRY) {
+		job_ok = false;
+		run_job(JOB_REPORTED, NULL, 0); /* an endpoint on trial counts the failure */
 	}
 	return st;
 }
@@ -211,24 +294,13 @@ static int do_report(void)
 static int post_ack(const struct slot_ack *ack)
 {
 	struct rook_http_resp r;
-	char at[32] = "";
-	int len, err;
+	int64_t t = 0;
+	bool has_t = server_now(&t);
+	int len = rook_ack_encode(ack, has_t, t, body, sizeof(body));
+	int err;
 
-	if (ack->has_at) {
-		proto_time_format(ack->at, at, sizeof(at));
-	}
-	len = snprintf(body, sizeof(body),
-		       "{\"command_id\":\"%s\",\"version\":%u,\"status\":\"%s\"%s%s%s%s%s}",
-		       ack->command_id.s, (unsigned)ack->version,
-		       ack_status_str((enum ack_status)ack->status),
-		       ack->status == ACK_REJECTED ? ",\"code\":\"" : "",
-		       ack->status == ACK_REJECTED ? reject_str((enum reject_code)ack->code) : "",
-		       ack->status == ACK_REJECTED ? "\"" : "", ack->has_at ? ",\"at\":\"" : "",
-		       ack->has_at ? at : "");
-	if (ack->has_at && len < (int)sizeof(body) - 2) {
-		body[len - 1] = '"';
-		body[len++] = '}';
-		body[len] = 0;
+	if (len < 0) {
+		return -ENOMEM;
 	}
 	err = exchange("POST", "/ack", body, len, &r);
 	return status_of(err, &r);
@@ -237,24 +309,27 @@ static int post_ack(const struct slot_ack *ack)
 static int do_boundary(void)
 {
 	struct rook_http_resp r;
-	char q[48];
+	char q[80];
 	uint32_t have;
 	int err, st;
 
 	k_mutex_lock(&lock, K_FOREVER);
-	have = MAX(boundary_version, rook_fence_seq());
+	have = MAX(MAX(boundary_version, mine.have), rook_fence_seq());
 	k_mutex_unlock(&lock);
-	snprintf(q, sizeof(q), "/boundary?have=%u", (unsigned)have);
+	if (rook_boundary_query(have, mine.provisioned ? &mine : NULL, q, sizeof(q)) < 0) {
+		return -ENOMEM;
+	}
 	err = exchange("GET", q, NULL, 0, &r);
 	st = status_of(err, &r);
+	if (st == 409) {
+		LOG_INF("boundary: held back by the server's safety gate (409)");
+	}
+	st = rook_boundary_status(st);
 	if (st != 200 || r.body_len == 0) {
 		return st;
 	}
 	/* Verify on the main thread; wait for it */
-	fence_len = r.body_len;
-	fence_wire = r.body;
-	k_poll_signal_raise(&sig, 1);
-	k_sem_take(&fence_done, K_FOREVER);
+	run_job(JOB_BOUNDARY, r.body, r.body_len);
 	LOG_INF("boundary: code %s, seq %u%s", reject_str(fence_res.code),
 		(unsigned)fence_res.ack.version, fence_res.handed_on ? ", to LoRa" : "");
 	if (fence_res.has_ack) {
@@ -299,6 +374,22 @@ static void thread_fn(void *p1, void *p2, void *p3)
 		uint32_t wait_s = CONFIG_ROOK_LTE_REPORT_S;
 		int st;
 
+		k_mutex_lock(&lock, K_FOREVER);
+		mine = dev;
+		k_mutex_unlock(&lock);
+		if (mine.provisioned && mine.report_s && !strlen(CONFIG_ROOK_LTE_BASE_URL)) {
+			wait_s = mine.report_s;
+			if (strcmp(mine.endpoint, ep_cur) != 0) {
+				struct rook_url u;
+
+				if (rook_url_parse(mine.endpoint, false, &u) == 0) {
+					url = u;
+					strcpy(ep_cur, mine.endpoint);
+					LOG_INF("endpoint now %s", ep_cur);
+				}
+			}
+		}
+
 		if (!attached) {
 			attached = lte_up() == 0;
 			if (!attached) {
@@ -310,7 +401,7 @@ static void thread_fn(void *p1, void *p2, void *p3)
 		if (rook_http_action(st, 0) == ROOK_ACT_DONE) {
 			st = do_boundary();
 		}
-		if (st == 200 || st == 204) {
+		if (st >= 200 && st < 300) {
 			rook_backoff_reset(&backoff);
 		} else {
 			wait_s = rook_backoff_delay(&backoff, st, -1);
@@ -344,7 +435,9 @@ int rook_lte_start(const struct app *a)
 	strncpy(token, tok, sizeof(token) - 1);
 	strncpy(collar_id, a->prov.ok ? a->prov.collar_id.s : "unprovisioned",
 		sizeof(collar_id) - 1);
+	strncpy(ep_cur, ep, sizeof(ep_cur) - 1);
 	rook_queue_init(&queue);
+	rook_state_take(a, &dev);
 	LOG_INF("fence_seq high-water mark %u", (unsigned)rook_fence_init(a));
 	rook_battery_init();
 	k_thread_create(&rook_thread, rook_stack, K_THREAD_STACK_SIZEOF(rook_stack), thread_fn,

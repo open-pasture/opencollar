@@ -27,6 +27,10 @@ enum rook_http_action {
 /* status <= 0 means a network/TLS error or no answer */
 enum rook_http_action rook_http_action(int status, int is_ack);
 
+/* GET /boundary: 409 is the server's safety gate refusing to send the boundary
+ * (not a fault, nothing to retry sooner): it reads as 204, nothing new. */
+int rook_boundary_status(int status);
+
 struct rook_backoff {
 	uint32_t next_s; /* The next plain backoff delay, before jitter */
 	uint32_t (*rand32)(void *ctx);

@@ -25,11 +25,23 @@ int rook_http_head(char *out, size_t cap, const char *method, const struct rook_
 struct rook_http_resp {
 	int status;
 	int32_t retry_after_s; /* -1 none */
+	bool has_date;
+	int64_t date; /* Date header, Unix s */
 	const char *body;
 	size_t body_len;
 };
 
-/* Parse a whole response in buf (len bytes). -1 if it's not HTTP/1.x */
-int rook_http_parse(const char *buf, size_t len, struct rook_http_resp *r);
+/* Parse a whole response in buf (len bytes). A chunked body is decoded in
+ * place (Cloudflare and other proxies may re-chunk). -1 if it's not HTTP/1.x
+ * or the chunking is broken. */
+int rook_http_parse(char *buf, size_t len, struct rook_http_resp *r);
+
+/* An IMF-fixdate ("Tue, 03 Nov 2026 22:48:00 GMT") to Unix s; -1 if not one */
+int64_t rook_http_date(const char *s, size_t len);
+
+/* The value of a top-level key of a JSON object (as sent, e.g. the whole
+ * nested object). Returns 0 and sets *off and *vlen, or -1 if absent. */
+int rook_json_member(const char *json, size_t len, const char *key, size_t *off,
+		     size_t *vlen);
 
 #endif

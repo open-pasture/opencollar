@@ -67,3 +67,8 @@ uint32_t rook_backoff_delay(struct rook_backoff *b, int status, int32_t retry_af
 	b->next_s = b->next_s >= ROOK_BACKOFF_MAX_S / 2 ? ROOK_BACKOFF_MAX_S : b->next_s * 2;
 	return d;
 }
+
+int rook_boundary_status(int status)
+{
+	return status == 409 ? 204 : status;
+}

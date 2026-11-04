@@ -48,8 +48,8 @@ config ROOK_LTE_MAX_FIXES
 	default 12
 
 config ROOK_LTE_BODY_BYTES
-	int "Report body buffer"
-	default 2048
+	int "Report body buffer (device + slots + fixes)"
+	default 3072
 
 config ROOK_LTE_STACK_SIZE
 	int "Reporter thread stack"
