@@ -36,6 +36,7 @@ if(EXISTS ${LORA_DIR}/include/opencollar/fence_node.h)
   message(STATUS "Starling: linking firmware/lora (oc_fh_*)")
   target_include_directories(app PRIVATE ${LORA_DIR}/include)
   target_sources(app PRIVATE
+    src/oc_fh_store_nvs.c
     ${LORA_DIR}/src/fence_node.c
     ${LORA_DIR}/src/fence_manifest.c
     ${LORA_DIR}/src/fence_wire.c

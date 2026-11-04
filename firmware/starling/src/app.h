@@ -16,11 +16,15 @@
 #include "power.h"
 #include "welfare.h"
 
+#ifdef STARLING_HAS_LORA
+#include "oc_fh_store_nvs.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define STARLING_FW_VERSION "0.1.1-starling"
+#define STARLING_FW_VERSION "0.1.2-starling"
 
 struct starling_app {
 	struct gnss gnss;
@@ -32,6 +36,9 @@ struct starling_app {
 	struct welfare_hooks welfare;
 	struct starling_gossip gossip;
 	struct power_sched power;
+#ifdef STARLING_HAS_LORA
+	starling_fh_nvs_t fh_nvs; /* oc_fh_store_t over NVS (INTEGRATION.md) */
+#endif
 	bool starling_serve;
 	bool fenced;
 	struct cue_command last_cmd;
@@ -49,15 +56,24 @@ struct starling_tick_out {
 void starling_app_init(struct starling_app *a, bool starling_serve);
 
 #ifdef STARLING_HAS_LORA
+/*
+ * Bind radio + farm verify + payload_verify, then restore from NVS before
+ * any poll. Call after store_init() / starling_app_init().
+ */
 void starling_app_bind_gossip(struct starling_app *a, uint16_t node_id,
 			      const uint8_t farm_id[OC_FH_FARM_ID_LEN], oc_radio_t *radio,
-			      oc_fh_verify_fn verify, void *verify_ctx, uint32_t (*now_ms)(void *),
-			      void *clock_ctx);
+			      oc_fh_verify_fn verify, void *verify_ctx,
+			      oc_fh_payload_verify_fn payload_verify, void *payload_verify_ctx,
+			      uint32_t (*now_ms)(void *), void *clock_ctx);
 #endif
 
 void starling_app_bind_gnss(struct starling_app *a, enum gnss_backend backend,
 			    const struct gnss_ops *ops, void *ctx);
 
+/*
+ * Boot: load geo fence_store, then (if LoRa bound) ensure gossip restore
+ * already ran so HWM/active are in RAM before radio traffic.
+ */
 int starling_app_boot(struct starling_app *a, int64_t now_ms);
 
 int starling_app_set_fence(struct starling_app *a, const struct starling_fence_blob *blob,

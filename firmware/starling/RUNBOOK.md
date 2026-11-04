@@ -10,36 +10,49 @@ build + run the fence from **simulated GNSS**. Real GNSS and SX1262 when parts
 arrive.
 
 **Merge order (op-firmware):** PR #6 (proto) → #12 (rook) → **#9 (this) last**.
+Do **not** merge this PR; keep draft until op-firmware says go.
 
 ## Layout
 
 | Path | Owner / role |
 | --- | --- |
 | `firmware/starling/` | This app |
-| `firmware/lora/` | PR #6 — `oc_radio_*`, `oc_fh_node_*`, `oc_fh_freshness_t` |
-| `firmware/starling/pending_opencollar/` | **TEMPORARY** freshness-only shim until #6 merges — then delete |
-| `firmware/core/welfare.h` | Cue gate hooks only (no numeric caps; PR #2) |
+| `firmware/lora/` | PR #6 — `oc_radio_*`, `oc_fh_node_*`, `INTEGRATION.md` |
+| `firmware/starling/pending_opencollar/` | **TEMPORARY** freshness-only shim — **delete when #6 merges** |
+| `firmware/starling/src/oc_fh_store_nvs.*` | NVS `oc_fh_store_t` (A/B+CRC HWM+active) per INTEGRATION |
+| `firmware/core/welfare.h` | Cue gate hooks; honors shut-off (no numeric caps; PR #2) |
 | `firmware/src/{geofence,cue,…}` | Shared portable core (do not move here) |
 
-Starling does **not** ship `radio_hal.h` / `fence_gossip` stubs. The app calls
-`oc_fh_node_init` / `oc_fh_node_poll` / `oc_fh_inject_local` and supplies
-`oc_radio_t` + the NVS store.
+## INTEGRATION.md conformity (PR #6)
+
+Starling calls exactly:
+
+| Call | When |
+| --- | --- |
+| `oc_fh_node_init` | Bind radio |
+| `oc_fh_node_set_store` | After init (NVS backend) |
+| `oc_fh_node_set_payload_verify` | Pilot LOCAL authenticity |
+| `oc_fh_node_restore` | Boot — **before any radio poll** |
+| `oc_fh_inject_opaque` | Pilot inject (host/Rook path) |
+| `oc_fh_node_poll` | Tick / radio IRQ |
+
+Config: `starling_serve` default **OFF**, `accept_local_air=1` (pilot),
+`frag_data_max` → `OC_FH_DEFAULT_FRAG_DATA` (209). Freshness widths per
+NOTES.md: farm 8 / seq 4 / poly 32 / recv 4 / source 2.
 
 ## Host tests
 
-`make` must be installed. Host gossip tests fetch PR #6 into
-`tests/host/.deps/` (gitignored):
-
 ```bash
 make -C firmware/starling/tests/host
-# optional: PROTO_REF=origin/cursor/proto-fence-gossip-c865 make -C firmware/starling/tests/host deps
+# pin tip: PROTO_REF=origin/proto-fence-gossip make -C firmware/starling/tests/host clean deps test
 ```
 
-Suites: `geofence_fake`, `fence_store` (incl. **fence_seq high-water** across
-reboot), `ubx_nmea`, `demo`, `gossip_hwm` (links PR #6 `oc_fh_*` + sim).
+Suites: `geofence_fake`, `fence_store`, `ubx_nmea`, `demo`, `gossip_hwm`
+(restore + inject_opaque + reject-stale), `gossip_opaque` (payload_verify /
+field widths).
 
-Shared CI: op-firmware `firmware-build.yml` (Starling no longer ships its own
-workflow).
+`PROTO_REF` defaults to `origin/proto-fence-gossip` (PR #6 tip). Archive lands
+in `tests/host/.deps/` (gitignored).
 
 ## Zephyr / nRF52840 build
 
@@ -55,9 +68,9 @@ export ZEPHYR_BASE=$HOME/ncs/v3.4.1/zephyr
 nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 -- west build -b xiao_ble/nrf52840 firmware/starling --build-dir /workspace/starling-build -p
 ```
 
-When `firmware/lora` is present (after #6), CMake links `oc_fh_*` and defines
-`STARLING_HAS_LORA`. Otherwise it uses `pending_opencollar` (freshness only;
-gossip disabled).
+When `firmware/lora` is present (after #6), CMake links `oc_fh_*` +
+`oc_fh_store_nvs` and defines `STARLING_HAS_LORA`. Otherwise
+`pending_opencollar` (freshness only; gossip disabled).
 
 ## Default `prj.conf`
 
@@ -69,15 +82,34 @@ gossip disabled).
 
 ## Persistence
 
-NVS ids: active fence (`0x40`), **fence_seq high-water** (`0x43`). Adopt only
-`verified && fence_seq > hwm`. Reboot cannot roll back to an older signed fence.
-When op-fw-proto publishes the official store hook, switch to it and drop the
-Starling-local save path.
+| Store | Ids | Contract |
+| --- | --- | --- |
+| `oc_fh_store_nvs` | `0x50`/`0x51` A/B, `0x52` primary | HWM+active same CRC’d record; higher `fence_seq` wins |
+| `fence_store` (geo mirror) | `0x40` active, `0x43` hwm | Vertices / demo path; reject `seq <= hwm` |
 
-## Open items
+Boot: `starling_gossip_restore` → load HWM + active **before** radio traffic.
+Fence move calls `cue_rearm` only — never `cue_clear_shutoff` (PR #22).
 
-- Blocked on **PR #6** for real `oc_radio_*` / `oc_fh_*` on tree (delete
+## Welfare / shut-off (PR #22 merged, #25 draft)
+
+- **#22:** auto shut-off stays until caretaker `cue_clear_shutoff`; fence
+  `cue_rearm` must not resume. Starling wires `welfare_hooks_init_shutoff`
+  so the welfare gate suppresses cues while `cue.enforcement_off`.
+- **#25 (draft):** persist shut-off + signed remote re-arm (`welfare_store`,
+  `rearm_seq`). **Not wired in Starling yet** — needs Cody decision (see
+  below). No numeric welfare caps here (PR #2).
+
+### TODO(cody)
+
+1. Should Starling boot-restore shut-off from `STORE_ID_WELFARE` (#25) the
+   same way the main collar app does?
+2. Remote re-arm over LoRa vs serial-only on Starling?
+3. PR #2 numeric welfare caps (escape_cycle_limit / max_outside_cues).
+
+## Open / blocked
+
+- Blocked on **PR #6** merge for `firmware/lora` on `main` (then delete
   `pending_opencollar/`).
 - op-fw-radio: SX1262 backend for `oc_radio_t`.
-- Cody / PR #2: welfare numeric caps (hooks only here).
+- Draft PR #25: persist shut-off + signed rearm (Starling hook only so far).
 - Real MAX-M10S UART when module arrives.

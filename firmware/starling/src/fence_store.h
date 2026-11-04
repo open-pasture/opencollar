@@ -2,13 +2,11 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright 2026 openpasture contributors
  *
- * Starling NVS persistence: active fence + fence_seq high-water mark.
+ * Starling geofence mirror: active vertices + fence_seq high-water.
  *
- * Uses PR #6's oc_fh_freshness_t. Never adopt unsigned or seq <= hwm.
- * Reboot must not roll back to an older signed fence.
- *
- * TEMPORARY store surface until op-fw-proto adds the official store hook;
- * then call that and delete the Starling-local save/load path.
+ * Gossip engine persistence is PR #6's oc_fh_store_t (see oc_fh_store_nvs).
+ * This store mirrors applied fences for geofence_init / demo. Never adopt
+ * unsigned or seq <= hwm. Reboot must not roll back to an older fence.
  */
 #ifndef STARLING_FENCE_STORE_H
 #define STARLING_FENCE_STORE_H

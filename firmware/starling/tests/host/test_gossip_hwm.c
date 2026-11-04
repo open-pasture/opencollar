@@ -1,27 +1,50 @@
 /*
  * SPDX-License-Identifier: Apache-2.0
  *
- * Against PR #6 oc_fh_* (+ sim): inject_local adopt-newer, reject older,
- * and fence_seq high-water survives store reboot (no rollback).
+ * Against PR #6 oc_fh_* (+ sim + oc_fh_store_ram):
+ *   restore after reboot, inject_opaque adopt-newer, reject-stale.
  */
 #include "test.h"
 
-#include "fence_build.h"
-#include "fence_store.h"
 #include "gossip.h"
 #include "opencollar/fence_node.h"
+#include "opencollar/fence_store.h"
 #include "sim_radio.h"
 #include "store_ram.h"
 #include "test_crypto.h"
 
+#include "monocypher-ed25519.h"
+
 #include <string.h>
 
-typedef struct {
-	uint8_t active[STARLING_FENCE_PAYLOAD_MAX];
-	uint8_t pending[STARLING_FENCE_PAYLOAD_MAX];
-	uint8_t rx[SIM_MAX_MTU];
-	uint8_t tx[SIM_MAX_MTU];
-} unused_mem_t;
+/* Fake v1-style: payload = version_be32 || body || sig[64]. */
+static void make_signed_payload(uint8_t *out, size_t *out_len, uint32_t version,
+				const uint8_t *body, size_t body_len, test_keypair_t *kp)
+{
+	out[0] = (uint8_t)(version >> 24);
+	out[1] = (uint8_t)(version >> 16);
+	out[2] = (uint8_t)(version >> 8);
+	out[3] = (uint8_t)version;
+	memcpy(out + 4, body, body_len);
+	crypto_ed25519_sign(out + 4 + body_len, kp->sk, out, 4 + body_len);
+	*out_len = 4 + body_len + 64;
+}
+
+static int payload_verify(const uint8_t *payload, size_t len, uint32_t fence_seq, void *ctx)
+{
+	const test_keypair_t *kp = ctx;
+	uint32_t ver;
+
+	if (len < 4 + 64) {
+		return -1;
+	}
+	ver = ((uint32_t)payload[0] << 24) | ((uint32_t)payload[1] << 16) |
+	      ((uint32_t)payload[2] << 8) | (uint32_t)payload[3];
+	if (ver != fence_seq) {
+		return -1;
+	}
+	return crypto_ed25519_check(payload + len - 64, kp->pk, payload, len - 64);
+}
 
 int main(void)
 {
@@ -29,9 +52,11 @@ int main(void)
 	test_keypair_t kp;
 	uint8_t seedk[32];
 	uint8_t farm[8] = { 'F', 'A', 'R', 'M', '0', '0', '0', '1' };
-	uint8_t payload[120];
-	oc_fh_built_t built;
-	struct fence_store store;
+	uint8_t body[80];
+	uint8_t payload[200];
+	size_t plen = 0;
+	oc_fh_store_ram_t ram;
+	struct fence_store geo;
 	struct starling_gossip g;
 	unsigned i;
 
@@ -39,78 +64,75 @@ int main(void)
 		seedk[i] = (uint8_t)(i + 9);
 	}
 	test_keygen(&kp, seedk);
-	memset(payload, 0xA5, sizeof(payload));
+	memset(body, 0xA5, sizeof(body));
 
 	store_ram_reset();
-	fence_store_init(&store);
-	CHECK(fence_store_boot(&store) == 0);
+	fence_store_init(&geo);
+	CHECK(fence_store_boot(&geo) == 0);
+	oc_fh_store_ram_init(&ram);
 
 	sim_world_init(&world, 1, 42);
-	starling_gossip_init(&g, &store, 2, farm, false, sim_radio(&world, 0), test_verify, &kp,
-			     sim_clock_ms, &world);
+	starling_gossip_init(&g, &geo, &ram.api, 2, farm, false, sim_radio(&world, 0),
+			     test_verify, &kp, payload_verify, &kp, sim_clock_ms, &world);
 	CHECK(g.enabled);
 
-	/* frag_data_max must match the node's cfg (OC_FH_DEFAULT_FRAG_DATA). */
-	CHECK(oc_fh_build_signed(&built, farm, 5, 100, payload, sizeof(payload),
-				 OC_FH_DEFAULT_FRAG_DATA, test_sign, &kp) == 0);
-	CHECK(starling_gossip_inject_local(&g, built.sealed, built.sealed_len, payload,
-					   sizeof(payload)) == 0);
-	CHECK(fence_store_hwm(&store) == 5);
-	CHECK(store.has_active);
-	CHECK(store.active.freshness.fence_seq == 5);
+	make_signed_payload(payload, &plen, 5, body, sizeof(body), &kp);
+	CHECK(starling_gossip_inject_opaque(&g, payload, plen, 5, 100) == OC_FH_OK);
+	CHECK(oc_fh_store_ram_hwm(&ram) == 5);
+	CHECK(oc_fh_active(&g.node)->fence_seq == 5);
 	CHECK(g.apply_count >= 1);
 
-	/* Older seq rejected by node + must not lower hwm */
-	CHECK(oc_fh_build_signed(&built, farm, 3, 90, payload, sizeof(payload),
-				 OC_FH_DEFAULT_FRAG_DATA, test_sign, &kp) == 0);
-	CHECK(starling_gossip_inject_local(&g, built.sealed, built.sealed_len, payload,
-					   sizeof(payload)) != 0);
-	CHECK(fence_store_hwm(&store) == 5);
-
-	/* Equal rejected */
-	CHECK(oc_fh_build_signed(&built, farm, 5, 101, payload, sizeof(payload),
-				 OC_FH_DEFAULT_FRAG_DATA, test_sign, &kp) == 0);
-	CHECK(starling_gossip_inject_local(&g, built.sealed, built.sealed_len, payload,
-					   sizeof(payload)) != 0);
-	CHECK(fence_store_hwm(&store) == 5);
-
-	/* Reboot store: hwm persists; older still rejected via fence_store_offer */
-	store_ram_reboot();
+	/* Older seq rejected — HWM unchanged */
 	{
-		struct fence_store fs2;
-		struct starling_fence_blob stale;
+		uint8_t stale[200];
+		size_t slen = 0;
 
-		fence_store_init(&fs2);
-		CHECK(fence_store_boot(&fs2) == 0);
-		CHECK(fence_store_hwm(&fs2) == 5);
-		CHECK(fs2.has_active);
-		memset(&stale, 0, sizeof(stale));
-		stale.freshness.fence_seq = 4;
-		stale.verified = true;
-		stale.payload_len = 1;
-		stale.n_vertices = 0;
-		CHECK(fence_store_offer(&fs2, &stale, 1) == 0);
-		CHECK(fence_store_hwm(&fs2) == 5);
+		make_signed_payload(stale, &slen, 3, body, sizeof(body), &kp);
+		CHECK(starling_gossip_inject_opaque(&g, stale, slen, 3, 90) == OC_FH_ERR_SEQ);
+		CHECK(oc_fh_store_ram_hwm(&ram) == 5);
+		CHECK(g.reject_seq_count >= 1);
 	}
 
-	/* Newer still accepted after reboot (fresh sim + node). */
+	/* Equal rejected */
+	{
+		uint8_t same[200];
+		size_t slen = 0;
+
+		make_signed_payload(same, &slen, 5, body, sizeof(body), &kp);
+		CHECK(starling_gossip_inject_opaque(&g, same, slen, 5, 101) == OC_FH_ERR_SEQ);
+		CHECK(oc_fh_store_ram_hwm(&ram) == 5);
+	}
+
+	/* Reboot node: restore from oc_fh_store_ram before any poll */
 	{
 		sim_world_t world2;
-		struct fence_store fs3;
-		struct starling_gossip g3;
+		struct starling_gossip g2;
+		struct fence_store geo2;
 
+		fence_store_init(&geo2);
 		sim_world_init(&world2, 1, 99);
-		fence_store_init(&fs3);
-		CHECK(fence_store_boot(&fs3) == 0);
-		CHECK(fence_store_hwm(&fs3) == 5);
-		starling_gossip_init(&g3, &fs3, 2, farm, false, sim_radio(&world2, 0),
-				     test_verify, &kp, sim_clock_ms, &world2);
-		CHECK(oc_fh_active(&g3.node)->fence_seq == 5); /* restored from NVS */
-		CHECK(oc_fh_build_signed(&built, farm, 6, 110, payload, sizeof(payload),
-					 OC_FH_DEFAULT_FRAG_DATA, test_sign, &kp) == 0);
-		CHECK(starling_gossip_inject_local(&g3, built.sealed, built.sealed_len, payload,
-						   sizeof(payload)) == 0);
-		CHECK(fence_store_hwm(&fs3) == 6);
+		starling_gossip_init(&g2, &geo2, &ram.api, 2, farm, false, sim_radio(&world2, 0),
+				     test_verify, &kp, payload_verify, &kp, sim_clock_ms, &world2);
+		CHECK(g2.restored);
+		CHECK(oc_fh_active(&g2.node)->fence_seq == 5);
+		CHECK(oc_fh_store_ram_hwm(&ram) == 5);
+
+		/* Stale still rejected after restore */
+		{
+			uint8_t stale[200];
+			size_t slen = 0;
+
+			make_signed_payload(stale, &slen, 4, body, sizeof(body), &kp);
+			CHECK(starling_gossip_inject_opaque(&g2, stale, slen, 4, 95) ==
+			      OC_FH_ERR_SEQ);
+			CHECK(oc_fh_store_ram_hwm(&ram) == 5);
+		}
+
+		/* Newer accepted */
+		make_signed_payload(payload, &plen, 6, body, sizeof(body), &kp);
+		CHECK(starling_gossip_inject_opaque(&g2, payload, plen, 6, 110) == OC_FH_OK);
+		CHECK(oc_fh_store_ram_hwm(&ram) == 6);
+		CHECK(oc_fh_active(&g2.node)->fence_seq == 6);
 	}
 
 	return test_done("gossip_hwm");

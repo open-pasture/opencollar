@@ -17,8 +17,6 @@ void starling_app_init(struct starling_app *a, bool starling_serve)
 	a->geo_cfg.hysteresis_m = 1.0;
 	a->geo_cfg.max_accuracy_m = 10.0;
 
-	welfare_hooks_init_none(&a->welfare);
-
 	a->cue_cfg.warn_freq_hz = 2700;
 	a->cue_cfg.outside_freq_hz = 3200;
 	a->cue_cfg.beep_ms = 200;
@@ -27,21 +25,35 @@ void starling_app_init(struct starling_app *a, bool starling_serve)
 	a->cue_cfg.outside_max_ms = 10000;
 	cue_init(&a->cue, &a->cue_cfg);
 
+	/* PR #22: honor shut-off until caretaker clear (hook plumbing only). */
+	welfare_hooks_init_shutoff(&a->welfare, &a->cue);
+
 	fence_store_init(&a->store);
 	a->starling_serve = starling_serve;
-	starling_gossip_init(&a->gossip, &a->store, 2, k_farm, starling_serve, NULL, NULL, NULL,
-			     NULL, NULL);
+
+#ifdef STARLING_HAS_LORA
+	starling_fh_nvs_init(&a->fh_nvs);
+	starling_gossip_init(&a->gossip, &a->store, &a->fh_nvs.api, 2, k_farm, starling_serve,
+			     NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+#else
+	starling_gossip_init(&a->gossip, &a->store, NULL, 2, k_farm, starling_serve, NULL, NULL,
+			     NULL, NULL, NULL, NULL, NULL);
+#endif
 	power_sched_init(&a->power);
 }
 
 #ifdef STARLING_HAS_LORA
 void starling_app_bind_gossip(struct starling_app *a, uint16_t node_id,
 			      const uint8_t farm_id[OC_FH_FARM_ID_LEN], oc_radio_t *radio,
-			      oc_fh_verify_fn verify, void *verify_ctx, uint32_t (*now_ms)(void *),
-			      void *clock_ctx)
+			      oc_fh_verify_fn verify, void *verify_ctx,
+			      oc_fh_payload_verify_fn payload_verify, void *payload_verify_ctx,
+			      uint32_t (*now_ms)(void *), void *clock_ctx)
 {
-	starling_gossip_init(&a->gossip, &a->store, node_id, farm_id, a->starling_serve, radio,
-			     verify, verify_ctx, now_ms, clock_ctx);
+	/* Re-init NVS store + gossip; restore runs inside init before poll. */
+	starling_fh_nvs_init(&a->fh_nvs);
+	starling_gossip_init(&a->gossip, &a->store, &a->fh_nvs.api, node_id, farm_id,
+			     a->starling_serve, radio, verify, verify_ctx, payload_verify,
+			     payload_verify_ctx, now_ms, clock_ctx);
 }
 #endif
 
@@ -57,8 +69,16 @@ int starling_app_boot(struct starling_app *a, int64_t now_ms)
 	if (fence_store_boot(&a->store) != 0) {
 		return -1;
 	}
+	/*
+	 * Gossip restore already ran in bind/init when LoRa is present.
+	 * Re-run here so a boot path that skipped bind still loads HWM/active
+	 * from the oc_fh_store before any radio poll.
+	 */
+	(void)starling_gossip_restore(&a->gossip);
+
 	a->fenced = fence_store_apply_geofence(&a->store, &a->fence, &a->geo_cfg);
 	if (a->fenced) {
+		/* New boundary arm only — does NOT clear shut-off (PR #22). */
 		cue_rearm(&a->cue);
 	}
 	if (a->gnss.ops) {
@@ -74,6 +94,7 @@ int starling_app_set_fence(struct starling_app *a, const struct starling_fence_b
 
 	if (rc == 1) {
 		a->fenced = fence_store_apply_geofence(&a->store, &a->fence, &a->geo_cfg);
+		/* Fence move: cue_rearm only — never cue_clear_shutoff. */
 		cue_rearm(&a->cue);
 	}
 	return rc;
