@@ -11,7 +11,7 @@ normative text, under Apache-2.0.
 | This file | **v1**: HTTP + JSON, one collar straight to its server |
 | [`v2/`](v2/README.md) | **v2, draft**: one message set for LoRa herds with anchor collars, LTE anchors and direct collars; identity, ownership and firmware updates |
 | [`registry.md`](registry.md) | Every name and code on the wire (caps, message and record types, cue kinds, reject codes, device classes) and how to add one |
-| [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) | **Reserved / TBD:** shock (pulse) module connectors, dual enable, states, `health.module`, cap `shock_module`, cue kind `pulse` — **no behaviour**; Record H blocks live use |
+| [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) | **Reserved / TBD:** shock (pulse) module connectors, dual enable, states, `health.module`, caps `shock_module` / `pulse_grant`, cue kind `pulse` — **no behaviour**; live use needs a named welfare reviewer, owner opt-in, audit log |
 | [`vectors/`](vectors/README.md) | Test vectors: the source of truth both repos copy |
 | [`conformance/`](conformance/README.md) | How a server or a collar shows it conforms |
 | [`reference/`](reference/) | A small reference decoder |
@@ -240,13 +240,21 @@ server accepted.
   queued like episodes and logged on serial today; report uplink is TBD
   ([`registry.md`](registry.md#welfare-event-kinds)).
 - **Shock / pulse module (reserved / TBD, no behaviour):** connector and
-  dual-enable semantics, module states, fault names, cap `shock_module`,
-  cue kind `pulse`, and v1 `health.module` (only when fitted; omit when
-  not — servers must not treat absence as ok) are reserved in
+  dual-enable semantics, module states, fault names, device cap
+  `shock_module`, signed grant `pulse_grant` (device-id-scoped; revoked on
+  release / transfer / factory reset), cue kind `pulse`, and v1
+  `health.module` (`hw_rev` / `state` / optional `fault`; only when fitted;
+  omit when not — servers must not treat absence as ok; no v1 `present`)
+  are reserved in
   [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) and
-  [`registry.md`](registry.md#shock-module). Placement (top unit vs side
-  pods) is **OPEN**. Nothing drives an output; **Record H** blocks live
-  use. v2 must not reuse the fence `armed` status bit for the module.
+  [`registry.md`](registry.md#shock-module). Links: `welfare.enforcement`
+  (record L), `cue_state` `pulse_off` (record N). Placement (top unit vs
+  side pods) is **OPEN**. Nothing drives an output. Live use needs a
+  **named** welfare reviewer (not only Record H), owner opt-in, an audit
+  log, and a ready module; the server offers no pulse settings otherwise.
+  `GATE_LATCH` is an MCU output (one-shot, cleared on reset — not
+  firmware-independent); protection is `pulse_grant` + HW current limit +
+  kill. v2 must not reuse the fence `armed` status bit for the module.
 
 ## Slots
 

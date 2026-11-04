@@ -8,20 +8,28 @@ release.
 ### Shock / pulse module interface reserved (no behaviour)
 
 Not a wire version bump. Docs + registry names only; nothing drives an output.
-Cue behaviour unchanged. Record H still blocks live use. Current limit TBD for
-the welfare reviewer. Placement (top unit vs side pods) left **OPEN** for Cody.
+Cue behaviour unchanged. Current limit TBD for the welfare reviewer. Placement
+(top unit vs side pods) left **OPEN** for Cody. Live use needs a **named**
+welfare reviewer (Record H alone is not enough), owner opt-in, an audit log,
+and a ready module; the server offers no pulse settings otherwise.
 
-- **Cap** `shock_module` reserved.
+- **Device cap** `shock_module` reserved (not a grant).
+- **Grant** `pulse_grant` reserved: signed, revocable, country rule, scoped to
+  device id; revoked on release, transfer, or factory reset.
 - **Cue kind** `pulse` (code 3) reserved — distinct from audio / future vibration.
 - **Module states** `not_fitted` / `fitted_disabled` / `fitted_ready` / `fault` /
   `killed` reserved; `not_fitted` is firmware-internal + registry (omit
   `health.module` on the wire when unfitted; servers must not treat absence as ok).
 - **Fault names** `open_electrode` / `short` / `over_current` / `no_contact` /
-  `over_temp` / `bad_id` reserved; any fault keeps HV off until a person re-arms.
-- **Report** `health.module` with `present`, `hw_rev`, `state`, `fault` — only when
-  fitted. v2 must not reuse the fence `armed` status bit for the module.
+  `over_temp` / `bad_id` reserved; any fault keeps HV off until a person
+  **re-enables** (not welfare `rearm`).
+- **Report** `health.module` with `hw_rev`, `state`, optional `fault` — only when
+  fitted; no v1 `present`. v2 must not reuse the fence `armed` status bit.
+- **Latch:** `GATE_LATCH` is an MCU output (one-shot, cleared on reset); not
+  firmware-independent. Protection is `pulse_grant` + HW current limit + kill.
+- Cross-links: `welfare.enforcement` (record L), `cue_state` `pulse_off` (record N).
 - Normative text: [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md)
-  (op-architect record O; Cody standing rule 2026-11-04).
+  (op-architect records O + review; Cody standing rule 2026-11-04).
 
 ## 2026-11-03
 

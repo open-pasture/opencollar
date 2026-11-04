@@ -29,9 +29,9 @@ static void test_fault_values_stable(void)
 static void test_field_names_stable(void)
 {
 	CHECK(strcmp(SHOCK_CAP_NAME, "shock_module") == 0);
+	CHECK(strcmp(SHOCK_PULSE_GRANT_NAME, "pulse_grant") == 0);
 	CHECK(strcmp(SHOCK_CUE_KIND_PULSE, "pulse") == 0);
 	CHECK(strcmp(SHOCK_REPORT_HEALTH_MODULE, "module") == 0);
-	CHECK(strcmp(SHOCK_REPORT_PRESENT, "present") == 0);
 	CHECK(strcmp(SHOCK_REPORT_HW_REV, "hw_rev") == 0);
 	CHECK(strcmp(SHOCK_REPORT_STATE, "state") == 0);
 	CHECK(strcmp(SHOCK_REPORT_FAULT, "fault") == 0);

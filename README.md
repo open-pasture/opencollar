@@ -27,7 +27,7 @@ Two collar types share as much as possible:
 
 - `docs/BUILD-LOG.md` — dated record of every step, result, and decision
 - `docs/WELFARE-POLICY.md` — cue limits, auto shut-off, and welfare events (review thresholds before pulse)
-- `docs/SHOCK-MODULE-INTERFACE.md` — reserved shock/pulse connectors and report fields (no live output; Record H blocks use)
+- `docs/SHOCK-MODULE-INTERFACE.md` — reserved shock/pulse connectors and report fields (no live output; named reviewer + owner opt-in required)
 - `docs/PROTOTYPE-V0.md` — current state of the V0 prototype
 - `docs/V1-DESIGN.md` — the V1 collar design and cost estimates
 - `docs/MANUFACTURING.md` — how we get to 1,000 collars, and why FCC and carrier approval matter

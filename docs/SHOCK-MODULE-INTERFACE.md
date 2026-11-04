@@ -2,9 +2,15 @@
 
 **Status:** interface reservation only. Nothing in this document, and nothing
 in the accompanying enum-only header, enables or drives any stimulus output.
-Cue behaviour is unchanged (audio V0). **Record H** (welfare-reviewer
-question) still blocks any live use of a pulse / shock module. Hardware
-current-limit values stay **TBD for the welfare reviewer**.
+Cue behaviour is unchanged (audio V0). Hardware current-limit values stay
+**TBD for the welfare reviewer**.
+
+**Live use is blocked until all of:** a **named** animal-welfare reviewer has
+signed off (Record H’s welfare-reviewer question is necessary but not
+sufficient — the reviewer must be named), **owner opt-in**, an **audit log**
+of grants and stimulus events, and the module reporting ready. The server
+**offers no pulse settings** unless the module is ready. This reservation
+adds none of that behaviour.
 
 **Standing rule (Cody, 2026-11-04):** no separate pilot and production
 designs. The unit we test is the production design even if only some
@@ -24,7 +30,9 @@ This file reserves **logical** connectors, rails, and report fields that work
 either way. Mechanical choice is out of scope here.
 
 Related: [`WELFARE-POLICY.md`](WELFARE-POLICY.md),
-[`protocol/registry.md`](../protocol/registry.md),
+[`protocol/registry.md`](../protocol/registry.md)
+(including reserved `welfare.enforcement` from record L and `cue_state` /
+`pulse_off` from record N),
 [`hardware/carrier/SPEC.md`](../hardware/carrier/SPEC.md) (existing pin map).
 
 ---
@@ -46,32 +54,65 @@ module rides off-board).
 
 ---
 
-## 2. Dual enable: firmware + hardware gate latch
+## 2. Dual enable: firmware HV enable + gate latch
 
 High voltage may run only when **both** are asserted:
 
-1. **Firmware enable** (`DRV_EN` / logical HV enable) — software path,
+1. **Firmware enable** (`HV_EN` / logical driver enable) — software path,
    welfare-gated; default inactive at reset, on fault, and whenever the
    module is not in a ready state.
-2. **Hardware gate latch** — a separate latch that firmware cannot hold
-   closed across a reset. The latch **opens only after** the collar has
-   checked a **signed, revocable server capability** that includes a
-   **country rule**. **Any reset closes the latch.**
+2. **Hardware gate latch**, armed by the MCU output **`GATE_LATCH`**.
+   Firmware **does** fire this output: the latch is **one-shot**, cleared on
+   any reset, and **not** firmware-independent. Firmware arms it only after
+   checking a valid **`pulse_grant`** (below). Saying the latch is
+   “hardware” means the latch *holds* until reset once set — **not** that
+   firmware cannot assert it alone.
+
+**What actually protects against firmware alone enabling HV:** the
+server-signed **`pulse_grant`**, the **fixed hardware current limit**, and
+the **independent kill line**. Do not claim the latch itself is outside
+firmware’s reach.
 
 Under that AND-gate sit, always:
 
 | Layer | Role |
 | --- | --- |
-| **Fixed hardware current limit** | Value **TBD by the welfare reviewer**. Firmware never programs above it; any software limit is strictly lower. |
+| **Fixed hardware current limit** | Value **TBD by the named welfare reviewer**. Firmware never programs above it; any software limit is strictly lower. |
 | **Independent kill line** | Cuts the driver / HV rail **independent of firmware** (kill switch, fuse, or equivalent). Firmware **observes** kill asserted; it does not implement the cut. |
 | **Hardware watchdog** | Loss of kick or latch integrity forces HV off. |
 
 **Safe state is always high voltage off:** unfitted, unknown, reset, fault,
-kill asserted, latch closed, watchdog trip, or missing / revoked capability.
+kill asserted, latch cleared, watchdog trip, missing / revoked `pulse_grant`,
+welfare enforcement off, or `cue_state` of `pulse_off`.
 
-Firmware may assert enable **only** from the existing welfare-gated cue path
-(same counters as [`WELFARE-POLICY.md`](WELFARE-POLICY.md) / `cue.c`). This
+Firmware may assert `HV_EN` **only** from the existing welfare-gated cue path
+(same counters as [`WELFARE-POLICY.md`](WELFARE-POLICY.md) / `cue.c`), and
+only while the latch is set and grant / welfare / cue-state allow it. This
 reservation adds **no** new cue behaviour and **no** driver code.
+
+### `pulse_grant` (signed server permission)
+
+Cap `shock_module` means the **device** understands the interface. It is
+**not** the grant.
+
+| | |
+| --- | --- |
+| Name | `pulse_grant` — **RESERVED (no behaviour)** in [`registry.md`](../protocol/registry.md) |
+| What | Signed, revocable server capability that includes a **country rule** |
+| Scope | Tied to the collar’s **device id** |
+| Revocation | Grant is revoked on **release**, **transfer**, or **factory reset** (and whenever the server revokes it) |
+| Latch | Collar may arm `GATE_LATCH` only after verifying a current grant; any reset clears the latch |
+
+Wire shape TBD; name reserved so it is not confused with `shock_module`.
+
+### Welfare and cue-state links
+
+- **`welfare.enforcement`** (record L): when enforcement is off (auto
+  shut-off, etc.), no pulse path may run. Distinct from clearing a module
+  fault — caretaker `rearm` / `cue_clear_shutoff` clears welfare shut-off
+  only; it does **not** clear a module fault.
+- **`cue_state` value `pulse_off`** (record N, reserved): cue / stimulus
+  state that keeps pulse off; reserved so audio and pulse are not conflated.
 
 ---
 
@@ -95,7 +136,7 @@ existing carrier wiring in [`hardware/carrier/SPEC.md`](../hardware/carrier/SPEC
 
 | Logical MCU net | Use | Constraints vs today’s map |
 | --- | --- | --- |
-| `GATE_LATCH` | Drive / arm the hardware gate latch (capability-checked path only) | Not P0.30/P0.31 (I2C/buzzer), not GNSS (P0.22–P0.27, P0.24 PPS/SAFEBOOT), not FLASH SPI (P0.01–P0.04), not `EXT_EN` (P0.07) reused as HV enable. Prefer a spare such as the NC analog bank **only after** a pin audit; mark **TBD** until assigned. Pulldown / safe-off at reset. |
+| `GATE_LATCH` | **MCU output** that arms the one-shot hardware gate latch (only after a verified `pulse_grant`). Cleared on reset. Not firmware-independent — see §2. | Not P0.30/P0.31 (I2C/buzzer), not GNSS (P0.22–P0.27, P0.24 PPS/SAFEBOOT), not FLASH SPI (P0.01–P0.04), not `EXT_EN` (P0.07) reused as HV enable. Prefer a spare such as the NC analog bank **only after** a pin audit; mark **TBD** until assigned. Pulldown / safe-off at reset. |
 | `KILL_SENSE` | Observe the independent kill line | Same exclusion set. Input with defined idle level so an open connector is not “ok”. |
 
 **ID chip footprint:** reserved on the module PCB (package TBD; I2C). Collar
@@ -115,9 +156,9 @@ Firmware-internal and registry-defined state values
 | State | Meaning |
 | --- | --- |
 | `not_fitted` | No module on the sense pin / ID. **Internal + registry only** — not sent as a report block. |
-| `fitted_disabled` | Present; HV held off (default, latch closed, or welfare / capability). |
-| `fitted_ready` | Present; capability + latch + firmware path allow enable when a welfare-gated cue would fire. Still off until that path asserts. |
-| `fault` | A fault code is latched; module forced off until a **person** clears / re-arms. |
+| `fitted_disabled` | Fitted; HV held off (default, latch cleared, missing grant, or welfare / cue-state). |
+| `fitted_ready` | Fitted; `pulse_grant` + latch + firmware path allow enable when a welfare-gated cue would fire. Still off until that path asserts. |
+| `fault` | A fault code is latched; module forced off until a **person re-enables** it (not caretaker `rearm` / welfare shut-off clear). |
 | `killed` | Independent kill asserted; HV off. |
 
 `not_fitted` and unknown **must** mean no firmware path may drive HV. Default
@@ -131,7 +172,8 @@ future record fields). Fence `armed` keeps its current meaning only.
 
 ## 5. Fault codes (proposed names; RESERVED)
 
-Any fault turns the module **off until a person turns it back on**.
+Any fault turns the module **off until a person re-enables** it. That is
+**not** the welfare `rearm` path (record L / `cue_clear_shutoff`).
 
 | Name | Intent |
 | --- | --- |
@@ -149,14 +191,15 @@ so they are not reused for something else.
 
 ## 6. Reports and caps (omit-when-unknown / omit-when-unfitted)
 
-### Cap
+### Caps / grants
 
-| Cap | Meaning when listed (future) |
+| Name | Meaning when listed (future) |
 | --- | --- |
-| `shock_module` | Collar hardware/firmware understands the reserved shock-module interface. **RESERVED — no behaviour today.** |
+| `shock_module` | **Device cap:** collar hardware/firmware understands the reserved shock-module interface. **RESERVED — no behaviour today.** Not a live-use grant. |
+| `pulse_grant` | **Signed server permission** (country rule, device-id-scoped, revocable). **RESERVED — no behaviour today.** See §2. |
 
-Listing the cap must never be taken as “pulse is live.” Record H still
-blocks live use.
+Listing `shock_module` must never be taken as “pulse is live.” Live use still
+needs a named welfare reviewer, owner opt-in, audit log, and a ready module.
 
 ### Cue kind
 
@@ -166,25 +209,30 @@ blocks live use.
 
 ### v1 report shape
 
-When a module **is** fitted, the position report may include (names reserved):
+When a module **is** fitted, the position report may include (names reserved).
+Omit unknown fields (no placeholders):
 
 ```json
 "health": {
   "module": {
-    "present": true,
     "hw_rev": "<from ID chip>",
-    "state": "fitted_disabled",
-    "fault": null
+    "state": "fitted_disabled"
   }
 }
 ```
 
+If a fault is latched, include `"fault": "<name>"`; otherwise **omit**
+`fault` entirely.
+
 - Emit `health.module` **only when a module is fitted**.
-- Fields: `present`, `hw_rev`, `state`, `fault` (fault name or omit / null when none).
+- v1 fields: `hw_rev`, `state`, and `fault` only when known / latched.
+  **No `present` field in v1** — the block’s presence already means fitted.
 - When **not** fitted: **omit** the entire `health.module` block (do not send
   `state: "not_fitted"` on the wire).
 - Servers **must** treat an absent `health.module` as **not fitted or
   unknown**, and **never** as ok / ready / stimulus-capable.
+- The server **offers no pulse settings** unless the module is ready
+  (`fitted_ready` and live-use gates above).
 
 Optional later: serial from the ID chip under the same block; omit when
 unknown.
@@ -193,22 +241,27 @@ unknown.
 
 Keep module state out of the fence `armed` bit. A future health-map key or
 record field may carry the same semantics; unknown keys stay ignored per
-registry extensibility. No CDDL / vector change in this PR (reservation
-only).
+registry extensibility. If a v2 encoding needs an explicit present flag
+inside a denser structure, that is a v2-only concern — **not** a v1 JSON
+field. No CDDL / vector change in this PR (reservation only).
 
 ---
 
 ## 7. Hard rules (unchanged welfare gating)
 
 1. Unfitted or unknown → no firmware path may drive the module.
-2. Default is **off** (reset, latch closed, enable inactive).
+2. Default is **off** (reset clears the latch; enable inactive).
 3. This reservation **does not** enable any output and **does not** change
    audio cue behaviour.
-4. **Record H** (welfare-reviewer question) **blocks any live use**.
+4. Live use needs a **named** welfare reviewer (Record H alone is not
+   enough), **owner opt-in**, an **audit log**, and a ready module; the
+   server offers no pulse settings otherwise.
 5. Hardware current limit value remains **TBD for the welfare reviewer**;
    software limits stay strictly below that hardware limit once set.
 6. One production design: leave mechanical and connector room even when the
    module is not fitted for early builds.
+7. Protection against firmware-alone HV is `pulse_grant` + HW current limit
+   + kill line — not a claim that `GATE_LATCH` is outside firmware.
 
 Enum / field-name constants only (no drivers): optional
 [`firmware/src/shock_iface.h`](../firmware/src/shock_iface.h).
