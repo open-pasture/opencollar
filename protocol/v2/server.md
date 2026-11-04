@@ -147,10 +147,19 @@ collar that goes silent after installing, and MUST let the owner turn automatic 
   as any member still holds it as current (it fell back). As the new server: re-send the
   confirm (naming the handover's digest) to members that acked `received`; hold other commands
   for a member until it has confirmed; ask for record gaps with a resend.
-- Store claim codes only as long as a claim takes; store the owner key's public half only.
-- Before a release, ask a person: a released collar on an animal has no fence. A release or
-  transfer of a collar with an owner key needs the owner's signature; the server can only
-  prepare it.
+- **Claim codes (plaintext):** erase at claim (when the bind is `applied`), not only when the
+  collar first reports. Keep the factory record's `claim_check`. **Exception:** the server
+  MAY retain plaintext only where erasing it would break reclaim-after-reset or
+  `code_checked` / `claim_check` flows; prefer not to. Op-software MAY still refine this.
+  Store the owner key's public half only.
+- **Same-farm herd move** (collar stays on this farm's server; only the herd record changes;
+  no new device or server key): notify current owners, offer a **24 h undo**, and do **not**
+  require an owner-key signature or a person's confirm. (Cross-farm sale or server change is
+  §13, not this bullet.)
+- **Release** of a collar that still holds an active boundary: ask a person before sending
+  the release command ([identity.md §7](identity.md#7-release-and-factory-reset)). A release
+  or type-6 **transfer** that changes ownership on the collar still needs the owner key's
+  signature when one is enrolled; the server can only prepare it.
 
 ## 11. Farm policy: zones and leases
 
@@ -171,15 +180,53 @@ A server that sends boundaries to collars listing the cap `zones` ([messages.md 
 
 ## 12. Claims
 
+- **Who may claim.** Claiming requires the **Hand** role or above on this farm's server.
+  **Viewers MUST NOT** claim (refuse with a role error). The claim is into a herd on the
+  **claimer's own farm** (any existing herd on that farm, or one created in the same call if
+  the product supports it). There is no separate herd-membership role on the server today.
 - When the card's factory record has a `claim_check`, check a typed or scanned code against
   it before storing it or using airtime, and refuse a mismatch ([identity.md §4](identity.md#4-claim)).
 - A collar is **claim pending** until it acks the bind `applied`; the software MUST NOT show
   it as claimed before. `bad_claim` means the code was wrong.
-- After the claim, forget the code and keep the `claim_check`. A collar that is unclaimed
-  again (its hello carries a claim nonce) is reclaimed by scanning its card again, checked
-  against the kept `claim_check`.
+- **Claim-code storage.** Erase the plaintext claim code when the claim completes (bind
+  `applied`). Keep `claim_check`. Exception: retain plaintext only if reclaim or
+  `code_checked` cannot work without it (prefer erase; op-software MAY still change this).
+- **Reclaim after a factory reset (server side):** scanning the card again and checking
+  `claim_check` is enough for the server to start a new claim. The collar-side magnet reset
+  (10 s + `reset <claim code>`) in [identity.md §7](identity.md#7-release-and-factory-reset)
+  is unchanged. **Residual risk:** a thief who holds the card can reclaim after a reset;
+  mitigate with notices, undo where applicable, lockouts that survive restarts, and the
+  audit log (below).
 - A factory server (one that only makes collars) forgets claim codes when the unit ships,
   unless the maker's support policy says it keeps them; either way the box says which.
+
+### Lockouts, audit, notices
+
+- **Lockouts** (wrong claim codes): by **caller**, by **serial**, and by **code**, persisted
+  so they survive server restarts (not only in-memory). Unknown serial and wrong code MUST
+  return the **same** client-visible failure (constant 404 or equivalent), so probing does
+  not distinguish them.
+- **Audit log** every claim, release, same-farm move, and cross-farm handover (success and
+  failure attempts that the server accepts enough to evaluate).
+- **Notify** current owners (in-app / live event and email where available) on every claim
+  **attempt** on their unit, every release, and every herd move.
+
+## 13. Same-farm moves and cross-farm handover
+
+- **Same farm.** Changing a collar's herd on the same server changes only the herd record
+  (and clears / replaces boundary state as the product already does). No new key. Notice to
+  owners and a **24 h undo**; no owner-key signature and no person confirmation (§10).
+- **Cross-farm (or other server).** Ownership leaves this farm. Options:
+  1. **Owner-generated one-time transfer code:** 16 Crockford characters, **24 h** lifetime,
+     **single use**. Lifecycle: **issue** (owner starts handover / release route) → **hold**
+     until used or expiry → **consume** on successful claim by the buyer → or **expire** /
+     **revoke** (owner cancels) without use. Or
+  2. **Claim with the card** on the buyer's farm (same claim path as §12).
+- On cross-farm completion: the **old key is revoked** (this farm stops commanding the
+  collar); the collar **keeps its device id**. In **v2**, no private key moves: release or
+  handover, then a **new bind** on the buyer's server. In **v1**, a new key is minted at
+  claim and the old one dies. **History** goes with the collar on export. The **fence is
+  cleared** until the new herd's boundary is acked, so the collar cues nothing in between.
 
 ## Informative: openpasture's policies
 
