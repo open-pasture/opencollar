@@ -636,8 +636,8 @@ D4 contoured skin around D5 internals (PR head `6b1f882`). Script: `hardware/roo
 | Pod anchor (world) | y = ±{POD_ANCHOR_Y}, z = {POD_ANCHOR_Z} |
 | Tilt about X | ±{POD_TILT_DEG:.2f}° (L +, R −) — matches d4.json |
 | Mount pad size | {POD_MOUNT_SIZE[0]} × {POD_MOUNT_SIZE[1]} × {POD_MOUNT_SIZE[2]} |
-| Mount face Y | ±{POD_MOUNT_FACE_Y} |
-| Screws in pad | 4× Ø{D.CLEAR} clear, local (±12, z∈{{4,12}}) through pad |
+| Mount face Y | inset pads; outer envelope stays {CAP_L} (tilt-compensated) |
+| Screws in pad | 4× Ø{D.CLEAR} clear through pad (local ±10 X, two Z rows) |
 | Cable exits | Ø6 through ±Y ends + ±X walls; countersink Ø8 × 1.2 |
 
 Pod agent builds the mating pod face / fairing to these anchors.
