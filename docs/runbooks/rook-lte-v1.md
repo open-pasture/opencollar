@@ -79,15 +79,32 @@ v1 servers ignore unknown fields, so these are backward compatible; none are v2 
 - `roster` (top level, **reserved**): future Starling freshness summary; currently never sent.
   Servers should ignore it until it is specified.
 
-## Build
+## Build the Rook image
+Run from `firmware/` (CI uses the same line). `build.sh` can't make this image: it takes no
+conf argument or env var and always builds the plain collar image into `build/`. Use west:
 ```
 cd firmware
-export ZEPHYR_BASE=~/ncs/v3.4.1/zephyr
-nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 -- \
-  west build -p -b nrf9151_connectkit/nrf9151/ns -d build-rook . -- -DBOARD_ROOT=$PWD \
-  -DEXTRA_CONF_FILE="rook/rook.conf"                       # real server
-# bench against the mock: -DEXTRA_CONF_FILE="rook/rook.conf;rook/rook-mock.conf"
+nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 -- bash -c \
+  'export ZEPHYR_BASE=$HOME/ncs/v3.4.1/zephyr; west build -p --sysbuild \
+   -b nrf9151_connectkit/nrf9151/ns -d build-rook . -- \
+   -DBOARD_ROOT=$PWD -DEXTRA_CONF_FILE="rook/rook.conf"'
+# mock bench variant: -DEXTRA_CONF_FILE="rook/rook.conf;rook/rook-mock.conf"
 ```
+- Use `EXTRA_CONF_FILE`, not `CONF_FILE`. `CONF_FILE` replaces `prj.conf`, and that drops the base app.
+  `ZEPHYR_BASE` must be exported *inside* the toolchain shell. Run outside the NCS workspace,
+  west finds the SDK only through it.
+- Outputs, from a verified build on 2026-11-03:
+  - `build-rook/merged.hex` (flash this: MCUboot plus the signed app, about 572 KB of hex);
+  - `build-rook/firmware/zephyr/zephyr.signed.hex` (app only, for DFU);
+  - `build-rook/firmware/zephyr/zephyr.hex` (unsigned app);
+  - `build-rook/mcuboot/zephyr/zephyr.hex`.
+- Sizes: the app takes 144380 B of 417642 B flash (34.6%) and 100952 B of RAM (47.7%); MCUboot
+  takes 31632 B. `python3 scripts/check_image.py build-rook/firmware/zephyr` passes.
+- The `.config` should have `CONFIG_ROOK_LTE=y` and `# CONFIG_ROOK_BATTERY_MAX17260 is not set`.
+- Flash it the same way as `firmware/build.sh flash`:
+  `pyocd flash -t nrf91 -f 4000000 -e sector build-rook/merged.hex`. Use `-e chip` the first time
+  over a no-bootloader image. Then provision over serial (see "Shortest path" below).
+
 Without `EXTRA_CONF_FILE` the build is unchanged from main (CONFIG_ROOK_LTE off).
 
 Host tests: `make -C firmware/rook/tests/host` (or `firmware/rook/tests/host/run.sh`).
@@ -132,9 +149,8 @@ A device on LTE needs a public address for the mock (e.g. a tunnel); set it in `
   shows). Nothing is faked.
 - With the carrier rev A3: `CONFIG_ROOK_BATTERY_MAX17260=y` plus a carrier devicetree overlay
   naming its I2C bus (missing: the overlay and the bus label; `i2c2` is a placeholder).
-- Proposed fallback without the carrier: a VBAT divider into one nRF9151 AIN pin read by the
-  Zephyr ADC (`zephyr,user` `io-channels`) and a LiPo voltage-to-fraction curve. Missing: the
-  divider (two resistors and the pin, hardware), the overlay, and a curve. Not implemented.
+- Demo decision (op-firmware, 2026-11-03): battery is omitted for the demo. MAX17260 stays off
+  and the VBAT-divider path is not built.
   The modem's `%XVBAT` is the regulated supply, not the battery: not used.
 
 ## Shortest path to a first report in the app
@@ -152,10 +168,15 @@ then the next cycle posts it; the server's `Date` arrives on that first response
   the carrier overlay, which doesn't exist yet. No gauge config (ModelGauge EZ init) is written,
   so SoC is the gauge's default model until that is added.
 - Fence persistence: host-tested on `store_ram.c` only; not yet exercised on real NVS flash.
-- Pending acks from `app.acks` (NVS) are not resent by the reporter yet; only the ack for the
-  command just downloaded is posted.
+- Pending acks: every cycle after a 2xx report (so after any reboot or reconnect), and again
+  after the boundary fetch, the reporter POSTs the core's queued acks (NVS id 2), oldest first,
+  with their own `at` (or the server's `Date` if they were made without a clock). It pops an
+  ack on a 2xx or any 4xx except 401/408/429, and keeps it on those and on network/5xx errors.
+  Host-tested with reboot simulation on `store_ram.c`, not on real flash.
 - Config: applied through the core and host-tested with a mock-signed config; the endpoint
   switch and `report_s` cadence on the device are not exercised on hardware. `poll_s` is not
   used separately (the boundary is fetched every report cycle).
 - `device_class` is not sent (optional; the Rook's class in the herd network isn't decided).
-- 413 split: the next cycle relies on `CONFIG_ROOK_LTE_MAX_FIXES`/body cap, not a real halving.
+- 413: the batch is halved from what was sent (down to 1) and resent at once, up to 8 times.
+  A single fix that still gets 413 is dropped and counted in `dropped`. A 2xx restores
+  `CONFIG_ROOK_LTE_MAX_FIXES`. The halving maths is host-tested; the device loop is not.
