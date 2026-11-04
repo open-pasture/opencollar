@@ -1,5 +1,5 @@
 {
-  "revision": "D6_pod_d4_skin_d5_internals",
+  "revision": "D7_pod_fairings_continuous",
   "d5_head": "6b1f882",
   "mount": {
     "L": {
@@ -334,5 +334,6 @@
       "note": "Outer-down; soft tip taper only \u2014 not a deep crown"
     }
   },
-  "review_blend": "review/pod_review.blend"
+  "review_blend": "review/pod_review.blend",
+  "fairing_note": "D7 continuous loft via fairing.py; FAIRING_* in assembly.py; R>=4"
 }

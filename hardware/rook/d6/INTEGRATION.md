@@ -16,6 +16,7 @@ Assembly: `out/assembly_check.json`, world STLs `out/world/`, `out/d6_assembly_w
 ## Cody Blender checklist
 1. Cap–pod joint (tilt L+ / R−, pad/recess, gap)
 2. Pod bulk vs D4 ghost (92 vs 67 wide — cavity-forced)
-3. Fairing placement / width taper 88→66
+3. Fairing placement / continuous width taper 88→66 along run (D7 loft, R≥4)
+3b. Cap rounded nose flowing into fairing (D7)
 4. Strap path through saddle / clamps (along Y)
 5. Counterweight size (D5 mass envelope 88×74×30 vs D4 ~59×85×24)

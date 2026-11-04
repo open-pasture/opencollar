@@ -27,10 +27,13 @@ fairing-bridged gap while the pad/recess joint still meets. Cap pad tilt
 matches pod/D4: L **+29.142°**, R **−29.142°**. Cap pads and pod ends share
 a 36×4×14 M3 joint (4× clear).
 
-## Fairings
+## Fairings (D7 continuous wedge)
 
-Wide end **88** (spans 92 mm pods / 88 mm CW), taper to **66**, run **28**,
-H **14**. World poses from D4 fairing bbox centres in `assembly.py`.
+Wide end **88** (spans `POD_L−4` / CW 88), taper to **66** *along the run*
+(not as a vertical trapezoid block), run **28** (cap↔pod **18**), H **14**,
+edge fillet **R ≥ 4**. Loft in `fairing.py`; params `FAIRING_*` in `assembly.py`
+follow pod/cap/CW outline constants so a slim-pod agent can re-loft. Bridges the
+~1.3 mm cap–pod body gap; world poses from bridge centres in `assembly.py`.
 
 ## CW lid print orientation
 

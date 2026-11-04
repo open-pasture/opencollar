@@ -54,7 +54,7 @@ On `pod_*_base` and `pod_floor_layout`: `BATT`, `PLUS`, `MINUS`, `BUZZ`, `PIN1` 
 | --- | --- | --- |
 | `pod_*_base` | underside; cavity UP | glyphs/ribs face +Z |
 | `pod_*_lid` | **OUTER face DOWN** | modeled mating-at-z=0; export rotates **180° about X** + recalc normals — **never** `flip_normals()` for orientation |
-| fairings | long axis on bed | slope = WALL |
+| fairings | widest face on bed z=0 | continuous wedge; walls = slope; R≥4 |
 | `pod_floor_layout` | underside; ribs UP | PLA coupon |
 
 ### Lid bed face / supports
@@ -63,12 +63,14 @@ On `pod_*_base` and `pod_floor_layout`: `BATT`, `PLUS`, `MINUS`, `BUZZ`, `PIN1` 
 - Soft tip taper only (not a deep crown) → **no large supports** expected for the outer shell.
 - Optional tiny supports under mating-face ribs/posts if the slicer treats them as bridges.
 
-## Fairings (agree with CW `05ef563`)
+## Fairings (D7 continuous loft — `fairing.py`)
+
+Width eases **88 → 66 along the run** (smootherstep tangents), not as a vertical trapezoid block. Edge fillet **R ≥ 4**. Params `FAIRING_*` in `assembly.py` follow `POD_L` / plan R so a slim-pod outline can re-loft.
 
 | Part | Envelope (approx) |
 | --- | --- |
-| `fairing_cap_pod_L/R` | **88 → 66 × 18 × 14** (widened; short run) |
-| `fairing_pod_strap_L/R` | **88 → 66 × 28 × 14** |
+| `fairing_cap_pod_L/R` | **88 → 66 × 18 × 14**, R≥4 (bridges ~1.3 mm cap–pod gap) |
+| `fairing_pod_strap_L/R` | **88 → 66 × 28 × 14**, R≥4 |
 
 ## Assembly agree — owned by CW agent (pods do not re-export)
 

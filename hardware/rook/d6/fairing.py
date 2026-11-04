@@ -1,0 +1,182 @@
+"""D7 continuous fairing loft (shared by pod.py + cw.py).
+
+D6 built fairings as a constant-Y trapezoid prism (width taper lived in Z),
+which reads as a square block bolted between bodies. D7 lofts along the run
+so width eases W0→W1 with long tangents, soft end caps, and edge fillets
+R >= 4 mm — D4_contoured_v3 style.
+
+Parametric outline: FAIRING_* in assembly.py read POD_L / POD_W / PLAN_R /
+CAP_W so a later slim-pod outline can re-loft without rewriting the solid.
+"""
+from __future__ import annotations
+
+import math
+import os
+import sys
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_COMMON = os.path.abspath(os.path.join(_HERE, "..", "..", "common", "cad", "lib"))
+sys.path.insert(0, _COMMON)
+sys.path.insert(0, _HERE)
+
+import oc  # noqa: E402
+import assembly as A  # noqa: E402
+
+
+def _smootherstep(t: float) -> float:
+    """Zero 1st/2nd derivative at 0 and 1 — long tangent blend into neighbours."""
+    t = max(0.0, min(1.0, t))
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
+
+
+def _plan_outline(run: float, w0: float, w1: float, r0: float, r1: float,
+                  n_side: int = 16, n_arc: int = 10):
+    """Closed XY outline of a continuous wedge (CCW from +Z).
+
+    Wide end at y = -run/2 (width w0), narrow at y = +run/2 (width w1).
+    Side edges use smootherstep so the 88→66 taper blends into neighbours
+    with low long tangents (no hard kink at the seam). Ends are stadium-rounded.
+    """
+    r0 = min(max(r0, 0.5), w0 / 2.0 - 0.2, run / 3.0)
+    r1 = min(max(r1, 0.5), w1 / 2.0 - 0.2, run / 3.0)
+    y0 = -run / 2.0
+    y1 = +run / 2.0
+
+    def width_at(y: float) -> float:
+        t = (y - y0) / run
+        return w0 + (w1 - w0) * _smootherstep(t)
+
+    pts = []
+
+    # +X side, wide → narrow (between end radii)
+    y_a = y0 + r0
+    y_b = y1 - r1
+    for i in range(n_side + 1):
+        y = y_a + (y_b - y_a) * (i / n_side)
+        pts.append((width_at(y) / 2.0, y))
+
+    # Narrow end (+Y) stadium arc: right shoulder → tip → left shoulder
+    # Arc centre line at y = y1 - r1; right centre x = +(w1/2 - r1)
+    for i in range(1, n_arc + 1):
+        a = math.pi * i / n_arc  # 0..π ; skip 0 (already at +X shoulder)
+        if a <= math.pi / 2.0:
+            x = (w1 / 2.0 - r1) + r1 * math.cos(a)
+        else:
+            x = -(w1 / 2.0 - r1) + r1 * math.cos(a)
+        y = (y1 - r1) + r1 * math.sin(a)
+        pts.append((x, y))
+
+    # -X side, narrow → wide
+    for i in range(n_side + 1):
+        y = y_b - (y_b - y_a) * (i / n_side)
+        pts.append((-width_at(y) / 2.0, y))
+
+    # Wide end (−Y) stadium arc: left shoulder → tip → right shoulder
+    for i in range(1, n_arc + 1):
+        a = math.pi + math.pi * i / n_arc  # π..2π ; skip π (already at -X)
+        if a <= 3.0 * math.pi / 2.0:
+            x = -(w0 / 2.0 - r0) + r0 * math.cos(a)
+        else:
+            x = (w0 / 2.0 - r0) + r0 * math.cos(a)
+        y = (y0 + r0) + r0 * math.sin(a)
+        pts.append((x, y))
+
+    return pts
+
+
+def _bevel_safe(obj, r: float, segments: int = 4) -> float:
+    """Bevel all edges; fall back to smaller R if the modifier collapses."""
+    for trial in (r, max(4.0, r * 0.85), 4.0):
+        try:
+            oc.bake(obj)
+            vol0 = oc.volume_mm3(obj)
+            oc.bevel(obj, trial, segments=segments)
+            oc.apply_modifiers(obj)
+            vol1 = oc.volume_mm3(obj)
+            if vol1 > 0.5 * vol0 and vol1 > 100.0:
+                return float(trial)
+        except Exception:
+            # Restore attempt: caller will prepare() anyway; try smaller R
+            continue
+    return 0.0
+
+
+def fairing_body(name: str,
+                 run: float | None = None,
+                 w0: float | None = None,
+                 w1: float | None = None,
+                 h: float | None = None,
+                 *,
+                 edge_r: float | None = None,
+                 plan_r0: float | None = None,
+                 plan_r1: float | None = None,
+                 top_crown: float | None = None):
+    """Continuous D4-style fairing wedge.
+
+    Prints flat on its widest face (z=0 bed); slope walls need no large supports.
+    Width tapers along Y (the bridge run), not as a vertical trapezoid block.
+    """
+    run = float(run if run is not None else A.FAIRING_RUN)
+    w0 = float(w0 if w0 is not None else A.FAIRING_W0)
+    w1 = float(w1 if w1 is not None else A.FAIRING_W1)
+    h = float(h if h is not None else A.FAIRING_H)
+    edge_r = float(edge_r if edge_r is not None else A.FAIRING_EDGE_R)
+    plan_r0 = float(plan_r0 if plan_r0 is not None else A.FAIRING_PLAN_R0)
+    plan_r1 = float(plan_r1 if plan_r1 is not None else A.FAIRING_PLAN_R1)
+    top_crown = float(
+        top_crown if top_crown is not None else getattr(A, "FAIRING_TOP_CROWN", 1.2)
+    )
+
+    outline = _plan_outline(run, w0, w1, plan_r0, plan_r1)
+    f = oc.prism_z(name, outline, 0.0, h)
+
+    # Soft top crown — shallow long-edge drop so the top isn't a flat slab
+    if top_crown > 0.05:
+        land = 0.55 * min(w0, w1)
+        for sx in (-1.0, 1.0):
+            oc.cut(f, oc.prism_y(f"{name}_crown{int(sx + 2)}", [
+                (sx * land / 2.0, h + 0.5),
+                (sx * (max(w0, w1) / 2.0 + 2.0), h + 0.5),
+                (sx * (max(w0, w1) / 2.0 + 2.0), h - top_crown),
+                (sx * land / 2.0, h + 0.05),
+            ], run + 4.0))
+
+    applied = _bevel_safe(f, max(edge_r, 4.0), segments=4)
+    # Stash on object for report hooks (custom props)
+    try:
+        f["fairing_edge_r"] = applied
+    except Exception:
+        pass
+    oc.bake(f)
+    return f
+
+
+def fairing_cap_pod(side: str = "L"):
+    """Cap↔pod bridge: short run, follows pod/cap outline params."""
+    run = float(getattr(A, "FAIRING_RUN_CAP_POD", 18.0))
+    return fairing_body(
+        f"fairing_cap_pod_{side}",
+        run=run, w0=A.FAIRING_W0, w1=A.FAIRING_W1, h=A.FAIRING_H,
+        plan_r0=A.FAIRING_PLAN_R0,
+        plan_r1=A.FAIRING_PLAN_R1,
+    )
+
+
+def fairing_pod_strap(side: str = "L"):
+    """Pod↔strap bridge: brand 28 mm run."""
+    return fairing_body(
+        f"fairing_pod_strap_{side}",
+        run=A.FAIRING_RUN, w0=A.FAIRING_W0, w1=A.FAIRING_W1, h=A.FAIRING_H,
+        plan_r0=A.FAIRING_PLAN_R0,
+        plan_r1=min(A.FAIRING_PLAN_R1, A.STRAP_HALF * 0.9),
+    )
+
+
+def fairing_cw(side: str = "L"):
+    """CW↔strap fairing at bottom of loop."""
+    return fairing_body(
+        f"fairing_cw_{side}",
+        run=A.FAIRING_RUN, w0=A.FAIRING_W0, w1=A.FAIRING_W1, h=A.FAIRING_H,
+        plan_r0=A.FAIRING_PLAN_R0,
+        plan_r1=min(A.FAIRING_PLAN_R1, A.STRAP_HALF * 0.9),
+    )

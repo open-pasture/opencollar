@@ -70,7 +70,11 @@ LID_SKIRT = 0.0
 LID_WRAP_STEP = 2.5                    # outer perimeter step down from crown (visual low seam)
 LID_H = LID_ABOVE                      # solid height above mating
 CROWN = 2.7                            # D4 crown outside panel land
-END_TAPER = 20.0                       # hard end taper length (D4 ~20)
+END_TAPER = 22.0                       # D7: slightly longer low tangent into fairing
+NOSE_TIP_H = 7.5                       # D7: rounded nose tip height (D6 hard-cut ~4)
+NOSE_ARC_SEGS = 8                      # elliptical roof samples per end
+NOSE_PLAN_R = 12.0                     # generous plan radius at tip (flows into fairing)
+NOSE_BULL_R = 5.0                      # bullnose on top end edge
 PANEL_LAND = (68.0, 116.0)             # flat plateau containing 66.6×113.6 pocket
 PLAN_R = 7.0
 REVEAL = 0.5
@@ -189,15 +193,60 @@ def support_ceiling_area(obj, overhang_deg=45.0):
 # ---------------------------------------------------------------- outer contour helpers
 
 def end_taper_d4(body, w, l, h, taper_len=END_TAPER):
-    """Hard end taper ~4→15→full over last ~20 mm (D4 silhouette), both ±Y."""
+    """Back-compat alias → rounded D7 nose (kept name so call sites stay stable)."""
+    return end_nose_contoured(body, w, l, h, taper_len=taper_len)
+
+
+def end_nose_contoured(body, w, l, h, taper_len=END_TAPER,
+                       tip_h=NOSE_TIP_H, segs=NOSE_ARC_SEGS,
+                       plan_r=NOSE_PLAN_R, bull_r=NOSE_BULL_R):
+    """D7 rounded/chamfered nose — elliptical roof + generous plan radii.
+
+    D6's hard prism cut (~4 mm flat tip) read as a chopped-off slab. D7 drops
+    the roof on a quarter-ellipse over `taper_len`, keeps a higher tip, rounds
+    the plan at ±Y, and bullnoses the top end edge so the cap flows into the
+    fairing / pod like D4_contoured_v3's top end. Mount pads still union on
+    after this (see cap_base).
+    """
+    tip_h = max(tip_h, 5.0)
+    segs = max(int(segs), 4)
     for sy in (-1, 1):
         tip = sy * (l / 2)
-        # High cut: from tip height ~4 up to full at taper_len inward
-        oc.cut(body, oc.prism_x(f"taper_hi{sy}", [
-            (tip + sy * 0.5, h + 1.0),
-            (tip - sy * taper_len, h + 1.0),
-            (tip + sy * 0.5, 4.0),
-        ], w + 6))
+        # Region ABOVE the elliptical roof — prism_x profile in YZ
+        profile = [(tip + sy * 1.5, h + 2.0)]
+        for i in range(segs + 1):
+            t = i / segs  # 0 at tip → 1 at taper_len inboard
+            y = tip - sy * (taper_len * t)
+            # quarter-ellipse: z(tip)=tip_h, z(inboard)=h, vertical tangent at inboard
+            z = tip_h + (h - tip_h) * math.sin(0.5 * math.pi * t)
+            profile.append((y, z))
+        profile.append((tip - sy * taper_len, h + 2.0))
+        oc.cut(body, oc.prism_x(f"nose_arc{sy}", profile, w + 8))
+
+        # Plan rounding at the tip: shave square corners with vertical cylinders
+        # so the end isn't a flat chopped face in top view.
+        pr = min(plan_r, w / 2.0 - 1.0, taper_len * 0.6)
+        for sx in (-1, 1):
+            # Box corner outside the kept plan radius
+            corner = oc.box(f"nose_corner{sy}_{sx}",
+                            (pr + 4.0, pr + 4.0, h + 4.0),
+                            at=(sx * (w / 2.0 - pr / 2.0 + 2.0),
+                                tip - sy * (pr / 2.0 - 1.0),
+                                h / 2.0),
+                            anchor="center")
+            keep = oc.cylinder(f"nose_keep{sy}_{sx}", pr * 2.0, h + 6.0,
+                               at=(sx * (w / 2.0 - pr), tip - sy * pr, -1.0),
+                               anchor="bottom", segments=28)
+            oc.cut(body, oc.cut(corner, keep))
+
+        # Bullnose the top end edge (horizontal cylinder along X at the tip roof)
+        if bull_r > 0.5:
+            br = min(bull_r, tip_h * 0.7, taper_len * 0.35)
+            oc.cut(body, oc.cylinder(
+                f"nose_bull{sy}", br * 2.0, w + 10.0,
+                at=(0.0, tip - sy * (br * 0.15), tip_h + br * 0.55),
+                axis="X", segments=28,
+            ))
     return body
 
 
@@ -223,15 +272,32 @@ def crown_shoulders(body, land_xy, crown, lid_h, lw, ll):
 
 
 def end_crown_taper(body, land_xy, lid_h, lw, ll, taper_len=END_TAPER):
-    """Drop lid ends over last ~20 mm (D4 hard taper on lid shell)."""
-    lx, ly = land_xy
+    """D7 lid nose — elliptical drop matching base, not a hard chopped prism."""
+    tip_h = max(3.5, lid_h - 6.5)
+    segs = NOSE_ARC_SEGS
     for sy in (-1, 1):
         tip = sy * (ll / 2)
-        oc.cut(body, oc.prism_x(f"lid_end{sy}", [
-            (tip + sy * 0.5, lid_h + 1.0),
-            (tip - sy * taper_len, lid_h + 1.0),
-            (tip + sy * 0.5, max(3.0, lid_h - 8.0)),
-        ], lw + 4))
+        profile = [(tip + sy * 1.5, lid_h + 2.0)]
+        for i in range(segs + 1):
+            t = i / segs
+            y = tip - sy * (taper_len * t)
+            z = tip_h + (lid_h - tip_h) * math.sin(0.5 * math.pi * t)
+            profile.append((y, z))
+        profile.append((tip - sy * taper_len, lid_h + 2.0))
+        oc.cut(body, oc.prism_x(f"lid_nose{sy}", profile, lw + 6))
+        # Soft plan rounding on lid tip
+        pr = min(NOSE_PLAN_R - 2.0, lw / 2.0 - 1.0, taper_len * 0.5)
+        for sx in (-1, 1):
+            corner = oc.box(f"lid_corner{sy}_{sx}",
+                            (pr + 3.0, pr + 3.0, lid_h + 3.0),
+                            at=(sx * (lw / 2.0 - pr / 2.0 + 1.5),
+                                tip - sy * (pr / 2.0 - 0.5),
+                                lid_h / 2.0),
+                            anchor="center")
+            keep = oc.cylinder(f"lid_keep{sy}_{sx}", pr * 2.0, lid_h + 5.0,
+                               at=(sx * (lw / 2.0 - pr), tip - sy * pr, -1.0),
+                               anchor="bottom", segments=24)
+            oc.cut(body, oc.cut(corner, keep))
     return body
 
 
@@ -631,7 +697,7 @@ D4 contoured skin around D5 internals (PR head `6b1f882`). Script: `hardware/roo
 | Base H (mating) | {CAP_BASE_H} | Floor {CAP_FLOOR} + cavity {CAP_CAVITY_H} (D5) |
 | Lid H (above mating) | {LID_H} | Flat panel land; crown {CROWN} outside land |
 | Plan R / reveal | {PLAN_R} / {REVEAL} | Soft plan; 0.5 inset lid |
-| End taper | {END_TAPER} | Hard 4→full over last ~20 mm (D4) |
+| End nose | {END_TAPER} taper / tip {NOSE_TIP_H} / plan R {NOSE_PLAN_R} | D7 rounded ellipse + bullnose (was hard ~4 mm cut) |
 | Panel land (flat) | {PANEL_LAND[0]} × {PANEL_LAND[1]} | Contains pocket; crown outside |
 | Panel pocket | {D.PANEL_POCKET[0]} × {D.PANEL_POCKET[1]} × {D.PANEL_POCKET[2]} | P124 KEPT; 15 mm keep-clear |
 | Lid under panel | {round(LID_H - D.PANEL_POCKET[2], 2)} | ≥ {D.PANEL_MIN_LID_UNDER} |
@@ -654,7 +720,7 @@ Pod agent builds the mating pod face / fairing to these anchors.
 | Item | Value |
 | --- | --- |
 | Clamp bar | **10 × 70 × 8**, flange down (print ×8) |
-| Cap clamp inserts | (±20, ±28.5) — 4 in cap |
+| Cap clamp inserts | (±28.5, ±20) — 4 in cap (strap-along-Y) |
 | Saddle W | **76** |
 | Strap channel | **46.45 × 3.4** |
 
@@ -716,7 +782,7 @@ All internals: kit/bq/wio pockets, U.FL slack, lid posts, gasket+lip, columns/in
 
 - Outer L 160→**164**; W stays 76
 - Stack 25.5→**31**; lid above mating 6.5→**12** with crown + flat land
-- Low wrap seam + short skirt; hard end taper 20 mm
+- Low wrap seam + short skirt; D7 rounded nose (ellipse + plan R + bullnose)
 - Pod mount pads at ±Y ends (tilted)
 - Cable exits added on ±Y toward pods
 - Cap column Y lightly scaled ×164/160
@@ -734,10 +800,12 @@ def main():
         os.makedirs(d, exist_ok=True)
 
     report = {
-        "revision": "D6_cap_v1_contour_skin",
+        "revision": "D7_cap_nose_fairing_flow",
         "contract": {
             "cap_w": CAP_W, "cap_l": CAP_L, "stack_h": CAP_STACK_H,
             "seam_z": SEAM_Z, "crown": CROWN, "end_taper": END_TAPER,
+            "nose_tip_h": NOSE_TIP_H, "nose_plan_r": NOSE_PLAN_R,
+            "nose_bull_r": NOSE_BULL_R,
             "panel_pocket": list(D.PANEL_POCKET), "panel_land": list(PANEL_LAND),
             "keep_clear": D.ANTENNA_METAL_KEEP,
             "pod_anchor_y": POD_ANCHOR_Y, "pod_anchor_z": POD_ANCHOR_Z,

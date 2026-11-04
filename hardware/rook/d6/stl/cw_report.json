@@ -288,5 +288,6 @@
     }
   },
   "pass": true,
-  "review_blend": "review/cw_review.blend"
+  "review_blend": "review/cw_review.blend",
+  "fairing_note": "D7 continuous loft via fairing.py; R>=4"
 }

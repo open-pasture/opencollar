@@ -12,7 +12,7 @@ D4 contoured skin around D5 internals (PR head `6b1f882`). Script: `hardware/roo
 | Base H (mating) | 19.0 | Floor 6.0 + cavity 13.0 (D5) |
 | Lid H (above mating) | 12.0 | Flat panel land; crown 2.7 outside land |
 | Plan R / reveal | 7.0 / 0.5 | Soft plan; 0.5 inset lid |
-| End taper | 20.0 | Hard 4→full over last ~20 mm (D4) |
+| End nose | 22.0 taper / tip 7.5 / plan R 12.0 | D7 rounded ellipse + bullnose (was hard ~4 mm cut) |
 | Panel land (flat) | 68.0 × 116.0 | Contains pocket; crown outside |
 | Panel pocket | 66.6 × 113.6 × 2.3 | P124 KEPT; 15 mm keep-clear |
 | Lid under panel | 9.7 | ≥ 2.0 |
@@ -35,7 +35,7 @@ Pod agent builds the mating pod face / fairing to these anchors.
 | Item | Value |
 | --- | --- |
 | Clamp bar | **10 × 70 × 8**, flange down (print ×8) |
-| Cap clamp inserts | (±28.5, ±20) — 4 in cap (strap-along-Y; see DECISIONS.md) |
+| Cap clamp inserts | (±28.5, ±20) — 4 in cap (strap-along-Y) |
 | Saddle W | **76** |
 | Strap channel | **46.45 × 3.4** |
 
@@ -51,8 +51,8 @@ Pod agent builds the mating pod face / fairing to these anchors.
 
 | Orient | Bed-face area (mm²) | Downward/support ceiling (mm²) |
 | --- | --- | --- |
-| Mating-down | 10210.3 | 1857.6 |
-| Outer-down | 1201.2 | 11065.1 |
+| Mating-down | 10157.4 | 1857.6 |
+| Outer-down | 1130.7 | 10849.6 |
 | **Picked** | **mating_down** | |
 
 Mating-down: panel pocket +Z, GNSS/LTE are bed recesses (small trees OK). Outer-down: flat panel land on bed; mating bosses become ceilings. Crown is shallow (2.7 mm) outside the land.
@@ -84,10 +84,10 @@ Keys on cap floor: KIT, BQ, WIO, USB, POST, GNSS, LTE, PIN1, SCR1–4.
 | GNSS/LTE from z=0 | D5 | same | YES |
 | Cable countersink | Ø8×1.2 | same (+ ±Y) | YES |
 | Floor glyphs real text | DejaVu table | reused D5 table | YES |
-| Pod anchors | ±126, z−21.9, L+29.1°/R−29.1° | assembly.py | YES |
+| Pod anchors | ±113.8, z−27.8, ±29.1° | same | YES |
 | Print: base cavity up | yes | yes | YES |
 | Print: lid | choose best | **mating_down** | YES |
-| Clamp 10×70×8 / holes±28.5 | CW; CAP_CLAMP (±28.5,±20) | matched | YES |
+| Clamp 10×70×8 / y±28.5 | CW agent | matched | YES |
 
 ### Carried from D5
 
@@ -97,7 +97,7 @@ All internals: kit/bq/wio pockets, U.FL slack, lid posts, gasket+lip, columns/in
 
 - Outer L 160→**164**; W stays 76
 - Stack 25.5→**31**; lid above mating 6.5→**12** with crown + flat land
-- Low wrap seam + short skirt; hard end taper 20 mm
+- Low wrap seam + short skirt; D7 rounded nose (ellipse + plan R + bullnose)
 - Pod mount pads at ±Y ends (tilted)
 - Cable exits added on ±Y toward pods
 - Cap column Y lightly scaled ×164/160

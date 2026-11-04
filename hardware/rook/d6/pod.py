@@ -92,16 +92,18 @@ GLYPH_EXPORT_WELD = {
     "pod_L_base", "pod_R_base", "pod_floor_layout",
 }
 
-# Fairings — widened to span 92 mm pods (see assembly.py)
+# Fairings — D7 continuous wedge; params from assembly.py (follow pod outline)
 FAIRING_RUN = A.FAIRING_RUN
-FAIRING_W0 = A.FAIRING_W0                    # 88 wide end
+FAIRING_W0 = A.FAIRING_W0                    # 88 wide end (POD_L - 4)
 FAIRING_W1 = A.FAIRING_W1                    # 66 narrow end
 FAIRING_H = A.FAIRING_H
-FAIRING_R = D.FAIRING_R
-FAIRING_EDGE_R = D.FAIRING_EDGE_R
+FAIRING_R = A.FAIRING_PLAN_R0
+FAIRING_EDGE_R = A.FAIRING_EDGE_R            # >= 4 mm
 # Assembly agree (owned by CW agent; pods do not re-export these):
 #   clamp_bar 10×70×8, flange down, holes ±28.5, qty 8
 #   saddle W=76; strap channel 46.45×3.4 along Y
+
+import fairing as F  # noqa: E402 — shared D7 loft
 
 
 # ---------------------------------------------------------------- helpers (thin wrappers)
@@ -372,41 +374,19 @@ def pod_floor_layout(side="L"):
     return normalize_z0(prepare(floor))
 
 
-# ---------------------------------------------------------------- fairings
-
-def _fairing_body(name, run, w0, w1, h):
-    f = oc.prism_y(name, [
-        (0.0, 0.0),
-        (w0 / 2, 0.0),
-        (w1 / 2, h),
-        (-w1 / 2, h),
-        (-w0 / 2, 0.0),
-    ], run)
-    bound = oc.rounded_rect(f"{name}_bnd", (max(w0, w1) + 2, run + 2, h + 2),
-                            FAIRING_R, at=(0, 0, -1), anchor="bottom", segments=10)
-    oc.intersect(f, bound)
-    try:
-        oc.bevel(f, FAIRING_EDGE_R, segments=3)
-        oc.apply_modifiers(f)
-    except Exception:
-        pass
-    return f
-
+# ---------------------------------------------------------------- fairings (D7 continuous loft)
 
 def fairing_cap_pod(side="L"):
-    """Bridge cap end → pod mount. W0=88→W1=66 × run 18 × H 14 (D4-ish short run)."""
-    run = getattr(A, "FAIRING_RUN_CAP_POD", 18.0)
-    f = prepare(_fairing_body(f"fairing_cap_pod_{side}", run,
-                              FAIRING_W0, FAIRING_W1, FAIRING_H))
+    """Bridge cap end → pod mount. Continuous W0→W1 wedge, run 18, H 14, R≥4."""
+    f = prepare(F.fairing_cap_pod(side))
     if side == "R":
         mirror_x(f)
     return f
 
 
 def fairing_pod_strap(side="L"):
-    """Blend pod into strap. W0=88→W1=66 × run 28 × H 14."""
-    f = prepare(_fairing_body(f"fairing_pod_strap_{side}", FAIRING_RUN,
-                              FAIRING_W0, FAIRING_W1, FAIRING_H))
+    """Blend pod into strap. Continuous W0→W1 wedge, run 28, H 14, R≥4."""
+    f = prepare(F.fairing_pod_strap(side))
     if side == "R":
         mirror_x(f)
     return f
@@ -419,10 +399,10 @@ PART_META = {
     "pod_L_lid": ("PRINT: OUTER face DOWN z=0 (180° about X on export)", "lid screws; ribs"),
     "pod_R_base": ("PRINT: cavity UP; bed=underside z=0", "true mirror of L"),
     "pod_R_lid": ("PRINT: OUTER face DOWN z=0 (180° about X on export)", "true mirror of L"),
-    "fairing_cap_pod_L": ("PRINT: long axis on bed; slope=WALL", "cap→pod blend"),
-    "fairing_cap_pod_R": ("PRINT: long axis on bed; slope=WALL", "mirror"),
-    "fairing_pod_strap_L": ("PRINT: long axis on bed; slope=WALL", "pod→strap blend"),
-    "fairing_pod_strap_R": ("PRINT: long axis on bed; slope=WALL", "mirror"),
+    "fairing_cap_pod_L": ("PRINT: widest face on bed z=0; walls=slope", "D7 continuous cap→pod"),
+    "fairing_cap_pod_R": ("PRINT: widest face on bed z=0; walls=slope", "mirror"),
+    "fairing_pod_strap_L": ("PRINT: widest face on bed z=0; walls=slope", "D7 continuous pod→strap"),
+    "fairing_pod_strap_R": ("PRINT: widest face on bed z=0; walls=slope", "mirror"),
     "pod_floor_layout": ("PRINT: floor underside z=0; ribs/glyphs UP", "PLA coupon"),
 }
 
@@ -598,7 +578,7 @@ def main():
     ]
 
     report = {
-        "revision": "D6_pod_d4_skin_d5_internals",
+        "revision": "D7_pod_fairings_continuous",
         "d5_head": "6b1f882",
         "mount": {"L": MOUNT_L, "R": MOUNT_R, "source": "d4.json pod_*_anchor"},
         "envelope": {
