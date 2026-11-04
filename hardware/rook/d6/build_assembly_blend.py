@@ -433,51 +433,107 @@ def _lerp_table(rows, key_x, key_y, x):
     return ys[-1]
 
 
-def _flared_section_xz(hw_lid, hw_skirt, z_bot, z_top, chamfer=1.2, n_side=6):
-    """Closed CCW section: crisp flat lid + small chamfer + flared skirt (D4).
+def _flared_section_xz(hw_lid, hw_skirt, z_bot, z_top, chamfer=1.8, n_side=5):
+    """Closed CCW section: flat lid + visible 1.5–2 mm chamfer + flared skirt.
 
-    Sharp lid edge (tiny chamfer, not a soft sleeve). Lower sides flare to a
-    wide skirt at the strap; bottom closes under the strap outer face.
+    Lid stays flat (not a soft hump). Chamfer is a distinct hard edge. Lower
+    sides flare to a wide skirt at the strap; bottom closes under strap outer.
     """
-    ch = min(chamfer, hw_lid * 0.08, max(0.6, 0.04 * (z_top - z_bot)))
+    ch = max(1.5, min(float(chamfer), 2.0, hw_lid * 0.12))
 
     def flare_hw(s_from_top):
-        # Hold lid width for top 35%, then ease to skirt
-        if s_from_top <= 0.35:
+        # Hold lid width through chamfer band, then ease to skirt
+        if s_from_top <= 0.28:
             return hw_lid
-        u = (s_from_top - 0.35) / 0.65
+        u = (s_from_top - 0.28) / 0.72
         u = u * u * (3.0 - 2.0 * u)
         return hw_lid + (hw_skirt - hw_lid) * u
 
     pts = []
-    # Flat lid (crisp top)
+    # Flat lid (two points) + sharp chamfer corners
     pts.append((-hw_lid + ch, z_top))
     pts.append((hw_lid - ch, z_top))
     pts.append((hw_lid, z_top - ch))  # right chamfer
-    # Right wall top → bottom
     for k in range(1, n_side + 1):
         t = k / n_side
         s = t * t * (3.0 - 2.0 * t)
         z = (z_top - ch) + (z_bot + 0.6 - (z_top - ch)) * s
         pts.append((flare_hw(s), z))
-    # Closed underside
-    pts.append((hw_skirt - ch, z_bot))
-    pts.append((-hw_skirt + ch, z_bot))
-    # Left wall bottom → top
+    pts.append((hw_skirt - ch * 0.5, z_bot))
+    pts.append((-hw_skirt + ch * 0.5, z_bot))
     for k in range(1, n_side + 1):
         t = k / n_side
         s = t * t * (3.0 - 2.0 * t)
         z = (z_bot + 0.6) + ((z_top - ch) - (z_bot + 0.6)) * s
         pts.append((-flare_hw(1.0 - s), z))
     pts.append((-hw_lid, z_top - ch))  # left chamfer
-    return pts
+    return pts, ch
+
+
+def _make_001_cutter(size=9.5, depth=2.4, font_path=None):
+    """Manifold '001' cutter (baseline +X, extrude ±Z). Applied boolean later.
+
+    Uses text extrude (keeps glyph shape) + solidify fill; no voxel remesh
+    (that was destroying stroke detail at H=9.5).
+    """
+    bpy.ops.object.text_add(location=(0, 0, 0))
+    txt = bpy.context.active_object
+    td = txt.data
+    td.body = "001"
+    td.align_x = "CENTER"
+    td.align_y = "CENTER"
+    td.size = float(size)
+    td.extrude = float(depth) * 0.5  # ±depth/2 from the glyph plane
+    td.offset = 0.0
+    td.space_character = 1.35  # keep digit wells distinct around the orange dot
+    if font_path and os.path.exists(font_path):
+        try:
+            td.font = bpy.data.fonts.load(font_path)
+        except Exception:
+            pass
+    bpy.ops.object.convert(target="MESH")
+    txt = bpy.context.active_object
+    bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY", center="BOUNDS")
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.mesh.remove_doubles(threshold=0.02)
+    bpy.ops.mesh.normals_make_consistent(inside=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    return txt
+
+
+def _verify_001_pit(obj, a_deg, r_out, zc, h_expect, depth=0.6):
+    """Return (ok, measured_depth_mm) by sampling radial heights near a_deg."""
+    a = math.radians(a_deg)
+    samples = []
+    for v in obj.data.vertices:
+        co = v.co
+        yy, zz = co.y, co.z - zc
+        ang = math.degrees(math.atan2(yy, zz))
+        if abs(ang - a_deg) > 4.0:
+            continue
+        if abs(co.x) > 18.0:
+            continue
+        rad = math.hypot(yy, zz)
+        samples.append(rad - r_out)
+    if len(samples) < 20:
+        return False, 0.0
+    samples.sort()
+    # Lid plateau near top; pit sits ~0.6 below
+    top = sorted(samples)[int(0.85 * len(samples))]
+    # Look for verts clearly below the plateau but still on the lid face
+    pit = [s for s in samples if (top - 1.4) < s < (top - 0.25)]
+    if not pit:
+        return False, 0.0
+    measured = top - min(pit)
+    ok = measured >= depth * 0.45  # allow some remesh loss
+    return ok, round(measured, 3)
 
 
 def _add_d4_loft_shell(details_col, body_rgb):
-    """D7r12: slim lofted review shell — crisp lid, flared skirt, 001 deboss.
+    """D7r13: D4-extent loft — two-stage ≤12 mm step, crisp chamfer, real 001.
 
-    Cap stays at true min ~48.2 mm (panel land); pods target ~25 mm (≈1.4× D4).
-    Shallow shadowed step at solar/pod join. Print STLs unchanged.
+    Cap 48.2 / pod 25 unchanged. Arc targets D4 ±44°. Print STLs untouched.
     """
     import bmesh
 
@@ -488,127 +544,155 @@ def _add_d4_loft_shell(details_col, body_rgb):
     d4_ang0 = float(profile["housing_angle_range_deg"][0])
     d4_ang1 = float(profile["housing_angle_range_deg"][1])
     D4_CAP_MAX = float(profile.get("max_top_above_strap_outer_mm", 27.6))
+    d4_arc_mm = float(profile.get("housing_arc_length_mm_at_r_outer", 363.5))
 
     major_r = 227.0
     zc = -233.85
     r_out = major_r + STRAP_T / 2.0  # ≈228.5
     strap_outer_z0 = zc + r_out       # ≈ -5.35 at a=0
 
-    # ---- per-region heights ------------------------------------------------
+    # ---- per-region heights (unchanged) ------------------------------------
     PANEL_LAND_Z = 41.4
-    # True min with current internals — cannot hit 1.4×D4 (39) without lowering land
     CAP_H = PANEL_LAND_Z - strap_outer_z0 + 1.5  # ≈48.25
     CAP_H_DRIVER = (
         "cap_lid panel land z=41.4 (+1.5 skin); cannot reach ~39 mm (1.4×D4) "
         "without lowering the land / lid stack — see review/height_options.md"
     )
-    # Pods: 1.4× D4 17.5 ≈ 24.5 → 25 mm review silhouette (lids hidden)
     POD_H = 25.0
-    POD_H_MID = 24.0
-    POD_H_DRIVER = "review target ≈1.4× D4 pod (print lids hidden; STL stack still 26.2)"
+    POD_H_DRIVER = "review target ≈1.4× D4 pod (print lids hidden; STL stack still 26.4)"
+    # Mid landing of the two-stage step (≤12 mm each stage)
+    DROP = CAP_H - POD_H  # ≈23.25
+    STAGE = min(12.0, DROP * 0.5)  # ≈11.6
+    MID_H = CAP_H - STAGE           # ≈36.6
     BOTTOM = -4.9
 
-    # Widths: crisp lid, wide flared skirt (D4 side has wide base under housing)
+    # Widths
     POD_LID_W = 68.0
-    POD_SKIRT_W = 78.0   # wide flare at strap
+    POD_SKIRT_W = 76.0
     CAP_LID_W = 76.0
     CAP_SKIRT_W = 80.0
 
-    pod_tip_y = 187.0
-    d6_body = math.degrees(math.asin(min(0.999, pod_tip_y / major_r)))
-    d6_body0, d6_body1 = -d6_body, +d6_body
-    # Short tangent shoulder into strap + rounded end (D4 L~9 mm / R~18 mm)
-    drop_tail = 2.6
-    d6_ang0 = d6_body0 - drop_tail
-    d6_ang1 = d6_body1 + drop_tail
+    # ---- PRIORITY 1: D4 along-strap extent ±44° ----------------------------
+    # Review shell matches D4 (−43.5…+45.0). Print pod STLs still reach
+    # |Y|≈183 (~±53.7°) but are hidden under the shell; if the shell had to
+    # cover exposed print pods, that tip would set the floor — not reachable
+    # at ±44 without leaving tips outside.
+    d6_ang0, d6_ang1 = -43.5, 45.0
+    d6_body0, d6_body1 = -41.5, 42.5  # start end-drop before tip
+    drop_tail = abs(d6_ang0) - abs(d6_body0)  # ≈2.0°
     END_PLAN_R = 8.0
+    ARC_DRIVER = (
+        "review shell matches D4 −43.5…+45.0° (≈363 mm outer arc at D4 r). "
+        "Print pod_L/R_base tips |Y|≈183 (~±53.7°) are hidden under shell; "
+        "that tip would set the min arc if the shell had to cover exposed pods."
+    )
 
-    # Stepped silhouette: hold cap, then short step down to pod (not soft sleeve)
-    A_CAP = 17.0
-    A_TRANS0 = 18.5
-    A_TRANS1 = 24.0    # shorter transition → visible step
-    A_POD_MID = 38.0
+    # High-cap block: panel land 116 mm (+4 mm wall) → half ≈62 mm → ≈15.9°
+    PANEL_LAND_L = 116.0
+    CAP_WALL_EXTRA = 4.0
+    cap_half_y = PANEL_LAND_L * 0.5 + CAP_WALL_EXTRA  # 62
+    A_CAP = math.degrees(math.asin(min(0.999, cap_half_y / major_r)))  # ≈15.85
+    # Two-stage step: 45° ramp (~3° arc for 12 mm), short landing, second ramp
+    # 1° at r_out ≈ 4.0 mm
+    DEG_PER_MM = 180.0 / (math.pi * r_out)
+    # 45° ramp run for ≤12 mm drop ≈12 mm ≈3°; stretch landing so the terrace
+    # reads clearly in side view (was ~2° and looked like one cliff).
+    ramp_deg = max(3.0, STAGE * DEG_PER_MM)  # ≈45° slope
+    land_deg = 5.5  # ~22 mm flat mid terrace
+    A_R1_0 = A_CAP
+    A_R1_1 = A_CAP + ramp_deg
+    A_LAND_0 = A_R1_1
+    A_LAND_1 = A_LAND_0 + land_deg
+    A_R2_0 = A_LAND_1
+    A_R2_1 = A_R2_0 + ramp_deg
+    A_POD_MID = 0.5 * (A_R2_1 + abs(d6_body0))
+
+    # Cap block length along outer arc vs D4
+    cap_block_arc_mm = 2.0 * A_CAP * math.pi / 180.0 * r_out
+    # D4 high roof ≈ within ±17° (stations: 26.5 at ±16.9, 17.5 at ±22.8)
+    d4_cap_half_deg = 17.0
+    d4_cap_block_arc_mm = 2.0 * d4_cap_half_deg * math.pi / 180.0 * d4_r_out
 
     def d4_angle_to_d6(a_d4):
         t = (a_d4 - d4_ang0) / max(d4_ang1 - d4_ang0, 1e-9)
-        return d6_body0 + t * (d6_body1 - d6_body0)
-
-    def d6_angle_to_d4(a_d6):
-        a = max(d6_body0, min(d6_body1, a_d6))
-        t = (a - d6_body0) / max(d6_body1 - d6_body0, 1e-9)
-        return d4_ang0 + t * (d4_ang1 - d4_ang0)
+        return d6_ang0 + t * (d6_ang1 - d6_ang0)
 
     def _smoothstep(t):
         t = max(0.0, min(1.0, t))
         return t * t * (3.0 - 2.0 * t)
 
     def roof_at_d6_angle(a_d6):
-        """Per-region roof. Returns (height_mm, driver_str)."""
+        """Two-stage ≤12 mm steps: ramp → flat landing → ramp → pod."""
         aa = abs(a_d6)
-        if aa <= A_CAP:
+        if aa <= A_R1_0:
             return CAP_H, CAP_H_DRIVER
-        if aa < A_TRANS0:
-            return CAP_H, CAP_H_DRIVER
-        if aa < A_TRANS1:
-            # Short eased step (visible stepped silhouette, not one soft sleeve)
-            t = _smoothstep((aa - A_TRANS0) / max(A_TRANS1 - A_TRANS0, 1e-9))
-            # Bias toward a quicker drop (more step-like)
-            t = t * t
-            h = CAP_H + (POD_H - CAP_H) * t
-            return h, "cap→pod shallow step"
-        dip_t = abs(aa - A_POD_MID) / 12.0
-        dip = (1.0 - _smoothstep(min(1.0, dip_t))) * (POD_H - POD_H_MID)
-        return POD_H - dip, POD_H_DRIVER
+        if aa < A_R1_1:
+            # Linear 45°-ish ramp so the stage edge stays crisp in side view
+            t = (aa - A_R1_0) / max(A_R1_1 - A_R1_0, 1e-9)
+            h = CAP_H + (MID_H - CAP_H) * t
+            return h, f"stage1 ramp ≤{STAGE:.1f}mm (cap→mid)"
+        if aa < A_LAND_1:
+            return MID_H, f"mid landing {MID_H:.1f}mm"
+        if aa < A_R2_1:
+            t = (aa - A_R2_0) / max(A_R2_1 - A_R2_0, 1e-9)
+            h = MID_H + (POD_H - MID_H) * t
+            return h, f"stage2 ramp ≤{STAGE:.1f}mm (mid→pod)"
+        return POD_H, POD_H_DRIVER
 
     def widths_at_d6_angle(a_d6):
         aa = abs(a_d6)
         if aa <= A_CAP:
             return CAP_LID_W, CAP_SKIRT_W
-        if aa < A_TRANS1:
-            if aa < A_TRANS0:
-                return CAP_LID_W, CAP_SKIRT_W
-            t = _smoothstep((aa - A_TRANS0) / max(A_TRANS1 - A_TRANS0, 1e-9))
+        if aa < A_R2_1:
+            t = _smoothstep((aa - A_CAP) / max(A_R2_1 - A_CAP, 1e-9))
             lid = CAP_LID_W + (POD_LID_W - CAP_LID_W) * t
             skirt = CAP_SKIRT_W + (POD_SKIRT_W - CAP_SKIRT_W) * t
             return lid, skirt
-        # Hold pod widths; tip rounding is handled in the end-drop below
         return POD_LID_W, POD_SKIRT_W
 
-    # Dense stations → fair lower edge, no end faceting
-    n_stat = 72
+    n_stat = 80
     angles_d6 = [d6_ang0 + (d6_ang1 - d6_ang0) * i / (n_stat - 1) for i in range(n_stat)]
 
     bm = bmesh.new()
+    # Blender 4.x: edge crease lives on float layer 'crease_edge'
+    crease_layer = bm.edges.layers.float.get("crease_edge")
+    if crease_layer is None:
+        crease_layer = bm.edges.layers.float.new("crease_edge")
     rings = []
+    ring_ch = []
     for a_d6 in angles_d6:
         h_top, _driver = roof_at_d6_angle(a_d6)
         hw_lid, hw_skirt = widths_at_d6_angle(a_d6)
         h_bot = BOTTOM
         aa = abs(a_d6)
-        if aa > d6_body - 1.2:
-            # Short tangent shoulder into strap + rounded end (D4 L ~9 mm arc)
-            # Hold width through the shoulder, then round plan to tip — no horns.
-            t_end = min(1.0, max(0.0, (aa - (d6_body - 1.2)) / (drop_tail + 1.2)))
-            s = t_end * t_end * (3.0 - 2.0 * t_end)  # smoothstep
-            s3 = s * s * s  # steeper height drop after shoulder
-            h_top = h_top * (1.0 - s3) + 1.5 * s3
-            tip_w = 2.0 * END_PLAN_R  # ≈16 mm round plan
-            # Fair lower edge: lid and skirt converge together (no skirt flare-out)
-            hw_lid = hw_lid * (1.0 - s) + tip_w * 0.55 * s
-            hw_skirt = hw_skirt * (1.0 - s) + tip_w * 0.85 * s
+        body_lim = abs(d6_body0) if a_d6 < 0 else d6_body1
+        if aa > body_lim:
+            # Short tangent shoulder → rounded tip into strap (D4-like)
+            t_end = min(1.0, max(0.0, (aa - body_lim) / max(drop_tail + 0.8, 1e-9)))
+            s = t_end * t_end * (3.0 - 2.0 * t_end)
+            s2 = s * s
+            h_top = h_top * (1.0 - s2) + 1.2 * s2
+            tip_w = 2.0 * END_PLAN_R
+            # Skirt flares slightly then rounds — tangent into strap
+            flare = math.sin(s * math.pi) * 4.0
+            hw_lid = hw_lid * (1.0 - s) + tip_w * 0.5 * s
+            hw_skirt = (hw_skirt + flare) * (1.0 - s) + tip_w * 0.95 * s
             if hw_skirt < hw_lid:
                 hw_skirt = hw_lid
-            h_bot = BOTTOM * (1.0 - s) + (-0.8) * s
+            h_bot = BOTTOM * (1.0 - s) + (-0.6) * s
 
         a = math.radians(a_d6)
         cy = r_out * math.sin(a)
         cz = zc + r_out * math.cos(a)
         ny, nz = math.sin(a), math.cos(a)
-        peri = _flared_section_xz(hw_lid * 0.5, hw_skirt * 0.5, h_bot, h_top, chamfer=1.1)
+        peri, ch = _flared_section_xz(
+            hw_lid * 0.5, hw_skirt * 0.5, h_bot, h_top, chamfer=1.8
+        )
         ring = []
         for lx, lz in peri:
             ring.append(bm.verts.new((lx, cy + ny * lz, cz + nz * lz)))
         rings.append(ring)
+        ring_ch.append(ch)
 
     bm.verts.ensure_lookup_table()
     for i in range(n_stat - 1):
@@ -631,9 +715,30 @@ def _add_d4_loft_shell(details_col, body_rgb):
     except ValueError:
         pass
 
-    # Weld + consistent normals before subdiv (kills end faceting / lit seams)
-    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.05)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.04)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+
+    # Crease lid flat + chamfer edges so subdiv keeps a crisp top (not a hump)
+    bm.edges.ensure_lookup_table()
+    bm.verts.ensure_lookup_table()
+    for e in bm.edges:
+        # Edge is "lid-ish" if both verts are near the local top of their rings
+        # Heuristic: small |x| variation and high world-Z relative — use link faces
+        vs = e.verts
+        # Mark boundary of the flat top: edges whose midpoint |radial height| is high
+        # and the edge runs mostly across X (lid width)
+        mid = (vs[0].co + vs[1].co) * 0.5
+        yy, zz = mid.y, mid.z - zc
+        rad = math.hypot(yy, zz)
+        h_rel = rad - r_out
+        dx = abs(vs[0].co.x - vs[1].co.x)
+        d_along = math.hypot(vs[0].co.y - vs[1].co.y, vs[0].co.z - vs[1].co.z)
+        if h_rel > 20.0 and dx > 0.8 and d_along < 6.0:
+            e[crease_layer] = 1.0
+        elif h_rel > 18.0 and dx < 1.2 and d_along < 3.5:
+            # chamfer ring edges (short, near top)
+            e[crease_layer] = 1.0
+
     mesh = bpy.data.meshes.new("review_shell_mesh")
     bm.to_mesh(mesh)
     bm.free()
@@ -647,40 +752,66 @@ def _add_d4_loft_shell(details_col, body_rgb):
     sub = obj.modifiers.new("subdiv", "SUBSURF")
     sub.levels = 2
     sub.render_levels = 2
+    sub.use_creases = True
     try:
         bpy.ops.object.modifier_apply(modifier=sub.name)
     except Exception as exc:
         print(f"  subdiv warn: {exc}")
+
+    # Auto-smooth keeps chamfer readable under workbench
+    try:
+        obj.data.use_auto_smooth = True
+        obj.data.auto_smooth_angle = math.radians(30.0)
+    except Exception:
+        pass
     bpy.ops.object.shade_smooth()
-    for poly in obj.data.polygons:
-        poly.use_smooth = True
-    # Clear custom split normals so workbench doesn't light coplanar edges
     try:
         bpy.ops.mesh.customdata_custom_splitnormals_clear()
     except Exception:
         pass
 
-    def _bool_cut(cutter, tag):
+    def _bool_cut(cutter, tag, solver="EXACT"):
         bpy.ops.object.select_all(action="DESELECT")
         obj.select_set(True)
         bpy.context.view_layer.objects.active = obj
+        n0 = len(obj.data.vertices)
+        # Hide cutter from viewport so it can't linger if apply fails mid-way
+        cutter.hide_render = True
         mod = obj.modifiers.new(tag, "BOOLEAN")
         mod.operation = "DIFFERENCE"
         mod.object = cutter
         try:
+            mod.solver = solver
+        except Exception:
+            pass
+        applied = False
+        try:
             bpy.ops.object.modifier_apply(modifier=mod.name)
+            applied = True
         except Exception as exc:
-            print(f"  bool {tag} warn: {exc}")
-        bpy.data.objects.remove(cutter, do_unlink=True)
+            print(f"  bool {tag} {solver} warn: {exc}")
+            if tag in [m.name for m in obj.modifiers]:
+                try:
+                    obj.modifiers.remove(obj.modifiers[tag])
+                except Exception:
+                    pass
+            if solver == "EXACT":
+                return _bool_cut(cutter, tag, solver="FAST")
+        n1 = len(obj.data.vertices)
+        try:
+            bpy.data.objects.remove(cutter, do_unlink=True)
+        except Exception:
+            pass
+        print(f"  bool {tag}: verts {n0}→{n1} solver={solver} applied={applied}")
+        return n1 != n0
 
-    # Solar opening — shell must NOT cover navy strips / charcoal rib
+    # Solar opening
     bpy.ops.mesh.primitive_cube_add(
         size=1.0,
         location=(0.0, 0.0, strap_outer_z0 + CAP_H - 2.0),
     )
     solar_cut = bpy.context.active_object
     solar_cut.name = "_tmp_solar_cut"
-    # Slightly larger than 66.6×113.6 pocket so strips+rib are fully open
     solar_cut.scale = (68.0, 116.0, 20.0)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     for cc in list(solar_cut.users_collection):
@@ -688,71 +819,87 @@ def _add_d4_loft_shell(details_col, body_rgb):
     details_col.objects.link(solar_cut)
     _bool_cut(solar_cut, "solar_open")
 
-    # Cap–pod lid seam: real narrow groove with shadow (not a lit coplanar line)
+    # Shadow grooves at the two stage lips only (not a multi-ridge cliff)
     for side, sy in (("L", -1.0), ("R", 1.0)):
-        a_deg = sy * 21.0
-        a_joint = math.radians(a_deg)
-        cy = r_out * math.sin(a_joint)
-        cz = zc + r_out * math.cos(a_joint)
-        h_j, _ = roof_at_d6_angle(a_deg)
-        # Cutter sits on the roof and cuts a V-ish trench downward
-        loc = Vector((0.0,
-                      cy + math.sin(a_joint) * (h_j + 0.2),
-                      cz + math.cos(a_joint) * (h_j + 0.2)))
-        bpy.ops.mesh.primitive_cube_add(size=1.0, location=loc)
-        g = bpy.context.active_object
-        g.name = f"_tmp_seam_{side}"
-        # Narrow along strap (1.4 mm), deep enough to shadow, across lid width
-        g.scale = (64.0, 1.4, 3.5)
-        g.rotation_euler = (-a_joint, 0.0, 0.0)
-        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-        for cc in list(g.users_collection):
-            cc.objects.unlink(g)
-        details_col.objects.link(g)
-        _bool_cut(g, f"seam_{side}")
+        for tag, a_deg in (
+            ("s1", sy * A_R1_1),   # end of first ramp / start of mid landing
+            ("s2", sy * A_R2_0),   # end of landing / start of second ramp
+        ):
+            a_joint = math.radians(a_deg)
+            cy = r_out * math.sin(a_joint)
+            cz = zc + r_out * math.cos(a_joint)
+            h_j, _ = roof_at_d6_angle(a_deg)
+            loc = Vector((
+                0.0,
+                cy + math.sin(a_joint) * (h_j + 0.15),
+                cz + math.cos(a_joint) * (h_j + 0.15),
+            ))
+            bpy.ops.mesh.primitive_cube_add(size=1.0, location=loc)
+            g = bpy.context.active_object
+            g.name = f"_tmp_seam_{tag}_{side}"
+            g.scale = (62.0, 1.2, 3.0)
+            g.rotation_euler = (-a_joint, 0.0, 0.0)
+            bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+            for cc in list(g.users_collection):
+                cc.objects.unlink(g)
+            details_col.objects.link(g)
+            _bool_cut(g, f"seam_{tag}_{side}")
 
-    # "001" deboss: same charcoal as lid, 0.6 mm deep, H=9.5 mm.
-    # Baseline along +X → reads L→R in TOP view (strap horizontal / across neck).
-    # Centred under the orange-dot station so side view keeps it under the dot.
+    # Orange-dot recesses (crisp 0.6 mm, no dark halo) + 001 deboss
+    DOT_A = 30.0  # mid-pod under shortened shell
     font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    id_001_info = {}
     for side, sy in (("L", -1.0), ("R", 1.0)):
-        a_pod = sy * 28.0  # under orange dot
+        a_pod = sy * DOT_A
         a = math.radians(a_pod)
         h_p, _ = roof_at_d6_angle(a_pod)
         cy = r_out * math.sin(a)
         cz = zc + r_out * math.cos(a)
         ny, nz = math.sin(a), math.cos(a)
-        bpy.ops.object.text_add(location=(0, 0, 0))
-        txt = bpy.context.active_object
-        td = txt.data
-        td.body = "001"
-        td.align_x = "CENTER"
-        td.align_y = "CENTER"
-        td.size = 9.5
-        td.extrude = 1.2  # solid cutter; boolean pit targeted at 0.6 mm
-        td.offset = -0.05
-        if os.path.exists(font_path):
-            try:
-                td.font = bpy.data.fonts.load(font_path)
-            except Exception:
-                pass
-        bpy.ops.object.convert(target="MESH")
-        txt = bpy.context.active_object
-        txt.name = f"_tmp_001cut_{side}"
-        bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY", center="BOUNDS")
-        # Baseline +X (across strap) → L→R in top view; local +Z → outward normal
-        txt.rotation_euler = (-a, 0.0, 0.0)
-        bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
-        # Place so the cutter straddles the lid: ~0.6 mm into the shell
-        txt.location = Vector((0.0, cy + ny * (h_p - 0.3), cz + nz * (h_p - 0.3)))
-        for cc in list(txt.users_collection):
-            cc.objects.unlink(txt)
-        details_col.objects.link(txt)
-        _bool_cut(txt, f"id_001_{side}")
-        print(f"  001 deboss {side}: a={a_pod:.1f}° under orange-dot station; "
-              f"reads L→R in TOP view (baseline +X)")
 
-    # Hide print bodies the shell replaces; keep solar + accents visible
+        # Real 001 deboss FIRST (glyphs must stay readable around the orange)
+        cutter = _make_001_cutter(size=9.5, depth=1.6, font_path=font_path)
+        cutter.name = f"cutter_001_{side}"
+        cutter.rotation_euler = (-a, 0.0, 0.0)
+        bpy.ops.object.select_all(action="DESELECT")
+        cutter.select_set(True)
+        bpy.context.view_layer.objects.active = cutter
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+        # Target ~0.6 mm pit: cutter centre just below lid (extrude ±1.0)
+        cutter.location = Vector((0.0, cy + ny * (h_p - 0.2), cz + nz * (h_p - 0.2)))
+        for cc in list(cutter.users_collection):
+            cc.objects.unlink(cutter)
+        details_col.objects.link(cutter)
+        _bool_cut(cutter, f"id_001_{side}")
+        ok, measured = _verify_001_pit(obj, a_pod, r_out, zc, h_p, depth=0.55)
+        id_001_info[side] = {
+            "angle_deg": a_pod,
+            "modifier_applied": f"id_001_{side} (BOOLEAN DIFFERENCE, applied to mesh)",
+            "object": "review_shell",
+            "verified_in_mesh": ok,
+            "measured_depth_mm": measured,
+            "target_depth_mm": 0.6,
+            "height_mm": 9.5,
+            "material": "same charcoal as lid",
+            "reads_in": "TOP view L→R (baseline +X, strap horizontal)",
+        }
+        print(f"  001 {side}: verified={ok} depth≈{measured} mm at a={a_pod:.1f}°")
+
+        # Crisp Ø5.4 × 0.6 recess for the orange — AFTER 001 so walls stay sharp
+        bpy.ops.mesh.primitive_cylinder_add(
+            radius=2.7, depth=1.4,
+            location=(0.0, cy + ny * (h_p - 0.05), cz + nz * (h_p - 0.05)),
+        )
+        rec = bpy.context.active_object
+        rec.name = f"_tmp_dot_recess_{side}"
+        rec.rotation_euler = (-a, 0.0, 0.0)
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+        for cc in list(rec.users_collection):
+            cc.objects.unlink(rec)
+        details_col.objects.link(rec)
+        _bool_cut(rec, f"dot_recess_{side}")
+
+    # Hide print bodies the shell replaces
     hide_names = []
     for o in list(bpy.data.objects):
         n = o.name
@@ -763,13 +910,12 @@ def _add_d4_loft_shell(details_col, body_rgb):
                 "cap_base", "cap_lid", "pod_L_base", "pod_R_base",
                 "pod_L_lid", "pod_R_lid", "saddle",
             )
-            or n.startswith("screw_cap_orange")  # were reading as roof dashes
+            or n.startswith("screw_cap_orange")
         ):
             o.hide_render = True
             o.hide_viewport = True
             hide_names.append(n)
 
-    # Per-station compare vs D4 + driver
     compare = []
     for st in stations:
         a_d4 = float(st["angle_deg"])
@@ -777,14 +923,16 @@ def _add_d4_loft_shell(details_col, body_rgb):
         h_d6, driver = roof_at_d6_angle(a_d6)
         hw_lid, hw_skirt = widths_at_d6_angle(a_d6)
         aa = abs(a_d6)
-        if aa > d6_body - 1.2:
-            t_end = min(1.0, max(0.0, (aa - (d6_body - 1.2)) / (drop_tail + 1.2)))
+        body_lim = abs(d6_body0) if a_d6 < 0 else d6_body1
+        if aa > body_lim:
+            t_end = min(1.0, max(0.0, (aa - body_lim) / max(drop_tail + 0.8, 1e-9)))
             s = t_end * t_end * (3.0 - 2.0 * t_end)
-            s3 = s * s * s
-            h_d6 = h_d6 * (1.0 - s3) + 1.5 * s3
+            s2 = s * s
+            h_d6 = h_d6 * (1.0 - s2) + 1.2 * s2
             tip_w = 2.0 * END_PLAN_R
-            hw_lid = hw_lid * (1.0 - s) + tip_w * 0.55 * s
-            hw_skirt = hw_skirt * (1.0 - s) + tip_w * 0.85 * s
+            flare = math.sin(s * math.pi) * 4.0
+            hw_lid = hw_lid * (1.0 - s) + tip_w * 0.5 * s
+            hw_skirt = (hw_skirt + flare) * (1.0 - s) + tip_w * 0.95 * s
             driver = "end_drop"
         compare.append({
             "angle_d4_deg": round(a_d4, 2),
@@ -800,30 +948,46 @@ def _add_d4_loft_shell(details_col, body_rgb):
             "height_driver": driver,
         })
 
+    outer_arc_mm = (d6_ang1 - d6_ang0) * math.pi / 180.0 * r_out
     meta = {
-        "round": "D7r12",
+        "round": "D7r13",
         "profile_path": profile_path,
         "d4_r_outer": d4_r_out,
         "d6_r_outer": r_out,
         "d6_angle_span_deg": [round(d6_ang0, 2), round(d6_ang1, 2)],
+        "d6_outer_arc_mm": round(outer_arc_mm, 1),
+        "d4_angle_span_deg": [round(d4_ang0, 2), round(d4_ang1, 2)],
+        "d4_outer_arc_mm": d4_arc_mm,
+        "arc_driver": ARC_DRIVER,
         "cap_roof_need_mm": round(CAP_H, 2),
         "cap_height_driver": CAP_H_DRIVER,
         "pod_roof_mm": POD_H,
         "pod_height_driver": POD_H_DRIVER,
+        "mid_landing_mm": round(MID_H, 2),
+        "stage_drop_mm": round(STAGE, 2),
+        "cap_block": {
+            "half_angle_deg": round(A_CAP, 2),
+            "arc_mm": round(cap_block_arc_mm, 1),
+            "set_by": f"panel land {PANEL_LAND_L} mm + {CAP_WALL_EXTRA} mm wall",
+            "d4_half_angle_deg": d4_cap_half_deg,
+            "d4_arc_mm": round(d4_cap_block_arc_mm, 1),
+        },
+        "step_angles_deg": {
+            "cap_end": round(A_R1_0, 2),
+            "ramp1_end": round(A_R1_1, 2),
+            "landing_end": round(A_LAND_1, 2),
+            "ramp2_end": round(A_R2_1, 2),
+        },
         "d4_cap_max_mm": D4_CAP_MAX,
         "bottom_rel_mm": BOTTOM,
-        "id_001": {
-            "depth_mm": 0.6,
-            "height_mm": 9.5,
-            "material": "same charcoal as lid (boolean deboss)",
-            "reads_in": "TOP view L→R (baseline +X, strap horizontal across neck)",
-            "side_view": "centred under orange dot at a≈±28°",
-        },
+        "chamfer_mm": 1.8,
+        "id_001": id_001_info,
+        "dot_angle_deg": DOT_A,
         "cap_roof_note": (
-            f"Cap {CAP_H:.1f} mm — true min with current panel land z=41.4 "
-            f"(cannot hit ~39 mm / 1.4×D4 without lowering land; see height_options.md). "
-            f"Pods {POD_H:.0f} mm ≈1.4× D4. Crisp lid + flared skirt; "
-            f"001 same-material 0.6 mm deboss reads L→R in TOP view."
+            f"Cap {CAP_H:.1f} / mid {MID_H:.1f} / pod {POD_H:.0f} — two-stage "
+            f"≤{STAGE:.1f} mm steps. High-cap block {cap_block_arc_mm:.0f} mm arc "
+            f"(D4 ≈{d4_cap_block_arc_mm:.0f} mm). Shell {d6_ang0:.1f}…{d6_ang1:.1f}° "
+            f"matches D4 extent."
         ),
         "n_stations_loft": n_stat,
         "hidden": hide_names,
@@ -831,59 +995,64 @@ def _add_d4_loft_shell(details_col, body_rgb):
         "end_shoulder_d4": end_sh,
     }
     print(
-        f"  review_shell r12: angles {d6_ang0:.1f}→{d6_ang1:.1f} "
-        f"cap={CAP_H:.1f} pod={POD_H:.0f}"
+        f"  review_shell r13: angles {d6_ang0:.1f}→{d6_ang1:.1f} "
+        f"cap={CAP_H:.1f} mid={MID_H:.1f} pod={POD_H:.0f} "
+        f"cap_block_arc={cap_block_arc_mm:.0f}mm"
     )
     print(f"  hidden under shell: {hide_names}")
     return obj, meta
 
 
 def _add_solar_review_detail(details_col, panel_c, panel_sz):
-    """D7r8 review solar: D4-like thin navy edge strips + wide charcoal rib.
+    """D7r13: D4 navy strips ACROSS the strap at the two Y-ends of the solar block.
 
-    Pocket 66.6×113.6 unchanged. Navy ONLY on the two edge strips. Matte.
+    Top view: strips are vertical (constant Y), one at each end of the panel.
+    Charcoal centre rib between them. No proud bezel edge in side view.
+    Pocket 66.6×113.6 unchanged.
     """
-    px, py = float(panel_sz.x), float(panel_sz.y)
-    bezel_w, bezel_l = px + 3.0, py + 3.0
+    px, py = float(panel_sz.x), float(panel_sz.y)  # X across strap, Y along strap
+    # All solar review solids ≥2 mm (hygiene) but sit UP in the opening so no
+    # proud bottom edge reads as a lit bezel line in side view.
+    z_top = panel_c.z + 1.6
     _add_box(
         details_col, "solar_bezel",
-        (bezel_w, bezel_l, 2.2),
-        (panel_c.x, panel_c.y, panel_c.z + 0.5),
-        CHARCOAL_SOLAR, rough=0.75,
+        (px + 1.6, py + 1.6, 2.0),
+        (panel_c.x, panel_c.y, z_top),
+        CHARCOAL_SOLAR, rough=0.8,
     )
-    # D4 look: thin edge strips (~8 mm), wide charcoal centre rib
-    strip_w = 8.0
-    gap = 1.0  # charcoal margin between strip and rib
-    rib_w = px - 2.0 * strip_w - 2.0 * gap  # ≈48.6 mm
-    strip_l = py - 2.0
-    for sx, tag in ((-1.0, "L"), (1.0, "R")):
-        x = panel_c.x + sx * (px * 0.5 - strip_w * 0.5 - 0.5)
+    # Strips at ±Y ends (across strap = along X). Narrow accent at each end.
+    strip_y = max(6.0, min(10.0, py / 6.0))  # ~8–10 mm along strap
+    gap = 1.0
+    rib_y = py - 2.0 * strip_y - 2.0 * gap
+    strip_x = px - 1.0  # nearly full panel width across strap
+    for sy, tag in ((-1.0, "N"), (1.0, "S")):
+        y = panel_c.y + sy * (py * 0.5 - strip_y * 0.5 - 0.4)
         _add_box(
             details_col, f"solar_navy_strip_{tag}",
-            (strip_w, strip_l, 2.2),
-            (x, panel_c.y, panel_c.z + 1.05),
+            (strip_x, strip_y, 2.0),
+            (panel_c.x, y, z_top + 0.15),
             NAVY_SOLAR, rough=0.85,
         )
     _add_box(
         details_col, "solar_centre_rib",
-        (rib_w, strip_l + 0.6, 2.4),
-        (panel_c.x, panel_c.y, panel_c.z + 1.35),
+        (strip_x - 0.4, rib_y, 2.1),
+        (panel_c.x, panel_c.y, z_top + 0.25),
         CHARCOAL_SOLAR, rough=0.7,
     )
-    shade_rib = rib_w / 66.6
-    shade_strips = (2.0 * strip_w) / 66.6  # navy is glass look — not shade
+    shade_rib = rib_y / py
     return {
-        "rib_w_mm": round(rib_w, 2),
-        "strip_w_mm": strip_w,
-        "bezel_inset_mm": 1.5,
+        "rib_y_mm": round(rib_y, 2),
+        "strip_y_mm": round(strip_y, 2),
+        "strip_x_mm": round(strip_x, 2),
+        "placement": "across strap at ±Y ends of solar block (D4); charcoal centre",
+        "bezel": "flush inset 1.0 mm — no proud side-view lit edge",
         "panel_pocket_mm": [66.6, 113.6],
         "shade_fraction_rib": round(shade_rib, 3),
+        "rib_w_mm": round(rib_y, 2),  # back-compat for note field
         "shade_note": (
-            f"Wide charcoal rib {rib_w:.1f} mm ≈ {100 * shade_rib:.0f}% of panel "
-            f"width; two navy edge strips {strip_w} mm each (not shading). Bezel "
-            f"~1.5 mm ring. Review-only — pocket unchanged. If built proud over "
-            f"glass, the rib+bezel would shade ~{100 * shade_rib:.0f}% of width "
-            f"(strips are the active glass look)."
+            f"D4 placement: navy strips {strip_y:.1f} mm at each Y-end "
+            f"(across strap); charcoal centre rib {rib_y:.1f} mm between. "
+            f"Flush bezel — no side-view lit line."
         ),
     }
 
@@ -1024,7 +1193,7 @@ _add_box(
 )
 solar_meta = _add_solar_review_detail(details, panel_c, Vector((66.6, 113.6, 2.0)))
 
-# D7r12: orange ONLY on the two lid dots — latch in body charcoal (no orange tab)
+# D7r13: orange ONLY on the two lid dots — latch in body charcoal (no tab)
 latch_path = _find_detail("latch.stl")
 latch_c = _wbbox_centre("latch")
 if latch_path and latch_c is not None:
@@ -1039,40 +1208,59 @@ if latch_path and latch_c is not None:
 elif latch_c is not None:
     _add_box(details, "latch", (6.0, 11.0, 2.2), latch_c, BODY)
 
-# D7r12: orange ONLY on the two lid dots — tab dropped
+# Tab dropped — buckle/keeper only
 _add_strap_loop(details)
 _add_buckle_keeper(details)
 _purge_curves_and_wires()
 
 _shell_obj, _shell_meta = _add_d4_loft_shell(details, BODY)
-_shell_report_path = os.path.join(OUT, "d7r12_stations_vs_d4.json")
+_shell_report_path = os.path.join(OUT, "d7r13_stations_vs_d4.json")
 json.dump(_shell_meta, open(_shell_report_path, "w"), indent=2)
 shutil.copy2(
     _shell_report_path,
-    os.path.join(_HERE, "review", "d7r12_stations_vs_d4.json"),
+    os.path.join(_HERE, "review", "d7r13_stations_vs_d4.json"),
 )
 
-# Orange dots on shell pod lids — centred over 001 deboss (a≈±28°)
+# Clean Ø5 mm flat orange dots, flush in the 0.6 mm recess (no dark halo)
 _zc, _r_out = -233.85, 227.0 + STRAP_T / 2.0
+_dot_a = float(_shell_meta.get("dot_angle_deg", 30.0))
 for side, sy in (("L", -1.0), ("R", 1.0)):
-    a = math.radians(sy * 28.0)
+    a = math.radians(sy * _dot_a)
     h_pod = float(_shell_meta.get("pod_roof_mm", 25.0))
     cy = _r_out * math.sin(a)
     cz = _zc + _r_out * math.cos(a)
+    ny, nz = math.sin(a), math.cos(a)
+    # Flat disc flush with lid top (sits in the 0.6 mm recess, no proud wall)
     loc = (
         0.0,
-        cy + math.sin(a) * (h_pod + 1.2),
-        cz + math.cos(a) * (h_pod + 1.2),
+        cy + ny * (h_pod - 0.28),
+        cz + nz * (h_pod - 0.28),
     )
-    _add_cyl(
+    dot = _add_cyl(
         details,
         f"pod_{side}_dot_orange",
-        radius=4.0,
-        depth=2.2,
+        radius=2.5,   # Ø5 mm
+        depth=0.5,
         loc=loc,
         rgb=ORANGE,
         rot=(-a, 0.0, 0.0),
+        rough=0.35,
     )
+    bpy.ops.object.select_all(action="DESELECT")
+    dot.select_set(True)
+    bpy.context.view_layer.objects.active = dot
+    bpy.ops.object.shade_flat()
+
+# Keep shell chamfers / boolean edges readable (no soft halo on recess)
+bpy.ops.object.select_all(action="DESELECT")
+_shell_obj.select_set(True)
+bpy.context.view_layer.objects.active = _shell_obj
+try:
+    _shell_obj.data.use_auto_smooth = True
+    _shell_obj.data.auto_smooth_angle = math.radians(25.0)
+except Exception:
+    pass
+bpy.ops.object.shade_smooth()
 
 note = bpy.data.objects.new("NOTE_d4_ghost", None)
 note.empty_display_type = "PLAIN_AXES"
@@ -1081,10 +1269,10 @@ note["ghost_note"] = ghost_note
 note["palette"] = _palette
 note["solar_shade"] = solar_meta.get("shade_note", "")
 note["solar_rib_w_mm"] = float(solar_meta.get("rib_w_mm", 0))
-note["review_shell"] = "d4_loft_r12"
+note["review_shell"] = "d4_loft_r13"
 note["cap_roof_note"] = _shell_meta.get("cap_roof_note", "")
 note["cap_height_driver"] = _shell_meta.get("cap_height_driver", "")
-note["id_001"] = "deboss 0.6mm same charcoal; reads L→R in TOP view"
+note["id_001"] = "deboss 0.6mm same charcoal applied to review_shell mesh; L→R TOP"
 details.objects.link(note)
 
 hygiene_path = os.path.join(OUT, "geometry_hygiene.json")
@@ -1163,13 +1351,58 @@ if joint_objs:
     dst = f"d6_assembly_joint.png" if not suffix else f"d6_assembly_joint{suffix}.png"
     shutil.copy2(sc.render.filepath, os.path.join(render_dir, dst))
 
+# ---- 001 close-up crops under raking light (charcoal only) ----------------
+if _palette == "charcoal":
+    sc.display.shading.light = "STUDIO"
+    sc.display.shading.color_type = "MATERIAL"
+    sc.render.resolution_x, sc.render.resolution_y = 1200, 900
+    _dot_a = float(_shell_meta.get("dot_angle_deg", 30.0))
+    _h_pod = float(_shell_meta.get("pod_roof_mm", 25.0))
+    for side, sy in (("L", -1.0), ("R", 1.0)):
+        a = math.radians(sy * _dot_a)
+        cy = _r_out * math.sin(a)
+        cz = _zc + _r_out * math.cos(a)
+        ny, nz = math.sin(a), math.cos(a)
+        lid = Vector((0.0, cy + ny * _h_pod, cz + nz * _h_pod))
+        # Mostly top-down onto the lid (see glyphs) with a raking +X bias so
+        # the 0.6 mm pits self-shadow.
+        out = Vector((0.0, ny, nz))
+        across = Vector((1.0, 0.0, 0.0))
+        # Lid-normal dominant + raking +X so glyph pits shadow; wide enough
+        # to show full "001" on both L and R lids.
+        cam_dir = (out * 0.88 + across * 0.42).normalized()
+        cam_d.type = "ORTHO"
+        cam_d.ortho_scale = 34.0
+        cam.location = lid + cam_dir * 100.0
+        # Aim explicitly at lid centre
+        direction = (lid - cam.location).normalized()
+        cam.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+        out_name = f"d6_001_closeup_{side}{suffix}.png"
+        sc.render.filepath = os.path.join(OUT, out_name)
+        bpy.ops.render.render(write_still=True)
+        shutil.copy2(sc.render.filepath, os.path.join(render_dir, out_name))
+        shutil.copy2(sc.render.filepath, os.path.join(_HERE, "review", out_name))
+        art = "/opt/cursor/artifacts"
+        if os.path.isdir(art):
+            shutil.copy2(sc.render.filepath, os.path.join(art, out_name))
+        print(f"  001 closeup {side}: {out_name}")
+
 os.makedirs(os.path.dirname(review_blend), exist_ok=True)
 if _palette == "charcoal":
     shutil.copy2(blend_path, review_blend)
 else:
     shutil.copy2(blend_path, os.path.join(_HERE, "review", f"d6_assembly_{_palette}.blend"))
 
+# Fail the build if 001 did not land in the mesh
+_id = _shell_meta.get("id_001") or {}
+for side, info in _id.items():
+    if isinstance(info, dict) and not info.get("verified_in_mesh", False):
+        raise SystemExit(
+            f"001 deboss NOT verified in review_shell mesh ({side}): {info}"
+        )
+
 print("OK", ghost_note)
 print("palette", _palette)
 print("blend", blend_path)
 print("renders", OUT)
+print("001", json.dumps(_id, indent=2))

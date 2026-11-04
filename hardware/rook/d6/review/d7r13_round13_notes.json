@@ -1,0 +1,55 @@
+{
+  "round": "D7r13",
+  "head_base": "8d29985",
+  "source": "op-brand Round 13 + D4-follow refinements",
+  "items": {
+    "1_arc_extent": {
+      "d6_deg": [-43.5, 45.0],
+      "d6_outer_arc_mm": 352.9,
+      "d4_deg": [-43.47, 44.95],
+      "d4_outer_arc_mm": 363.5,
+      "note": "Review shell matches D4 ±44°. Print pod tips |Y|≈183 (~±53.7°) are hidden under the shell; that tip would set the min arc if the shell had to cover exposed print pods."
+    },
+    "2_two_stage_step": {
+      "cap_mm": 48.25,
+      "mid_landing_mm": 36.62,
+      "pod_mm": 25.0,
+      "stage_drop_mm": 11.62,
+      "angles_deg": {"cap_end": 15.85, "ramp1_end": 18.85, "landing_end": 24.35, "ramp2_end": 27.35},
+      "note": "Heights unchanged; 23 mm drop reads as two ≤12 mm stages with mid terrace"
+    },
+    "3_cap_block": {
+      "half_angle_deg": 15.85,
+      "arc_mm": 126.4,
+      "set_by": "panel land 116 mm + 4 mm wall",
+      "d4_half_angle_deg": 17.0,
+      "d4_arc_mm": 139.8
+    },
+    "4_id_001": {
+      "object": "review_shell",
+      "modifier_applied": "id_001_L / id_001_R (BOOLEAN DIFFERENCE, applied to mesh — no live modifier left)",
+      "depth_mm_target": 0.6,
+      "depth_mm_measured": 0.91,
+      "height_mm": 9.5,
+      "verified_in_mesh": true,
+      "closeups": ["review/d6_001_closeup_L.png", "review/d6_001_closeup_R.png"],
+      "reads_in": "TOP L→R with strap horizontal; under orange dots at a≈±30°"
+    },
+    "5_navy_strips": {
+      "placement": "across strap at ±Y ends of solar block (D4); charcoal centre rib between",
+      "objects": ["solar_navy_strip_N", "solar_navy_strip_S", "solar_centre_rib"]
+    },
+    "6_orange": {
+      "change": "Ø5 mm flat dots in crisp 0.6 mm recess (dot_recess_* boolean); no tab; latch charcoal"
+    },
+    "7_crisp_lid": {
+      "chamfer_mm": 1.8,
+      "note": "Flat lid + crease-weighted subdiv; flat pod roofs"
+    }
+  },
+  "stations_report": "review/d7r13_stations_vs_d4.json",
+  "mount_interface": "untouched",
+  "print_stls": "unchanged",
+  "assembly_check": "144/144 PASS",
+  "hygiene": "PASS"
+}
