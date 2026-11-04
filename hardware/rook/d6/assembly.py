@@ -35,10 +35,10 @@ POD_ANCHOR_Y = 126.0
 # (pad local z = CAP_FLOOR+5; must stay above bed after ±29° tilt).
 POD_ANCHOR_Z = -21.9
 POD_Z0 = -4.3
-POD_BASE_H = 22.2          # as-exported (floor+cavity+reg lip/taper); cavity still 19.5
-POD_LID_T = 4.2            # as-exported lid thickness
-POD_L = 92.0               # min for 82 cavity + 5 mm walls (cannot reach D4's 67)
-POD_W = 92.0               # along strap — between D5 68 and D4 97; leaves cavity 58 + 17/side
+POD_BASE_H = 22.2          # as-exported mating plane (tip roof drops below); cavity still 19.5
+POD_LID_T = 4.2            # as-exported lid thickness (~4.0 modeled + ribs)
+POD_L = 92.0               # max X = cell swell (tips taper to ~70 toward D4's 67)
+POD_W = 92.0               # along strap — LOCKED for mount face at ±POD_W/2 (D4 was 97)
 POD_FLOOR = 1.5
 
 CAP_Z0 = -3.6              # D4 cap_base world min z

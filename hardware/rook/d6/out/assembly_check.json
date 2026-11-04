@@ -426,7 +426,7 @@
   {
    "check": "pod_L_base: volume>0",
    "ok": true,
-   "measured": 84760,
+   "measured": 68927,
    "expected": ">0",
    "note": ""
   },
@@ -458,7 +458,7 @@
   {
    "check": "pod_L_lid: volume>0",
    "ok": true,
-   "measured": 32602,
+   "measured": 28623,
    "expected": ">0",
    "note": ""
   },
@@ -475,7 +475,7 @@
    "measured": [
     91.0,
     91.0,
-    4.35
+    4.15
    ],
    "expected": "<=256",
    "note": ""
@@ -490,7 +490,7 @@
   {
    "check": "pod_R_base: volume>0",
    "ok": true,
-   "measured": 84758,
+   "measured": 68927,
    "expected": ">0",
    "note": ""
   },
@@ -522,7 +522,7 @@
   {
    "check": "pod_R_lid: volume>0",
    "ok": true,
-   "measured": 32602,
+   "measured": 28623,
    "expected": ">0",
    "note": ""
   },
@@ -539,7 +539,7 @@
    "measured": [
     91.0,
     91.0,
-    4.35
+    4.15
    ],
    "expected": "<=256",
    "note": ""
@@ -554,7 +554,7 @@
   {
    "check": "pod_floor_layout: volume>0",
    "ok": true,
-   "measured": 10290,
+   "measured": 10286,
    "expected": ">0",
    "note": ""
   },
@@ -832,6 +832,41 @@
    "note": ""
   },
   {
+   "check": "pod D7 swell width ~92 over cells (x at y=0)",
+   "ok": true,
+   "measured": 92.0,
+   "expected": ">=90 (cell wall 3.5\u20135 on 82 cavity)",
+   "note": ""
+  },
+  {
+   "check": "pod D7 tip width toward D4 67 (x at |y|=40)",
+   "ok": true,
+   "measured": "+Y 69.9 / -Y 69.9 (swell 92.0)",
+   "expected": "60\u201375 and \u226510 narrower than swell",
+   "note": ""
+  },
+  {
+   "check": "pod.py contoured taper (POD_X_END + contoured_slab)",
+   "ok": true,
+   "measured": "POD_X_END/contoured_slab present",
+   "expected": "tapered plan helper",
+   "note": ""
+  },
+  {
+   "check": "pod plan corner R >= 8 (PLAN_R in pod.py)",
+   "ok": true,
+   "measured": "PLAN_R set >=8 in pod.py",
+   "expected": ">=8",
+   "note": ""
+  },
+  {
+   "check": "pod length POD_W locked at 92 (mount face plane)",
+   "ok": true,
+   "measured": "A.POD_W=92.0, STL Y=93.8",
+   "expected": "92 / ~93.8 as-exported",
+   "note": ""
+  },
+  {
    "check": "cw_lid prints mating-face-down (FLIP_OUTER_DOWN empty of cw_lid)",
    "ok": true,
    "measured": "mating-down",
@@ -869,7 +904,7 @@
   {
    "check": "fairing_pod_strap_L near a body (not floating)",
    "ok": true,
-   "measured": "nearest pod_L_base gap/overlap=-9.2",
+   "measured": "nearest pod_L_base gap/overlap=-8.1",
    "expected": "<5 mm",
    "note": ""
   },
@@ -906,13 +941,13 @@
   {
    "a": "cap_base",
    "b": "pod_L_base",
-   "mm3": 47.1,
+   "mm3": 47.8,
    "class": "expected mount pad/recess engagement"
   },
   {
    "a": "cap_base",
    "b": "pod_R_base",
-   "mm3": 376.3,
+   "mm3": 328.8,
    "class": "expected mount pad/recess engagement"
   },
   {
@@ -942,61 +977,61 @@
   {
    "a": "pod_L_base",
    "b": "pod_L_lid",
-   "mm3": 333.1,
+   "mm3": 245.1,
    "class": "expected lip/groove engagement"
   },
   {
    "a": "pod_L_base",
    "b": "fairing_cap_pod_L",
-   "mm3": 2730.7,
+   "mm3": 1417.3,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_L_base",
    "b": "fairing_pod_strap_L",
-   "mm3": 6736.4,
+   "mm3": 4404.5,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_L_lid",
    "b": "fairing_cap_pod_L",
-   "mm3": 522.9,
+   "mm3": 545.3,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_L_lid",
    "b": "fairing_pod_strap_L",
-   "mm3": 1251.2,
+   "mm3": 1167.4,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_R_base",
    "b": "pod_R_lid",
-   "mm3": 333.1,
+   "mm3": 245.1,
    "class": "expected lip/groove engagement"
   },
   {
    "a": "pod_R_base",
    "b": "fairing_cap_pod_R",
-   "mm3": 4023.8,
+   "mm3": 2573.1,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_R_base",
    "b": "fairing_pod_strap_R",
-   "mm3": 5372.2,
+   "mm3": 3174.5,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_R_lid",
    "b": "fairing_cap_pod_R",
-   "mm3": 522.9,
+   "mm3": 545.3,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_R_lid",
    "b": "fairing_pod_strap_R",
-   "mm3": 1251.2,
+   "mm3": 1167.4,
    "class": "fairing blend (OK)"
   },
   {

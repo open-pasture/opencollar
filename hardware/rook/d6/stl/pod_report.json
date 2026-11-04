@@ -1,24 +1,25 @@
 {
-  "revision": "D6_pod_d4_skin_d5_internals",
+  "revision": "D7_pod_tapered_swell_d5_internals",
   "d5_head": "6b1f882",
+  "d6_integrate_head": "96f3b30",
   "mount": {
     "L": {
       "loc": [
         0.0,
-        -124.0,
-        -27.839
+        -126.0,
+        -21.9
       ],
       "rot_x_deg": 29.141828721535205
     },
     "R": {
       "loc": [
         0.0,
-        124.0,
-        -27.839
+        126.0,
+        -21.9
       ],
       "rot_x_deg": -29.141828721535205
     },
-    "source": "d4.json pod_*_anchor"
+    "source": "assembly.py d6-integrate locked"
   },
   "envelope": {
     "outer_base_mm": [
@@ -26,17 +27,21 @@
       92.0,
       22.2
     ],
+    "outer_tip_width_mm": 70.0,
+    "swell_half_y_mm": 31.0,
+    "shoulder_run_mm": 7.0,
+    "plan_r_mm": 8.0,
     "outer_lid_mm": [
       91.0,
       91.0,
-      4.2
+      4.0
     ],
     "cavity_mm": [
       82.0,
       58.0,
       19.5
     ],
-    "stack_mm": 26.4,
+    "stack_mm": 26.2,
     "d4_ref_base": [
       67.02,
       96.99,
@@ -47,7 +52,12 @@
       68.0,
       22.0
     ],
-    "note": "X grown 67\u219292 for 82 cavity; Y kept ~97 D4 length; H 22 for 19.5 cav"
+    "d6_ref_base": [
+      92.0,
+      92.0,
+      22.2
+    ],
+    "note": "D7: 92 mm swell only over cells; tips taper to ~68 (D4=67) with R\u22658 and chamfered shoulder; POD_W=92 keeps mount face; tip roof drop 5.5 over 22.0; cavity 82\u00d758\u00d719.5 locked"
   },
   "gasket": {
     "groove_w": 2.0,
@@ -109,7 +119,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 436612
+        "faces": 639952
       },
       "pass": true,
       "stl_path": "stl/pod_L_base.stl",
@@ -124,7 +134,7 @@
       "size_mm": [
         91.0,
         91.0,
-        4.35
+        4.15
       ],
       "watertight": {
         "watertight": true,
@@ -134,14 +144,14 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 3862
+        "faces": 4448
       },
       "pass": true,
       "stl_path": "stl/pod_L_lid.stl",
       "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 6513.4,
+      "bed_face_area_mm2": 5984.0,
       "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X on export)",
       "load_path": "lid screws; ribs"
     },
@@ -159,7 +169,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 436620
+        "faces": 639954
       },
       "pass": true,
       "stl_path": "stl/pod_R_base.stl",
@@ -174,7 +184,7 @@
       "size_mm": [
         91.0,
         91.0,
-        4.35
+        4.15
       ],
       "watertight": {
         "watertight": true,
@@ -184,14 +194,14 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 3862
+        "faces": 4448
       },
       "pass": true,
       "stl_path": "stl/pod_R_lid.stl",
       "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 6513.4,
+      "bed_face_area_mm2": 5984.0,
       "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X on export)",
       "load_path": "true mirror of L"
     },
@@ -309,7 +319,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 140656
+        "faces": 219914
       },
       "pass": true,
       "stl_path": "stl/pod_floor_layout.stl",
@@ -324,12 +334,12 @@
   "pass": true,
   "lid_print": {
     "pod_L_lid": {
-      "bed_face_area_mm2": 6513.4,
+      "bed_face_area_mm2": 5984.0,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
       "note": "Outer-down; soft tip taper only \u2014 not a deep crown"
     },
     "pod_R_lid": {
-      "bed_face_area_mm2": 6513.4,
+      "bed_face_area_mm2": 5984.0,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
       "note": "Outer-down; soft tip taper only \u2014 not a deep crown"
     }

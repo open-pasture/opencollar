@@ -1,50 +1,54 @@
-# D6 Pod — D4 contour skin + D5 internals
+# D7 Pod — tapered D4 silhouette + D5 internals
 
-Branch: `cursor/d6-pod-9a36`. Base: D5 `6b1f882` (`cursor/d5-productionize-9a36`).
+Branch: `cursor/d7-pod-9a36` (from d6-integrate `96f3b30`).
 Script: `hardware/rook/d6/pod.py`. STLs: `stl/`. Renders: `renders/`. Review: `review/pod_review.blend`.
 
 ## Intent
 
-Cody: D4 contoured look, D5 layout/buildability. Pods hang off the cap ends on D4 mounts; two-cell cavity, gasket, glyphs, and lid rules from D5.
+op-brand on D6: pods read as flat 92 mm slabs bolted in a row. D7 restores D4_contoured_v3’s one continuous tapered object: **92 mm only over the cell bay**, tips narrow toward D4’s **~67 mm**, generous plan radii, chamfered shoulder, stronger tip roof drop. Mount face / cavity / lid / glyphs stay locked so the parallel cap/fairing agent (`cursor/d7-cap-9a36`) still meets.
 
-## Mount transform (from `d4.json` / D4_contoured_v3)
+## Mount transform (LOCKED — do not move)
 
 | Side | Location (mm) | Rotation about X |
 | --- | --- | --- |
 | L | `(0, -126.0, -21.9)` | `+29.142°` |
 | R | `(0, +126.0, -21.9)` | `−29.142°` |
 
-Frame: origin at cap centre; X across strap; Y along spine; Z up. Cap agent must put matching mount faces / fairing lands at these anchors. R is a true mirror of L (`Scale −X` + one `flip_normals` for winding) — not a print-orientation flip.
+Frame: origin at cap centre; X across strap; Y along spine; Z up. Cap agent must keep matching mount faces / fairing lands at these anchors. Joint: **36×4×14** pad recess + **4× M3 clear** on the +Y local face (same hole pattern / face plane as d6-integrate). R is a true mirror of L (`Scale −X` + one `flip_normals` for winding).
 
 ## Outer envelope
 
-| Item | D6 | D4 ref | D5 ref |
+| Item | D7 | D6 | D4 ref |
 | --- | --- | --- | --- |
-| Base outer (X×Y×Z) | **92 × 97 × 22** | 67 × 89–97 × 19.4 | 92 × 68 × 22 |
-| Lid outer | 91 × 96 × 4.0 | 61.5 × 97 × 6.4 | 91 × 67 × 4.0 |
-| Cavity | **82 × 58 × 19.5** (kept) | (no cells) | 82 × 58 × 19.5 |
-| Stack | 26.0 | ~25.8 | 26.0 |
-| Plan radius | 7.0 | contoured | 7.0 |
-| Tip taper | 18 mm run, 3.5 mm roof drop | hard 4→19 over ~20 mm | none |
+| Swell X (cells) | **92** | 92 flat | 67 |
+| Tip X | **~70 → ~66** at nose (R8) | 92 | 67 |
+| Length Y | **92** (mount face locked) | 92 | 97 |
+| Base H (mating) | **22.2** + tip roof drop 5.5 | 22.2 / soft 3.5 drop | 19.4 |
+| Lid | **4.0** contoured | 4.0–4.2 flat | 6.4 |
+| Cavity | **82 × 58 × 19.5** | same | (no cells) |
+| Plan R | **8** tip / **10** swell | 7 | contoured |
+| Shoulder | chamfer 92→70 over 7 mm Y | none | smooth |
+| Wall at cells | **5.0** (3.5–5 allowed) | 5.0 | — |
+| Wall outside cells | tip skin ~2.6 equiv (taper) | 5 all around | — |
 
-X grown 67→92 so the 82 mm cell cavity fits; Y kept ~97 for the D4 length look; walls 5 mm.
+X stays 92 only where the 82 mm cavity needs wall; Y kept at 92 so `±POD_W/2` mount faces still meet the cap pads. Cannot reach D4’s 19.4 base height with a 19.5 cavity + 1.5 floor — tip roof drop carries the thinner read.
 
-## Internals (from D5)
+## Internals (unchanged from D5 / D6)
 
 | Feature | Value |
 | --- | --- |
-| Cell bay | Ø19.4 × 76 along X at `CELL_AT=(-2,-8)`; Adafruit 1781; 353 pack NOT approved |
+| Cell bay | Ø19.4 × 76 along X at `CELL_AT=(-2,-8)`; Adafruit 1781 |
 | Buzzer | pocket 26.2² at `(18, 15)`; port Ø8 + mesh seat on +Y wall |
 | Cable | Ø6 through +Y (cap-facing) + **D8 × 1.2** countersink |
-| Gasket groove | W=2.0, D=1.5; **inner land ≥ 2.0**; outer land 1.0 |
-| Reg lip | 1.2 mm ring |
+| Gasket groove | W=2.0, D=1.5; on **cavity+wall** rect 92×68 (inside swell); inner land ≥ 2.0 |
+| Reg lip | 1.2 mm ring on same envelope |
 | Screw bosses | `POD_COLS = (±37, ±27)`; insert Ø4 × 5 |
 | Lid | 4.0 mm; landing ring; cross-ribs clear of cell; two Ø6 × 1.8 mating posts |
 | Floor ribs | cell rails under cradle |
 
-## Floor glyphs (D5 `FLOOR_LABEL_TABLE` @ 6b1f882)
+## Floor glyphs (D5 `FLOOR_LABEL_TABLE`)
 
-DejaVu Sans Bold. Char height ≥ 5 mm, stroke ≥ 0.8 mm, relief ≥ 0.6 mm (solidify 0.75 − embed 0.15).
+DejaVu Sans Bold. Char height ≥ 5 mm, stroke ≥ 0.8 mm, relief ≥ 0.6 mm.
 
 On `pod_*_base` and `pod_floor_layout`: `BATT`, `PLUS`, `MINUS`, `BUZZ`, `PIN1` (arrow toward +Y cable/cap), `SCR1`–`SCR4`.
 
@@ -54,64 +58,57 @@ On `pod_*_base` and `pod_floor_layout`: `BATT`, `PLUS`, `MINUS`, `BUZZ`, `PIN1` 
 | --- | --- | --- |
 | `pod_*_base` | underside; cavity UP | glyphs/ribs face +Z |
 | `pod_*_lid` | **OUTER face DOWN** | modeled mating-at-z=0; export rotates **180° about X** + recalc normals — **never** `flip_normals()` for orientation |
-| fairings | long axis on bed | slope = WALL |
+| fairings | long axis on bed | slope = WALL (unchanged this branch; cap agent rebuilds) |
 | `pod_floor_layout` | underside; ribs UP | PLA coupon |
 
-### Lid bed face / supports
-
-- Bed-face area ≈ **6957 mm²** (near-full 91×96 outer).
-- Soft tip taper only (not a deep crown) → **no large supports** expected for the outer shell.
-- Optional tiny supports under mating-face ribs/posts if the slicer treats them as bridges.
-
-## Fairings (agree with CW `05ef563`)
+## Fairings (stand-ins; cap agent owns redesign)
 
 | Part | Envelope (approx) |
 | --- | --- |
-| `fairing_cap_pod_L/R` | **88 → 66 × 18 × 14** (widened; short run) |
+| `fairing_cap_pod_L/R` | **88 → 66 × 18 × 14** |
 | `fairing_pod_strap_L/R` | **88 → 66 × 28 × 14** |
 
-## Assembly agree — owned by CW agent (pods do not re-export)
+Pod end interface (mount face Y, recess, holes) unchanged so redesigned fairings/cap ends can meet.
 
-| Item | Match |
+## What moved (D6 → D7)
+
+| Item | Change |
 | --- | --- |
-| Clamp bar | 10 × 70 × 8; flange down; holes at y=±28.5; **8 total** |
-| Saddle | width **76**; strap channel **46.45 × 3.4** |
-| CW fairings | ~66 × 28 × 14 |
+| Plan outline | Flat 92×92 → swell 92 over cells + taper to ~70 tip |
+| Plan radius | 7 → 8 (tips) / 10 (swell) |
+| Shoulder | added chamfered 92→70 over 7 mm Y |
+| Tip roof drop | 3.5 / 18 mm → 5.5 / 22 mm |
+| Groove/lip envelope | full 92×92 → cavity+wall 92×68 (inside swell) |
+| Lid plan | matching contoured outline + reveal |
+| Volume (L base) | ~85k → ~69k mm³ |
+| Mount / cavity / buzzer / glyphs / lid T | **unchanged** |
 
-## STLs (`stl/`)
-
-`pod_L_base`, `pod_L_lid`, `pod_R_base`, `pod_R_lid`, `fairing_cap_pod_L/R`, `fairing_pod_strap_L/R`, `pod_floor_layout` — all print-oriented, watertight-checked (`stl/pod_report.json`).
-
-## Verification vs contract / D5
+## Verification
 
 | Check | Status |
 | --- | --- |
-| D6 mounts y=±126, z=−21.9, ±29.1° about X (shifted from D4 for clearance) | PASS |
-| Two-cell cavity 82×58×19.5 | PASS |
-| Grow envelope from D4 67×97; keep D4 length look | PASS (92×97×22) |
-| Gasket inner land ≥ 2 mm | PASS (2.0) |
-| Lid 4.0 + ribs | PASS |
-| Buzzer (18,15) clear of cell | PASS |
-| Cable countersink D8×1.2 | PASS |
-| Real embossed glyphs ≥5 / 0.8 / 0.6; one table | PASS (D5 table) |
-| Screw order numbers + polarity + PIN1 | PASS |
-| R = true mirror, fixed normals | PASS |
-| Lid outer-down via 180° X (no flip_normals) | PASS |
-| Fairings ~66×28×14 (CW agree) | PASS |
-| Print STLs at z=0 | PASS |
-| Cap agent: mount faces at same anchors | **MUST MATCH** |
-| Cap agent: fairing_cap_pod lands | **MUST MATCH** |
+| Mounts y=±126, z=−21.9, ±29.142°; face plane / hole pattern | PASS (locked) |
+| Two-cell cavity 82×58×19.5; wall ≥4 at swell | PASS |
+| Tip width toward D4 67; swell ~92 | PASS (`assembly_check`) |
+| Plan R ≥ 8; contoured_slab | PASS |
+| Gasket inner land ≥ 2 mm; lid 4.0 + ribs | PASS |
+| Buzzer (18,15); cable D8×1.2 | PASS |
+| Real glyphs; R = true mirror; lid outer-down | PASS |
+| Print STLs z=0, watertight, ≤256³ | PASS |
+| Assembly `assembly_check.py` | **109+ / 109+** |
 
-## Cap / CW agents — match these
+## Honest rough edges
 
-1. **Mount empties** exactly as above (cap end fairings land on pod +Y local / mount face).
-2. **Fairing family** 66×28×14; clamp 10×70×8 ×8; saddle 76 / channel 46.45×3.4 (CW already).
-3. Pod cable exits toward cap on the mount end (+Y local before world rot).
-4. Glyph + lid-flip pattern = D5 `6b1f882`.
+1. **Length still 92, not D4’s 97** — lengthening would move the mount face; locked for the parallel cap agent.
+2. **Stack still ~26 mm, not D4’s ~19.4** — 19.5 cavity + floor forbids a 19.4 shell; tip roof drop is the visual lever.
+3. **Base glyph boolean still needs voxel remesh** (~0.32–0.40) for watertight export; softens micro-edges slightly.
+4. **Fairings still 88-wide D6 stand-ins** — narrower tips mean less blend volume; cap/fairing agent should retaper them to the new nose.
+5. **CW “visually lower/smaller than pods”** is owned by the CW/cap pass; pods are less slabby but still the larger of the two until CW shrinks.
 
 ## Build
 
 ```bash
 cd hardware/rook/d6
 blender --background --factory-startup --python pod.py
+python3 assembly_check.py
 ```

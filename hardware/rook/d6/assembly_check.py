@@ -238,6 +238,58 @@ chk(
     ">=4",
 )
 
+# D7 outline: swell over cells (~92), tips taper toward D4 (~67), length locked for mount
+def _pod_width_at_y(m, y, band=1.2):
+    v = m.vertices
+    mask = (v[:, 1] > y - band) & (v[:, 1] < y + band)
+    if not np.any(mask):
+        return None
+    xs = v[mask, 0]
+    return float(xs.max() - xs.min())
+
+
+pod_L = mesh["pod_L_base"]
+swell_w = _pod_width_at_y(pod_L, 0.0)
+tip_w = _pod_width_at_y(pod_L, 40.0)
+tip_w2 = _pod_width_at_y(pod_L, -40.0)
+chk(
+    "pod D7 swell width ~92 over cells (x at y=0)",
+    swell_w is not None and swell_w >= 90.0,
+    round(swell_w, 1) if swell_w is not None else None,
+    ">=90 (cell wall 3.5–5 on 82 cavity)",
+)
+chk(
+    "pod D7 tip width toward D4 67 (x at |y|=40)",
+    tip_w is not None
+    and tip_w2 is not None
+    and 60.0 <= tip_w <= 75.0
+    and 60.0 <= tip_w2 <= 75.0
+    and tip_w < (swell_w or 99) - 10.0,
+    f"+Y {None if tip_w is None else round(tip_w,1)} / -Y "
+    f"{None if tip_w2 is None else round(tip_w2,1)} (swell {None if swell_w is None else round(swell_w,1)})",
+    "60–75 and ≥10 narrower than swell",
+)
+chk(
+    "pod.py contoured taper (POD_X_END + contoured_slab)",
+    "POD_X_END" in pod_src and "contoured_slab" in pod_src,
+    "POD_X_END/contoured_slab present" if "POD_X_END" in pod_src else "missing",
+    "tapered plan helper",
+)
+chk(
+    "pod plan corner R >= 8 (PLAN_R in pod.py)",
+    ("PLAN_R = 8" in pod_src or "PLAN_R = 8.0" in pod_src or "PLAN_R=8" in pod_src)
+    or ("PLAN_R = 10" in pod_src or "PLAN_R = 10.0" in pod_src),
+    "PLAN_R set >=8 in pod.py",
+    ">=8",
+)
+# Mount face plane / length unchanged vs d6-integrate
+chk(
+    "pod length POD_W locked at 92 (mount face plane)",
+    abs(A.POD_W - 92.0) < 1e-6 and abs(pod_L.extents[1] - 93.8) < 2.0,
+    f"A.POD_W={A.POD_W}, STL Y={pod_L.extents[1]:.1f}",
+    "92 / ~93.8 as-exported",
+)
+
 # cw_lid orientation: mating-down means NOT in FLIP_OUTER_DOWN
 chk(
     "cw_lid prints mating-face-down (FLIP_OUTER_DOWN empty of cw_lid)",
