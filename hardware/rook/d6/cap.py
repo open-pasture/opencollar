@@ -70,14 +70,14 @@ LID_ABOVE = CAP_STACK_H - CAP_BASE_H   # 12 mm above mating → stack 31
 # normalize_z0 and turns the mating face into a support ceiling. Wrap-over look
 # is a short OUTER step at the lid perimeter (z≥0) + low seam documentation.
 LID_SKIRT = 0.0
-LID_WRAP_STEP = 3.5                    # D7r4: deeper rim step — lower visual ledge
+LID_WRAP_STEP = 2.8                    # D7r5: softer rim — avoid thin protruding plate read
 LID_H = LID_ABOVE                      # solid height above mating (cavities kept)
-CROWN = 1.4                            # D7r4: lower shoulders toward pod roof (was 2.7)
-END_TAPER = 24.0                       # longer low tangent into fairing ramp
-NOSE_TIP_H = 5.5                       # D7r4: lower nose tip (was 7.5); panel/Wio safe
+CROWN = 1.0                            # D7r5: lower shoulders → continuous hero roof
+END_TAPER = 28.0                       # longer low tangent into fairing ramp
+NOSE_TIP_H = 4.5                       # D7r5: match pod lid edge height at seam
 NOSE_ARC_SEGS = 8                      # elliptical roof samples per end
-NOSE_PLAN_R = 12.0                     # generous plan radius at tip (flows into fairing)
-NOSE_BULL_R = 4.0                      # bullnose on top end edge
+NOSE_PLAN_R = 14.0                     # match pod tip plan R — no shadow line
+NOSE_BULL_R = 6.0                      # bullnose blends into fairing
 PANEL_LAND = (68.0, 116.0)             # flat plateau containing 66.6×113.6 pocket
 PLAN_R = 7.0
 REVEAL = 0.5
@@ -276,7 +276,7 @@ def crown_shoulders(body, land_xy, crown, lid_h, lw, ll):
 
 def end_crown_taper(body, land_xy, lid_h, lw, ll, taper_len=END_TAPER):
     """D7 lid nose — elliptical drop matching base, not a hard chopped prism."""
-    tip_h = max(3.5, lid_h - 6.5)
+    tip_h = max(3.5, min(NOSE_TIP_H, lid_h - 5.5))
     segs = NOSE_ARC_SEGS
     for sy in (-1, 1):
         tip = sy * (ll / 2)
@@ -442,23 +442,43 @@ def cap_base():
                           ("SCR3", (1, -1)), ("SCR4", (-1, -1))):
         emboss_label(b, key, (sx * 28.0, sy * 62.0, fz))
 
-    # D7r4: flared skirts under ±Y ends wrapping toward the strap (body colour).
-    # Reuses saddle/clamp footprint; channel 46.45×3.4 kept clear for the strap.
+    # D7r5: deep flared skirts under ±Y ends — recess clamp bars, R12 shoulder.
+    # Underside wider than clamp length so bars stay hidden from iso/hero/front.
     ch_w, ch_d = D.SADDLE_CHANNEL_W, D.SADDLE_CHANNEL_D
-    skirt_h, flare = 7.0, 7.0
+    bar_w, bar_l, bar_h = D.CLAMP_FLANGE_W, D.CLAMP_L, D.CLAMP_DEPTH  # 10×70×8
+    skirt_h, flare, plan_r = 14.0, 12.0, 12.0
+    shoulder = 12.0
+    pocket_h = bar_h + 0.2
     for sy in (-1.0, 1.0):
+        # Centre so the ±20 clamp station sits inside the skirt footprint
+        cy = sy * 38.0
+        sk_w = max(CAP_W - 2.0, bar_l + 4.0, ch_w + 2.0 * flare)
+        sk_l = 58.0
         sk = oc.rounded_rect(
-            f"cap_skirt{int(sy+2)}",
-            (min(CAP_W - 4.0, ch_w + 2.0 * flare), 42.0, skirt_h),
-            4.0,
-            at=(0.0, sy * (CAP_L / 2.0 - 28.0), -skirt_h),
-            anchor="bottom", segments=8,
+            f"cap_skirt{int(sy + 2)}",
+            (sk_w, sk_l, skirt_h),
+            min(plan_r, sk_w / 2.0 - 1.0, sk_l / 2.0 - 1.0),
+            at=(0.0, cy, -skirt_h),
+            anchor="bottom", segments=16,
         )
-        roof = max(1.4, skirt_h - ch_d - 0.2)
+        # Top shoulder flare (bed stays wide to hide bars)
+        body_half = CAP_W / 2.0 - 1.0
+        for sx in (-1.0, 1.0):
+            oc.cut(sk, oc.prism_y(f"cap_skirt_shx{int(sy + 2)}_{int(sx + 2)}", [
+                (sx * (sk_w / 2.0 + 1.0), -shoulder),
+                (sx * (sk_w / 2.0 + 1.0), 0.6),
+                (sx * (body_half + 0.2), 0.6),
+                (sx * (sk_w / 2.0 - 0.2), -shoulder),
+            ], sk_l + 8.0))
+        # Clamp pocket at the ±20 station that lives under this end skirt
         oc.cut(sk, oc.box(
-            f"cap_skirt_ch{int(sy+2)}", (ch_w, 46.0, ch_d + 0.4),
-            at=(0.0, sy * (CAP_L / 2.0 - 28.0), -skirt_h + roof),
-            anchor="bottom",
+            f"cap_cpocket{int(sy + 2)}",
+            (bar_l + 2.0, bar_w + 1.6, pocket_h + 0.4),
+            at=(0.0, sy * 20.0, -skirt_h), anchor="bottom",
+        ))
+        oc.cut(sk, oc.box(
+            f"cap_skirt_ch{int(sy + 2)}", (ch_w, sk_l + 2.0, ch_d + 0.4),
+            at=(0.0, cy, -skirt_h + pocket_h), anchor="bottom",
         ))
         oc.union(b, sk)
     return prepare(b)
@@ -526,12 +546,7 @@ def cap_lid():
     # Perimeter wrap step (z≥0) — low-seam read without hanging skirt
     add_wrap_step(lid, lw, ll, LID_WRAP_STEP, LID_H, r=PLAN_R - 1.0)
 
-    # D4-style raised rear lip / drip rim across the −Y (label) end — low.
-    lip_h, lip_d = 1.2, 2.5
-    lip_y = -(ll / 2.0) + lip_d / 2.0 + 0.8
-    oc.union(lid, oc.rounded_rect(
-        "rear_lip", (lw - 10.0, lip_d, lip_h), 1.2,
-        at=(0.0, lip_y, LID_H - 0.05), anchor="bottom"))
+    # D7r5: no proud rear lip plate — was reading as a thin protruding shelf.
     return prepare(lid)
 
 

@@ -90,10 +90,16 @@ POD_GROOVE_Y = CAV_Y + 2 * POD_WALL          # 92
 POD_COLS = [(sx * 22.0, sy * 36.0) for sx in (-1, 1) for sy in (-1, 1)]
 POD_TAPER_LEN = 20.0                         # D7r3: slightly longer tip run
 POD_TAPER_DROP = 6.0                         # D7r3: roof tip drop ~6 mm to fairing
-# D7r4: flared strap skirt under shell (body colour); channel kept 46.45×3.4
-POD_SKIRT_H = 7.0
-POD_SKIRT_FLARE = 7.0                        # mm flare toward strap width
-POD_PUBLIC_ID = "001"                        # low-relief mono on lid outer
+# D7r5: deep flared skirt recesses clamp bars; R12 shoulder into strap
+# Stack: channel 3.4 + clamp 8 + ≤1 mm proud + roof 1.6 ≈ 14
+# Underside must span full clamp length (70) so bars stay inside the skirt.
+POD_SKIRT_H = 14.0
+POD_SKIRT_FLARE = 12.0                       # outward flare past body → covers bars
+POD_SKIRT_PLAN_R = 12.0                      # large rounded shoulder (D4)
+POD_SKIRT_SHOULDER_R = 12.0                  # tangent flare radius at body→skirt
+POD_PUBLIC_ID = "001"                        # recessed mono on lid outer
+POD_ID_H = 10.0                              # capital height mm
+POD_ID_DEPTH = 0.6                           # recess depth mm
 
 # Cap↔pod M3 joint (matches cap.py pad) — recess on +Y mount face
 POD_MOUNT_SIZE = A.POD_MOUNT_SIZE            # 36×4×14
@@ -275,25 +281,57 @@ def top_perimeter_chamfer(body, w, l, h, r=POD_TOP_EDGE_R, y0=0.0):
 
 
 def strap_flare_skirt(body, w, l, y0=0.0, h=POD_SKIRT_H, flare=POD_SKIRT_FLARE):
-    """Flared skirt under the shell that wraps the strap (D4 one-form read).
+    """Deep flared skirt: R12 shoulder into strap, clamp bars recessed flush.
 
-    Extends below z=0 by `h`, flares ~`flare` mm toward the strap width, and
-    keeps a 46.45×3.4 channel so clamp bars stay accessible. normalize_z0
-    after export lifts the bed to the skirt underside.
+    Extends below z=0 by `h` (~14 mm = channel + clamp + roof). Underside is
+    WIDER than the body so 70 mm clamp bars stay inside the skirt footprint
+    (hidden from iso/hero/front). R12 plan + R12 top shoulder; rounded ends
+    (no pointed tabs). Strap channel 46.45×3.4 kept; screw access from above.
     """
     ch_w = float(A.SADDLE_CHANNEL_W)
     ch_d = float(A.SADDLE_CHANNEL_D)
-    skirt_w = min(w - 2.0, ch_w + 2.0 * flare)
-    skirt_l = min(l * 0.62, 64.0)
+    bar_w, bar_l, bar_h = A.CLAMP_BAR  # 10×70×8 — after 90°Z, long axis = X
+    # Bed must cover full bar length (+ margin); flare outward from body.
+    skirt_w = max(w + 2.0 * flare, bar_l + 4.0, ch_w + 2.0 * flare)
+    skirt_l = min(l * 0.82, 82.0)
+    plan_r = min(POD_SKIRT_PLAN_R, skirt_w / 2.0 - 1.0, skirt_l / 2.0 - 1.0)
     sk = oc.rounded_rect(
-        "strap_skirt", (skirt_w, skirt_l, h), 4.0,
-        at=(0.0, y0, -h), anchor="bottom", segments=8,
+        "strap_skirt", (skirt_w, skirt_l, h), plan_r,
+        at=(0.0, y0, -h), anchor="bottom", segments=16,
     )
-    # Strap channel through the skirt (roof ≥1.4 mm) — clamp bars stay accessible
-    roof = max(1.4, h - ch_d - 0.2)
+    # R12-ish shoulder at the TOP of the skirt (body join) — bed stays wide.
+    # Prism approximates a concave flare: outer face curves in toward body.
+    shoulder = min(POD_SKIRT_SHOULDER_R, h * 0.85, (skirt_w - w) / 2.0 + 2.0)
+    body_half = w / 2.0
+    for sx in (-1.0, 1.0):
+        # Cut the upper-outer corner so the silhouette eases body → wide bed
+        oc.cut(sk, oc.prism_y(f"skirt_sh_x{int(sx + 2)}", [
+            (sx * (skirt_w / 2.0 + 1.0), -shoulder),
+            (sx * (skirt_w / 2.0 + 1.0), 0.6),
+            (sx * (body_half + 0.2), 0.6),
+            (sx * (skirt_w / 2.0 - 0.2), -shoulder),
+        ], skirt_l + 8.0))
+    for sy in (-1.0, 1.0):
+        tip = y0 + sy * (skirt_l / 2.0)
+        oc.cut(sk, oc.prism_x(f"skirt_sh_y{int(sy + 2)}", [
+            (tip + sy * 1.0, -shoulder),
+            (tip + sy * 1.0, 0.6),
+            (tip - sy * shoulder * 0.85, 0.6),
+            (tip - sy * 0.2, -shoulder),
+        ], skirt_w + 8.0))
+
+    # Underside stack (z=-h bed → up): clamp pocket → strap channel → roof
+    # Pocket deep enough that a flush bar (proud≈0) is fully swallowed.
+    pocket_h = bar_h + 0.2
+    for i, dy in enumerate((-25.0, 25.0)):
+        oc.cut(sk, oc.box(
+            f"clamp_pocket{i}",
+            (bar_l + 2.0, bar_w + 1.6, pocket_h + 0.4),
+            at=(0.0, y0 + dy, -h), anchor="bottom",
+        ))
     oc.cut(sk, oc.box(
         "skirt_ch", (ch_w, skirt_l + 4.0, ch_d + 0.4),
-        at=(0.0, y0, -h + roof), anchor="bottom",
+        at=(0.0, y0, -h + pocket_h), anchor="bottom",
     ))
     oc.union(body, sk)
     return body
@@ -499,20 +537,22 @@ def pod_lid(side="L"):
     smooth_lid_crown(lid, lx_max, ll, POD_LID_T, sagitta=POD_LID_CROWN, y0=POD_Y0)
     end_taper_skin(lid, lx_max, ll, POD_LID_T + POD_LID_CROWN,
                    POD_TAPER_LEN * 0.85, min(POD_TAPER_DROP * 0.55, 3.5), y0=POD_Y0)
+    # Soft perimeter only — heavy chamfer was reading as a dark edge loop in hero
     top_perimeter_chamfer(lid, lx_max, ll, POD_LID_T + POD_LID_CROWN,
-                          r=min(POD_TOP_EDGE_R, 4.0), y0=POD_Y0)
+                          r=min(3.0, POD_TOP_EDGE_R * 0.5), y0=POD_Y0)
 
-    # D7r4: public ID — low-relief mono "001" on outer face (~9 mm tall, 0.5 mm)
-    # Recessed into outer (+Z) so outer-down print stays clean on the bed.
+    # D7r5: clean recessed "001" only — 10 mm tall, 0.6 mm deep; no other marks
     try:
         z_outer = POD_LID_T + POD_LID_CROWN
-        glyph = d5._text_mesh(POD_PUBLIC_ID, 18.0, 0.7)  # ~9 mm capital height
+        # Blender font size ≈ 2× capital height for DejaVu (GLYPH_SIZE 10 → 5 mm)
+        font_size = POD_ID_H * 2.0
+        glyph = d5._text_mesh(POD_PUBLIC_ID, font_size, POD_ID_DEPTH + 0.2)
         lo, hi = oc.bounds(glyph)
         oc.move(
             glyph,
             dx=0.0 - (lo[0] + hi[0]) / 2.0,
-            dy=POD_Y0 + 8.0 - (lo[1] + hi[1]) / 2.0,
-            dz=(z_outer - 0.5) - lo[2],
+            dy=POD_Y0 - (lo[1] + hi[1]) / 2.0,
+            dz=(z_outer - POD_ID_DEPTH) - lo[2],
         )
         oc.cut(lid, glyph)
     except Exception as exc:

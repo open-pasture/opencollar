@@ -301,9 +301,12 @@ chk(
     "58 across / 82 along",
 )
 
-def _pod_width_at_y(m, y, band=1.2):
+def _pod_width_at_y(m, y, band=1.2, z_min=None):
+    """Width across X at a Y station. Optional z_min skips deep skirt flare verts."""
     v = m.vertices
     mask = (v[:, 1] > y - band) & (v[:, 1] < y + band)
+    if z_min is not None:
+        mask = mask & (v[:, 2] >= z_min)
     if not np.any(mask):
         return None
     xs = v[mask, 0]
@@ -311,9 +314,12 @@ def _pod_width_at_y(m, y, band=1.2):
 
 
 pod_L = mesh["pod_L_base"]
-swell_w = _pod_width_at_y(pod_L, 0.0)
-tip_w = _pod_width_at_y(pod_L, 40.0)
-tip_w2 = _pod_width_at_y(pod_L, -40.0)
+# D7r5 skirts flare wider than the body below the mating band — measure the
+# shell outline above the skirt (POD_SKIRT_H≈14), not the clamp-covering bed.
+_skirt_h = 14.0
+swell_w = _pod_width_at_y(pod_L, 0.0, z_min=_skirt_h)
+tip_w = _pod_width_at_y(pod_L, 40.0, z_min=_skirt_h)
+tip_w2 = _pod_width_at_y(pod_L, -40.0, z_min=_skirt_h)
 chk(
     "pod D7r2 swell width ≤70 (x at y=0)",
     swell_w is not None and 64.0 <= swell_w <= 70.0,
@@ -480,7 +486,10 @@ for i in res["interference"]:
             "fairing blend (OK)" if i["mm3"] < 15000 else "fairing overlap high — review pose"
         )
     elif "clamp_bar" in i["a"] or "clamp_bar" in i["b"]:
-        i["class"] = "clamp engagement (OK)" if i["mm3"] < 200 else "REAL clash"
+        # D7r5: bars seat in skirt/saddle pockets (≤1 mm proud) — allow pocket volume
+        i["class"] = (
+            "clamp pocket engagement (OK)" if i["mm3"] < 2500 else "REAL clash"
+        )
     else:
         i["class"] = "REAL clash"
 

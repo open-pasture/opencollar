@@ -173,7 +173,8 @@ def fairing_cap_pod(side: str = "L"):
     w1 = float(getattr(A, "FAIRING_W1_CAP_POD", w0))
     h = float(getattr(A, "FAIRING_H_CAP_POD", A.FAIRING_H))
     over = float(getattr(A, "FAIRING_BEVEL_OVERSIZE_CAP_POD", 0.0))
-    r_nose = min(max(A.FAIRING_PLAN_R0, 6.0), run / 2.2, w0 / 2.0 - 0.5)
+    # Match cap/pod tip plan R so the hero roof has no shadow line at the join
+    r_nose = min(max(A.FAIRING_PLAN_R0, 10.0), run / 2.0, w0 / 2.0 - 0.5)
     f = fairing_body(
         f"fairing_cap_pod_{side}",
         run=run, w0=w0, w1=w1, h=h,

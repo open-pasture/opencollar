@@ -112,7 +112,7 @@ FAIRING_BEVEL_OVERSIZE_CAP_POD = 0.0
 FAIRING_PLAN_R0 = max(FAIRING_POD_PLAN_R, 8.0)
 FAIRING_PLAN_R1 = max(FAIRING_CAP_PLAN_R, 6.0)
 FAIRING_TOP_CROWN = 0.0                 # D7r3: no crown cuts → no crease lines
-FAIRING_RAMP_DROP = 3.5                 # D7r4: roof slope toward pod (mm)
+FAIRING_RAMP_DROP = 6.5                 # D7r5: stronger roof slope → continuous hero line
 FAIRING_INTERFERE_TOL = 0.2
 FAIRING_SEAM_STEP_MAX = 0.5              # mm — plan/height step at fairing joins
 FAIRING_LID_SEAM_MAX = 0.3              # mm — top vs lid roof at seam
@@ -204,26 +204,27 @@ def world_poses():
         P = P @ T([0, 0, -h / 2.0])
         poses[name] = P
 
-    # Clamp bars ×8
-    # 2 under cap saddle: long axis along X (holes → x=±28.5), at y=±20
+    # Clamp bars ×8 — D7r5: recessed into skirt/saddle pockets (≤1 mm proud).
+    # Cap/pod bars still long-axis along X (holes → ±28.5); hidden inside skirts.
+    # STL bed = skirt underside; bar bottom flush with bed (proud≈0).
+    CLAMP_PROUD = 0.0
     bars = []
     for y in (-20.0, 20.0):
         bars.append(
-            T([0, y, CAP_Z0 - SADDLE_H - STRAP_T - CLAMP_BAR[2]])
+            T([0, y, CAP_Z0 - CLAMP_PROUD])
             @ R(math.pi / 2, Zax)
         )
-    # 2 per pod: along local X after tilt
     for side in ("L", "R"):
-        A = pod_anchor_matrix(side)
+        Am = pod_anchor_matrix(side)
         for dy in (-25.0, 25.0):
             bars.append(
-                A
-                @ T([0, dy, POD_Z0 - STRAP_T - CLAMP_BAR[2]])
+                Am
+                @ T([0, dy, POD_Z0 - CLAMP_PROUD])
                 @ R(math.pi / 2, Zax)
             )
-    # 2 under CW: long axis along Y (no Z rot) — holes at y=±28.5, bars at x=±36
+    # 2 under CW: long axis along Y (along strap); flush in tub bed pockets
     for x in (-36.0, 36.0):
-        bars.append(CWA @ T([x, 0, CW_Z0 - STRAP_T - CLAMP_BAR[2]]))
+        bars.append(CWA @ T([x, 0, CW_Z0 - CLAMP_PROUD]))
     for i, B in enumerate(bars):
         poses[f"clamp_bar_{i + 1}"] = B
     return poses

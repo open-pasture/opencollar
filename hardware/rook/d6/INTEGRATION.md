@@ -1,22 +1,24 @@
-# D6/D7r4 integration
+# D6/D7r5 integration
 
 Branch `cursor/d6-integrate-9a36`. Acceptance:
 `python3 assembly_check.py out` → **143/143 PASS**.
 
-## D7r4 deltas (vs D7r3 head `7e3530e`)
-- **Palette:** review blend DEFAULT = charcoal (~`#3A3C3E`, roughness 0.6,
-  matched to D4_contoured_v3 when blend present); `--palette light` secondary.
-  Orange unchanged `#FF6A2B`.
-- **Strap:** slim flat band (≈44.45×3.0) on YZ ring through saddle channel and
-  under CW clamp; D4-style buckle + keeper (dark gray).
-- **Orange trim-back:** remove pod saddle teeth + clamp endcaps. Orange only:
-  one small dot per pod lid, one collar tab, tiny screw heads + latch.
-- **Flared skirts:** under each pod and cap ±Y ends; 7 mm flare wrapping strap;
-  channel 46.45×3.4 kept; clamp bars accessible.
-- **Silhouette:** lower cap crown (1.4) / nose tip (5.5) / wrap step (3.5);
-  fairing roof ramp (drop 3.5) toward pod; cavities unchanged.
-- **Lids (review):** four corner screws + one pod dot; public ID `001`
-  recessed on pod lid outer (~9 mm, 0.5 mm).
+## D7r5 deltas (vs D7r4 head `d1ae7ce`)
+- **Clamp bars:** recessed into skirt/saddle pockets; ≤1 mm proud of underside;
+  hidden from iso/hero/front; body material; channel 46.45×3.4 + screw access kept.
+- **Buckle + keeper:** open rectangular frame (~24×30×3) flat on strap surface with
+  tongue; thin keeper loop around band; both follow strap curvature (≤3 mm proud).
+- **Stack roof:** continuous cap → fairing → pod line (ramp drop 5.5); no rear-lip
+  plate; matching nose/pod plan R; ghost wire loops hidden in committed renders.
+- **Pod shoulder:** deep flared skirt (H≈14) with R12 plan + soft tangent chamfer;
+  rounded ends (no pointed tabs).
+- **Lid detail:** clean recessed `001` (10 mm tall, 0.6 mm deep); no arrow engraving;
+  solar panel = clean flat dark rectangle with crisp edge only.
+
+## D7r4 carry-forward
+- Charcoal default palette (~`#3A3C3E`); `--palette light` secondary; orange `#FF6A2B`.
+- Slim strap band (≈44.45×3.0) on YZ ring; orange only dots/tab/screws/latch.
+- Cavities / panel / Wio / 771.8 g / z=0 / watertight / rotation-only unchanged.
 
 ## Reports
 Per-part: `stl/*_report.json`. Assembly: `out/assembly_check.json`.
@@ -31,8 +33,8 @@ Print: `PRINT.md` (256 mm bed, 8 mm ASA brims).
   `blender ... --palette light` for the secondary pack
 
 ## Cody checklist
-1. Charcoal body reads like D4; orange only dots/tab/screws/latch
-2. Strap = thin flat band through saddle + under CW; buckle/keeper present
-3. Skirts blend pod/cap into strap; no orange fins
-4. Cap→pod = smooth ramp (no tall ledge / sail)
-5. Pod lid shows `001` + four corner screws + one orange dot
+1. Clamps invisible under skirts (or flush ≤1 mm); no perpendicular slats in hero
+2. Buckle = flat open frame on strap; keeper = thin loop; nothing >3 mm proud
+3. Cap/fairing/pod roof = one continuous slope; no thin shelf at far end
+4. Pod skirt = long R12 flare with rounded ends
+5. Pod lid = clean `001` only; solar panel = clean dark rectangle

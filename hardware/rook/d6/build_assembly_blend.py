@@ -288,41 +288,95 @@ def _add_strap_loop(collection):
     return loop
 
 
-def _add_buckle_keeper(collection):
-    """D4-style buckle (rect frame + tongue) and keeper on the strap path."""
-    # Anchors from d4.json (world), scaled slightly to current collar radius
-    b_anchor = _d4_obj("buckle_anchor")
-    k_anchor = _d4_obj("keeper_anchor")
-    # Fallback centres from wbbox
-    b_c = _wbbox_centre("buckle") or Vector((0.0, -188.72, -90.29))
-    k_c = _wbbox_centre("keeper") or Vector((0.0, -169.23, -66.79))
-    if b_anchor and b_anchor.get("loc"):
-        b_c = Vector(b_anchor["loc"])
-    if k_anchor and k_anchor.get("loc"):
-        k_c = Vector(k_anchor["loc"])
-    b_rot = math.radians((b_anchor or {}).get("rot_deg", [53.1, 0, 0])[0])
-    k_rot = math.radians((k_anchor or {}).get("rot_deg", [45.7, 0, 0])[0])
+def _strap_point(angle_deg, major_r=227.0, zc=-233.85):
+    """Point on the strap midplane (YZ ring) + outward normal (for flat-on-strap)."""
+    a = math.radians(angle_deg)
+    # Circle in YZ centred at (0,0,zc); angle 0 = +Y, 90 = +Z top, -90/+270 = bottom
+    y = major_r * math.sin(a)
+    z = zc + major_r * math.cos(a)
+    # Tangent about X: rotate so local +Z of a flat part points outward (radial)
+    # At angle a from +Z toward +Y, outward normal in YZ is (0, sin a, cos a)
+    # Euler X rot that maps local +Z to that normal: ...
+    # Simpler: rotate about X by -a so a plate in XY lies tangent to the ring.
+    return Vector((0.0, y, z)), (-a, 0.0, 0.0)
 
-    # Buckle: rectangular frame ~47×26×5.5 (dims) with a centre tongue
-    frame = _add_box(
-        collection, "buckle_frame", (26.0, 5.5, 47.0), b_c, HARDWARE,
-        rot=(b_rot, 0.0, 0.0), rough=0.55,
+
+def _add_buckle_keeper(collection):
+    """D4 buckle: open rect frame flat ON the strap + thin keeper loop around band.
+
+    Frame ≈24×30×3 mm, central opening, tongue across; ≤3 mm proud of band.
+    Placed just below the cap/pod on the −Y side of the collar (D4 side view).
+    """
+    # D4 anchors sit near the lower-right of the upper arc — map to our ring.
+    # Use polar angles on the fitted strap (~35–55° from top toward −Y).
+    b_pos, b_eul = _strap_point(-48.0)  # toward −Y from top
+    k_pos, k_eul = _strap_point(-38.0)
+
+    # Raise slightly onto the outer strap surface (thickness/2 + 1.5 mm frame)
+    major_r = 227.0
+    zc = -233.85
+    def _on_surface(pos, proud=1.6):
+        # Outward from centre (0,0,zc)
+        v = Vector((pos.x, pos.y, pos.z - zc))
+        if v.length < 1e-6:
+            return pos
+        return Vector((0.0, 0.0, zc)) + v.normalized() * (major_r + proud)
+
+    b_pos = _on_surface(b_pos, proud=1.7)
+    k_pos = _on_surface(k_pos, proud=1.2)
+
+    # Open rectangular frame 24 (across strap/X) × 30 (along strap) × 3 thick
+    outer = _add_box(
+        collection, "buckle_frame", (24.0, 30.0, 3.0), b_pos, HARDWARE,
+        rot=b_eul, rough=0.55,
     )
-    # Hollow the frame
+    # Boolean cut the opening (leave ~3 mm rail)
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=b_pos)
+    hole = bpy.context.active_object
+    hole.name = "buckle_opening"
+    hole.scale = (18.0, 22.0, 4.0)
+    hole.rotation_euler = b_eul
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    for cc in list(hole.users_collection):
+        cc.objects.unlink(hole)
+    collection.objects.link(hole)
+    # Boolean
     bpy.ops.object.select_all(action="DESELECT")
-    frame.select_set(True)
-    bpy.context.view_layer.objects.active = frame
-    # Tongue bar across the frame
+    outer.select_set(True)
+    bpy.context.view_layer.objects.active = outer
+    mod = outer.modifiers.new("hole", "BOOLEAN")
+    mod.operation = "DIFFERENCE"
+    mod.object = hole
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+    bpy.data.objects.remove(hole, do_unlink=True)
+
+    # Tongue across the opening (along X)
     _add_box(
-        collection, "buckle_tongue", (18.0, 2.0, 3.0),
-        (b_c.x, b_c.y, b_c.z), HARDWARE,
-        rot=(b_rot, 0.0, 0.0), rough=0.55,
+        collection, "buckle_tongue", (20.0, 2.5, 2.0), b_pos, HARDWARE,
+        rot=b_eul, rough=0.55,
     )
-    # Keeper loop (D4 dims 49.45 × 9 × 6.5) — small dark band on strap
-    _add_box(
-        collection, "keeper", (9.0, 6.5, 40.0), k_c, HARDWARE,
-        rot=(k_rot, 0.0, 0.0), rough=0.55,
+
+    # Thin keeper loop wrapped around the band — torus-ish scaled flat
+    # Cross-section thin; major ≈ half strap width so it hugs the band
+    bpy.ops.mesh.primitive_torus_add(
+        major_radius=STRAP_W / 2.0 + 1.5,
+        minor_radius=1.2,
+        major_segments=32,
+        minor_segments=10,
+        location=k_pos,
     )
+    keeper = bpy.context.active_object
+    keeper.name = "keeper"
+    # Orient so the loop circles the strap cross-section (around local X of strap)
+    keeper.rotation_euler = (k_eul[0] + math.radians(90), 0.0, math.radians(90))
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+    # Flatten slightly along strap tangent so it doesn't stand >3 mm proud
+    keeper.scale = (1.0, 1.0, 0.7)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    for cc in list(keeper.users_collection):
+        cc.objects.unlink(keeper)
+    collection.objects.link(keeper)
+    keeper.data.materials.append(mat("m_keeper", HARDWARE, rough=0.55))
 
 
 # ---- collections ----------------------------------------------------------
@@ -364,17 +418,15 @@ for n in ("pod_L", "pod_R"):
     d6.objects.link(e)
 
 # ---- review-only details --------------------------------------------------
-panel_path = _find_detail("panel_p124.stl")
-panel_c = _wbbox_centre("cap_panel_p124")
-if panel_path and panel_c is not None:
-    p = imp_stl(panel_path, details, name="cap_panel_p124")
-    pc = _bbox_centre(p)
-    p.location = panel_c - pc
-    p.data.materials.clear()
-    p.data.materials.append(mat("solar_glass", PANEL_GLASS, rough=0.15))
-elif panel_c is not None:
-    sz = _wbbox_size("cap_panel_p124") or Vector((66.6, 113.6, 2.3))
-    _add_box(details, "cap_panel_p124", (sz.x, sz.y, sz.z), panel_c, PANEL_GLASS)
+# Solar panel — clean flat dark rectangle with a crisp edge (no mottling)
+panel_c = _wbbox_centre("cap_panel_p124") or Vector((0.0, 0.0, 18.5))
+sz = _wbbox_size("cap_panel_p124") or Vector((66.6, 113.6, 2.3))
+_add_box(
+    details, "cap_panel_p124",
+    (sz.x, sz.y, max(sz.z, 1.2)),
+    (panel_c.x, panel_c.y, panel_c.z),
+    PANEL_GLASS, rough=0.12,
+)
 
 # Latch — tiny orange (D4-scale, not oversized)
 latch_path = _find_detail("latch.stl")
@@ -416,10 +468,7 @@ for side, sy in (("L", -1.0), ("R", 1.0)):
         rot=(_POD_TILT * (-sy), 0.0, 0.0),
     )
 
-# Subtle rib / glyph (body colour only — no orange)
-for i, y in enumerate((-50.0, 50.0)):
-    _add_box(details, f"rib_cap_{i}", (50.0, 0.5, 0.3), (0.0, y, 20.3), RIB)
-_add_box(details, "glyph_panel_recess", (24.0, 14.0, 0.4), (0.0, -40.0, 20.1), GLYPH_PANEL)
+# No rib/glyph clutter on lid faces in review (D7r5)
 
 note = bpy.data.objects.new("NOTE_d4_ghost", None)
 note.empty_display_type = "PLAIN_AXES"
@@ -443,14 +492,10 @@ w = bpy.data.worlds.new("w")
 sc.world = w
 w.color = WORLD_BG
 
+# Hide D4 ghost for committed renders (wire loops read as false lid edge artifacts)
 for o in ghost.objects:
-    if o.type != "MESH":
-        continue
-    m = o.modifiers.new("wf", "WIREFRAME")
-    m.thickness = 0.35
-    o.display_type = "TEXTURED"
-    o.data.materials.clear()
-    o.data.materials.append(mat("ghostR", GHOST, 1.0))
+    o.hide_render = True
+    o.hide_viewport = True
 
 objs = [o for o in list(d6.objects) + list(details.objects) if o.type == "MESH"]
 lo = Vector([min((o.matrix_world @ Vector(c))[i] for o in objs for c in o.bound_box) for i in range(3)])

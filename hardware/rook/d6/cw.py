@@ -602,6 +602,16 @@ def cw_tub():
     for key, (sx, sy) in (("SCR1", (1, 1)), ("SCR2", (-1, 1)),
                           ("SCR3", (1, -1)), ("SCR4", (-1, -1))):
         emboss_label(b, key, (sx * 30.0, sy * 48.0, fz))
+
+    # D7r5: recess CW clamp bars into bed pockets (along-strap, flush ≤1 mm).
+    # Bars at x=±36, long axis Y; hide C-profile from front/hero.
+    pocket_h = D.CLAMP_DEPTH + 0.2
+    for i, x in enumerate((-36.0, 36.0)):
+        oc.cut(b, oc.box(
+            f"cw_cpocket{i}",
+            (D.CLAMP_FLANGE_W + 1.8, D.CLAMP_L + 2.0, pocket_h + 0.4),
+            at=(x, 0.0, 0.0), anchor="bottom",
+        ))
     return prepare(b)
 
 
@@ -671,6 +681,14 @@ def saddle():
     for i, (x, y) in enumerate([(sx * 28.0, sy * 32.0) for sx in (-1, 1) for sy in (-1, 1)]):
         pin = oc.cylinder(f"spin{i}", 4.0, 1.5, at=(x, y, SADDLE_H), anchor="bottom")
         oc.union(s, pin)
+    # D7r5: clearance slots so recessed clamp bars (long axis X at y=±20) don't
+    # clash with the saddle when seated in the cap-skirt pockets.
+    for i, y in enumerate((-20.0, 20.0)):
+        oc.cut(s, oc.box(
+            f"saddle_cpocket{i}",
+            (D.CLAMP_L + 2.0, D.CLAMP_FLANGE_W + 2.0, SADDLE_H + 1.0),
+            at=(0.0, y, -0.5), anchor="bottom",
+        ))
     return prepare(s)
 
 

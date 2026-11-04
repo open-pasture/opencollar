@@ -8,11 +8,11 @@ D4 contoured skin around D5 internals (PR head `6b1f882`). Script: `hardware/roo
 | --- | --- | --- |
 | Outer W × L | **76.0 × 164.0** | Contract; D4 was 69.3×164.2 — width grown for P124 |
 | Stack H | **31.0** | D4 ≈30.7; base mating 19.0 + lid above 12.0 |
-| Seam Z (assembly) | **9.0** | Low seam ~0.29 of stack; lid perimeter step 3.5 mm (no hanging skirt) |
+| Seam Z (assembly) | **9.0** | Low seam ~0.29 of stack; lid perimeter step 2.8 mm (no hanging skirt) |
 | Base H (mating) | 19.0 | Floor 6.0 + cavity 13.0 (D5) |
-| Lid H (above mating) | 12.0 | Flat panel land; crown 1.4 outside land |
+| Lid H (above mating) | 12.0 | Flat panel land; crown 1.0 outside land |
 | Plan R / reveal | 7.0 / 0.5 | Soft plan; 0.5 inset lid |
-| End nose | 24.0 taper / tip 5.5 / plan R 12.0 | D7 rounded ellipse + bullnose (was hard ~4 mm cut) |
+| End nose | 28.0 taper / tip 4.5 / plan R 14.0 | D7r5 continuous roof into fairing ramp |
 | Panel land (flat) | 68.0 × 116.0 | Contains pocket; crown outside |
 | Panel pocket | 66.6 × 113.6 × 2.3 | P124 KEPT; 15 mm keep-clear |
 | Lid under panel | 9.7 | ≥ 2.0 |
@@ -51,8 +51,8 @@ Pod agent builds the mating pod face / fairing to these anchors.
 
 | Orient | Bed-face area (mm²) | Downward/support ceiling (mm²) |
 | --- | --- | --- |
-| Mating-down | 10157.4 | 2018.9 |
-| Outer-down | 161.3 | 12155.9 |
+| Mating-down | 10118.1 | 1857.6 |
+| Outer-down | 586.6 | 11309.6 |
 | **Picked** | **mating_down** | |
 
 Mating-down: panel pocket +Z, GNSS/LTE are bed recesses (small trees OK). Outer-down: flat panel land on bed; mating bosses become ceilings. Crown is shallow (2.7 mm) outside the land.
@@ -75,7 +75,7 @@ Keys on cap floor: KIT, BQ, WIO, USB, POST, GNSS, LTE, PIN1, SCR1–4.
 | P124 pocket | 66.6×113.6×2.3 | same | YES |
 | 15 mm keep-clear | ANTENNA_METAL_KEEP=15 | same | YES |
 | Flat panel land | required | 68.0×116.0 | YES |
-| Crown ~2.7 | D4 | 1.4 outside land | YES |
+| Crown ~2.7 | D4 | 1.2 outside land | YES |
 | Low seam | ~z=8/27 | seam 9.0 / stack 31.0 | YES |
 | Lay-flat Wio | 21.8×18.6×8 @ (22,−8) | same | YES |
 | +X wall ≥3 | WIO_MIN_WALL | 5.1 mm | YES |
