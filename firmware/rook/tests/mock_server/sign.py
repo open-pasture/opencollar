@@ -68,6 +68,18 @@ def boundary(version, herd_id="herd_01J7GOLDEN", collar_id=None, ring=None,
     return sign(cmd, seed)
 
 
+def config(version, collar_id="col_01J9SIMCOLLAR", report_s=60, poll_s=60, herd_id=None,
+           endpoint=None, seed=DEV_SEED):
+    """A signed config command (protocol/README.md "Config"), as a report reply carries it."""
+    cmd = {"command_id": "cfg_rook_%d" % version, "collar_id": collar_id, "version": version,
+           "report_s": report_s, "poll_s": poll_s}
+    if herd_id:
+        cmd["herd_id"] = herd_id
+    if endpoint:
+        cmd["endpoint"] = endpoint
+    return sign(cmd, seed)
+
+
 if __name__ == "__main__":
     v = int(sys.argv[1]) if len(sys.argv) > 1 else 1
     print(json.dumps(boundary(v), separators=(",", ":")))
