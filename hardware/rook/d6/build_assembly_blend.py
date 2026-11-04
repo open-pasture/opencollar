@@ -457,35 +457,68 @@ def _flared_section_xz(hw_lid, hw_skirt, z_bot, z_top, chamfer=1.8):
     return pts, ch
 
 
-def _poly_digit_0(height=9.5, depth=1.4, stroke=1.55):
-    """Rounded-rectangle ring '0' — simple manifold prism, no font."""
+def _bevel_vertical_corners(obj, corner_r, depth):
+    """Round only pure-Z corner edges — keeps top/bottom faces sharp (no pillow)."""
     import bmesh as _bm
-    w = float(height) * 0.58
-    h = float(height)
-    d = float(depth)
-    sw = float(stroke)
-    # Outer rounded-rect via bevelled cube, then inner hole
-    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0, 0, 0))
-    outer = bpy.context.active_object
-    outer.scale = (w, h, d)
-    bpy.ops.object.transform_apply(scale=True)
-    bev = outer.modifiers.new("round", "BEVEL")
-    bev.width = min(1.6, w * 0.28)
-    bev.segments = 2
-    bev.limit_method = "ANGLE"
-    bev.angle_limit = math.radians(40.0)
-    bpy.ops.object.modifier_apply(modifier=bev.name)
+    bm = _bm.new()
+    bm.from_mesh(obj.data)
+    bm.edges.ensure_lookup_table()
+    vert_edges = []
+    for e in bm.edges:
+        v0, v1 = e.verts
+        if abs(v0.co.x - v1.co.x) > 1e-4 or abs(v0.co.y - v1.co.y) > 1e-4:
+            continue
+        if abs(v0.co.z - v1.co.z) < float(depth) * 0.4:
+            continue
+        vert_edges.append(e)
+    if vert_edges and corner_r > 0.05:
+        _bm.ops.bevel(
+            bm, geom=vert_edges,
+            offset=float(corner_r),
+            segments=3, affect="EDGES",
+        )
+    bm.to_mesh(obj.data)
+    bm.free()
 
-    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0, 0, 0))
-    hole = bpy.context.active_object
-    hole.scale = (max(0.9, w - 2.0 * sw), max(0.9, h - 2.0 * sw), d * 1.4)
-    bpy.ops.object.transform_apply(scale=True)
-    bev = hole.modifiers.new("round", "BEVEL")
-    bev.width = min(1.1, (w - 2.0 * sw) * 0.25)
-    bev.segments = 2
-    bev.limit_method = "ANGLE"
-    bev.angle_limit = math.radians(40.0)
-    bpy.ops.object.modifier_apply(modifier=bev.name)
+
+def _rounded_rect_ring(width, height, depth, stroke, corner_r):
+    """Sharp-walled rounded-rect RING (XY profile). No pillow/top bevel.
+
+    Local: X = letter-up (across strap), Y = baseline (along strap), Z = depth.
+    '0' is taller in X than wide in Y when upright in a strap-horizontal view.
+    """
+    import bmesh as _bm
+    bm = _bm.new()
+    _bm.ops.create_cube(bm, size=1.0)
+    for v in bm.verts:
+        v.co.x *= float(height)
+        v.co.y *= float(width)
+        v.co.z *= float(depth)
+    mesh = bpy.data.meshes.new("rr_outer")
+    bm.to_mesh(mesh)
+    bm.free()
+    outer = bpy.data.objects.new("rr_outer", mesh)
+    bpy.context.scene.collection.objects.link(outer)
+    _bevel_vertical_corners(
+        outer, min(float(corner_r), width * 0.35, height * 0.35), depth,
+    )
+
+    iw = max(0.6, float(width) - 2.0 * float(stroke))
+    ih = max(0.6, float(height) - 2.0 * float(stroke))
+    bm = _bm.new()
+    _bm.ops.create_cube(bm, size=1.0)
+    for v in bm.verts:
+        v.co.x *= ih
+        v.co.y *= iw
+        v.co.z *= float(depth) * 1.4
+    hmesh = bpy.data.meshes.new("rr_hole")
+    bm.to_mesh(hmesh)
+    bm.free()
+    hole = bpy.data.objects.new("rr_hole", hmesh)
+    bpy.context.scene.collection.objects.link(hole)
+    _bevel_vertical_corners(
+        hole, min(float(corner_r) * 0.7, iw * 0.3, ih * 0.3), depth * 1.4,
+    )
 
     bpy.ops.object.select_all(action="DESELECT")
     outer.select_set(True)
@@ -499,7 +532,6 @@ def _poly_digit_0(height=9.5, depth=1.4, stroke=1.55):
         pass
     bpy.ops.object.modifier_apply(modifier=mod.name)
     bpy.data.objects.remove(hole, do_unlink=True)
-    # Manifold cleanup
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.mesh.remove_doubles(threshold=0.01)
@@ -509,25 +541,38 @@ def _poly_digit_0(height=9.5, depth=1.4, stroke=1.55):
     return outer
 
 
-def _poly_digit_1(height=9.5, depth=1.4, stroke=1.55):
-    """Vertical bar + short top flag — manifold stem ∪ flag cubes."""
+def _poly_digit_0(height=5.0, depth=1.4, stroke=0.9):
+    """Plain rounded-rectangle ring '0' — sharp walls, no pillow bevel."""
+    # taller in X (letter-up) than in Y (baseline)
+    return _rounded_rect_ring(
+        width=float(height) * 0.62,
+        height=float(height),
+        depth=depth,
+        stroke=stroke,
+        corner_r=min(1.1, float(height) * 0.18),
+    )
+
+
+def _poly_digit_1(height=5.0, depth=1.4, stroke=0.9):
+    """Plain vertical bar + short top flag — sharp walls, letter-up = +X."""
     h = float(height)
     d = float(depth)
-    sw = max(float(stroke), 1.85)  # thicker stem so '1' reads clearly
-    fw, fh = sw * 1.45, sw * 0.85
+    sw = float(stroke)
+    fw, fh = sw * 1.5, sw * 0.85
 
+    # Stem: tall in X, stroke in Y
     bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, 0.0))
     stem = bpy.context.active_object
-    stem.scale = (sw, h, d)
+    stem.scale = (h, sw, d)
     bpy.ops.object.transform_apply(scale=True)
 
-    # Flag at top-left (−X, +Y); overlaps stem so UNION is solid
+    # Flag at top-left in strap-horizontal view: +X (top), −Y (left of stem)
     bpy.ops.mesh.primitive_cube_add(
         size=1.0,
-        location=(-0.5 * sw - 0.30 * fw, 0.5 * h - 0.55 * fh, 0.0),
+        location=(0.5 * h - 0.55 * fh, -0.5 * sw - 0.30 * fw, 0.0),
     )
     flag = bpy.context.active_object
-    flag.scale = (fw, fh, d)
+    flag.scale = (fh, fw, d)
     bpy.ops.object.transform_apply(scale=True)
 
     bpy.ops.object.select_all(action="DESELECT")
@@ -552,22 +597,24 @@ def _poly_digit_1(height=9.5, depth=1.4, stroke=1.55):
     return stem
 
 
-def _make_001_cutters(size=9.5, depth=1.4, font_path=None):
-    """Three polygon glyphs spaced along WORLD +X (same on both lids).
+def _make_001_cutters(size=5.0, depth=1.4, font_path=None, stroke=0.9):
+    """Three polygon glyphs spaced along the STRAP (world +Y / baseline).
 
-    Local frame: baseline +X (L→R in TOP), letter-up +Y, depth +Z.
-    ≥1.2 mm gap between glyph AABBs. No font / no trough.
+    Local frame BEFORE lid tip:
+      +X = letter-up (across strap) — 0 taller in X than Y
+      +Y = baseline (along strap) — digits spaced here, increasing +Y = 0,0,1
+      +Z = cut depth
+    Same layout on BOTH lids (no mirror). ≥1.2 mm gap. No trough.
     """
-    gap = 1.25
+    gap = 1.2
     half = float(depth) * 0.5
     parts = []
     for i, kind in enumerate(("0", "0", "1")):
         if kind == "0":
-            c = _poly_digit_0(height=size, depth=depth)
+            c = _poly_digit_0(height=size, depth=depth, stroke=stroke)
         else:
-            c = _poly_digit_1(height=size, depth=depth)
+            c = _poly_digit_1(height=size, depth=depth, stroke=stroke)
         c.name = f"cutter_001_{kind}_{i}"
-        # Force exact Z prism depth (closed manifold slab)
         zs = [v.co.z for v in c.data.vertices]
         z0, z1 = min(zs), max(zs)
         span = max(z1 - z0, 1e-6)
@@ -582,20 +629,23 @@ def _make_001_cutters(size=9.5, depth=1.4, font_path=None):
         bpy.ops.mesh.select_all(action="SELECT")
         bpy.ops.mesh.normals_make_consistent(inside=False)
         bpy.ops.object.mode_set(mode="OBJECT")
+        ys = [v.co.y for v in c.data.vertices]
         xs = [v.co.x for v in c.data.vertices]
-        parts.append((c, max(xs) - min(xs)))
+        parts.append((c, max(ys) - min(ys), max(xs) - min(xs)))
         print(
-            f"  poly '{kind}': widthX={parts[-1][1]:.2f} height≈{size:.1f} "
-            f"verts={len(c.data.vertices)}"
+            f"  poly '{kind}': alongY={parts[-1][1]:.2f} upX={parts[-1][2]:.2f} "
+            f"(want upX≈{size:.1f}) verts={len(c.data.vertices)}"
         )
-    spans = [w for _, w in parts]
+    spans = [w for _, w, _ in parts]
     total = sum(spans) + gap * (len(spans) - 1)
-    x = -0.5 * total
+    # Space 0,0,1 toward decreasing local Y. After lid tip, local +Y → +world Y
+    # (both lids). Verify cam uses screen-right = −Y so L→R on screen = 001.
+    y = 0.5 * total
     cutters = []
-    for c, w in parts:
-        c.location = (x + 0.5 * w, 0.0, 0.0)
+    for c, w, _xh in parts:
+        c.location = (0.0, y - 0.5 * w, 0.0)
         cutters.append(c)
-        x += w + gap
+        y -= w + gap
     return cutters
 
 
@@ -607,9 +657,9 @@ def _verify_001_pit(obj, a_deg, r_out, zc, h_expect, depth=0.6):
         co = v.co
         yy, zz = co.y, co.z - zc
         ang = math.degrees(math.atan2(yy, zz))
-        if abs(ang - a_deg) > 4.0:
+        if abs(ang - a_deg) > 5.0:
             continue
-        if abs(co.x) > 14.0:
+        if abs(co.x) > 8.0:
             continue
         rad = math.hypot(yy, zz) - r_out
         if abs(rad - h_ref) < 0.35:
@@ -622,6 +672,42 @@ def _verify_001_pit(obj, a_deg, r_out, zc, h_expect, depth=0.6):
     measured = top - min(pit)
     ok = 0.45 <= measured <= 0.85
     return ok, round(measured, 3)
+
+
+def _glyph_centres_001(obj, a_deg, r_out, zc, h_expect):
+    """Return list of (x,y,z) glyph centres ordered by increasing world Y."""
+    h_ref = float(h_expect)
+    pits = []
+    for v in obj.data.vertices:
+        ang = math.degrees(math.atan2(v.co.y, v.co.z - zc))
+        if abs(ang - a_deg) > 5.0:
+            continue
+        if abs(v.co.x) > 8.0:
+            continue
+        h = math.hypot(v.co.y, v.co.z - zc) - r_out
+        if (h_ref - 0.95) <= h <= (h_ref - 0.30):
+            pits.append((v.co.x, v.co.y, v.co.z))
+    if len(pits) < 12:
+        return []
+    # Cluster along Y (baseline / along-strap)
+    pits = sorted(pits, key=lambda p: p[1])
+    clusters = [[pits[0]]]
+    for p in pits[1:]:
+        if p[1] - clusters[-1][-1][1] > 0.8:
+            clusters.append([p])
+        else:
+            clusters[-1].append(p)
+    # Keep the 3 densest interior clusters (drop side-rail noise)
+    clusters = sorted(clusters, key=lambda c: -len(c))[:3]
+    centers = []
+    for c in clusters:
+        centers.append((
+            round(sum(p[0] for p in c) / len(c), 3),
+            round(sum(p[1] for p in c) / len(c), 3),
+            round(sum(p[2] for p in c) / len(c), 3),
+        ))
+    centers.sort(key=lambda p: p[1])  # increasing world Y
+    return centers
 
 
 def _arc_solid(a0_deg, a1_deg, h_fn, h_bot, half_w, zc, r_out, n_seg=64, name="arc_solid", angles=None):
@@ -1065,27 +1151,43 @@ def _add_d4_loft_shell(details_col, body_rgb):
             sorted(_roof_samples)[int(0.9 * (len(_roof_samples) - 1))]
             if len(_roof_samples) >= 8 else h_p
         )
-        # Cutter depth 1.5 → centre at roof+0.15 → pit floor at roof-0.6
-        cut_h = mesh_roof + 0.15
-        cutters = _make_001_cutters(size=9.5, depth=1.5)
+        # Cutter depth 1.4 → centre at roof+0.1 → pit floor at roof-0.6
+        cut_h = mesh_roof + 0.10
+        # Along-strap baseline (+Y local → tangent); letter-up +X; same on BOTH lids
+        cutters = _make_001_cutters(size=5.0, depth=1.4, stroke=0.9)
+        tangent = Vector((0.0, math.cos(a), -math.sin(a)))  # along +angle ≈ +Y
+        glyph_world = []
         for ci, cutter in enumerate(cutters):
             cutter.name = f"cutter_001_{side}_{ci}"
-            # WORLD +X baseline — same L→R on BOTH lids (no mirror / no "100")
-            along_x = float(cutter.location.x)
+            along_y = float(cutter.location.y)  # baseline offset along strap
             cutter.location = (0.0, 0.0, 0.0)
-            # Tip depth into lid normal; letter-up → strap tangent (upright in top)
+            # Tip depth into lid normal; letter-up stays world +X; baseline → tangent
             cutter.rotation_euler = (-a, 0.0, 0.0)
             bpy.ops.object.select_all(action="DESELECT")
             cutter.select_set(True)
             bpy.context.view_layer.objects.active = cutter
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
             lid = Vector((0.0, cy + ny * cut_h, cz + nz * cut_h))
-            cutter.location = lid + Vector((along_x, 0.0, 0.0))
+            # Identical on L and R: increasing along_y → increasing world Y → 0,0,1
+            pos = lid + tangent * along_y
+            cutter.location = pos
+            glyph_world.append({
+                "glyph": ("0", "0", "1")[ci],
+                "along_offset_mm": round(along_y, 3),
+                "world_xyz": [round(pos.x, 3), round(pos.y, 3), round(pos.z, 3)],
+            })
             for cc in list(cutter.users_collection):
                 cc.objects.unlink(cutter)
             details_col.objects.link(cutter)
             _bool_cut(cutter, f"id_001_{side}_{ci}")
         ok, measured = _verify_001_pit(obj, a_id, r_out, zc, mesh_roof, depth=0.5)
+        # Centres returned Y-ascending; 0,0,1 reading order is Y-descending
+        centres_asc = _glyph_centres_001(obj, a_id, r_out, zc, mesh_roof)
+        centres = list(reversed(centres_asc))  # 0,0,1 order
+        y_order_sign = 0
+        if len(centres) >= 2:
+            # sign of ΔY from first glyph (0) to last (1) in reading order
+            y_order_sign = 1 if centres[-1][1] > centres[0][1] else -1
         clear_mm = abs(ID_001_A - DOT_A) * math.pi / 180.0 * r_out
         clear_ramp_mm = abs(ID_001_A - A_R2_1) * math.pi / 180.0 * r_out
         id_001_info[side] = {
@@ -1094,23 +1196,36 @@ def _add_d4_loft_shell(details_col, body_rgb):
             "clearance_to_dot_mm": round(clear_mm, 1),
             "clearance_to_ramp_mm": round(clear_ramp_mm, 1),
             "modifier_applied": (
-                f"id_001_{side}_0/1/2 (3× BOOLEAN DIFFERENCE, WORLD +X baseline)"
+                f"id_001_{side}_0/1/2 (3× BOOLEAN DIFFERENCE, along-strap +Y baseline)"
             ),
             "object": "review_shell",
             "verified_in_mesh": ok,
             "measured_depth_mm": measured,
             "target_depth_mm": 0.6,
-            "height_mm": 9.5,
+            "height_mm": 5.0,
+            "stroke_mm": 0.9,
             "material": "same charcoal as lid",
-            "reads_in": "TOP view L→R increasing world X on BOTH lids (no mirror)",
+            "reads_in": (
+                "strap-horizontal world top (+Z, screen-up=+X, screen-right=−Y): "
+                "L→R = 0,0,1 on BOTH lids (letter-up +X; baseline along strap)"
+            ),
             "glyph_gap_mm": 1.2,
-            "glyphs": "polygon 0=rounded-rect ring, 1=bar+flag; cut AFTER bevel",
+            "glyphs": "polygon 0=rounded-rect ring, 1=bar+flag; sharp walls; cut AFTER bevel",
+            "glyph_centres_xyz": centres,
+            "glyph_placement": glyph_world,
+            "y_order_sign": y_order_sign,
+            "y_order_note": (
+                "0,0,1 ordered by decreasing world Y so strap-H crop "
+                "(screen-right=−Y) reads 001 L→R; letter-up = +X"
+            ),
+            "x_order_note": "baseline is along strap (world Y), not across (X)",
         }
         print(
             f"  001 {side}: verified={ok} depth≈{measured} mm at a={a_id:.1f}° "
             f"(dot at {sy * DOT_A:.1f}°, clear_dot≈{clear_mm:.1f} mm, "
-            f"clear_ramp≈{clear_ramp_mm:.1f} mm, WORLD +X)"
+            f"clear_ramp≈{clear_ramp_mm:.1f} mm, along-strap +Y)"
         )
+        print(f"  001 {side} centres (Y-asc): {centres}  y_order_sign={y_order_sign}")
 
     # Post-boolean cleanup — kill stray tabs / non-manifold from cuts
     bpy.ops.object.select_all(action="DESELECT")
@@ -1221,7 +1336,7 @@ def _add_d4_loft_shell(details_col, body_rgb):
 
     outer_arc_mm = (d6_ang1 - d6_ang0) * math.pi / 180.0 * r_out
     meta = {
-        "round": "D7r16",
+        "round": "D7r17",
         "profile_path": profile_path,
         "d4_r_outer": d4_r_out,
         "d6_r_outer": r_out,
@@ -1261,10 +1376,10 @@ def _add_d4_loft_shell(details_col, body_rgb):
         "dot_angle_deg": DOT_A,
         "id_001_angle_deg": ID_001_A,
         "cap_roof_note": (
-            f"D7r16 extruded tiers. Cap {CAP_H:.1f} / mid {MID_H:.1f} "
+            f"D7r17 extruded tiers. Cap {CAP_H:.1f} / mid {MID_H:.1f} "
             f"/ pod {POD_H:.0f}; chamfer 1.8 mm on every tier lip + rails; "
-            f"closed charcoal roof; polygon 001 WORLD +X at ±{ID_001_A}°; "
-            f"dots at ±{DOT_A}°; navy strips inlaid ≤0.2 mm below roof."
+            f"closed charcoal roof; polygon 001 along-strap +Y at ±{ID_001_A}° "
+            f"(letter-up +X); dots at ±{DOT_A}°; navy strips arc-inlaid."
         ),
         "n_stations_loft": "n/a (extruded solids)",
         "hidden": hide_names,
@@ -1273,9 +1388,9 @@ def _add_d4_loft_shell(details_col, body_rgb):
         "solar_cut": False,
     }
     print(
-        f"  review_shell r16: angles {d6_ang0:.1f}→{d6_ang1:.1f} "
+        f"  review_shell r17: angles {d6_ang0:.1f}→{d6_ang1:.1f} "
         f"cap={CAP_H:.1f} mid={MID_H:.1f} pod={POD_H:.0f} "
-        f"tier-chamfer 1.8 + polygon 001 WORLD +X (no subdiv, no solar cut)"
+        f"tier-chamfer 1.8 + polygon 001 along-strap (no subdiv, no solar cut)"
     )
     print(f"  hidden under shell: {hide_names}")
     return obj, meta
@@ -1566,12 +1681,12 @@ except Exception:
     pass
 bpy.ops.object.shade_smooth()
 
-_shell_report_path = os.path.join(OUT, "d7r16_stations_vs_d4.json")
+_shell_report_path = os.path.join(OUT, "d7r17_stations_vs_d4.json")
 json.dump(_shell_meta, open(_shell_report_path, "w"), indent=2)
 os.makedirs(os.path.join(_HERE, "review"), exist_ok=True)
 shutil.copy2(
     _shell_report_path,
-    os.path.join(_HERE, "review", "d7r16_stations_vs_d4.json"),
+    os.path.join(_HERE, "review", "d7r17_stations_vs_d4.json"),
 )
 
 # Ø5 mm flat orange dots — 0.3 mm proud on the lid, NO recess / no dark rim
@@ -1628,8 +1743,8 @@ note["review_shell"] = "d4_extruded_r16"
 note["cap_roof_note"] = _shell_meta.get("cap_roof_note", "")
 note["cap_height_driver"] = _shell_meta.get("cap_height_driver", "")
 note["id_001"] = (
-    "deboss 0.6mm charcoal; polygon glyphs; WORLD +X L→R BOTH lids; "
-    "flat pod roof 31–40°; clear of orange"
+    "deboss 0.6mm charcoal; polygon glyphs; along-strap +Y L→R BOTH lids; "
+    "letter-up +X; flat pod roof 31–40°; clear of orange"
 )
 details.objects.link(note)
 
@@ -1681,9 +1796,23 @@ for name, d in {
     d = Vector(d).normalized()
     cam.location = ctr + d * ext * 2
     if name == "top":
-        # Standard top-down: +X = LEFT→RIGHT so WORLD-X 001 reads 0,0,1 L→R
-        # on both lids. Strap (Y) runs vertical on screen.
-        cam.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
+        # Strap-horizontal world top (right-handed): look −Z;
+        # screen-up=+X (letter-up upright); screen-right=−Y (strap horizontal).
+        # Glyphs ordered decreasing world Y so L→R = 0,0,1 on both lids.
+        _r = Vector((0.0, -1.0, 0.0))
+        _u = Vector((1.0, 0.0, 0.0))
+        _b = Vector((0.0, 0.0, 1.0))
+        _o = ctr + Vector((0.0, 0.0, ext * 2))
+        from mathutils import Matrix as _Mtop
+        _mw = _Mtop((
+            (_r.x, _u.x, _b.x, _o.x),
+            (_r.y, _u.y, _b.y, _o.y),
+            (_r.z, _u.z, _b.z, _o.z),
+            (0.0, 0.0, 0.0, 1.0),
+        ))
+        cam.location = _o
+        cam.rotation_euler = _mw.to_euler()
+        bpy.context.view_layer.update()
     else:
         cam.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
     sc.render.filepath = os.path.join(OUT, f"d6_assembly_{name}{suffix}.png")
@@ -1714,37 +1843,46 @@ if joint_objs:
     dst = f"d6_assembly_joint.png" if not suffix else f"d6_assembly_joint{suffix}.png"
     shutil.copy2(sc.render.filepath, os.path.join(render_dir, dst))
 
-# ---- 001 top-down orthographic lid crops (charcoal only) ------------------
+# ---- 001 world-+Z lid crops, strap horizontal (charcoal only) -------------
 if _palette == "charcoal":
-    from mathutils import Matrix as _Mtx
+    from mathutils import Matrix as _Mlid
     sc.display.shading.light = "STUDIO"
     sc.display.shading.color_type = "MATERIAL"
-    sc.render.resolution_x, sc.render.resolution_y = 1200, 900
+    sc.render.resolution_x, sc.render.resolution_y = 1200, 1200
     _id_a = float(_shell_meta.get("id_001_angle_deg", 35.5))
-    _dot_a_cu = float(_shell_meta.get("dot_angle_deg", 29.0))
     _h_pod = float(_shell_meta.get("pod_roof_mm", 25.0))
     for side, sy in (("L", -1.0), ("R", 1.0)):
-        # True top-down on the 001 patch: look along −radial, +X = L→R.
+        # REQUIRED verify cam: orthographic from +Z; screen-up = +X;
+        # screen-right = +Y (strap horizontal). Letter-up +X → upright;
+        # baseline +Y → 001 L→R identical on both lids.
         a_id = math.radians(sy * _id_a)
         cy = _r_out * math.sin(a_id)
         cz = _zc + _r_out * math.cos(a_id)
         ny, nz = math.sin(a_id), math.cos(a_id)
         lid = Vector((0.0, cy + ny * _h_pod, cz + nz * _h_pod))
-        out = Vector((0.0, ny, nz)).normalized()
-        right = Vector((1.0, 0.0, 0.0))
-        up = out.cross(right).normalized()  # along-strap for upright glyphs
-        # Re-orthogonalise right in case of drift
-        right = up.cross(out).normalized()
-        # Columns = local X,Y,Z; camera looks down −Z → toward −out = into lid
-        basis = _Mtx((
-            (right.x, up.x, out.x),
-            (right.y, up.y, out.y),
-            (right.z, up.z, out.z),
-        ))
         cam_d.type = "ORTHO"
-        cam_d.ortho_scale = 48.0
-        cam.location = lid + out * 100.0
-        cam.rotation_euler = basis.to_euler()
+        cam_d.ortho_scale = 36.0
+        # Right-handed: screen-right=−Y, screen-up=+X, look −Z.
+        # 001 ordered decreasing world Y → L→R on screen; letter-up +X upright.
+        _r = Vector((0.0, -1.0, 0.0))
+        _u = Vector((1.0, 0.0, 0.0))
+        _b = Vector((0.0, 0.0, 1.0))
+        _o = Vector((lid.x, lid.y, lid.z + 250.0))
+        _mw = _Mlid((
+            (_r.x, _u.x, _b.x, _o.x),
+            (_r.y, _u.y, _b.y, _o.y),
+            (_r.z, _u.z, _b.z, _o.z),
+            (0.0, 0.0, 0.0, 1.0),
+        ))
+        cam.location = _o
+        cam.rotation_euler = _mw.to_euler()
+        bpy.context.view_layer.update()
+        _ax = cam.matrix_world
+        print(
+            f"  001 cam {side}: right={tuple(round(v,2) for v in _ax.col[0][:3])} "
+            f"up={tuple(round(v,2) for v in _ax.col[1][:3])} "
+            f"back={tuple(round(v,2) for v in _ax.col[2][:3])}"
+        )
         for out_name in (
             f"d6_001_closeup_{side}{suffix}.png",
             f"lid001_{side}{suffix}.png",
@@ -1756,7 +1894,7 @@ if _palette == "charcoal":
             art = "/opt/cursor/artifacts"
             if os.path.isdir(art):
                 shutil.copy2(sc.render.filepath, os.path.join(art, out_name))
-            print(f"  001 top-down {side}: {out_name}")
+            print(f"  001 worldZ strap-H {side}: {out_name}")
 
 os.makedirs(os.path.dirname(review_blend), exist_ok=True)
 if _palette == "charcoal":
