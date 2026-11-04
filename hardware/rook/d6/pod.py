@@ -95,11 +95,12 @@ POD_TAPER_DROP = 6.0                         # D7r3: roof tip drop ~6 mm to fair
 POD_SKIRT_H = 14.0
 POD_SKIRT_FLARE = 0.0                        # no outward flange past pod width
 POD_SKIRT_PLAN_R = 12.0                      # large rounded ends (D4)
-# D7r7: long concave tangent flare into strap (not a vertical cliff)
-POD_SKIRT_SHOULDER_R = 14.0
+# D7r8: D4 curved shoulder — blend pod width → strap width over ~18 mm vertical
+POD_SKIRT_SHOULDER_R = 18.0
+POD_SKIRT_FLARE_RUN = 18.0                   # vertical run of the tangent flare
 POD_PUBLIC_ID = "001"                        # recessed mono on lid outer
-POD_ID_H = 9.0                               # D7r7: match D4 orange-dot ~8–10 mm
-POD_ID_DEPTH = 0.55                          # low-contrast deboss
+POD_ID_H = 9.5                               # D7r8: 9–10 mm (D4 dot row height)
+POD_ID_DEPTH = 0.8                           # visible at iso; still low-contrast
 
 # Cap↔pod M3 joint (matches cap.py pad) — recess on +Y mount face
 POD_MOUNT_SIZE = A.POD_MOUNT_SIZE            # 36×4×14
@@ -281,17 +282,17 @@ def top_perimeter_chamfer(body, w, l, h, r=POD_TOP_EDGE_R, y0=0.0):
 
 
 def strap_flare_skirt(body, w, l, y0=0.0, h=POD_SKIRT_H, flare=POD_SKIRT_FLARE):
-    """Deep skirt: long R12+ tangent flare into strap (no vertical cliff).
+    """Deep skirt: D4 curved shoulder — pod width → strap width over ~18 mm.
 
-    Extends below z=0 by `h`. Plan width never exceeds the pod body (`w`) so
-    top/side views show no flange overhang. Multi-step concave cut eases the
-    outer face into the strap. Channel 46.45×3.4 kept.
+    Extends below z=0 by `h`. Plan never exceeds pod outline. Multi-sample
+    concave flare blends outer face into the strap (not a vertical cliff).
+    Channel 46.45×3.4 kept; clamp pockets recessed inside the flare.
     """
-    del flare  # D7r6: no outward overhang; kept in signature for call-site compat
+    del flare  # no outward overhang past pod width
     ch_w = float(A.SADDLE_CHANNEL_W)
     ch_d = float(A.SADDLE_CHANNEL_D)
+    strap_w = float(A.STRAP_W)
     bar_w, bar_l, bar_h = A.CLAMP_BAR  # 10×70×8 — after 90°Z, long axis = X
-    # ≤ pod width; clamp length 70 ≈ pod swell 68–70 so bars stay in footprint
     skirt_w = min(w, max(bar_l, ch_w + 4.0))
     skirt_l = min(l * 0.82, 82.0)
     plan_r = min(POD_SKIRT_PLAN_R, skirt_w / 2.0 - 1.0, skirt_l / 2.0 - 1.0)
@@ -299,25 +300,35 @@ def strap_flare_skirt(body, w, l, y0=0.0, h=POD_SKIRT_H, flare=POD_SKIRT_FLARE):
         "strap_skirt", (skirt_w, skirt_l, h), plan_r,
         at=(0.0, y0, -h), anchor="bottom", segments=12,
     )
-    # D7r7: long concave flare (R≈POD_SKIRT_SHOULDER_R) — not a short cliff
-    shoulder = min(float(POD_SKIRT_SHOULDER_R), h * 0.85, skirt_w * 0.22)
-    # Two-step prism approximates a concave quarter-curve into the strap
-    mid = shoulder * 0.45
+    # D7r8: long tangent flare — width at bottom ≈ strap, at top = pod
+    run = min(float(POD_SKIRT_FLARE_RUN), h - 0.5)
+    w_bot = max(strap_w + 2.0, ch_w)          # ~46.45 near strap
+    # Sample a quarter-ellipse: full width at z=-h+run, strap width at z=-h
+    segs = 6
     for sx in (-1.0, 1.0):
-        oc.cut(sk, oc.prism_y(f"skirt_sh_x{int(sx + 2)}", [
-            (sx * (skirt_w / 2.0 + 1.5), -h - 0.5),
-            (sx * (skirt_w / 2.0 + 1.5), -h + shoulder),
-            (sx * (skirt_w / 2.0 - mid * 0.35), -h + mid),
-            (sx * (skirt_w / 2.0 - shoulder), -h - 0.5),
-        ], skirt_l + 6.0))
+        profile = [
+            (sx * (skirt_w / 2.0 + 2.0), -h - 1.0),
+            (sx * (skirt_w / 2.0 + 2.0), -h + run + 1.0),
+        ]
+        for i in range(segs + 1):
+            t = i / segs  # 0 at top of flare → 1 at bottom
+            z = -h + run * (1.0 - t)
+            # quarter-ellipse: ease from skirt_w → w_bot
+            ease = math.sin(0.5 * math.pi * t)  # 0→1, vertical tangent at top
+            half = 0.5 * (skirt_w - (skirt_w - w_bot) * ease)
+            profile.append((sx * (half + 0.15), z))
+        profile.append((sx * (w_bot / 2.0 - 0.5), -h - 1.0))
+        oc.cut(sk, oc.prism_y(f"skirt_flare_x{int(sx + 2)}", profile, skirt_l + 8.0))
     for sy in (-1.0, 1.0):
         tip = y0 + sy * (skirt_l / 2.0)
-        oc.cut(sk, oc.prism_x(f"skirt_sh_y{int(sy + 2)}", [
-            (tip + sy * 1.5, -h - 0.5),
-            (tip + sy * 1.5, -h + shoulder),
-            (tip - sy * mid * 0.35, -h + mid),
-            (tip - sy * shoulder, -h - 0.5),
-        ], skirt_w + 6.0))
+        # Softer Y-end ease (keep plan R readable)
+        sh = min(run * 0.55, 10.0)
+        oc.cut(sk, oc.prism_x(f"skirt_flare_y{int(sy + 2)}", [
+            (tip + sy * 2.0, -h - 1.0),
+            (tip + sy * 2.0, -h + sh),
+            (tip - sy * sh * 0.6, -h + sh * 0.35),
+            (tip - sy * sh, -h - 1.0),
+        ], skirt_w + 8.0))
 
     pocket_h = bar_h + 0.2
     for i, dy in enumerate((-25.0, 25.0)):
@@ -552,17 +563,14 @@ def pod_lid(side="L"):
         )
         oc.union(lid, head)
 
-    # D7r7: debossed "001" — 9 mm (≈D4 orange-dot H), low-contrast, strap end.
-    # +90°Z so reading runs local +Y (strap→cap): readable in side AND top cams
-    # when the collar hangs. Letter block sits toward the strap (base toward strap).
+    # D7r8: debossed "001" — baseline across collar width (local +X), like D4's
+    # orange-dot row. Reads L→R when the collar hangs; NO 90° spin. 9.5×0.8 mm.
     try:
         z_outer = POD_LID_T + POD_LID_CROWN
         font_size = POD_ID_H * 2.0  # DejaVu size≈2× capital H
-        glyph = d5._text_mesh(POD_PUBLIC_ID, font_size, POD_ID_DEPTH + 0.15)
-        oc.bake(glyph)
-        glyph.data.transform(Matrix.Rotation(math.radians(90.0), 4, "Z"))
+        glyph = d5._text_mesh(POD_PUBLIC_ID, font_size, POD_ID_DEPTH + 0.2)
         lo, hi = oc.bounds(glyph)
-        id_y = POD_Y0 - (ll * 0.30)  # toward strap end (−Y for L)
+        id_y = POD_Y0 - (ll * 0.28)  # toward strap end (−Y for L)
         oc.move(
             glyph,
             dx=0.0 - (lo[0] + hi[0]) / 2.0,

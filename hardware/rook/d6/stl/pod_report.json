@@ -120,8 +120,8 @@
     "pod_L_base": {
       "size_mm": [
         68.0,
-        98.79,
-        37.387
+        98.8,
+        37.4
       ],
       "watertight": {
         "watertight": true,
@@ -131,7 +131,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 259754
+        "faces": 457702
       },
       "pass": true,
       "stl_path": "stl/pod_L_base.stl",
@@ -156,22 +156,22 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 11250
+        "faces": 17302
       },
       "pass": true,
       "stl_path": "stl/pod_L_lid.stl",
       "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 1303.9,
+      "bed_face_area_mm2": 1318.8,
       "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X on export)",
       "load_path": "lid screws; ribs"
     },
     "pod_R_base": {
       "size_mm": [
         68.0,
-        98.8,
-        37.4
+        98.79,
+        37.387
       ],
       "watertight": {
         "watertight": true,
@@ -181,7 +181,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 458890
+        "faces": 259276
       },
       "pass": true,
       "stl_path": "stl/pod_R_base.stl",
@@ -206,14 +206,14 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 11250
+        "faces": 17302
       },
       "pass": true,
       "stl_path": "stl/pod_R_lid.stl",
       "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 1303.9,
+      "bed_face_area_mm2": 1318.8,
       "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X on export)",
       "load_path": "true mirror of L"
     },
@@ -221,7 +221,7 @@
       "size_mm": [
         68.0,
         16.0,
-        18.0
+        16.0
       ],
       "watertight": {
         "watertight": true,
@@ -246,7 +246,7 @@
       "size_mm": [
         68.0,
         16.0,
-        18.0
+        16.0
       ],
       "watertight": {
         "watertight": true,
@@ -346,12 +346,12 @@
   "pass": true,
   "lid_print": {
     "pod_L_lid": {
-      "bed_face_area_mm2": 1303.9,
+      "bed_face_area_mm2": 1318.8,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
       "note": "Outer-down; soft tip taper only \u2014 not a deep crown"
     },
     "pod_R_lid": {
-      "bed_face_area_mm2": 1303.9,
+      "bed_face_area_mm2": 1318.8,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
       "note": "Outer-down; soft tip taper only \u2014 not a deep crown"
     }

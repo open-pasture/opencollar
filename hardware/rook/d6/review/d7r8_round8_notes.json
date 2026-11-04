@@ -1,0 +1,24 @@
+{
+  "round": "D7r8",
+  "head_base": "4576a15",
+  "items": {
+    "1_001": {
+      "change": "Removed +90°Z; baseline across collar width (local +X); H=9.5 mm; depth=0.8 mm",
+      "verify": "glyph dx=23.5 dy=9.3; STL pit hot-span X=20 Y=8; top render refreshed"
+    },
+    "2_thin_bar": {
+      "change": "Hid pod clamp_bar_3..6 in review blend; moved buckle/keeper to strap angles -68/-62 (past pod tip); hygiene flags <2 mm non-named-body details"
+    },
+    "3_skirt": {
+      "change": "Ellipse flare pod width 68 → ~strap 47 over ~13–14 mm vertical (POD_SKIRT_FLARE_RUN=18)",
+      "profile_z0_to_z13": [47.1, 47.4, 48.0, 49.2, 50.2, 51.9, 53.4, 55.5, 57.2, 59.8, 62.1, 64.4, 66.7, 68.0]
+    },
+    "4_joint_solar": {
+      "change": "Continuous review roof sleeve with shadow groove; print fairings hidden; rounded nose; navy edge strips 8 mm + charcoal rib 48.6 mm",
+      "shade": "Rib ≈73% of panel width if built proud over glass; navy strips are the active look (not shade). Pocket 66.6×113.6 unchanged.",
+      "print_gap": "kept"
+    }
+  },
+  "mount_interface": "untouched",
+  "assembly_check": "144/144 PASS"
+}

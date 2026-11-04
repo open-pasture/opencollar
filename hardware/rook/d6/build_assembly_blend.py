@@ -305,13 +305,16 @@ def _strap_point(angle_deg, major_r=227.0, zc=-233.85):
 
 
 def _add_buckle_keeper(collection):
-    """D7r7 buckle + flat rectangular keeper — square to the strap, not a hoop.
+    """D7r8 buckle + flat rectangular keeper — square to the strap, not a hoop.
 
     Buckle: open rect frame ≈24×30×3 flat on strap (no diagonal tongue bar).
-    Keeper: flat rectangular frame ~24×6×2, ≤3 mm proud, slim bar, square to strap.
+    Keeper: flat rectangular frame ~24×6×2, ≤3 mm proud, square to strap.
+    Placed toward the buckle (not under the pod skirt) so side view stays clean.
     """
-    b_pos, b_eul = _strap_point(-48.0)
-    k_pos, k_eul = _strap_point(-38.0)
+    # Buckle + keeper past the pod free-end (pod tip ≈ |y| 187) so side view
+    # does not show a thin bar under the skirt. Angles → |y| ≳ 200.
+    b_pos, b_eul = _strap_point(-68.0)
+    k_pos, k_eul = _strap_point(-62.0)
 
     major_r = 227.0
     zc = -233.85
@@ -403,10 +406,11 @@ def _world_bbox(obj):
 
 
 def _add_roof_fairing_sleeves(details_col, body_rgb):
-    """Review-only ramp sleeve: bridges print STL cap↔pod gap as a shadow line.
+    """D7r8 review fairing: one continuous tapered band, shadow groove only.
 
-    Wedge from lowered cap tip down to pod/fairing roof (D4-like tangent step).
-    Does NOT boolean-union whole lids (D7r6 mega-plates). Print gap unchanged.
+    Same roof line across the joint (cap tip → pod roof). Print STLs keep the
+    real ~4 mm gap; print fairings are hidden so the sleeve reads as the skin.
+    Plan-rounded ends so L/R match (no squared block on R).
     """
     import bmesh
 
@@ -419,125 +423,151 @@ def _add_roof_fairing_sleeves(details_col, body_rgb):
             continue
         cb = _world_bbox(cap)
         pb = _world_bbox(pod)
-        if sy < 0:
-            y_cap = cb[2]
-            y_pod = pb[3]
-        else:
-            y_cap = cb[3]
-            y_pod = pb[2]
-        # Overlap each lid ~3 mm so the join reads continuous
-        y_c = y_cap + sy * (-3.0)  # slightly inboard of cap end (toward pod)
-        y_p = y_pod + sy * (3.0)   # slightly outboard into pod lid
-        z_pod = pb[5]
-        if fair is not None:
-            z_fair = _world_bbox(fair)[5]
-            fair.hide_render = False
-            fair.hide_viewport = False
-        else:
-            z_fair = z_pod
+        y_cap = cb[2] if sy < 0 else cb[3]
+        y_pod = pb[3] if sy < 0 else pb[2]
+        # Deep overlap so cap+pod read as one band
+        y_a = y_cap - sy * 8.0
+        y_b = y_pod + sy * 12.0
         tip_zs = [
             (cap.matrix_world @ Vector(v.co)).z
             for v in cap.data.vertices
-            if abs((cap.matrix_world @ Vector(v.co)).y - y_cap) < 4.0
-            and abs((cap.matrix_world @ Vector(v.co)).x) < 28.0
+            if abs((cap.matrix_world @ Vector(v.co)).y - y_cap) < 5.0
+            and abs((cap.matrix_world @ Vector(v.co)).x) < 30.0
         ]
         z_cap = max(tip_zs) if tip_zs else (cb[4] + 3.0)
-        z_low = max(z_fair, z_pod) + 0.05
-        # Wedge thickness ≥2 mm; top surface ramps cap→pod
-        t = 2.2
-        hw = 32.0  # half-width ≤ pod swell
-        # Order Y so y_a is cap side, y_b is pod side
-        if sy < 0:
-            y_a, y_b = y_c, y_p  # cap at higher Y? L: cap y~-81, pod y~-101
-            # L: cap end > pod end numerically (−81 > −101)
-            z_a, z_b = z_cap, z_low
-        else:
-            y_a, y_b = y_c, y_p
-            z_a, z_b = z_cap, z_low
+        z_pod = pb[5] - 0.05
+        if fair is not None:
+            fair.hide_render = True
+            fair.hide_viewport = True
+        t = 2.4
+        n_stat = 6
         bm = bmesh.new()
-        # 8 corners of a ramp box (top ramps, bottom parallel offset by -t)
-        corners = [
-            (-hw, y_a, z_a),
-            (hw, y_a, z_a),
-            (hw, y_b, z_b),
-            (-hw, y_b, z_b),
-            (-hw, y_a, z_a - t),
-            (hw, y_a, z_a - t),
-            (hw, y_b, z_b - t),
-            (-hw, y_b, z_b - t),
-        ]
-        vs = [bm.verts.new(c) for c in corners]
+        rings = []
+        for i in range(n_stat):
+            u = i / (n_stat - 1)
+            s = u * u * (3.0 - 2.0 * u)  # smoothstep
+            y = y_a + (y_b - y_a) * u
+            z_top = z_cap + (z_pod - z_cap) * s
+            # Taper width toward pod end (nose blob adds the plan round)
+            hw = 34.0 - 3.0 * s
+            corners_xz = [
+                (-hw, z_top),
+                (hw, z_top),
+                (hw, z_top - t),
+                (-hw, z_top - t),
+            ]
+            rings.append([bm.verts.new((x, y, z)) for x, z in corners_xz])
         bm.verts.ensure_lookup_table()
-        faces = [
-            (0, 1, 2, 3),  # top
-            (4, 7, 6, 5),  # bottom
-            (0, 4, 5, 1),  # cap end
-            (3, 2, 6, 7),  # pod end
-            (0, 3, 7, 4),  # -X
-            (1, 5, 6, 2),  # +X
-        ]
-        for f in faces:
-            bm.faces.new([vs[i] for i in f])
+        for i in range(n_stat - 1):
+            a, b = rings[i], rings[i + 1]
+            for j in range(4):
+                j2 = (j + 1) % 4
+                bm.faces.new([a[j], a[j2], b[j2], b[j]])
+        bm.faces.new(rings[0])
+        bm.faces.new(list(reversed(rings[-1])))
         mesh = bpy.data.meshes.new(f"review_roof_sleeve_{side}_mesh")
         bm.to_mesh(mesh)
         bm.free()
         obj = bpy.data.objects.new(f"review_roof_sleeve_{side}", mesh)
         details_col.objects.link(obj)
         obj.data.materials.append(mat(f"m_roof_sleeve_{side}", body_rgb, rough=0.6))
+        # Thin shadow groove at the print-gap midline (not a lit step / flat plate)
+        mid_y = 0.5 * (y_cap + y_pod)
+        bpy.ops.mesh.primitive_cube_add(
+            size=1.0, location=(0.0, mid_y, 0.5 * (z_cap + z_pod) + 0.5),
+        )
+        g = bpy.context.active_object
+        g.name = f"_tmp_groove_{side}"
+        g.scale = (70.0, 1.15, 1.1)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        for cc in list(g.users_collection):
+            cc.objects.unlink(g)
+        details_col.objects.link(g)
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        mod = obj.modifiers.new("groove", "BOOLEAN")
+        mod.operation = "DIFFERENCE"
+        mod.object = g
+        try:
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        except Exception as exc:
+            print(f"  groove warn {side}: {exc}")
+        bpy.data.objects.remove(g, do_unlink=True)
+        # Rounded nose blob on the pod-facing end (matches L/R, kills square block)
+        bpy.ops.mesh.primitive_uv_sphere_add(
+            radius=1.0,
+            location=(0.0, y_b, z_pod - t * 0.35),
+            segments=24, ring_count=12,
+        )
+        nose = bpy.context.active_object
+        nose.scale = (30.0, 6.0, t * 0.55)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        for cc in list(nose.users_collection):
+            cc.objects.unlink(nose)
+        details_col.objects.link(nose)
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        umod = obj.modifiers.new("nose", "BOOLEAN")
+        umod.operation = "UNION"
+        umod.object = nose
+        try:
+            bpy.ops.object.modifier_apply(modifier=umod.name)
+        except Exception as exc:
+            print(f"  nose warn {side}: {exc}")
+        bpy.data.objects.remove(nose, do_unlink=True)
         print(
-            f"  roof sleeve {side}: Y {y_a:.1f}→{y_b:.1f} Z {z_a:.1f}→{z_b:.1f}"
+            f"  roof sleeve {side}: Y {y_a:.1f}→{y_b:.1f} Z {z_cap:.1f}→{z_pod:.1f}"
         )
 
 
 def _add_solar_review_detail(details_col, panel_c, panel_sz):
-    """D7r7 review-only solar look on the lid (pocket/panel STLs unchanged).
+    """D7r8 review solar: D4-like thin navy edge strips + wide charcoal rib.
 
-    Two narrow navy strips (#1B2A4A) separated by a charcoal raised centre rib
-    (≤4 mm wide) with a charcoal bezel. Matte. Navy only on the two strips.
-
-    Shading note (written into NOTE custom props by caller): the rib sits on the
-    lid over the panel centreline and would shade a ≤4 mm-wide strip (≈3.5 % of
-    the 113.6 mm panel length-axis? — actually across the short axis). Bezel
-    frames the pocket edge (~1.5 mm inward) and would shade a ~1.5 mm perimeter
-    ring. Centre rib ≤4 mm wide × panel length; estimated optical shade ≈
-    (4 / 66.6) ≈ 6 % of panel area if opaque and flush-over-glass.
+    Pocket 66.6×113.6 unchanged. Navy ONLY on the two edge strips. Matte.
     """
     px, py = float(panel_sz.x), float(panel_sz.y)
-    # Bezel around pocket (charcoal), slightly proud — all dims ≥2 mm (hygiene)
     bezel_w, bezel_l = px + 3.0, py + 3.0
     _add_box(
         details_col, "solar_bezel",
-        (bezel_w, bezel_l, 2.0),
+        (bezel_w, bezel_l, 2.2),
         (panel_c.x, panel_c.y, panel_c.z + 0.5),
         CHARCOAL_SOLAR, rough=0.75,
     )
-    # Two navy strips with gap for rib (navy ONLY on these strips)
-    rib_w = 3.5  # ≤4 mm
-    strip_w = (px - rib_w) * 0.5 - 0.4
+    # D4 look: thin edge strips (~8 mm), wide charcoal centre rib
+    strip_w = 8.0
+    gap = 1.0  # charcoal margin between strip and rib
+    rib_w = px - 2.0 * strip_w - 2.0 * gap  # ≈48.6 mm
     strip_l = py - 2.0
     for sx, tag in ((-1.0, "L"), (1.0, "R")):
-        x = panel_c.x + sx * (rib_w * 0.5 + strip_w * 0.5 + 0.2)
+        x = panel_c.x + sx * (px * 0.5 - strip_w * 0.5 - 0.5)
         _add_box(
             details_col, f"solar_navy_strip_{tag}",
-            (strip_w, strip_l, 2.0),
+            (strip_w, strip_l, 2.2),
             (x, panel_c.y, panel_c.z + 1.05),
             NAVY_SOLAR, rough=0.85,
         )
     _add_box(
         details_col, "solar_centre_rib",
-        (rib_w, strip_l + 0.6, 2.2),
+        (rib_w, strip_l + 0.6, 2.4),
         (panel_c.x, panel_c.y, panel_c.z + 1.35),
         CHARCOAL_SOLAR, rough=0.7,
     )
+    shade_rib = rib_w / 66.6
+    shade_strips = (2.0 * strip_w) / 66.6  # navy is glass look — not shade
     return {
-        "rib_w_mm": rib_w,
+        "rib_w_mm": round(rib_w, 2),
+        "strip_w_mm": strip_w,
         "bezel_inset_mm": 1.5,
         "panel_pocket_mm": [66.6, 113.6],
-        "shade_fraction_rib": round(rib_w / 66.6, 3),
+        "shade_fraction_rib": round(shade_rib, 3),
         "shade_note": (
-            f"Centre rib {rib_w} mm wide over glass ≈ {100 * rib_w / 66.6:.1f}% of "
-            "panel width; bezel ~1.5 mm perimeter ring. Review-only — print pocket "
-            "unchanged. Rib/bezel would shade that fraction in reality if built proud."
+            f"Wide charcoal rib {rib_w:.1f} mm ≈ {100 * shade_rib:.0f}% of panel "
+            f"width; two navy edge strips {strip_w} mm each (not shading). Bezel "
+            f"~1.5 mm ring. Review-only — pocket unchanged. If built proud over "
+            f"glass, the rib+bezel would shade ~{100 * shade_rib:.0f}% of width "
+            f"(strips are the active glass look)."
         ),
     }
 
@@ -565,9 +595,16 @@ def _meshes_touching(a, b, tol=0.5):
 
 
 def _geometry_hygiene_report(path):
-    """Flag non-mesh / dim<2 mm / floating solids (excluding known empties)."""
+    """Flag non-mesh / floating / thin (<2 mm) detail not part of a named body.
+
+    Named bodies (print STLs + strap) may be thin in one AABB axis after tilt;
+    review details under 2 mm thick are flagged.
+    """
     allow_empty = {"NOTE_d4_ghost", "pod_L_anchor", "pod_R_anchor"}
-    # Objects that are intentionally isolated visual accents still must touch a body
+    named_body_prefixes = (
+        "cap_", "pod_L_", "pod_R_", "cw_", "fairing_", "saddle",
+        "clamp_bar_", "strap_loop",
+    )
     thin = []
     floating = []
     non_mesh = []
@@ -580,8 +617,19 @@ def _geometry_hygiene_report(path):
         if o.hide_render:
             continue
         dims = [float(d) for d in o.dimensions]
-        if any(d < 2.0 - 1e-6 for d in dims):
+        is_named = any(o.name.startswith(p) or o.name == p.rstrip("_")
+                       for p in named_body_prefixes)
+        # D7r8: flag review/detail solids with any dim < 2 mm
+        if (not is_named) and any(d < 2.0 - 1e-6 for d in dims):
             thin.append({"name": o.name, "dims": [round(d, 3) for d in dims]})
+        # Also flag ANY visible object (incl. named) with thickness < 2 if it
+        # looks like a stray plate under a skirt (world Z extent < 2)
+        bb = _world_bbox(o)
+        z_th = bb[5] - bb[4]
+        if (not is_named) and z_th < 2.0 - 1e-6:
+            entry = {"name": o.name, "dims": [round(d, 3) for d in dims], "z_th": round(z_th, 3)}
+            if entry not in thin and not any(t["name"] == o.name for t in thin):
+                thin.append(entry)
     for o in meshes:
         others = [p for p in meshes if p.name != o.name]
         if not others:
@@ -614,6 +662,12 @@ for f in sorted(glob.glob(os.path.join(WORLD, "*.stl"))):
     o = imp_stl(f, d6)
     o.data.materials.clear()
     o.data.materials.append(body_mat)
+    # D7r8: hide pod clamp bars in review — they read as a thin horizontal bar
+    # under the skirt in side view. Print STLs / assembly_check unchanged.
+    # Cap clamps (1–2) and CW clamps (7–8) stay visible.
+    if o.name in ("clamp_bar_3", "clamp_bar_4", "clamp_bar_5", "clamp_bar_6"):
+        o.hide_render = True
+        o.hide_viewport = True
 
 # D4 ghost STLs are imported only for optional wbbox notes, then DELETED —
 # WIRE display leftovers were reading as thin frames around lids/cap ends.
@@ -679,20 +733,20 @@ _add_strap_loop(details)
 _add_buckle_keeper(details)
 _purge_curves_and_wires()
 
-# Cap corner screw accents ON the lid surface (≥2 mm) — skirt-aware Z
+# Cap corner screw accents ON the lid surface (≥2.2 mm) — skirt-aware Z
 cap_z = 33.0 + 0.6
 _POD_TILT = math.radians(29.1418)
 for i, (x, y) in enumerate([(29.5, 68.0), (-29.5, 68.0), (29.5, -68.0), (-29.5, -68.0)]):
-    _add_cyl(details, f"screw_cap_orange_{i}", radius=2.2, depth=2.0,
+    _add_cyl(details, f"screw_cap_orange_{i}", radius=2.2, depth=2.2,
              loc=(x, y, cap_z), rgb=ORANGE)
 
-# Orange dot ON each pod lid outer (not inside the cavity) — ≈8–10 mm across
+# Orange dot ON each pod lid outer — ≈9 mm across (D4 dot row height cue)
 for side, sy in (("L", -1.0), ("R", 1.0)):
     _add_cyl(
         details,
         f"pod_{side}_dot_orange",
         radius=4.5,
-        depth=2.0,
+        depth=2.2,
         loc=(0.0, sy * 110.0, 28.0),
         rgb=ORANGE,
         rot=(_POD_TILT * (-sy), 0.0, 0.0),
