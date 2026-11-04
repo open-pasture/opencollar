@@ -286,8 +286,10 @@ transfer code. v2 does not move private keys (release or handover, then a new bi
 - While an owner key is enrolled, only the owner key may sign a type-6 transfer (`unknown_kid`
   otherwise). Without one, the server key may. The owner key is **optional** and **OFF for
   the pilot** ([messages.md §4.4](messages.md#44-who-may-sign-what)): with none enrolled, the
-  server key signs, so a Hand can drive release / transfer-code flows in the app. A farmer
-  who enrols an owner key gains protection if a phone (server session) is stolen.
+  server key signs, so a Hand who can edit the collar can drive **release** in the app.
+  **Whether a Hand may also issue a transfer code is undecided** (Cody; see
+  [server.md §13](server.md#13-same-farm-moves-and-cross-farm-handover)). A farmer who
+  enrols an owner key gains protection if a phone (server session) is stolen.
 - On confirm, the collar's owner key becomes the transfer's `new_owner`, or none when it has
   none. The seller's owner key no longer works.
 - The **card** goes with the collar: its claim code is the physical reset credential. A
