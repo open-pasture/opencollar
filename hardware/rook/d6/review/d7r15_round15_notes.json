@@ -1,0 +1,26 @@
+{
+  "round": "D7r15",
+  "base_head": "d32e344",
+  "keeps": [
+    "arc -43.5..+45.0",
+    "two-stage drop 11.6 mm (48.25 / 36.62 / 25)",
+    "closed underside",
+    "Ø5 flat orange dots 0.3 proud, no recess",
+    "print STLs + assembly_check 144/144 untouched"
+  ],
+  "fixes": {
+    "roof": "single continuous arc solid with exact tier breakpoints + dense flat stations; straight 45° ramp segments; WEIGHT bevel 1.8 mm on lid perimeter only (no subdiv, no per-tier unions). Flat silhouette 2nd-diff 0.001 mm.",
+    "001": "baseline along strap (+Y); letter-up across (+X); 9.5 mm tall; 0.599 mm measured depth; ≥1.2 mm gaps; both lids. Top-render dark-cluster primary axis = HORIZONTAL (along strap) L→R.",
+    "navy": "closed charcoal roof (no solar cut, no panel glass); two narrow navy strips at ±Y ends only; no centre rib plate (no lit outline).",
+    "side_lit_line": "gone with closed roof + sunk strips"
+  },
+  "stations_deg": {
+    "cap_end": 15.85,
+    "ramp1_end": 18.85,
+    "landing_end": 24.35,
+    "ramp2_end": 27.35
+  },
+  "heights_mm": {"cap": 48.25, "mid": 36.62, "pod": 25.0, "stage": 11.62},
+  "assembly_check": "144/144",
+  "hygiene": "PASS"
+}
