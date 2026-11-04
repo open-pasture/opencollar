@@ -3,6 +3,8 @@
 **Draft only. No print. No merge.**  
 Pilot unit **is** the production design (Cody, 2026-11-04): leave room for the completed shock module on this same geometry.
 
+**Location caveat:** where the pulse module finally goes is **NOT decided**. `docs/BOTTOM-BAY.md` l.95–97 puts it in the top unit; `hardware/rook/cad/assembly/node_v1.py` l.2 says side pods. Do not treat either as final. The **pod bay is the working assumption** under Cody’s Nov 4 stance.
+
 ## What the D8 pod underside actually is
 
 Measured on `stl/pod_L_base.stl` (print frame, cavity UP, bed = z=0):

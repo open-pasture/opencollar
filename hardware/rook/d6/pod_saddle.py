@@ -62,12 +62,18 @@ DRIVER_MARGIN_Z = 2.0
 # Driver keep-out sits toward +Y (cap/mount) of the module bay
 
 ELECTRODE_PLACEHOLDER = True       # PLACEHOLDER, not a spec
-ELECTRODE_NOTE = "placeholder, not a spec — reserved geometry only when unfitted"
+ELECTRODE_NOTE = (
+    "placeholder, not a spec — studs kept in the design as reserved features "
+    "(not populated parts); no pulse circuit when unfitted"
+)
 ELECTRODE_D = 6.0
 ELECTRODE_SPACING = 25.0
 ELECTRODE_LAND_D = 10.0
+ELECTRODE_STUD_H = 2.5             # reserved stud boss height toward neck
+ELECTRODE_STUD_SEAL_T = 1.0        # sealed tip thickness (no open hole unfitted)
 ELECTRODE_COMPLIANCE_TRAVEL = 3.0  # reserved for spring/elastomer when fitted
-# Unfitted: lands are BLANK/FLAT (no open holes). Open studs = fitted state only.
+# op-architect (record O): keep electrode studs in the design.
+# Unfitted: stud bosses present, tips sealed (not populated conductive parts).
 
 WIRE_PLACEHOLDER = True            # PLACEHOLDER, not a spec
 WIRE_NOTE = (
@@ -247,31 +253,44 @@ def saddle_body(side: str = "L"):
     )
     oc.cut(body, oc.cut(ring_o, ring_i))
 
-    # --- Unfitted skin-contact: BLANK flat lands (no open holes) ---
-    # Reserved electrode keep-out centres on the MODULE bay; wells sealed.
+    # --- Electrode studs KEPT in the design (op-architect record O) ---
+    # Reserved features, not populated parts: Ø6 stud bosses @ 25 mm on the
+    # module bay, sealed tips when unfitted (no open conductive path).
+    skin_z = total_h - sag_cut
     for i, sy in enumerate((-0.5, 0.5)):
         ey = module_y + sy * ELECTRODE_SPACING
         land = oc.cylinder(
-            f"elec_land_blank{i}",
+            f"elec_land{i}",
             ELECTRODE_LAND_D,
             0.8,
-            at=(0.0, ey, total_h - sag_cut - 0.4),
+            at=(0.0, ey, skin_z - 0.4),
             anchor="bottom",
             segments=24,
         )
         oc.union(body, land)
-        # Internal compliance keep-out (does not pierce skin face when unfitted)
+        # Stud boss toward neck (reserved geometry)
+        stud = oc.cylinder(
+            f"elec_stud{i}",
+            ELECTRODE_D,
+            ELECTRODE_STUD_H,
+            at=(0.0, ey, skin_z - 0.2),
+            anchor="bottom",
+            segments=24,
+        )
+        oc.union(body, stud)
+        # Internal compliance / stud well keep-out — stops short of sealed tip
         oc.cut(
             body,
             oc.cylinder(
                 f"elec_comp_ko{i}",
-                ELECTRODE_D + 1.0,
+                ELECTRODE_D - 1.0,
                 ELECTRODE_COMPLIANCE_TRAVEL,
                 at=(0.0, ey, bay_z0 + bh - ELECTRODE_COMPLIANCE_TRAVEL - 0.5),
                 anchor="bottom",
                 segments=20,
             ),
         )
+        # Tip remains sealed by ELECTRODE_STUD_SEAL_T of solid (unfitted)
 
     # --- Sealed wire path bay → pod face (cell cavity via pod gland @ Y=-28) ---
     module_neg_end = module_y - 0.5 * bl
@@ -424,9 +443,19 @@ def saddle_body(side: str = "L"):
             "electrode": {
                 "note": ELECTRODE_NOTE,
                 "D_spacing": [ELECTRODE_D, ELECTRODE_SPACING],
-                "unfitted": "blank flat lands — no open holes",
+                "stud_h_mm": ELECTRODE_STUD_H,
+                "stud_seal_t_mm": ELECTRODE_STUD_SEAL_T,
+                "in_design": "stud bosses kept (reserved feature, not populated)",
+                "unfitted": "stud tips sealed — no open conductive path",
                 "compliance_travel_mm": ELECTRODE_COMPLIANCE_TRAVEL,
             },
+            "op_architect_reserved": [
+                "connector_position",
+                "wire_path_with_strain_relief",
+                "sealed_pass_through",
+                "service_lid_gasket_screws",
+                "electrode_studs",
+            ],
             "wire": {
                 "note": WIRE_NOTE,
                 "conductors_min": WIRE_CONDUCTORS_MIN,

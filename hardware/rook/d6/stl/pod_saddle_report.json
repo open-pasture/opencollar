@@ -31,7 +31,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 2870
+        "faces": 3166
       },
       "side": "L",
       "saddle_R_mm": 220.0,
@@ -82,14 +82,24 @@
           ]
         },
         "electrode": {
-          "note": "placeholder, not a spec \u2014 reserved geometry only when unfitted",
+          "note": "placeholder, not a spec \u2014 studs kept in the design as reserved features (not populated parts); no pulse circuit when unfitted",
           "D_spacing": [
             6.0,
             25.0
           ],
-          "unfitted": "blank flat lands \u2014 no open holes",
+          "stud_h_mm": 2.5,
+          "stud_seal_t_mm": 1.0,
+          "in_design": "stud bosses kept (reserved feature, not populated)",
+          "unfitted": "stud tips sealed \u2014 no open conductive path",
           "compliance_travel_mm": 3.0
         },
+        "op_architect_reserved": [
+          "connector_position",
+          "wire_path_with_strain_relief",
+          "sealed_pass_through",
+          "service_lid_gasket_screws",
+          "electrode_studs"
+        ],
         "wire": {
           "note": "placeholder, not a spec \u2014 pod-to-cap harness channel; count/gauge unknown; sized \u22658 conductors for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; NOT a final pinout",
           "conductors_min": 8,
@@ -172,7 +182,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 2870
+        "faces": 3166
       },
       "side": "R",
       "saddle_R_mm": 220.0,
@@ -223,14 +233,24 @@
           ]
         },
         "electrode": {
-          "note": "placeholder, not a spec \u2014 reserved geometry only when unfitted",
+          "note": "placeholder, not a spec \u2014 studs kept in the design as reserved features (not populated parts); no pulse circuit when unfitted",
           "D_spacing": [
             6.0,
             25.0
           ],
-          "unfitted": "blank flat lands \u2014 no open holes",
+          "stud_h_mm": 2.5,
+          "stud_seal_t_mm": 1.0,
+          "in_design": "stud bosses kept (reserved feature, not populated)",
+          "unfitted": "stud tips sealed \u2014 no open conductive path",
           "compliance_travel_mm": 3.0
         },
+        "op_architect_reserved": [
+          "connector_position",
+          "wire_path_with_strain_relief",
+          "sealed_pass_through",
+          "service_lid_gasket_screws",
+          "electrode_studs"
+        ],
         "wire": {
           "note": "placeholder, not a spec \u2014 pod-to-cap harness channel; count/gauge unknown; sized \u22658 conductors for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; NOT a final pinout",
           "conductors_min": 8,

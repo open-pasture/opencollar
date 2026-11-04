@@ -554,7 +554,7 @@
   {
    "check": "pod_L_saddle: volume>0",
    "ok": true,
-   "measured": 31018,
+   "measured": 31042,
    "expected": ">0",
    "note": ""
   },
@@ -714,7 +714,7 @@
   {
    "check": "pod_R_saddle: volume>0",
    "ok": true,
-   "measured": 31018,
+   "measured": 31042,
    "expected": ">0",
    "note": ""
   },
@@ -1485,10 +1485,17 @@
    "note": ""
   },
   {
-   "check": "unfitted bay uses blank lands (no open electrode holes)",
+   "check": "electrode studs kept in design (op-architect), tips sealed unfitted",
    "ok": true,
-   "measured": "blank lands",
-   "expected": "sealed unfitted",
+   "measured": "stud bosses kept, sealed tips",
+   "expected": "reserved feature, not populated",
+   "note": ""
+  },
+  {
+   "check": "op-architect reserved: connector, strain relief, sealed pass-through, service lid",
+   "ok": true,
+   "measured": "connector+strain+seal+service lid",
+   "expected": "reserved features, not populated",
    "note": ""
   },
   {

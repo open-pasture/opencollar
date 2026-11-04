@@ -736,11 +736,21 @@ chk(
     "easy to revise",
 )
 chk(
-    "unfitted bay uses blank lands (no open electrode holes)",
-    "blank flat lands" in saddle_src or "BLANK flat" in saddle_src
-    or "elec_land_blank" in saddle_src,
-    "blank lands",
-    "sealed unfitted",
+    "electrode studs kept in design (op-architect), tips sealed unfitted",
+    "elec_stud" in saddle_src
+    and "ELECTRODE_STUD_H" in saddle_src
+    and ("sealed" in saddle_src.lower() or "STUD_SEAL" in saddle_src),
+    "stud bosses kept, sealed tips",
+    "reserved feature, not populated",
+)
+chk(
+    "op-architect reserved: connector, strain relief, sealed pass-through, service lid",
+    "connector_ko" in saddle_src
+    and "wire_strain" in saddle_src
+    and "wire_up" in saddle_src
+    and "service lid" in saddle_src.lower(),
+    "connector+strain+seal+service lid",
+    "reserved features, not populated",
 )
 chk(
     "review 25 mm pod lid-top holds (saddle toward neck only)",
