@@ -1,0 +1,36 @@
+{
+  "round": "D7r12",
+  "head_base": "d43f099",
+  "source": "op-brand refinements (replace/tighten earlier r12 list)",
+  "items": {
+    "1_shape": {
+      "change": "Single roof line; crisp flat lid + small chamfer; short tangent shoulder + rounded ends (no horns); shallow visible cap→pod step (A_TRANS 18.5–24°); faired lower edge"
+    },
+    "2_id_001": {
+      "depth_mm": 0.6,
+      "height_mm": 9.5,
+      "material": "same charcoal as lid (boolean deboss, no plate)",
+      "reads_in": "TOP view L→R with strap horizontal (baseline +X)",
+      "side_view": "centred under orange dots at a≈±28°",
+      "both_lids": true
+    },
+    "3_seam": {
+      "change": "Cap–pod lid seam is a real narrow boolean groove with shadow (not a lit coplanar line)"
+    },
+    "4_orange": {
+      "change": "Orange ONLY two lid dots; collar tab dropped; latch body charcoal"
+    },
+    "5_slim": {
+      "cap_mm": 48.25,
+      "cap_vs_d4": "1.75× — true min with panel land z=41.4; cannot hit ~39 (1.4×) without lowering land",
+      "pod_mm": 25.0,
+      "pod_vs_d4": "1.43× — review silhouette; print lids hidden (STL stack still 26.4)",
+      "height_options": "review/height_options.md"
+    }
+  },
+  "stations_report": "review/d7r12_stations_vs_d4.json",
+  "mount_interface": "untouched",
+  "print_stls": "unchanged",
+  "assembly_check": "144/144 PASS",
+  "hygiene": "PASS"
+}

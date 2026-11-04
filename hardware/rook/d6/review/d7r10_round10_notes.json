@@ -1,0 +1,26 @@
+{
+  "round": "D7r10",
+  "head_base": "c59ed1c",
+  "verdict_r9": "worse than r8 — hug belly, cuff blocks, end knob, dark slot, long faceted flare read as bolt-ons",
+  "items": {
+    "1_revert_r9": {
+      "change": "Restored build_assembly_blend.py from D7r8 (8d1307f); removed r9 hug belly / end rounds / skirt-flare review add-ons / review_end_* knob parts"
+    },
+    "2_one_shell": {
+      "change": "Replaced r8 roof sleeves with one D4-guided lofted review_shell: 72 cross-section stations along D6 strap arc, rounded-rect rings, subdiv-3 + smooth. Cap–pod seam = thin dark groove only.",
+      "guide": "review/d4_profile.json (15 stations, roofline, end_shoulder)",
+      "envelope": "pod 68×98.8, cap 76×186.9, pocket 66.6×113.6 kept"
+    },
+    "3_d6_roof_vs_d4": {
+      "change": "D6 internals force roof well above D4 27.6 mm. Cap ~54 mm above strap outer (panel land z=41.4); pods clear ~56–65 mm (D4 pods 15–17.5). D4 width / end-drop / bottom-wrap (−0.5..−4.9) / relative roofline shape preserved; heights scaled to D6 envelope.",
+      "stations_report": "review/d7r10_stations_vs_d4.json"
+    },
+    "4_visible_set": {
+      "change": "Visible: review_shell + lids + orange dots/tab/screws + solar navy strips/charcoal rib + strap/buckle/keeper. Hidden: bases, fairings, saddle, CW, all clamp bars, old roof sleeves. Keeper off the pod (r8 angles −68/−62). 001 across strap width (print lid). Hygiene PASS."
+    }
+  },
+  "renders": ["hero", "side", "top", "joint", "iso", "front"],
+  "mount_interface": "untouched",
+  "print_stls": "unchanged",
+  "assembly_check": "144/144 PASS"
+}

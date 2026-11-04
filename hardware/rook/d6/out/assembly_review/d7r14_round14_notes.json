@@ -1,0 +1,31 @@
+{
+  "round": "D7r14",
+  "base_head": "9a763fc",
+  "keeps_from_r13": [
+    "arc -43.5..+45.0 deg (D4 ±44)",
+    "two-stage drop ~11.6 mm (cap 48.25 → mid 36.62 → pod 25)",
+    "navy strips at ±Y solar ends + charcoal centre rib",
+    "closed underside",
+    "print STLs + assembly_check 144/144 untouched"
+  ],
+  "fixes": {
+    "faceting": "334-station loft; subdiv-2 with creases ONLY on 1.8 mm chamfer + tier-breakpoint rails (no longitudinal lid creases — that was the zig-zag); weighted normals; mesh silhouette max flat 2nd-diff 0.07 mm",
+    "001": "three SEPARATE glyph booleans at ±36.5°; measured depth 0.598 mm; H=9.5; charcoal; ≥29.9 mm clear of orange at ±29°; sharp pit rims; flat lid between digits",
+    "orange_dots": "Ø5 flat boss, 0.3 mm proud, no recess / no dark rim",
+    "bezel_lit_line": "no bezel object; frustum solar cutter + VGROUP rim bevel only; strips/rib sunk below lid",
+    "chamfer": "1.8 mm hard-surface section; creased; visible in hero"
+  },
+  "stations": {
+    "cap_end_deg": 15.85,
+    "ramp1_end_deg": 18.85,
+    "landing_end_deg": 24.35,
+    "ramp2_end_deg": 27.35,
+    "cap_h_mm": 48.25,
+    "mid_h_mm": 36.62,
+    "pod_h_mm": 25.0,
+    "stage_drop_mm": 11.62,
+    "n_stations_loft": 334
+  },
+  "assembly_check": "144/144",
+  "hygiene": "PASS"
+}

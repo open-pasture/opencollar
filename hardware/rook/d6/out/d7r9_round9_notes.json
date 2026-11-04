@@ -1,0 +1,20 @@
+{
+  "round": "D7r9",
+  "head_base": "8d1307f",
+  "items": {
+    "1_hero_hug": {
+      "change": "Review strap-hug belly fills measured pod-to-strap gap along arc (±26°→±72°); ~10° end drop onto strap; thicker continuous roof sleeve with deeper overlap; print fairings hidden",
+      "print_gap": "kept (~4 mm)"
+    },
+    "2_side_skirt_bar": {
+      "change": "Review skirt flares (pod→strap width); hid ALL clamp_bar_* and fairing_pod_strap_* in review (thin dark bar)",
+      "print_stls": "unchanged"
+    },
+    "3_right_end": {
+      "change": "review_end_round_L/R: plan ~R8 cylinder + ~4 mm vertical torus fillet on both free ends"
+    }
+  },
+  "mount_interface": "untouched",
+  "pocket": [66.6, 113.6],
+  "assembly_check": "144/144 PASS"
+}

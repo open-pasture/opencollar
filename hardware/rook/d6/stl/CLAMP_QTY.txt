@@ -1,0 +1,3 @@
+clamp_bar.stl — print 8× per collar (2 under cap saddle, 2 under each pod, 2 under CW saddle).
+Orientation: flange flat on bed, channel opens +Z.
+LoRa clearance from clamp |y|≤28.5 to LoRa y≈64 = 44.0 mm.
