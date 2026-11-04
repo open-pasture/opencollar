@@ -5,11 +5,11 @@
     "cap_l": 164.0,
     "stack_h": 31.0,
     "seam_z": 9.0,
-    "crown": 1.2,
-    "end_taper": 26.0,
-    "nose_tip_h": 5.0,
+    "crown": 3.5,
+    "end_taper": 32.0,
+    "nose_tip_h": 3.0,
     "nose_plan_r": 14.0,
-    "nose_bull_r": 5.0,
+    "nose_bull_r": 6.0,
     "panel_pocket": [
       66.6,
       113.6,
@@ -97,7 +97,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 38308
+        "faces": 37710
       },
       "print": "cavity UP; bed=underside z=0"
     },
@@ -123,11 +123,11 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 7318
+        "faces": 6984
       },
       "print": "mating_down",
       "bed_face_mm2": 10118.1,
-      "support_ceiling_mm2": 1857.6
+      "support_ceiling_mm2": 1863.1
     },
     "cap_floor_layout": {
       "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/cap_floor_layout.stl",
@@ -148,11 +148,11 @@
   "orient": {
     "mating_down": {
       "bed_face_mm2": 10118.1,
-      "support_ceiling_mm2": 1857.6
+      "support_ceiling_mm2": 1863.1
     },
     "outer_down": {
-      "bed_face_mm2": 586.6,
-      "support_ceiling_mm2": 11309.6
+      "bed_face_mm2": 263.2,
+      "support_ceiling_mm2": 11826.2
     },
     "picked": "mating_down",
     "note": "Mating-down: panel pocket +Z, GNSS/LTE are bed recesses (small trees OK). Outer-down: flat panel land on bed; mating bosses become ceilings. Crown is shallow (2.7 mm) outside the land."

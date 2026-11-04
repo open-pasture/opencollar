@@ -70,12 +70,15 @@ LID_ABOVE = CAP_STACK_H - CAP_BASE_H   # 12 mm above mating → stack 31
 # normalize_z0 and turns the mating face into a support ceiling. Wrap-over look
 # is a short OUTER step at the lid perimeter (z≥0) + low seam documentation.
 LID_SKIRT = 0.0
-LID_WRAP_STEP = 2.8                    # D7r5: softer rim — avoid thin protruding plate read
+LID_WRAP_STEP = 3.2                    # D7r7: deeper rim drop — less ledge at ends
 LID_H = LID_ABOVE                      # solid height above mating (cavities kept)
-CROWN = 1.0                            # D7r5: lower shoulders → continuous hero roof
-END_TAPER = 28.0                       # longer low tangent into fairing ramp
-NOSE_TIP_H = 4.5                       # D7r5: match pod lid edge height at seam
-NOSE_ARC_SEGS = 8                      # elliptical roof samples per end
+# D7r7: drop outer crown/shoulder toward pod roof (~panel land stays at LID_H).
+# Before (D7r6): CROWN=1.0, NOSE_TIP_H=4.5 → world tip ~33.9 / land ~41.4.
+# After: CROWN=3.5, NOSE_TIP_H=3.0 → tip ~32.4; shoulders ~37.9 (panel/Wio/screws OK).
+CROWN = 3.5                            # long-edge shoulder drop outside panel land
+END_TAPER = 32.0                       # longer tangent into fairing / pod roof
+NOSE_TIP_H = 3.0                       # as low as wall allows; cavities unchanged
+NOSE_ARC_SEGS = 10                     # smoother elliptical roof (D4-like)
 NOSE_PLAN_R = 14.0                     # match pod tip plan R — no shadow line
 NOSE_BULL_R = 6.0                      # bullnose blends into fairing
 PANEL_LAND = (68.0, 116.0)             # flat plateau containing 66.6×113.6 pocket
@@ -211,7 +214,8 @@ def end_nose_contoured(body, w, l, h, taper_len=END_TAPER,
     fairing / pod like D4_contoured_v3's top end. Mount pads still union on
     after this (see cap_base).
     """
-    tip_h = max(tip_h, 5.0)
+    # D7r7: allow tip down to ~3 mm (panel land / cavities untouched)
+    tip_h = max(float(tip_h), 2.8)
     segs = max(int(segs), 4)
     for sy in (-1, 1):
         tip = sy * (l / 2)
@@ -276,7 +280,7 @@ def crown_shoulders(body, land_xy, crown, lid_h, lw, ll):
 
 def end_crown_taper(body, land_xy, lid_h, lw, ll, taper_len=END_TAPER):
     """D7 lid nose — elliptical drop matching base, not a hard chopped prism."""
-    tip_h = max(3.5, min(NOSE_TIP_H, lid_h - 5.5))
+    tip_h = max(2.8, min(NOSE_TIP_H, lid_h - 5.5))
     segs = NOSE_ARC_SEGS
     for sy in (-1, 1):
         tip = sy * (ll / 2)

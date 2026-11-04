@@ -106,7 +106,7 @@ FAIRING_W1_CW = FAIRING_W1               # 52
 # Height spans pad band up into the lid roof at the seam (~18–22 world Z).
 FAIRING_H = 18.0
 # Cap↔pod: slightly lower so top meets tip-dropped lid roof (Δz ≤ 0.3).
-FAIRING_H_CAP_POD = 16.0
+FAIRING_H_CAP_POD = 16.0                 # print fairing; review sleeve bridges remaining gap
 FAIRING_H_CW = 14.0                      # CW lid band
 FAIRING_EDGE_R = 4.0
 # Edge bevel pulls the plan silhouette in ~0.5–0.7 mm; oversize the loft so the
@@ -117,15 +117,15 @@ FAIRING_BEVEL_OVERSIZE_CAP_POD = 0.0
 FAIRING_PLAN_R0 = max(FAIRING_POD_PLAN_R, 8.0)
 FAIRING_PLAN_R1 = max(FAIRING_CAP_PLAN_R, 6.0)
 FAIRING_TOP_CROWN = 0.0                 # D7r3: no crown cuts → no crease lines
-FAIRING_RAMP_DROP = 6.5                 # D7r5: stronger roof slope → continuous hero line
+FAIRING_RAMP_DROP = 8.0                 # D7r7: stronger tangent step-down (D4-like)
 FAIRING_INTERFERE_TOL = 0.2
 FAIRING_SEAM_STEP_MAX = 0.5              # mm — plan/height step at fairing joins
 FAIRING_LID_SEAM_MAX = 0.3              # mm — top vs lid roof at seam
-FAIRING_CAP_POD_GAP = 1.3
+FAIRING_CAP_POD_GAP = 1.3               # print STL real gap kept; review sleeve shadows it
 
 # Explicit world centres — bridge the 1.3 mm joint; top aligns with lid roof.
 # Cap–pod: centre so run outboard ≈ tilted pod tip (~±94.5), not past it.
-# D7r6: lids sit on POD/CAP_MATING_Z (skirt-aware); Z raised so roof meets lids.
+# D7r6/r7: lids on POD/CAP_MATING_Z; Z set so fairing top kisses pod lid roof.
 FAIRING_CENTRES = {
     # Nudged inboard so tilted outboard end ≈ pod tip roof (~±94.5), not past it.
     "fairing_cap_pod_L": (0.0, -84.0, 7.9),

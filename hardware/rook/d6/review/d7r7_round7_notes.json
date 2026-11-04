@@ -1,0 +1,47 @@
+{
+  "round": "D7r7",
+  "cap_heights_mm": {
+    "before": {
+      "CROWN": 1.0,
+      "NOSE_TIP_H": 4.5,
+      "LID_WRAP_STEP": 2.8,
+      "world_panel_land_z": 41.4,
+      "world_tip_z_approx": 36.4
+    },
+    "after": {
+      "CROWN": 3.5,
+      "NOSE_TIP_H": 3.0,
+      "LID_WRAP_STEP": 3.2,
+      "world_panel_land_z": 41.4,
+      "world_tip_z_end_face": 32.4,
+      "world_tip_z_max_near_end": 33.8,
+      "note": "panel land / Wio / cavities / LID_H=12 unchanged; outer shoulders+tip lowered toward pod roof"
+    },
+    "pod_roof_world_z_seam_approx": 26.7,
+    "pod_roof_world_z_max": 30.2,
+    "fairing_cap_pod_top_z": 26.8
+  },
+  "solar_review": {
+    "navy": "#1B2A4A",
+    "rib_w_mm": 3.5,
+    "bezel": "charcoal around 66.6x113.6 pocket",
+    "pocket_kept_mm": [66.6, 113.6],
+    "would_shade_panel": true,
+    "shade_fraction_rib": 0.053,
+    "shade_note": "Centre rib 3.5 mm wide over glass ≈ 5.3% of panel width (66.6). Charcoal bezel ~1.5 mm perimeter ring. Review-only overlays on the lid; print pocket/panel unchanged. If built proud over glass in reality, rib+bezel would shade that fraction (~5% rib + ~perimeter bezel)."
+  },
+  "strays_removed": [
+    "keeper torus → flat rectangular frame",
+    "buckle_tongue diagonal deleted",
+    "review_roof_band_* mega-plate unions deleted → review_roof_sleeve_* ramp"
+  ],
+  "pod": {
+    "PLAN_R": 8.0,
+    "POD_ID_H": 9.0,
+    "POD_ID_DEPTH": 0.55,
+    "skirt_shoulder_R": 14.0
+  },
+  "mount_interface": "untouched",
+  "print_cap_pod_gap": "kept in STLs; review_roof_sleeve_* ramp bridges as shadow line",
+  "assembly_check": "144/144 PASS"
+}

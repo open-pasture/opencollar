@@ -628,7 +628,7 @@ for n in ("fairing_cw_L", "fairing_cw_R"):
         f"≤{SEAM_MAX}",
     )
 
-# D7r6: review-blend geometry hygiene (no thin solids / stray non-mesh)
+# D7r7: review-blend geometry hygiene (no dim<2mm / floating / stray non-mesh)
 hygiene_paths = [
     os.path.join(OUT, "assembly_review", "geometry_hygiene.json"),
     os.path.join(HERE, "review", "geometry_hygiene.json"),
@@ -643,19 +643,20 @@ for hp in hygiene_paths:
             continue
 if hyg is None:
     chk(
-        "review blend geometry hygiene (no dim<1mm / non-mesh)",
+        "review blend geometry hygiene (no dim<2mm / floating / non-mesh)",
         False,
         "geometry_hygiene.json missing — rebuild blend",
-        "ok with empty thin/non_mesh",
+        "ok with empty thin/floating/non_mesh",
     )
 else:
-    thin = hyg.get("thin_lt_1mm") or []
+    thin = hyg.get("thin_lt_2mm") or hyg.get("thin_lt_1mm") or []
     non = hyg.get("non_mesh") or []
+    floating = hyg.get("floating") or []
     chk(
-        "review blend geometry hygiene (no dim<1mm / non-mesh)",
-        bool(hyg.get("ok")) and not thin and not non,
-        {"thin": thin, "non_mesh": non},
-        "ok with empty thin/non_mesh",
+        "review blend geometry hygiene (no dim<2mm / floating / non-mesh)",
+        bool(hyg.get("ok")) and not thin and not non and not floating,
+        {"thin": thin, "floating": floating, "non_mesh": non},
+        "ok with empty thin/floating/non_mesh",
     )
 
 json.dump(res, open(os.path.join(OUT, "assembly_check.json"), "w"), indent=1, default=str)

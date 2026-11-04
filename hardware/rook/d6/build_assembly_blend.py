@@ -58,6 +58,9 @@ sc.unit_settings.length_unit = "MILLIMETERS"
 # ---- palette --------------------------------------------------------------
 ORANGE = (1.0, 0x6A / 255, 0x2B / 255)  # #FF6A2B
 PANEL_GLASS = (0.05, 0.08, 0.14)
+# D7r7 review solar look — navy strips + charcoal rib/bezel (matte)
+NAVY_SOLAR = (0x1B / 255, 0x2A / 255, 0x4A / 255)  # #1B2A4A
+CHARCOAL_SOLAR = (0x2A / 255, 0x2C / 255, 0x2E / 255)
 GHOST = (0.10, 0.45, 0.95)
 STRAP = (0.14, 0.14, 0.13)
 HARDWARE = (0.22, 0.22, 0.21)  # buckle / keeper — dark gray
@@ -302,10 +305,10 @@ def _strap_point(angle_deg, major_r=227.0, zc=-233.85):
 
 
 def _add_buckle_keeper(collection):
-    """D4 buckle: open rect frame flat ON the strap + solid keeper loop.
+    """D7r7 buckle + flat rectangular keeper — square to the strap, not a hoop.
 
-    Frame ≈24×30×3 mm, central opening, tongue across (≥2 mm solid).
-    Keeper = torus with ≥2 mm tube — never a thin wire/curve.
+    Buckle: open rect frame ≈24×30×3 flat on strap (no diagonal tongue bar).
+    Keeper: flat rectangular frame ~24×6×2, ≤3 mm proud, slim bar, square to strap.
     """
     b_pos, b_eul = _strap_point(-48.0)
     k_pos, k_eul = _strap_point(-38.0)
@@ -320,7 +323,8 @@ def _add_buckle_keeper(collection):
         return Vector((0.0, 0.0, zc)) + v.normalized() * (major_r + proud)
 
     b_pos = _on_surface(b_pos, proud=1.7)
-    k_pos = _on_surface(k_pos, proud=2.2)
+    # Keeper ≤3 mm proud; ~1.8 mm typical
+    k_pos = _on_surface(k_pos, proud=1.8)
 
     outer = _add_box(
         collection, "buckle_frame", (24.0, 30.0, 3.0), b_pos, HARDWARE,
@@ -343,29 +347,31 @@ def _add_buckle_keeper(collection):
     mod.object = hole
     bpy.ops.object.modifier_apply(modifier=mod.name)
     bpy.data.objects.remove(hole, do_unlink=True)
+    # D7r7: no buckle_tongue — was reading as a diagonal bar left of the buckle
 
-    # Solid tongue (≥2 mm) — not a diagonal wire
-    _add_box(
-        collection, "buckle_tongue", (20.0, 3.0, 2.5), b_pos, HARDWARE,
-        rot=b_eul, rough=0.55,
+    # Flat rectangular keeper frame (not a torus hoop). Local: X across strap,
+    # Y along strap (~6 mm), Z proud (~2 mm). Opening lets the strap through.
+    keeper_outer = _add_box(
+        collection, "keeper", (STRAP_W + 6.0, 6.0, 2.0), k_pos, HARDWARE,
+        rot=k_eul, rough=0.55,
     )
-
-    # Solid keeper loop — minor radius ≥2 mm so it never reads as a wire
-    bpy.ops.mesh.primitive_torus_add(
-        major_radius=STRAP_W / 2.0 + 2.5,
-        minor_radius=2.2,
-        major_segments=40,
-        minor_segments=12,
-        location=k_pos,
-    )
-    keeper = bpy.context.active_object
-    keeper.name = "keeper"
-    keeper.rotation_euler = (k_eul[0] + math.radians(90), 0.0, math.radians(90))
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
-    for cc in list(keeper.users_collection):
-        cc.objects.unlink(keeper)
-    collection.objects.link(keeper)
-    keeper.data.materials.append(mat("m_keeper", HARDWARE, rough=0.55))
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=k_pos)
+    khole = bpy.context.active_object
+    khole.name = "keeper_opening"
+    khole.scale = (STRAP_W + 1.0, 3.2, 3.0)
+    khole.rotation_euler = k_eul
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    for cc in list(khole.users_collection):
+        cc.objects.unlink(khole)
+    collection.objects.link(khole)
+    bpy.ops.object.select_all(action="DESELECT")
+    keeper_outer.select_set(True)
+    bpy.context.view_layer.objects.active = keeper_outer
+    kmod = keeper_outer.modifiers.new("khole", "BOOLEAN")
+    kmod.operation = "DIFFERENCE"
+    kmod.object = khole
+    bpy.ops.object.modifier_apply(modifier=kmod.name)
+    bpy.data.objects.remove(khole, do_unlink=True)
 
 
 def _purge_curves_and_wires():
@@ -388,69 +394,207 @@ def _delete_ghost_wires(ghost_col):
         bpy.data.objects.remove(o, do_unlink=True)
 
 
-def _add_continuous_roof_skins(d6_col, details_col, body_rgb):
-    """Review-only: one continuous band per side (cap nose + fairing + pod lid).
+def _world_bbox(obj):
+    corners = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
+    xs = [c.x for c in corners]
+    ys = [c.y for c in corners]
+    zs = [c.z for c in corners]
+    return (min(xs), max(xs), min(ys), max(ys), min(zs), max(zs))
 
-    Boolean-unions duplicates so the hero silhouette is a single surface; printable
-    STLs stay separate. Original fairing_cap_pod_* are hidden.
+
+def _add_roof_fairing_sleeves(details_col, body_rgb):
+    """Review-only ramp sleeve: bridges print STL cap↔pod gap as a shadow line.
+
+    Wedge from lowered cap tip down to pod/fairing roof (D4-like tangent step).
+    Does NOT boolean-union whole lids (D7r6 mega-plates). Print gap unchanged.
     """
-    for side in ("L", "R"):
-        names = [f"fairing_cap_pod_{side}", f"pod_{side}_lid", "cap_lid"]
-        srcs = [bpy.data.objects.get(n) for n in names]
-        if any(s is None for s in srcs):
-            print(f"  roof skin {side}: missing source, skip")
-            continue
-        copies = []
-        for s in srcs:
-            c = s.copy()
-            c.data = s.data.copy()
-            c.name = f"review_roof_{side}__{s.name}"
-            details_col.objects.link(c)
-            copies.append(c)
-        base = copies[0]
-        bpy.ops.object.select_all(action="DESELECT")
-        for c in copies:
-            c.select_set(True)
-        bpy.context.view_layer.objects.active = base
-        for other in copies[1:]:
-            mod = base.modifiers.new(f"u_{other.name[-8:]}", "BOOLEAN")
-            mod.operation = "UNION"
-            mod.object = other
-            try:
-                bpy.ops.object.modifier_apply(modifier=mod.name)
-            except Exception as exc:
-                print(f"  roof union warn {side}: {exc}")
-        for other in copies[1:]:
-            bpy.data.objects.remove(other, do_unlink=True)
-        base.name = f"review_roof_band_{side}"
-        base.data.materials.clear()
-        base.data.materials.append(mat(f"m_roof_{side}", body_rgb, rough=0.6))
-        # Hide the bridging fairing so only the continuous band shows the join
+    import bmesh
+
+    for side, sy in (("L", -1.0), ("R", 1.0)):
+        cap = bpy.data.objects.get("cap_lid")
+        pod = bpy.data.objects.get(f"pod_{side}_lid")
         fair = bpy.data.objects.get(f"fairing_cap_pod_{side}")
+        if cap is None or pod is None:
+            print(f"  roof sleeve {side}: missing cap/pod, skip")
+            continue
+        cb = _world_bbox(cap)
+        pb = _world_bbox(pod)
+        if sy < 0:
+            y_cap = cb[2]
+            y_pod = pb[3]
+        else:
+            y_cap = cb[3]
+            y_pod = pb[2]
+        # Overlap each lid ~3 mm so the join reads continuous
+        y_c = y_cap + sy * (-3.0)  # slightly inboard of cap end (toward pod)
+        y_p = y_pod + sy * (3.0)   # slightly outboard into pod lid
+        z_pod = pb[5]
         if fair is not None:
-            fair.hide_render = True
-            fair.hide_viewport = True
-        print(f"  roof skin {side}: OK")
+            z_fair = _world_bbox(fair)[5]
+            fair.hide_render = False
+            fair.hide_viewport = False
+        else:
+            z_fair = z_pod
+        tip_zs = [
+            (cap.matrix_world @ Vector(v.co)).z
+            for v in cap.data.vertices
+            if abs((cap.matrix_world @ Vector(v.co)).y - y_cap) < 4.0
+            and abs((cap.matrix_world @ Vector(v.co)).x) < 28.0
+        ]
+        z_cap = max(tip_zs) if tip_zs else (cb[4] + 3.0)
+        z_low = max(z_fair, z_pod) + 0.05
+        # Wedge thickness ≥2 mm; top surface ramps cap→pod
+        t = 2.2
+        hw = 32.0  # half-width ≤ pod swell
+        # Order Y so y_a is cap side, y_b is pod side
+        if sy < 0:
+            y_a, y_b = y_c, y_p  # cap at higher Y? L: cap y~-81, pod y~-101
+            # L: cap end > pod end numerically (−81 > −101)
+            z_a, z_b = z_cap, z_low
+        else:
+            y_a, y_b = y_c, y_p
+            z_a, z_b = z_cap, z_low
+        bm = bmesh.new()
+        # 8 corners of a ramp box (top ramps, bottom parallel offset by -t)
+        corners = [
+            (-hw, y_a, z_a),
+            (hw, y_a, z_a),
+            (hw, y_b, z_b),
+            (-hw, y_b, z_b),
+            (-hw, y_a, z_a - t),
+            (hw, y_a, z_a - t),
+            (hw, y_b, z_b - t),
+            (-hw, y_b, z_b - t),
+        ]
+        vs = [bm.verts.new(c) for c in corners]
+        bm.verts.ensure_lookup_table()
+        faces = [
+            (0, 1, 2, 3),  # top
+            (4, 7, 6, 5),  # bottom
+            (0, 4, 5, 1),  # cap end
+            (3, 2, 6, 7),  # pod end
+            (0, 3, 7, 4),  # -X
+            (1, 5, 6, 2),  # +X
+        ]
+        for f in faces:
+            bm.faces.new([vs[i] for i in f])
+        mesh = bpy.data.meshes.new(f"review_roof_sleeve_{side}_mesh")
+        bm.to_mesh(mesh)
+        bm.free()
+        obj = bpy.data.objects.new(f"review_roof_sleeve_{side}", mesh)
+        details_col.objects.link(obj)
+        obj.data.materials.append(mat(f"m_roof_sleeve_{side}", body_rgb, rough=0.6))
+        print(
+            f"  roof sleeve {side}: Y {y_a:.1f}→{y_b:.1f} Z {z_a:.1f}→{z_b:.1f}"
+        )
+
+
+def _add_solar_review_detail(details_col, panel_c, panel_sz):
+    """D7r7 review-only solar look on the lid (pocket/panel STLs unchanged).
+
+    Two narrow navy strips (#1B2A4A) separated by a charcoal raised centre rib
+    (≤4 mm wide) with a charcoal bezel. Matte. Navy only on the two strips.
+
+    Shading note (written into NOTE custom props by caller): the rib sits on the
+    lid over the panel centreline and would shade a ≤4 mm-wide strip (≈3.5 % of
+    the 113.6 mm panel length-axis? — actually across the short axis). Bezel
+    frames the pocket edge (~1.5 mm inward) and would shade a ~1.5 mm perimeter
+    ring. Centre rib ≤4 mm wide × panel length; estimated optical shade ≈
+    (4 / 66.6) ≈ 6 % of panel area if opaque and flush-over-glass.
+    """
+    px, py = float(panel_sz.x), float(panel_sz.y)
+    # Bezel around pocket (charcoal), slightly proud — all dims ≥2 mm (hygiene)
+    bezel_w, bezel_l = px + 3.0, py + 3.0
+    _add_box(
+        details_col, "solar_bezel",
+        (bezel_w, bezel_l, 2.0),
+        (panel_c.x, panel_c.y, panel_c.z + 0.5),
+        CHARCOAL_SOLAR, rough=0.75,
+    )
+    # Two navy strips with gap for rib (navy ONLY on these strips)
+    rib_w = 3.5  # ≤4 mm
+    strip_w = (px - rib_w) * 0.5 - 0.4
+    strip_l = py - 2.0
+    for sx, tag in ((-1.0, "L"), (1.0, "R")):
+        x = panel_c.x + sx * (rib_w * 0.5 + strip_w * 0.5 + 0.2)
+        _add_box(
+            details_col, f"solar_navy_strip_{tag}",
+            (strip_w, strip_l, 2.0),
+            (x, panel_c.y, panel_c.z + 1.05),
+            NAVY_SOLAR, rough=0.85,
+        )
+    _add_box(
+        details_col, "solar_centre_rib",
+        (rib_w, strip_l + 0.6, 2.2),
+        (panel_c.x, panel_c.y, panel_c.z + 1.35),
+        CHARCOAL_SOLAR, rough=0.7,
+    )
+    return {
+        "rib_w_mm": rib_w,
+        "bezel_inset_mm": 1.5,
+        "panel_pocket_mm": [66.6, 113.6],
+        "shade_fraction_rib": round(rib_w / 66.6, 3),
+        "shade_note": (
+            f"Centre rib {rib_w} mm wide over glass ≈ {100 * rib_w / 66.6:.1f}% of "
+            "panel width; bezel ~1.5 mm perimeter ring. Review-only — print pocket "
+            "unchanged. Rib/bezel would shade that fraction in reality if built proud."
+        ),
+    }
+
+
+def _meshes_touching(a, b, tol=0.5):
+    """True if world AABBs overlap or come within tol mm (proxy for contact)."""
+    ab = _world_bbox(a)
+    bb = _world_bbox(b)
+
+    def gap1(a0, a1, b0, b1):
+        if a1 < b0:
+            return b0 - a1
+        if b1 < a0:
+            return a0 - b1
+        return 0.0
+
+    gx = gap1(ab[0], ab[1], bb[0], bb[1])
+    gy = gap1(ab[2], ab[3], bb[2], bb[3])
+    gz = gap1(ab[4], ab[5], bb[4], bb[5])
+    # Separating-axis style: if any axis gap > tol and others don't compensate —
+    # floating if the Euclidean AABB gap > tol
+    if gx <= tol and gy <= tol and gz <= tol:
+        return True
+    return (gx * gx + gy * gy + gz * gz) ** 0.5 <= tol
 
 
 def _geometry_hygiene_report(path):
-    """List non-mesh / sub-1 mm objects (excluding known empties). Write JSON."""
+    """Flag non-mesh / dim<2 mm / floating solids (excluding known empties)."""
     allow_empty = {"NOTE_d4_ghost", "pod_L_anchor", "pod_R_anchor"}
+    # Objects that are intentionally isolated visual accents still must touch a body
     thin = []
+    floating = []
     non_mesh = []
+    meshes = [o for o in bpy.data.objects if o.type == "MESH" and not o.hide_render]
     for o in bpy.data.objects:
         if o.type != "MESH":
             if o.name not in allow_empty:
                 non_mesh.append({"name": o.name, "type": o.type})
             continue
+        if o.hide_render:
+            continue
         dims = [float(d) for d in o.dimensions]
-        if any(d < 1.0 - 1e-6 for d in dims):
+        if any(d < 2.0 - 1e-6 for d in dims):
             thin.append({"name": o.name, "dims": [round(d, 3) for d in dims]})
+    for o in meshes:
+        others = [p for p in meshes if p.name != o.name]
+        if not others:
+            continue
+        if not any(_meshes_touching(o, p, tol=0.8) for p in others):
+            floating.append({"name": o.name, "dims": [round(float(d), 3) for d in o.dimensions]})
     report = {
-        "thin_lt_1mm": thin,
+        "thin_lt_2mm": thin,
+        "thin_lt_1mm": thin,  # back-compat key for assembly_check
+        "floating": floating,
         "non_mesh": non_mesh,
-        "ok": not thin and not non_mesh,
-        "n_mesh": sum(1 for o in bpy.data.objects if o.type == "MESH"),
+        "ok": not thin and not non_mesh and not floating,
+        "n_mesh": len(meshes),
     }
     os.makedirs(os.path.dirname(path), exist_ok=True)
     json.dump(report, open(path, "w"), indent=1)
@@ -495,18 +639,21 @@ for n in ("pod_L", "pod_R"):
     d6.objects.link(e)
 
 # ---- review-only details --------------------------------------------------
-# Solar panel — clean flat dark rectangle with a crisp edge (no mottling)
-# Z raised with CAP_MATING_Z (skirt-aware lid)
+# Solar panel glass (pocket 66.6×113.6 kept) + D7r7 navy/charcoal review look
 panel_c = _wbbox_centre("cap_panel_p124") or Vector((0.0, 0.0, 32.5))
 if panel_c.z < 25.0:
     panel_c = Vector((panel_c.x, panel_c.y, panel_c.z + 14.0))
+# Skirt-aware lid: mating world ≈ CAP_Z0+CAP_MATING_Z = 29.4; land top ≈ 41.4
+panel_c = Vector((panel_c.x, panel_c.y, max(float(panel_c.z), 38.5)))
 sz = _wbbox_size("cap_panel_p124") or Vector((66.6, 113.6, 2.3))
+# Force pocket footprint (review glass); keep ≥2 mm thick for hygiene
 _add_box(
     details, "cap_panel_p124",
-    (sz.x, sz.y, max(float(sz.z), 2.0)),
+    (66.6, 113.6, max(float(sz.z), 2.0)),
     (panel_c.x, panel_c.y, panel_c.z),
     PANEL_GLASS, rough=0.12,
 )
+solar_meta = _add_solar_review_detail(details, panel_c, Vector((66.6, 113.6, 2.0)))
 
 latch_path = _find_detail("latch.stl")
 latch_c = _wbbox_centre("latch")
@@ -516,8 +663,12 @@ if latch_path and latch_c is not None:
     L.location = latch_c - Lc
     L.data.materials.clear()
     L.data.materials.append(orange_mat)
+    # Ensure ≥2 mm in every dim for hygiene
+    if min(L.dimensions) < 2.0 - 1e-6:
+        bpy.data.objects.remove(L, do_unlink=True)
+        _add_box(details, "latch", (6.0, 11.0, 2.2), latch_c, ORANGE)
 elif latch_c is not None:
-    _add_box(details, "latch", (6.0, 11.0, 8.0), latch_c, ORANGE)
+    _add_box(details, "latch", (6.0, 11.0, 2.2), latch_c, ORANGE)
 
 plug_c = _wbbox_centre("cap_plug_service_orange_p68p")
 if plug_c is not None:
@@ -535,26 +686,32 @@ for i, (x, y) in enumerate([(29.5, 68.0), (-29.5, 68.0), (29.5, -68.0), (-29.5, 
     _add_cyl(details, f"screw_cap_orange_{i}", radius=2.2, depth=2.0,
              loc=(x, y, cap_z), rgb=ORANGE)
 
-# Orange dot ON each pod lid outer (not inside the cavity)
+# Orange dot ON each pod lid outer (not inside the cavity) — ≈8–10 mm across
 for side, sy in (("L", -1.0), ("R", 1.0)):
     _add_cyl(
         details,
         f"pod_{side}_dot_orange",
-        radius=3.0,
+        radius=4.5,
         depth=2.0,
         loc=(0.0, sy * 110.0, 28.0),
         rgb=ORANGE,
         rot=(_POD_TILT * (-sy), 0.0, 0.0),
     )
 
-# Review-only continuous cap↔fairing↔pod roof bands
-_add_continuous_roof_skins(d6, details, BODY)
+# Review-only roof fairing sleeves (print gap kept; no mega-plate unions)
+_add_roof_fairing_sleeves(details, BODY)
 
 note = bpy.data.objects.new("NOTE_d4_ghost", None)
 note.empty_display_type = "PLAIN_AXES"
 note.empty_display_size = 1
 note["ghost_note"] = ghost_note
 note["palette"] = _palette
+note["solar_shade"] = solar_meta.get("shade_note", "")
+note["solar_rib_w_mm"] = float(solar_meta.get("rib_w_mm", 0))
+note["cap_crown_before_mm"] = 1.0
+note["cap_crown_after_mm"] = 3.5
+note["cap_nose_tip_before_mm"] = 4.5
+note["cap_nose_tip_after_mm"] = 3.0
 details.objects.link(note)
 
 hygiene_path = os.path.join(OUT, "geometry_hygiene.json")

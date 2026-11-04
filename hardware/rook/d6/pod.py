@@ -95,10 +95,11 @@ POD_TAPER_DROP = 6.0                         # D7r3: roof tip drop ~6 mm to fair
 POD_SKIRT_H = 14.0
 POD_SKIRT_FLARE = 0.0                        # no outward flange past pod width
 POD_SKIRT_PLAN_R = 12.0                      # large rounded ends (D4)
-POD_SKIRT_SHOULDER_R = 12.0                  # tangent flare body → strap (down)
+# D7r7: long concave tangent flare into strap (not a vertical cliff)
+POD_SKIRT_SHOULDER_R = 14.0
 POD_PUBLIC_ID = "001"                        # recessed mono on lid outer
-POD_ID_H = 12.0                              # capital height mm (iso-readable)
-POD_ID_DEPTH = 0.8                           # recess depth mm
+POD_ID_H = 9.0                               # D7r7: match D4 orange-dot ~8–10 mm
+POD_ID_DEPTH = 0.55                          # low-contrast deboss
 
 # Cap↔pod M3 joint (matches cap.py pad) — recess on +Y mount face
 POD_MOUNT_SIZE = A.POD_MOUNT_SIZE            # 36×4×14
@@ -280,11 +281,11 @@ def top_perimeter_chamfer(body, w, l, h, r=POD_TOP_EDGE_R, y0=0.0):
 
 
 def strap_flare_skirt(body, w, l, y0=0.0, h=POD_SKIRT_H, flare=POD_SKIRT_FLARE):
-    """Deep skirt: R12 tangent into strap, width ≤ pod outline, clamps recessed.
+    """Deep skirt: long R12+ tangent flare into strap (no vertical cliff).
 
     Extends below z=0 by `h`. Plan width never exceeds the pod body (`w`) so
-    top/side views show no flange overhang. Outer face eases from the shoulder
-    down toward the strap (not out past the outline). Channel 46.45×3.4 kept.
+    top/side views show no flange overhang. Multi-step concave cut eases the
+    outer face into the strap. Channel 46.45×3.4 kept.
     """
     del flare  # D7r6: no outward overhang; kept in signature for call-site compat
     ch_w = float(A.SADDLE_CHANNEL_W)
@@ -298,19 +299,23 @@ def strap_flare_skirt(body, w, l, y0=0.0, h=POD_SKIRT_H, flare=POD_SKIRT_FLARE):
         "strap_skirt", (skirt_w, skirt_l, h), plan_r,
         at=(0.0, y0, -h), anchor="bottom", segments=12,
     )
-    # Soft lower chamfer (tangent into strap) — keep manifold (simple 3-pt prism)
-    shoulder = min(6.0, h * 0.40)
+    # D7r7: long concave flare (R≈POD_SKIRT_SHOULDER_R) — not a short cliff
+    shoulder = min(float(POD_SKIRT_SHOULDER_R), h * 0.85, skirt_w * 0.22)
+    # Two-step prism approximates a concave quarter-curve into the strap
+    mid = shoulder * 0.45
     for sx in (-1.0, 1.0):
         oc.cut(sk, oc.prism_y(f"skirt_sh_x{int(sx + 2)}", [
-            (sx * (skirt_w / 2.0 + 1.0), -h - 0.5),
-            (sx * (skirt_w / 2.0 + 1.0), -h + shoulder),
+            (sx * (skirt_w / 2.0 + 1.5), -h - 0.5),
+            (sx * (skirt_w / 2.0 + 1.5), -h + shoulder),
+            (sx * (skirt_w / 2.0 - mid * 0.35), -h + mid),
             (sx * (skirt_w / 2.0 - shoulder), -h - 0.5),
         ], skirt_l + 6.0))
     for sy in (-1.0, 1.0):
         tip = y0 + sy * (skirt_l / 2.0)
         oc.cut(sk, oc.prism_x(f"skirt_sh_y{int(sy + 2)}", [
-            (tip + sy * 1.0, -h - 0.5),
-            (tip + sy * 1.0, -h + shoulder),
+            (tip + sy * 1.5, -h - 0.5),
+            (tip + sy * 1.5, -h + shoulder),
+            (tip - sy * mid * 0.35, -h + mid),
             (tip - sy * shoulder, -h - 0.5),
         ], skirt_w + 6.0))
 
@@ -547,14 +552,17 @@ def pod_lid(side="L"):
         )
         oc.union(lid, head)
 
-    # D7r6: clean recessed "001" only — 12 mm tall, 0.8 mm deep, near strap end
+    # D7r7: debossed "001" — 9 mm (≈D4 orange-dot H), low-contrast, strap end.
+    # +90°Z so reading runs local +Y (strap→cap): readable in side AND top cams
+    # when the collar hangs. Letter block sits toward the strap (base toward strap).
     try:
         z_outer = POD_LID_T + POD_LID_CROWN
-        font_size = POD_ID_H * 2.0
-        glyph = d5._text_mesh(POD_PUBLIC_ID, font_size, POD_ID_DEPTH + 0.2)
+        font_size = POD_ID_H * 2.0  # DejaVu size≈2× capital H
+        glyph = d5._text_mesh(POD_PUBLIC_ID, font_size, POD_ID_DEPTH + 0.15)
+        oc.bake(glyph)
+        glyph.data.transform(Matrix.Rotation(math.radians(90.0), 4, "Z"))
         lo, hi = oc.bounds(glyph)
-        # Place near the strap-end (−Y for L before mirror); clear of crown centre
-        id_y = POD_Y0 - (ll * 0.28)
+        id_y = POD_Y0 - (ll * 0.30)  # toward strap end (−Y for L)
         oc.move(
             glyph,
             dx=0.0 - (lo[0] + hi[0]) / 2.0,
