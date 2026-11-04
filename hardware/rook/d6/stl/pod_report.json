@@ -130,7 +130,7 @@
     "pod_L_base": {
       "size_mm": [
         76.0,
-        98.8,
+        98.79,
         37.7
       ],
       "watertight": {
@@ -141,7 +141,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 496706
+        "faces": 281390
       },
       "pass": true,
       "stl_path": "stl/pod_L_base.stl",
@@ -191,7 +191,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 281252
+        "faces": 281364
       },
       "pass": true,
       "stl_path": "stl/pod_R_base.stl",

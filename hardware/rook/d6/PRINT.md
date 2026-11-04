@@ -13,7 +13,7 @@ Times/grams are **estimates**. Re-slice before any real plate.
 - Cap↔pod fairings: **1.5 mm top groove** (fastening intact); pod↔strap fairings kiss flare
 - Cap plan R3; heights / arc / panel keep-clear unchanged (cap roof 48.2 / pod 25 review; print stacks lay-flat as today)
 - **P0 first:** `d8_fit_coupon.stl` (gauges + footprints + joint) before any ASA plate
-- **+2 neck saddles +2 bay covers**; height **0 mm above strap** (module depth extra toward neck only)
+- **+2 neck saddles +2 service lids +2 wire blank plugs**; height **0 mm above strap** (module/driver depth extra toward neck only); 25 mm pod lid-top holds
 
 ## Parts list (1 collar)
 
@@ -24,8 +24,9 @@ Times/grams are **estimates**. Re-slice before any real plate.
 | `cap_lid` | 75.0 × 163.0 × 12.0 | ~110 | 1 | mating DOWN; lower crown/nose |
 | `pod_L_base` / `pod_R_base` | **76.0 × 98.8 × 37.7** | ~59 each | 1+1 | cavity UP; flare 76 + D4 strap notches |
 | `pod_L_lid` / `pod_R_lid` | 70.0 × 91.0 × 6.0 | ~24 each | 1+1 | outer DOWN; prism `001` + screw recesses |
-| `pod_L/R_saddle` | **52 × 97 × ~12** | — | 1+1 | ASA; flat on bed, R220 concave UP + bowl supports |
-| `pod_L/R_bay_cover` | ~30 × 45 × 2 | — | 1+1 | blank sealed cover for empty shock bay |
+| `pod_L/R_saddle` | **52 × 97 × ~12** | — | 1+1 | ASA; flat on bed, R220 concave UP + bowl supports; module+driver keep-outs |
+| `pod_L/R_bay_cover` | ~service opening × 2.5 | — | 1+1 | service lid (bay without opening cell cavity) |
+| `pod_L/R_wire_plug` | ~Ø13 × 7 | — | 1+1 | blank plug — seals wire path when bay unfitted |
 | `cw_tub` | 89.1 × 116.0 × 19.2 | 59.9 | 1 | cavity UP; 2×2 steel |
 | `cw_lid` | 88.4 × 114.8 × 6.35 | 46.3 | 1 | mating DOWN |
 | `saddle` | 76.0 × 96.0 × 6.5 | 20.9 | 1 | channel along Y |

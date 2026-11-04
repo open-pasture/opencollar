@@ -36,7 +36,7 @@ Matches Cody’s ~5–6 mm flat gap. **Ask: verify the 25×42 cm ellipse / those
 | | (1) Rigid curved saddle/pad | (2) Flexible TPU contact pad | (3) Hinge/slide at 4×M3 cap joint |
 | --- | --- | --- | --- |
 | **Idea** | Separate part/pod: flat → pod, concave R≈220 → neck | Soft pad takes residual + animal variation | Let the rigid pod rock to average contact |
-| **Part count** | **+1 saddle / pod** (+ blank bay cover, Part B) | +1 TPU pad / pod (+ hard carrier or overmold) | 0 new bodies; more fasteners/bushings at joint |
+| **Part count** | **+1 saddle / pod** (+ service lid + wire blank plug) | +1 TPU pad / pod (+ hard carrier or overmold) | 0 new bodies; more fasteners/bushings at joint |
 | **Height above strap** | **0** if saddle lives in the ~5–6 mm underside gap | **0** if pad ≤ gap; thicker foam grows inward only | **0** above strap; joint stack may grow along strap |
 | **Height toward neck** | Fills ~5.4 mm (R220 sagitta) | Same budget; compliance in the pad | None by itself — still needs a pad/electrodes |
 | **Print** | **ASA**, flat pod-face **on bed**, concave neck-face **up** with light bowl supports (preferred). Side-print also possible but puts layer lines on the seal face. Curved face never on the bed. | TPU on flat bed (pad flat or lightly crowned); ASA carrier if needed | Existing ASA parts; no new curved print |
@@ -52,11 +52,18 @@ Matches Cody’s ~5–6 mm flat gap. **Ask: verify the 25×42 cm ellipse / those
 - Hinge/slide (3) does not create electrode lands or a module bay.
 - TPU (2) remains available later as a **skin cover** over the saddle electrodes; it is not required to define the bay.
 
-**Print method pick:** flat pod-mating face on the bed, concave R220 up, light supports in the bowl. Why: mating/seal face gets bed accuracy; curve is never on the bed; supports only touch non-critical concave skin. Side-print rejected as default because the gasket/land would be vertical (weaker layers on the seal).
+**Print method pick:** flat pod-mating face on the bed, concave R220 up, light supports in the bowl. Why: mating/seal face gets bed accuracy; curve is never on the bed; supports only touch non-critical concave skin. **Reject upside-down-with-lid** (puts the curve on the bed — violates the bed rule). **Reject side-print as default** (gasket/land would be vertical layers). Same write-up: `review/d8_fit_coupon_notes.md`.
 
-## Electrode contact (op-strategy addendum)
+## Electrode contact — hinge vs compliant (from residual vs R 208–221)
 
-A rigid R220 saddle matches **one** ideal ellipse — the 25×42 cm model is **not** measured cattle. The design **must not** rely on the rigid curve alone for electrode skin contact. The bay reserves travel / compliance (e.g. spring-loaded or elastomer-backed Ø6 studs). Still unpopulated.
+Measured residual after R220 saddle: **≤0.32 mm** (75 cm) / ~0.05 mm (107/130).
+
+| Need | Verdict |
+| --- | --- |
+| **Compliant / floating electrode contact** | **YES — required** when fitted (spring or elastomer). Rigid curve alone is not skin contact. |
+| **Hinge at the 4×M3 joint** | **NOT required** for ≤0.32 mm residual. Overkill; revisit only if real-neck data shows a much larger mismatch. |
+
+A rigid R220 saddle matches **one** ideal ellipse — the 25×42 cm model is **not** measured cattle. Bay reserves travel / compliance (PLACEHOLDER). Still unpopulated when bay is blank.
 
 ## Open measurement ask
 

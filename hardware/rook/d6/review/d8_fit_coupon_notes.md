@@ -21,8 +21,9 @@ The coupon’s “saddle footprint” is only a feeler gauge. The **real** `pod_
 A rigid R220 saddle matches **one** ideal neck shape. The **25 × 42 cm ellipse is a sizing model, not measured cattle.**
 
 - The design **must not** rely on the rigid saddle alone for electrode skin contact.
-- The shock-electrode **bay remains required** (PLACEHOLDER module 40×25×8, unpopulated).
-- Reserve **travel / compliance** for the electrodes (e.g. spring-loaded or elastomer-backed contact studs) inside the bay — still unpopulated. See `ELECTRODE_COMPLIANCE_TRAVEL` in `pod_saddle.py`.
+- Complete-version bay: electrode **module** keep-out **and** **driver** keep-out (both PLACEHOLDER, not a spec), sealed wire path ≥8 conductors + blank plug, service lid.
+- Residual vs R 208–221 after R220: **≤0.32 mm** → **compliant/floating contact YES; hinge NO.**
+- Reserve **travel / compliance** (`ELECTRODE_COMPLIANCE_TRAVEL` in `pod_saddle.py`). Unfitted = blank lands, no open electrodes.
 
 ## (3) Measurement ask
 

@@ -484,11 +484,13 @@ EXPECTED = {
     ("pod_L_base", "pod_L_lid"),
     ("pod_R_base", "pod_R_lid"),
     ("cw_tub", "cw_lid"),
-    # D8 neck saddle mates flat-to-flat on pod skirt bed; cover seals bay
+    # D8 neck saddle mates flat-to-flat on pod skirt bed; service lid + wire plug
     ("pod_L_base", "pod_L_saddle"),
     ("pod_R_base", "pod_R_saddle"),
     ("pod_L_saddle", "pod_L_bay_cover"),
     ("pod_R_saddle", "pod_R_bay_cover"),
+    ("pod_L_saddle", "pod_L_wire_plug"),
+    ("pod_R_saddle", "pod_R_wire_plug"),
 }
 # Cap pad into pod recess is the bolted M3 joint — expected engagement.
 MOUNT_JOINT = {
@@ -522,9 +524,13 @@ for i in res["interference"]:
         i["class"] = (
             "clamp pocket engagement (OK)" if i["mm3"] < 2500 else "REAL clash"
         )
-    elif "saddle" in i["a"] or "saddle" in i["b"] or "bay_cover" in i["a"] or "bay_cover" in i["b"]:
+    elif (
+        "saddle" in i["a"] or "saddle" in i["b"]
+        or "bay_cover" in i["a"] or "bay_cover" in i["b"]
+        or "wire_plug" in i["a"] or "wire_plug" in i["b"]
+    ):
         i["class"] = (
-            "saddle/bay engagement (OK)" if i["mm3"] < 12000 else "REAL clash"
+            "saddle/bay/plug engagement (OK)" if i["mm3"] < 12000 else "REAL clash"
         )
     else:
         i["class"] = "REAL clash"
@@ -669,22 +675,37 @@ saddle_path = os.path.join(HERE, "pod_saddle.py")
 if os.path.isfile(saddle_path):
     saddle_src = open(saddle_path).read()
 for side in ("L", "R"):
-    sn, cn = f"pod_{side}_saddle", f"pod_{side}_bay_cover"
+    sn, cn, pn = f"pod_{side}_saddle", f"pod_{side}_bay_cover", f"pod_{side}_wire_plug"
     chk(f"{sn} present", sn in mesh, sn in mesh, "stl")
     chk(f"{cn} present", cn in mesh, cn in mesh, "stl")
+    chk(f"{pn} present", pn in mesh, pn in mesh, "stl")
     if sn in mesh:
         e = mesh[sn].extents
         chk(
-            f"{sn} fits under pod length (~90×52)",
+            f"{sn} fits under pod length (~97×52)",
             float(e[1]) <= 100.0 and float(e[0]) <= 70.0,
             [round(float(v), 1) for v in e],
             "≤70 × ≤100 × h",
         )
 chk(
-    "pod_saddle.py MODULE_* PLACEHOLDER block",
-    "MODULE_PLACEHOLDER" in saddle_src and "MODULE_L = 40" in saddle_src,
-    "PLACEHOLDER 40×25×8" if "MODULE_L = 40" in saddle_src else "missing",
-    "40×25×8 pending op-firmware",
+    "pod_saddle.py MODULE_* PLACEHOLDER not-a-spec",
+    "MODULE_PLACEHOLDER" in saddle_src
+    and "placeholder, not a spec" in saddle_src
+    and "MODULE_L = 40" in saddle_src,
+    "PLACEHOLDER module 40×25×8" if "MODULE_L = 40" in saddle_src else "missing",
+    "placeholder, not a spec",
+)
+chk(
+    "pod_saddle.py DRIVER_* keep-out PLACEHOLDER",
+    "DRIVER_PLACEHOLDER" in saddle_src and "DRIVER_L" in saddle_src,
+    "DRIVER keep-out" if "DRIVER_L" in saddle_src else "missing",
+    "separate driver bay",
+)
+chk(
+    "wire channel ≥8 conductors PLACEHOLDER",
+    "WIRE_CONDUCTORS_MIN = 8" in saddle_src and "WIRE_CH_D" in saddle_src,
+    "≥8 conductors" if "WIRE_CONDUCTORS_MIN = 8" in saddle_src else "missing",
+    "8+",
 )
 chk(
     "saddle neck radius R≈220",
@@ -697,6 +718,30 @@ chk(
     "ELECTRODE_COMPLIANCE_TRAVEL" in saddle_src,
     "compliance travel" if "ELECTRODE_COMPLIANCE_TRAVEL" in saddle_src else "missing",
     "spring/elastomer reserve",
+)
+chk(
+    "connector sense/ID + hw kill reserved",
+    "CONNECTOR_HAS_SENSE_ID" in saddle_src and "HW_KILL" in saddle_src,
+    "connector+kill" if "HW_KILL" in saddle_src else "missing",
+    "reserved features",
+)
+chk(
+    "unfitted bay uses blank lands (no open electrode holes)",
+    "blank flat lands" in saddle_src or "BLANK flat" in saddle_src
+    or "elec_land_blank" in saddle_src,
+    "blank lands",
+    "sealed unfitted",
+)
+chk(
+    "review 25 mm pod lid-top holds (saddle toward neck only)",
+    "REVIEW_POD_ROOF_MM = 25" in saddle_src
+    and "height_above_strap_mm\": 0.0" in open(
+        os.path.join(STL, "pod_saddle_report.json")
+    ).read()
+    if os.path.isfile(os.path.join(STL, "pod_saddle_report.json"))
+    else "REVIEW_POD_ROOF_MM = 25" in saddle_src,
+    "25 mm holds / above-strap 0",
+    "25 mm lid-top unchanged",
 )
 chk(
     "cell cavity size unchanged 82×58×19.5",

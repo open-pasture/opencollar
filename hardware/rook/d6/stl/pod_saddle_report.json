@@ -1,128 +1,263 @@
 {
-  "revision": "D8_saddle_shock_bay",
-  "module_placeholder": {
-    "MODULE_L": 40.0,
-    "MODULE_W": 25.0,
-    "MODULE_H": 8.0,
-    "ELECTRODE_D": 6.0,
-    "ELECTRODE_SPACING": 25.0,
-    "pending": "op-firmware"
+  "revision": "D8_saddle_complete_bay_keepouts",
+  "location_caveat": "Pod bay is a working assumption under Cody's Nov 4 stance (pilot = production, each pod gets a spot). docs/BOTTOM-BAY.md and older CAD place pulse elsewhere \u2014 neither is final.",
+  "unfitted_state": "Service lid + gasket + screws; blank wire plug in sealed pass-through; blank flat skin-contact lands (no open electrode holes); connector sense/ID reads not-fitted; no pulse circuit.",
+  "op_architect_vs_strategy": "op-architect: keep electrode studs in the design. op-strategy: unfitted bay holds no electrodes. Resolution: reserved stud keep-outs with blank/sealed lands when unfitted; open studs only when fitted. Flagged for op-strategy to confirm.",
+  "height": {
+    "review_pod_lid_top_above_strap_mm": 25.0,
+    "holds_25mm_lid_top": true,
+    "why": "Saddle + bay stack sits on the neck side of the strap (fills the ~5.4 mm flat-underside gap). It does not raise the pod lid-top above the strap. Print pod stack above strap unchanged.",
+    "toward_neck_mm": 5.41,
+    "module_vs_sagitta": "MODULE_H=8.0 (+margins) vs sagitta 5.41: any shortfall grows toward neck only, not above strap.",
+    "hinge_vs_compliant": "Measured residual vs R208\u2013221 after R220 saddle is \u22640.32 mm. That does NOT need a hinge. It DOES need compliant/floating electrode contact (spring or elastomer) when fitted \u2014 rigid curve alone is not skin contact. Hinge reserved only if later real-neck data shows much larger mismatch."
+  },
+  "part_count_delta": {
+    "per_pod_was": 2,
+    "per_pod_now": 5,
+    "added": [
+      "pod_*_saddle",
+      "pod_*_bay_cover (service lid)",
+      "pod_*_wire_plug"
+    ],
+    "collar_added_qty": 6
   },
   "bodies": {
     "pod_L_saddle": {
       "size_mm": [
         52.0,
         97.0,
-        11.7
+        13.7
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 2988
+        "faces": 2870
       },
       "side": "L",
       "saddle_R_mm": 220.0,
       "sagitta_mm": 5.36,
-      "total_h_mm": 11.7,
-      "extra_toward_neck_mm": 4.29,
+      "total_h_mm": 13.7,
+      "extra_toward_neck_mm": 6.29,
       "height_above_strap_mm": 0.0,
-      "module_placeholder": {
-        "flag": true,
-        "L_W_H_mm": [
-          40.0,
-          25.0,
-          8.0
-        ],
-        "pending": "op-firmware"
+      "review_pod_roof_mm_unchanged": 25.0,
+      "layout_y_mm": {
+        "module_y": -21.5,
+        "driver_y": 24.0,
+        "wire_gland_y": -28.0,
+        "bay_span": 89.0
       },
-      "electrode_compliance_travel_mm": 3.0,
+      "placeholders": {
+        "module": {
+          "note": "placeholder, not a spec \u2014 no shock module chosen",
+          "L_W_H": [
+            40.0,
+            25.0,
+            8.0
+          ],
+          "margin_xy_z": [
+            3.0,
+            2.0
+          ],
+          "envelope_mm": [
+            31.0,
+            46.0,
+            10.0
+          ]
+        },
+        "driver": {
+          "note": "placeholder, not a spec \u2014 no driver board chosen",
+          "L_W_H": [
+            35.0,
+            22.0,
+            6.0
+          ],
+          "margin_xy_z": [
+            3.0,
+            2.0
+          ],
+          "envelope_mm": [
+            28.0,
+            41.0,
+            8.0
+          ]
+        },
+        "electrode": {
+          "note": "placeholder, not a spec \u2014 reserved geometry only when unfitted",
+          "D_spacing": [
+            6.0,
+            25.0
+          ],
+          "unfitted": "blank flat lands \u2014 no open holes",
+          "compliance_travel_mm": 3.0
+        },
+        "wire": {
+          "note": "placeholder, not a spec \u2014 \u22658 conductors sized for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; not a final pinout",
+          "conductors_min": 8,
+          "channel_d_mm": 8.0,
+          "gland_y_mm": -28.0
+        },
+        "connector_sense_id": true,
+        "hw_kill": "reserved: reachable hardware kill that cuts driver rail independent of firmware; accessible via service lid without opening cell cavity"
+      },
       "print": {
         "orientation": "flat pod-face on bed; concave neck-face UP; light bowl supports",
-        "why": "mating/seal face gets bed accuracy; curve never on bed",
         "material": "ASA",
         "brim_mm": 8
-      }
+      },
+      "design_guardrail": "Keep cap dominant / faceted / segmented; blind groove stays a distinct step; no soft bridge blend, no vent slots, no ribbed bridge, no glass-look flat pod tops; plan corners \u2264 R3."
     },
     "pod_L_bay_cover": {
       "size_mm": [
-        30.0,
-        45.0,
-        2.0
+        39.0,
+        97.0,
+        2.5
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 412
+        "faces": 414
       },
+      "role": "service lid \u2014 bay openable without cell cavity",
       "print": {
         "orientation": "flat; label UP",
         "material": "ASA or PLA"
+      }
+    },
+    "pod_L_wire_plug": {
+      "size_mm": [
+        12.5,
+        12.5,
+        7.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 188
+      },
+      "role": "blank plug \u2014 seals wire pass-through when unfitted",
+      "print": {
+        "orientation": "flange UP or stem down",
+        "material": "ASA or TPU"
       }
     },
     "pod_R_saddle": {
       "size_mm": [
         52.0,
         97.0,
-        11.7
+        13.7
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 2988
+        "faces": 2870
       },
       "side": "R",
       "saddle_R_mm": 220.0,
       "sagitta_mm": 5.36,
-      "total_h_mm": 11.7,
-      "extra_toward_neck_mm": 4.29,
+      "total_h_mm": 13.7,
+      "extra_toward_neck_mm": 6.29,
       "height_above_strap_mm": 0.0,
-      "module_placeholder": {
-        "flag": true,
-        "L_W_H_mm": [
-          40.0,
-          25.0,
-          8.0
-        ],
-        "pending": "op-firmware"
+      "review_pod_roof_mm_unchanged": 25.0,
+      "layout_y_mm": {
+        "module_y": -21.5,
+        "driver_y": 24.0,
+        "wire_gland_y": -28.0,
+        "bay_span": 89.0
       },
-      "electrode_compliance_travel_mm": 3.0,
+      "placeholders": {
+        "module": {
+          "note": "placeholder, not a spec \u2014 no shock module chosen",
+          "L_W_H": [
+            40.0,
+            25.0,
+            8.0
+          ],
+          "margin_xy_z": [
+            3.0,
+            2.0
+          ],
+          "envelope_mm": [
+            31.0,
+            46.0,
+            10.0
+          ]
+        },
+        "driver": {
+          "note": "placeholder, not a spec \u2014 no driver board chosen",
+          "L_W_H": [
+            35.0,
+            22.0,
+            6.0
+          ],
+          "margin_xy_z": [
+            3.0,
+            2.0
+          ],
+          "envelope_mm": [
+            28.0,
+            41.0,
+            8.0
+          ]
+        },
+        "electrode": {
+          "note": "placeholder, not a spec \u2014 reserved geometry only when unfitted",
+          "D_spacing": [
+            6.0,
+            25.0
+          ],
+          "unfitted": "blank flat lands \u2014 no open holes",
+          "compliance_travel_mm": 3.0
+        },
+        "wire": {
+          "note": "placeholder, not a spec \u2014 \u22658 conductors sized for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; not a final pinout",
+          "conductors_min": 8,
+          "channel_d_mm": 8.0,
+          "gland_y_mm": -28.0
+        },
+        "connector_sense_id": true,
+        "hw_kill": "reserved: reachable hardware kill that cuts driver rail independent of firmware; accessible via service lid without opening cell cavity"
+      },
       "print": {
         "orientation": "flat pod-face on bed; concave neck-face UP; light bowl supports",
-        "why": "mating/seal face gets bed accuracy; curve never on bed",
         "material": "ASA",
         "brim_mm": 8
-      }
+      },
+      "design_guardrail": "Keep cap dominant / faceted / segmented; blind groove stays a distinct step; no soft bridge blend, no vent slots, no ribbed bridge, no glass-look flat pod tops; plan corners \u2264 R3."
     },
     "pod_R_bay_cover": {
       "size_mm": [
-        30.0,
-        45.0,
-        2.0
+        39.0,
+        97.0,
+        2.5
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 412
+        "faces": 414
       },
+      "role": "service lid \u2014 bay openable without cell cavity",
       "print": {
         "orientation": "flat; label UP",
         "material": "ASA or PLA"
       }
+    },
+    "pod_R_wire_plug": {
+      "size_mm": [
+        12.5,
+        12.5,
+        7.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 188
+      },
+      "role": "blank plug \u2014 seals wire pass-through when unfitted",
+      "print": {
+        "orientation": "flange UP or stem down",
+        "material": "ASA or TPU"
+      }
     }
   },
-  "part_count_delta": {
-    "per_pod_was": 2,
-    "per_pod_now": 4,
-    "added": [
-      "pod_*_saddle",
-      "pod_*_bay_cover"
-    ],
-    "collar_added_qty": 4
-  },
-  "pass": true,
-  "height": {
-    "above_strap_mm": 0.0,
-    "toward_neck_mm": 5.41,
-    "note": "R220 sagitta\u22485.41 mm fills flat-underside gap; MODULE_H=8.0 mm \u2014 module deeper than sagitta by 2.6 mm; extra grows toward neck only (0 mm above strap)."
-  }
+  "pass": true
 }

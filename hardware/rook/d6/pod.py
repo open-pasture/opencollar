@@ -88,8 +88,8 @@ POD_STRAP_NOTCH_W = 6.0                      # D4-like plan notch at strap-end c
 POD_STRAP_NOTCH_D = 4.0
 # Saddle / shock-bay wire pass-through (cell cavity size unchanged)
 POD_WIRE_GLAND_Y = -28.0                     # toward strap end, clear of cells
-POD_WIRE_CH_D = 6.0
-POD_WIRE_GLAND_D = 10.0
+POD_WIRE_CH_D = 8.0                          # matches saddle WIRE_CH_D (≥8 conductors)
+POD_WIRE_GLAND_D = 12.0                      # matches saddle WIRE_GLAND_D
 POD_SADDLE_MOUNT = [(sx * 18.0, sy * 32.0) for sx in (-1, 1) for sy in (-1, 1)]
 # Full-width band covers most of the long cavity; soft tip taper only
 POD_Y_SWELL = 38.0                           # half-length of full-width band

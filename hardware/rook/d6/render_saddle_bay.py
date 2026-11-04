@@ -105,13 +105,16 @@ def main():
     _setup()
     sad = _import(os.path.join(STL, "pod_L_saddle.stl"), "saddle")
     cov = _import(os.path.join(STL, "pod_L_bay_cover.stl"), "cover")
+    plug = _import(os.path.join(STL, "pod_L_wire_plug.stl"), "plug")
     sad.data.materials.append(_mat("sad", CHARCOAL))
     cov.data.materials.append(_mat("cov", OAT))
-    # Cover above saddle neck face for iso readability
+    plug.data.materials.append(_mat("plug", OAT))
+    # Cover above saddle neck face for iso readability; plug near wire gland Y=-28
     oc.move(cov, dz=list(oc.size(sad))[2] + 4.0)
+    oc.move(plug, dy=-28.0, dz=list(oc.size(sad))[2] + 2.0)
 
     iso = os.path.join(REV, "d8_saddle_bay_iso.png")
-    _render([sad, cov], iso, (1.3, -1.4, 0.9), pad=1.25)
+    _render([sad, cov, plug], iso, (1.3, -1.4, 0.9), pad=1.25)
     shutil.copy2(iso, os.path.join(ART, "d8_saddle_bay_iso.png"))
 
     # Section: cut −X half, look along +X at the bay/electrode cut face

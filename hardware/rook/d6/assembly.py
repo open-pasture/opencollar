@@ -195,9 +195,13 @@ def world_poses():
         poses[f"pod_{side}_saddle"] = (
             A @ T([0, 0, POD_Z0]) @ R(math.pi, X)
         )
-        # Blank bay cover — sits on saddle neck face (approx; cover is thin)
+        # Service lid — on saddle neck/service face (approx)
         poses[f"pod_{side}_bay_cover"] = (
-            A @ T([0, 0, POD_Z0]) @ R(math.pi, X) @ T([0, 0, -2.0])
+            A @ T([0, 0, POD_Z0]) @ R(math.pi, X) @ T([0, 0, -2.5])
+        )
+        # Wire blank plug — saddle local Y matches pod.py POD_WIRE_GLAND_Y (−28)
+        poses[f"pod_{side}_wire_plug"] = (
+            A @ T([0, 0, POD_Z0]) @ R(math.pi, X) @ T([0, -28.0, -3.0])
         )
 
     CWA = T([0, 0, CW_ANCH_Z]) @ R(math.pi, X)
