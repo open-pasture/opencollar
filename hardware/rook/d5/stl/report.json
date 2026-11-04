@@ -1,9 +1,9 @@
 {
-  "revision": "D5_production_durability",
+  "revision": "D5_print_orient_floor_panel_kept",
   "assumptions": [
     "Strap thickness 4.0 mm assumed \u2014 VERIFY WITH CALIPERS before field print.",
-    "P124 on cap is an OPEN Cody/strategy decision; pocket retained for study.",
-    "Cap 76 mm exceeds brand 1.3\u00d7 strap (~57.8 mm) while P124 is in play; CAP_W_SLIM=58 if panel dropped.",
+    "P124 KEPT on collar #1 (Cody 2026-11-03) \u2014 pocket + 15 mm keep-clear retained; cap 76\u00d7160.",
+    "Cap 76 mm exceeds brand 1.3\u00d7 strap (~57.8 mm) because P124 is KEPT; CAP_W_SLIM=58 is not collar #1.",
     "bq24074 / GPS patch heights partially assumed \u2014 verify with calipers.",
     "Cap free height \u2248 14.3 mm (13 cavity + ~1.3 lid recess). Wio-SX1262 upright pocket needs ~23 mm + 20 mm wire bend \u2014 DOES NOT FIT. Connect Kit with socketed headers needs ~17 mm \u2014 DOES NOT FIT. Production CAD uses LAY-FLAT Wio (8 mm pocket) + LOW-PROFILE kit without headers (7.2 mm). Alternatives for Cody: (A) keep lay-flat/low-profile, (B) raise cap cavity \u226523 mm (hurts brand proportions / pod-lower look), (C) solder headers / remote radio. Flagged OPEN for Cody.",
     "Wio production orientation = lay_flat until Cody raises cavity for upright.",
@@ -11,7 +11,7 @@
     "Adafruit 353 pack is NOT approved; dual 1781 pods are plan of record.",
     "Rook Connect Kit fitted LOW-PROFILE 7.2 (no headers); ~17 with sockets DOES NOT FIT.",
     "LTE flex 44\u00d710 U; GNSS cover 1\u20133 mm plastic, no metal above patch.",
-    "Antenna metal keepout 10\u201315 mm (CAD uses 12 mm) from inserts/screws/CW/cells.",
+    "Antenna metal keepout \u226515 mm (CAD ANTENNA_METAL_KEEP=15) from inserts/screws/CW/cells.",
     "Do not pot the bq24074 charger solid \u2014 service access required.",
     "Cell swap needs only an M3 driver (pod lid orange/service screws).",
     "Counterweight tub stays free of electronics \u2014 steel pack only.",
@@ -24,12 +24,49 @@
   ],
   "fit_height_note": "Cap free height \u2248 14.3 mm (13 cavity + ~1.3 lid recess). Wio-SX1262 upright pocket needs ~23 mm + 20 mm wire bend \u2014 DOES NOT FIT. Connect Kit with socketed headers needs ~17 mm \u2014 DOES NOT FIT. Production CAD uses LAY-FLAT Wio (8 mm pocket) + LOW-PROFILE kit without headers (7.2 mm). Alternatives for Cody: (A) keep lay-flat/low-profile, (B) raise cap cavity \u226523 mm (hurts brand proportions / pod-lower look), (C) solder headers / remote radio. Flagged OPEN for Cody.",
   "cody_flags": [
-    "FIT HEIGHT: upright Wio 23 mm + kit headers 17 mm vs ~14.3 mm free \u2014 choose A/B/C in FIT_HEIGHT_NOTE.",
-    "P124 solar panel KEEP-OR-DROP OPEN \u2014 keep cap 76 or drop panel and take CAP_W_SLIM 58 (brand 1.3\u00d7 strap).",
+    "FIT HEIGHT: option A in force (lay-flat Wio + low-profile kit). B/C still available if Cody revisits.",
+    "P124 KEPT on collar #1 (2026-11-03) \u2014 CLOSED. Cap 76; pocket + 15 mm keep-clear stay.",
     "Mono vs stereo buzzer; 1781 purchase (HARDWARE-FIT).",
     "Light-gray colourway proposal \u2014 pending op-brand."
   ],
+  "decisions": [
+    {
+      "id": "P124",
+      "status": "KEPT",
+      "date": "2026-11-03",
+      "by": "Cody",
+      "note": "Collar #1 keeps Voltaic P124; cap 76\u00d7160; 15 mm keep-clear."
+    },
+    {
+      "id": "FIT_HEIGHT",
+      "status": "OPTION_A",
+      "date": "2026-11-03",
+      "by": "Cody/op-maker",
+      "note": "Lay-flat Wio + low-profile kit; upright/headers nofit."
+    }
+  ],
+  "panel_kept": true,
+  "panel_decision_date": "2026-11-03",
   "colourway_proposal": "Light-gray shell colourway proposed (durability/field-soil review). PENDING op-brand review \u2014 charcoal #26282B + orange #FF6A2B remain current locked accents.",
+  "floor_glyphs": true,
+  "floor_label_table": {
+    "KIT": "KIT",
+    "BQ": "BQ",
+    "WIO": "WIO",
+    "USB": "USB",
+    "CELL": "CELL",
+    "BUZZ": "BUZZ",
+    "GNSS": "GNSS",
+    "LTE": "LTE",
+    "POST": "P",
+    "SCR1": "1",
+    "SCR2": "2",
+    "SCR3": "3",
+    "SCR4": "4",
+    "PLUS": "+",
+    "MINUS": "\u2212",
+    "PIN1": "\u25b6"
+  },
   "clearances": {
     "wio_plus_x_wall_mm": 5.1,
     "wio_wall_ok": true,
@@ -58,6 +95,7 @@
     "colourway": "Light-gray shell colourway proposed (durability/field-soil review). PENDING op-brand review \u2014 charcoal #26282B + orange #FF6A2B remain current locked accents."
   },
   "clamp_orientation": "Print: flange flat on bed, web/walls rising in +Z (channel opens up). Load path: strap compression along bar length (Y) WITH layers \u2014 never peel across layers.",
+  "print_orientation_note": "All STLs exported with bed face at z=0. Lids in FLIP_OUTER_DOWN are flipped 180\u00b0 about X on export so OUTER face is on the bed; GNSS/LTE cavity openings face +Z (away from bed).",
   "layout": {
     "cap": [
       "Rook Connect Kit",
@@ -186,7 +224,7 @@
         10.0,
         0.8
       ],
-      "metal_keepout": 12.0,
+      "metal_keepout": 15.0,
       "crest": "+Y"
     }
   },
@@ -197,12 +235,13 @@
     "note": "pod lid 4.0 durability \u2192 26.0 vs cap 25.5 (0.5 mm brand tension)"
   },
   "waist_frac": 0.7450980392156863,
-  "panel_open_decision": true,
+  "panel_open_decision": false,
   "cap_vs_brand_width": {
     "cap_w": 76.0,
     "brand_max_1_3x_strap": 57.8,
-    "cap_w_slim_if_no_panel": 58.0,
-    "conflict": true
+    "cap_w_slim_historical": 58.0,
+    "conflict_accepted": true,
+    "reason": "P124 KEPT on collar #1 \u2014 cap stays 76"
   },
   "bodies": {
     "cap_base": {
@@ -219,12 +258,14 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 11440
+        "faces": 11980
       },
       "pass": true,
       "stl_path": "stl/cap_base.stl",
-      "orientation": "cavity up, bed=underside",
-      "load_path": "clamp\u2192inserts WITH layers; walls carry drop",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: cavity UP; bed=underside z=0",
+      "load_path": "clamp\u2192inserts WITH layers",
       "material": "ASA/PETG",
       "farmer_swappable": false,
       "rf_near_antenna": true
@@ -238,7 +279,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "normals_outward": true
+        "normals_outward": false
       },
       "stl": {
         "watertight": true,
@@ -247,8 +288,10 @@
       },
       "pass": true,
       "stl_path": "stl/cap_lid.stl",
-      "orientation": "OUTER face down; landing-ring groove UP",
-      "load_path": "lid screws INTO base inserts; no full-area recess",
+      "export_flipped_outer_down": true,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: OUTER face DOWN z=0 (flipped on export); GNSS/LTE open +Z",
+      "load_path": "lid screws INTO base",
       "material": "ASA/PETG",
       "farmer_swappable": true,
       "rf_near_antenna": true
@@ -271,8 +314,10 @@
       },
       "pass": true,
       "stl_path": "stl/panel_p124.stl",
-      "orientation": "flat",
-      "load_path": "bonded in pocket (OPEN DECISION)",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: flat; bed=either face z=0",
+      "load_path": "bonded in pocket \u2014 P124 KEPT collar #1",
       "material": "bought",
       "farmer_swappable": true,
       "rf_near_antenna": true
@@ -295,8 +340,10 @@
       },
       "pass": true,
       "stl_path": "stl/pod_L_base.stl",
-      "orientation": "cavity up",
-      "load_path": "lid screws; cell cradle; cable strain",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: cavity UP; bed=underside z=0",
+      "load_path": "lid screws; cell cradle",
       "material": "ASA/PETG",
       "farmer_swappable": false,
       "rf_near_antenna": true
@@ -310,7 +357,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "normals_outward": true
+        "normals_outward": false
       },
       "stl": {
         "watertight": true,
@@ -319,8 +366,10 @@
       },
       "pass": true,
       "stl_path": "stl/pod_L_lid.stl",
-      "orientation": "outer face down; \u22654 mm; landing ring UP",
-      "load_path": "lid screws; ribs clear of cell \u22651 mm",
+      "export_flipped_outer_down": true,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: OUTER face DOWN z=0 (flipped on export)",
+      "load_path": "lid screws; ribs clear cell",
       "material": "ASA/PETG",
       "farmer_swappable": true,
       "rf_near_antenna": true
@@ -343,7 +392,9 @@
       },
       "pass": true,
       "stl_path": "stl/pod_R_base.stl",
-      "orientation": "cavity up",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: cavity UP; bed=underside z=0",
       "load_path": "mirror of L",
       "material": "ASA/PETG",
       "farmer_swappable": false,
@@ -358,7 +409,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "normals_outward": true
+        "normals_outward": false
       },
       "stl": {
         "watertight": true,
@@ -367,7 +418,9 @@
       },
       "pass": true,
       "stl_path": "stl/pod_R_lid.stl",
-      "orientation": "outer face down; \u22654 mm; landing ring UP",
+      "export_flipped_outer_down": true,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: OUTER face DOWN z=0 (flipped on export)",
       "load_path": "mirror of L",
       "material": "ASA/PETG",
       "farmer_swappable": true,
@@ -391,8 +444,10 @@
       },
       "pass": true,
       "stl_path": "stl/cw_tub.stl",
-      "orientation": "cavity up",
-      "load_path": "steel pack; clamp; NO antennas",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: cavity UP; bed=underside z=0",
+      "load_path": "steel pack; NO antennas",
       "material": "ASA/PETG",
       "farmer_swappable": false,
       "rf_near_antenna": false
@@ -406,7 +461,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "normals_outward": true
+        "normals_outward": false
       },
       "stl": {
         "watertight": true,
@@ -415,7 +470,9 @@
       },
       "pass": true,
       "stl_path": "stl/cw_lid.stl",
-      "orientation": "mating face down",
+      "export_flipped_outer_down": true,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: OUTER face DOWN z=0 (flipped on export)",
       "load_path": "lid screws",
       "material": "ASA/PETG",
       "farmer_swappable": true,
@@ -439,8 +496,10 @@
       },
       "pass": true,
       "stl_path": "stl/saddle.stl",
-      "orientation": "flank on bed; roof\u22651.6 mm",
-      "load_path": "strap\u2192rails\u2192clamp\u2192cap inserts ALONG layers",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: roof on bed z=0; channel opens +Z",
+      "load_path": "strap\u2192rails\u2192clamp ALONG layers",
       "material": "ASA/PETG or PA-CF*",
       "farmer_swappable": false,
       "rf_near_antenna": false
@@ -463,8 +522,10 @@
       },
       "pass": true,
       "stl_path": "stl/clamp_bar.stl",
-      "orientation": "flange on bed, channel +Z; load ALONG Y WITH layers",
-      "load_path": "strap compression \u2192 web/flange \u2192 M3; \u226512 mm from LoRa crest",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: flange on bed z=0; channel +Z; load ALONG Y WITH layers",
+      "load_path": "strap compression; \u226515 mm from LoRa crest",
       "material": "ASA/PETG or PA-CF*",
       "farmer_swappable": true,
       "rf_near_antenna": false
@@ -487,7 +548,9 @@
       },
       "pass": true,
       "stl_path": "stl/keeper.stl",
-      "orientation": "flat",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: flat; bed z=0",
       "load_path": "strap tail guide",
       "material": "ASA/PETG/TPU",
       "farmer_swappable": true,
@@ -511,8 +574,10 @@
       },
       "pass": true,
       "stl_path": "stl/buckle.stl",
-      "orientation": "flat",
-      "load_path": "strap open/close; cross-bar fused to frame",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: flat; bed z=0",
+      "load_path": "strap open/close",
       "material": "ASA/PETG",
       "farmer_swappable": true,
       "rf_near_antenna": false
@@ -535,7 +600,9 @@
       },
       "pass": true,
       "stl_path": "stl/latch.stl",
-      "orientation": "flat",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: flat; bed z=0",
       "load_path": "lid open cue (orange)",
       "material": "ASA/PETG",
       "farmer_swappable": true,
@@ -559,7 +626,9 @@
       },
       "pass": true,
       "stl_path": "stl/plug_service.stl",
-      "orientation": "flat",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: flat; bed z=0",
       "load_path": "covers farmer screws",
       "material": "ASA orange",
       "farmer_swappable": true,
@@ -583,7 +652,9 @@
       },
       "pass": true,
       "stl_path": "stl/plug_struct.stl",
-      "orientation": "flat",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: flat; bed z=0",
       "load_path": "charcoal cosmetic",
       "material": "ASA charcoal",
       "farmer_swappable": true,
@@ -607,8 +678,10 @@
       },
       "pass": true,
       "stl_path": "stl/fairing_cap_pod_L.stl",
-      "orientation": "long axis on bed; slope=WALL; R7/R2.5",
-      "load_path": "28 mm blend cap\u2192pod",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: long axis on bed; slope=WALL",
+      "load_path": "28 mm blend",
       "material": "ASA/PETG",
       "farmer_swappable": true,
       "rf_near_antenna": false
@@ -631,7 +704,9 @@
       },
       "pass": true,
       "stl_path": "stl/fairing_cap_pod_R.stl",
-      "orientation": "long axis on bed; slope=WALL; R7/R2.5",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: long axis on bed; slope=WALL",
       "load_path": "mirror",
       "material": "ASA/PETG",
       "farmer_swappable": true,
@@ -655,8 +730,10 @@
       },
       "pass": true,
       "stl_path": "stl/fairing_pod_strap_L.stl",
-      "orientation": "long axis on bed; slope=WALL; R7/R2.5",
-      "load_path": "28 mm blend into strap",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: long axis on bed; slope=WALL",
+      "load_path": "28 mm blend",
       "material": "ASA/PETG",
       "farmer_swappable": true,
       "rf_near_antenna": false
@@ -679,7 +756,9 @@
       },
       "pass": true,
       "stl_path": "stl/fairing_pod_strap_R.stl",
-      "orientation": "long axis on bed; slope=WALL; R7/R2.5",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: long axis on bed; slope=WALL",
       "load_path": "mirror",
       "material": "ASA/PETG",
       "farmer_swappable": true,
@@ -703,8 +782,10 @@
       },
       "pass": true,
       "stl_path": "stl/usbc_cap.stl",
-      "orientation": "flat",
-      "load_path": "charge-port dust/gasket cap",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: flat; bed z=0",
+      "load_path": "charge-port gasket cap",
       "material": "TPU",
       "farmer_swappable": true,
       "rf_near_antenna": false
@@ -727,8 +808,10 @@
       },
       "pass": true,
       "stl_path": "stl/buzz_mesh.stl",
-      "orientation": "flat",
-      "load_path": "rimmed mesh disc \u2014 ONE part (\u00d72)",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: flat; bed z=0",
+      "load_path": "rimmed mesh disc \u00d72",
       "material": "PETG/TPU",
       "farmer_swappable": true,
       "rf_near_antenna": false
@@ -751,7 +834,9 @@
       },
       "pass": true,
       "stl_path": "stl/label_coupon.stl",
-      "orientation": "flat",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: flat; bed z=0",
       "load_path": "0.16 mm layer label test",
       "material": "ASA/PETG",
       "farmer_swappable": false,
@@ -775,8 +860,88 @@
       },
       "pass": true,
       "stl_path": "stl/fit_coupon.stl",
-      "orientation": "flat",
-      "load_path": "FIRST print \u2014 pocket/insert/groove gauges",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: flat; bed z=0",
+      "load_path": "FIRST print \u2014 gauges",
+      "material": "PLA",
+      "farmer_swappable": false,
+      "rf_near_antenna": false
+    },
+    "cap_floor_layout": {
+      "size_mm": [
+        60.0,
+        110.0,
+        5.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 1058
+      },
+      "pass": true,
+      "stl_path": "stl/cap_floor_layout.stl",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: floor underside z=0; ribs/glyphs UP",
+      "load_path": "PLA layout coupon",
+      "material": "PLA",
+      "farmer_swappable": false,
+      "rf_near_antenna": true
+    },
+    "pod_floor_layout": {
+      "size_mm": [
+        70.0,
+        50.0,
+        5.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 598
+      },
+      "pass": true,
+      "stl_path": "stl/pod_floor_layout.stl",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: floor underside z=0; ribs/glyphs UP",
+      "load_path": "PLA layout coupon (L=R mirror)",
+      "material": "PLA",
+      "farmer_swappable": false,
+      "rf_near_antenna": true
+    },
+    "cw_floor_layout": {
+      "size_mm": [
+        60.0,
+        50.0,
+        4.5
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 316
+      },
+      "pass": true,
+      "stl_path": "stl/cw_floor_layout.stl",
+      "export_flipped_outer_down": false,
+      "bed_face_at_z0": true,
+      "orientation": "PRINT: floor underside z=0",
+      "load_path": "PLA steel-pack outline",
       "material": "PLA",
       "farmer_swappable": false,
       "rf_near_antenna": false

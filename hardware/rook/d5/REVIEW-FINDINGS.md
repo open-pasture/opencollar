@@ -11,7 +11,7 @@ Nothing printed. Printer not touched. Nothing merged. No PR opened.
 - The U.FL slack channel (x 13-21, y 2-22) overlaps the bq24074 pocket corner (x to 19.5, y from 5.1).
 - The cap screw column at (±29.5, -42) d8 clips the kit pocket corner by about 0.5 mm.
 - Pods are taller than the cap (30.5 vs 25.5 mm total), against brand's "pods smaller and lower".
-- Cap width is 76 mm against the brand limit of ≤57.8 mm (1.3× strap). P124 panel still OPEN.
+- Cap width is 76 mm against the brand limit of ≤57.8 mm (1.3× strap). P124 panel **KEPT** on collar #1 (Cody 2026-11-03) — conflict accepted.
 - Strap thickness 4.0 mm and the bq/GNSS/Wio heights are unverified (calipers / parts Nov 4-6).
 
 ## Geometry checks (fixed set)

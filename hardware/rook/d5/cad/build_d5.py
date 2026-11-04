@@ -1,15 +1,20 @@
 """D5 production CAD — printable parametric rebuild of the D5 look study.
 
-Print orientation (load WITH layers, never across):
-  cap_base / pod_*_base / cw_tub  — bed = outer face OR cavity-up (documented per part)
-  lids                             — mating face down (seal land on bed)
-  saddle                           — flank on bed, channel as pocket (no bridge)
-  fairings                         — long axis on bed, visible slope as WALL
-  clamp bars                       — flat on bed
-  plugs / latch / seals            — flat on bed
+Exported STLs are in INTENDED PRINT ORIENTATION: bed face at z=0, no flip needed.
 
-Does NOT remesh/warp like the look-study. Curve to strap is via saddle +
-fairing mating, not voxel bend. Look-study STLs stay in ../look_study/.
+  cap/pod/cw bases     — cavity UP; bed = outer underside (z=0)
+  cap/pod/cw lids      — OUTER face DOWN (z=0); mating/landing features UP
+                         (GNSS/LTE cavity openings face +Z after flip)
+  saddle               — roof on bed (z=0); strap channel opens +Z (no bridge)
+  clamp_bar            — flange on bed (z=0); channel opens +Z
+  fairings             — long axis on bed; slope as WALL
+  floor_layout coupons — floor underside on bed; ribs/glyphs UP
+  small parts          — flat on bed as built
+
+Assembly orientation (mating at z=0) is used while modeling lids; export_part
+flips lids 180° about X then normalizes min-z → 0 so the STL matches print.
+
+FLOOR_GLYPHS: locating ribs + engraved labels on floor-layout variants.
 
 Run:
   cd hardware/rook/d5/cad
@@ -27,7 +32,7 @@ import sys
 from collections import Counter
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _D5 = os.path.abspath(os.path.join(_HERE, ".."))
@@ -44,6 +49,39 @@ BLACK = (0.07, 0.07, 0.08, 1.0)
 OAT = (0xEF / 255, 0xE8 / 255, 0xD8 / 255, 1.0)
 WORLD = (0.94, 0.93, 0.90)
 
+# Floor-layout assembly aids (Cody PLA floor print). Toggle glyphs/ribs.
+FLOOR_GLYPHS = True
+FLOOR_RIB_H = 3.0
+FLOOR_LAYOUT_H = 8.0          # trimmed coupon height
+GLYPH_DEPTH = 0.6             # ≥0.6 mm engrave
+GLYPH_SIZE = 3.2              # ~1 mm stroke on 0.4 mm nozzle
+
+# id → (short label, notes) — single source for floor glyphs
+FLOOR_LABEL_TABLE = {
+    "KIT": ("KIT", "nRF9151 Connect Kit; USB→−Y; pin1 mark"),
+    "BQ": ("BQ", "bq24074 charger; DO NOT POT"),
+    "WIO": ("WIO", "SX1262 lay-flat; U.FL→crest"),
+    "USB": ("USB", "USB-C charge"),
+    "CELL": ("CELL", "18650 + / −"),
+    "BUZZ": ("BUZZ", "Qwiic buzzer"),
+    "GNSS": ("GNSS", "patch sky; lid"),
+    "LTE": ("LTE", "flex; lid"),
+    "POST": ("P", "lid support"),
+    "SCR1": ("1", "screw order"),
+    "SCR2": ("2", "screw order"),
+    "SCR3": ("3", "screw order"),
+    "SCR4": ("4", "screw order"),
+    "PLUS": ("+", "cell +"),
+    "MINUS": ("−", "cell −"),
+    "PIN1": ("▶", "pin-1 / connector"),
+}
+
+# Parts whose assembly model has mating/features at z=0 but print OUTER face down.
+# export_part flips these 180° about X so outer face lands at z=0.
+FLIP_OUTER_DOWN = {
+    "cap_lid", "pod_L_lid", "pod_R_lid", "cw_lid",
+}
+
 # ---------------------------------------------------------------- mesh helpers
 
 def prepare(obj, merge=1e-4):
@@ -57,6 +95,57 @@ def prepare(obj, merge=1e-4):
     bm.free()
     obj.data.update()
     return obj
+
+
+def normalize_z0(obj):
+    """Translate mesh so min Z == 0 (bed plane)."""
+    oc.bake(obj)
+    lo, _hi = oc.bounds(obj)
+    if abs(lo[2]) > 1e-6:
+        oc.move(obj, dz=-lo[2])
+    return obj
+
+
+def flip_outer_down(obj):
+    """Rotate 180° about X so former +Z (outer) becomes bed at z=0 after normalize."""
+    oc.bake(obj)
+    obj.data.transform(Matrix.Rotation(math.radians(180), 4, "X"))
+    obj.data.flip_normals()
+    return normalize_z0(obj)
+
+
+def engrave_glyph(body, text, at, size=GLYPH_SIZE, depth=GLYPH_DEPTH):
+    """Raised label pad on the floor (emboss ≥0.6 mm). Text-cut glyphs were
+    non-manifold on thin floors; pads + short ID keep assembly readable on 0.4 mm nozzle.
+    """
+    if not FLOOR_GLYPHS or not text:
+        return body
+    # Pad sized for ≥1.0 mm effective stroke width when viewed / marked by hand
+    tw = max(6.0, 0.7 * size * max(len(text), 1))
+    th = max(4.0, size + 1.0)
+    pad = oc.rounded_rect(f"gp_{text}_{at[0]:.0f}_{at[1]:.0f}",
+                          (tw, th, depth), 0.6,
+                          at=(at[0], at[1], at[2]), anchor="bottom", segments=4)
+    oc.union(body, pad)
+    # Letterforms: skip boolean text (non-manifold on thin floors). Pads are the
+    # printable glyph markers; assemblers mark IDs from FLOOR_LABEL_TABLE / README.
+    return body
+
+
+def locate_rib_rect(body, name, size_xy, at_xy, floor_z, h=FLOOR_RIB_H, wall=1.2):
+    """Raised rectangular locating fence on the floor (four wall segments — manifold)."""
+    sx, sy = size_xy
+    ox, oy = sx / 2 + wall / 2, sy / 2 + wall / 2
+    # Four separate walls instead of outer-minus-inner (avoids coplanar boolean junk)
+    segs = [
+        ((sx + 2 * wall, wall, h), (at_xy[0], at_xy[1] + oy, floor_z)),
+        ((sx + 2 * wall, wall, h), (at_xy[0], at_xy[1] - oy, floor_z)),
+        ((wall, sy, h), (at_xy[0] + ox, at_xy[1], floor_z)),
+        ((wall, sy, h), (at_xy[0] - ox, at_xy[1], floor_z)),
+    ]
+    for i, (sz, pos) in enumerate(segs):
+        oc.union(body, oc.box(f"{name}_w{i}", sz, at=pos, anchor="bottom"))
+    return body
 
 
 def check_wt(obj):
@@ -294,13 +383,21 @@ def cap_base():
                                   at=(bx, by, D.CAP_FLOOR + D.KIT_POCKET[2] - 0.5),
                                   anchor="bottom"))
 
-    # Cable exits toward pods (±X). (Chamfer ring omitted — was non-manifold on wall.)
+    # Cable exits toward pods (±X): plain through-hole first.
     for sx in (-1, 1):
         oc.cut(b, oc.cylinder(f"cable{sx}", 6.0, D.CAP_WALL + 4,
                               at=(sx * (D.CAP_W / 2 - D.CAP_WALL / 2), 0, D.CAP_FLOOR + 6),
                               axis="X", segments=32))
 
     end_taper_cut(b, D.CAP_W, D.CAP_L, D.CAP_BASE_H, D.CAP_TAPER_LEN)
+    b = prepare(b)
+
+    # Separate boolean: stepped countersink on outer face (45° cone was non-manifold
+    # on this wall; Ø8×1.2 counterbore is the durable printable substitute).
+    for sx in (-1, 1):
+        oc.cut(b, oc.cylinder(f"cablesink{sx}", 8.0, 1.2,
+                              at=(sx * (D.CAP_W / 2 - 0.6), 0, D.CAP_FLOOR + 6),
+                              axis="X", segments=32))
     return prepare(b)
 
 
@@ -325,7 +422,7 @@ def cap_lid():
                             r_i, at=(0, 0, -0.2), anchor="bottom")
     oc.cut(lid, oc.cut(outer, inner))
 
-    # P124 pocket — OPEN keep-or-drop; ≥2 mm lid under (CAP_LID_T - pz ≥ 2)
+    # P124 pocket — KEPT on collar #1 (2026-11-03); ≥2 mm lid under (CAP_LID_T - pz ≥ 2)
     px, py, pz = D.PANEL_POCKET
     assert D.CAP_LID_T - pz >= D.PANEL_MIN_LID_UNDER
     oc.cut(lid, oc.rounded_rect("ppocket", (px, py, pz + 0.2), 1.2,
@@ -683,48 +780,116 @@ def fit_coupon():
     return prepare(c)
 
 
+# ---------------------------------------------------------------- floor-layout coupons (PLA assembly aids)
+
+def cap_floor_layout():
+    """Trimmed cap floor + locating ribs + ID pads. Bed = underside (z=0); ribs UP."""
+    w, l = 60.0, 110.0
+    floor = oc.rounded_rect("cap_floor", (w, l, 2.0), 3.0, anchor="bottom", segments=6)
+    fz = 2.0
+    # Keep fences well inside the plate
+    locate_rib_rect(floor, "kit", (40.0, 18.0), (0.0, -22.0), fz, wall=1.2)
+    locate_rib_rect(floor, "bq", (30.0, 24.0), (0.0, 22.0), fz, wall=1.2)
+    locate_rib_rect(floor, "wio", (18.0, 14.0), (18.0, -5.0), fz, wall=1.2)
+    for i, py in enumerate((5.0, -8.0)):
+        oc.union(floor, oc.cylinder(f"flpost{i}", 8.0, FLOOR_RIB_H,
+                                    at=(0.0, py, fz), anchor="bottom", segments=16))
+    for lab, xy in (("KIT", (0, -8)), ("BQ", (0, 38)), ("WIO", (18, 8)),
+                    ("USB", (0, -48)), ("P", (10, 5)), ("1", (-22, -45)),
+                    ("2", (22, -45)), ("3", (-22, 45)), ("4", (22, 45))):
+        engrave_glyph(floor, lab, (xy[0], xy[1], fz), size=3.0)
+    return normalize_z0(prepare(floor))
+
+
+def pod_floor_layout(side="L"):
+    """Trimmed pod floor + cell cradle + buzzer fence + polarity pads."""
+    w, l = 70.0, 50.0
+    floor = oc.rounded_rect(f"pod_{side}_floor", (w, l, 2.0), 3.0, anchor="bottom", segments=6)
+    fz = 2.0
+    # Cell rails (short, inside plate)
+    for sy in (-1, 1):
+        oc.union(floor, oc.box(f"cellrail{sy}", (50.0, 1.4, FLOOR_RIB_H),
+                               at=(0.0, sy * 11.0, fz), anchor="bottom"))
+    for sx, lab in ((-1, "+"), (1, "-")):
+        oc.union(floor, oc.box(f"cellend{sx}", (1.6, 18.0, FLOOR_RIB_H),
+                               at=(sx * 28.0, 0.0, fz), anchor="bottom"))
+        engrave_glyph(floor, lab, (sx * 22.0, 16.0, fz), size=4.0)
+    engrave_glyph(floor, "CELL", (0.0, -18.0, fz), size=3.0)
+    locate_rib_rect(floor, "buzz", (20.0, 20.0), (18.0, 12.0), fz, wall=1.2)
+    engrave_glyph(floor, "BUZZ", (18.0, -6.0, fz), size=3.0)
+    if side == "R":
+        oc.bake(floor)
+        floor.data.transform(Matrix.Scale(-1, 4, (1, 0, 0)))
+        floor.data.flip_normals()
+    return normalize_z0(prepare(floor))
+
+
+def cw_floor_layout():
+    """CW floor plate with steel-pack outline pads."""
+    w, l = 60.0, 50.0
+    floor = oc.rounded_rect("cw_floor", (w, l, 2.0), 3.0, anchor="bottom", segments=6)
+    locate_rib_rect(floor, "steel", (48.0, 38.0), (0, 0), 2.0, h=2.5, wall=1.5)
+    engrave_glyph(floor, "STEEL", (0, 10, 2.0), size=4.0)
+    engrave_glyph(floor, "ONLY", (0, -10, 2.0), size=4.0)
+    return normalize_z0(prepare(floor))
+
+
 # ---------------------------------------------------------------- export / plates / render
 
 PART_META = {
     # name: orientation, load_path, material_field, farmer_swappable, rf_near
-    "cap_base": ("cavity up, bed=underside", "clamp→inserts WITH layers; walls carry drop", "ASA/PETG", False, True),
-    "cap_lid": ("OUTER face down; landing-ring groove UP", "lid screws INTO base inserts; no full-area recess", "ASA/PETG", True, True),
-    "panel_p124": ("flat", "bonded in pocket (OPEN DECISION)", "bought", True, True),
-    "pod_L_base": ("cavity up", "lid screws; cell cradle; cable strain", "ASA/PETG", False, True),
-    "pod_L_lid": ("outer face down; ≥4 mm; landing ring UP", "lid screws; ribs clear of cell ≥1 mm", "ASA/PETG", True, True),
-    "pod_R_base": ("cavity up", "mirror of L", "ASA/PETG", False, True),
-    "pod_R_lid": ("outer face down; ≥4 mm; landing ring UP", "mirror of L", "ASA/PETG", True, True),
-    "cw_tub": ("cavity up", "steel pack; clamp; NO antennas", "ASA/PETG", False, False),
-    "cw_lid": ("mating face down", "lid screws", "ASA/PETG", True, False),
-    "saddle": ("flank on bed; roof≥1.6 mm", "strap→rails→clamp→cap inserts ALONG layers", "ASA/PETG or PA-CF*", False, False),
-    "clamp_bar": ("flange on bed, channel +Z; load ALONG Y WITH layers",
-                  "strap compression → web/flange → M3; ≥12 mm from LoRa crest", "ASA/PETG or PA-CF*", True, False),
-    "keeper": ("flat", "strap tail guide", "ASA/PETG/TPU", True, False),
-    "buckle": ("flat", "strap open/close; cross-bar fused to frame", "ASA/PETG", True, False),
-    "latch": ("flat", "lid open cue (orange)", "ASA/PETG", True, False),
-    "plug_service": ("flat", "covers farmer screws", "ASA orange", True, False),
-    "plug_struct": ("flat", "charcoal cosmetic", "ASA charcoal", True, False),
-    "fairing_cap_pod_L": ("long axis on bed; slope=WALL; R7/R2.5", "28 mm blend cap→pod", "ASA/PETG", True, False),
-    "fairing_cap_pod_R": ("long axis on bed; slope=WALL; R7/R2.5", "mirror", "ASA/PETG", True, False),
-    "fairing_pod_strap_L": ("long axis on bed; slope=WALL; R7/R2.5", "28 mm blend into strap", "ASA/PETG", True, False),
-    "fairing_pod_strap_R": ("long axis on bed; slope=WALL; R7/R2.5", "mirror", "ASA/PETG", True, False),
-    "usbc_cap": ("flat", "charge-port dust/gasket cap", "TPU", True, False),
-    "buzz_mesh": ("flat", "rimmed mesh disc — ONE part (×2)", "PETG/TPU", True, False),
-    "label_coupon": ("flat", "0.16 mm layer label test", "ASA/PETG", False, False),
-    "fit_coupon": ("flat", "FIRST print — pocket/insert/groove gauges", "PLA", False, False),
+    # orientation string = intended PRINT orientation; STL z=0 is the bed face.
+    "cap_base": ("PRINT: cavity UP; bed=underside z=0", "clamp→inserts WITH layers", "ASA/PETG", False, True),
+    "cap_lid": ("PRINT: OUTER face DOWN z=0 (flipped on export); GNSS/LTE open +Z", "lid screws INTO base", "ASA/PETG", True, True),
+    "panel_p124": ("PRINT: flat; bed=either face z=0", "bonded in pocket — P124 KEPT collar #1", "bought", True, True),
+    "pod_L_base": ("PRINT: cavity UP; bed=underside z=0", "lid screws; cell cradle", "ASA/PETG", False, True),
+    "pod_L_lid": ("PRINT: OUTER face DOWN z=0 (flipped on export)", "lid screws; ribs clear cell", "ASA/PETG", True, True),
+    "pod_R_base": ("PRINT: cavity UP; bed=underside z=0", "mirror of L", "ASA/PETG", False, True),
+    "pod_R_lid": ("PRINT: OUTER face DOWN z=0 (flipped on export)", "mirror of L", "ASA/PETG", True, True),
+    "cw_tub": ("PRINT: cavity UP; bed=underside z=0", "steel pack; NO antennas", "ASA/PETG", False, False),
+    "cw_lid": ("PRINT: OUTER face DOWN z=0 (flipped on export)", "lid screws", "ASA/PETG", True, False),
+    "saddle": ("PRINT: roof on bed z=0; channel opens +Z", "strap→rails→clamp ALONG layers", "ASA/PETG or PA-CF*", False, False),
+    "clamp_bar": ("PRINT: flange on bed z=0; channel +Z; load ALONG Y WITH layers",
+                  "strap compression; ≥15 mm from LoRa crest", "ASA/PETG or PA-CF*", True, False),
+    "keeper": ("PRINT: flat; bed z=0", "strap tail guide", "ASA/PETG/TPU", True, False),
+    "buckle": ("PRINT: flat; bed z=0", "strap open/close", "ASA/PETG", True, False),
+    "latch": ("PRINT: flat; bed z=0", "lid open cue (orange)", "ASA/PETG", True, False),
+    "plug_service": ("PRINT: flat; bed z=0", "covers farmer screws", "ASA orange", True, False),
+    "plug_struct": ("PRINT: flat; bed z=0", "charcoal cosmetic", "ASA charcoal", True, False),
+    "fairing_cap_pod_L": ("PRINT: long axis on bed; slope=WALL", "28 mm blend", "ASA/PETG", True, False),
+    "fairing_cap_pod_R": ("PRINT: long axis on bed; slope=WALL", "mirror", "ASA/PETG", True, False),
+    "fairing_pod_strap_L": ("PRINT: long axis on bed; slope=WALL", "28 mm blend", "ASA/PETG", True, False),
+    "fairing_pod_strap_R": ("PRINT: long axis on bed; slope=WALL", "mirror", "ASA/PETG", True, False),
+    "usbc_cap": ("PRINT: flat; bed z=0", "charge-port gasket cap", "TPU", True, False),
+    "buzz_mesh": ("PRINT: flat; bed z=0", "rimmed mesh disc ×2", "PETG/TPU", True, False),
+    "label_coupon": ("PRINT: flat; bed z=0", "0.16 mm layer label test", "ASA/PETG", False, False),
+    "fit_coupon": ("PRINT: flat; bed z=0", "FIRST print — gauges", "PLA", False, False),
+    "cap_floor_layout": ("PRINT: floor underside z=0; ribs/glyphs UP", "PLA layout coupon", "PLA", False, True),
+    "pod_floor_layout": ("PRINT: floor underside z=0; ribs/glyphs UP", "PLA layout coupon (L=R mirror)", "PLA", False, True),
+    "cw_floor_layout": ("PRINT: floor underside z=0", "PLA steel-pack outline", "PLA", False, False),
 }
 
 
 def export_part(obj, path, meta_key=None):
+    """Export STL in intended PRINT orientation: bed face at z=0."""
     prepare(obj)
+    flipped = False
+    if meta_key in FLIP_OUTER_DOWN:
+        flip_outer_down(obj)
+        flipped = True
+    else:
+        normalize_z0(obj)
     dims = list(oc.size(obj))
     wt = check_wt(obj)
     oc.export_stl(obj, path)
     stl = check_stl(path)
     tag = "OK" if wt["watertight"] and stl["watertight"] else "LOOK"
-    print(f"{tag}  {os.path.basename(path)}: {[round(x,1) for x in dims]}  bad={wt['bad_edges']}")
+    print(f"{tag}  {os.path.basename(path)}: {[round(x,1) for x in dims]}  bad={wt['bad_edges']}"
+          f"  bed_z0={'OUTER' if flipped else 'as-built'}")
     body = {"size_mm": dims, "watertight": wt, "stl": stl, "pass": True,
-            "stl_path": os.path.relpath(path, _D5)}
+            "stl_path": os.path.relpath(path, _D5),
+            "export_flipped_outer_down": flipped,
+            "bed_face_at_z0": True}
     if meta_key and meta_key in PART_META:
         o, load, mat, swap, rf = PART_META[meta_key]
         body.update({"orientation": o, "load_path": load, "material": mat,
@@ -882,6 +1047,9 @@ def main():
         ("buzz_mesh", buzz_mesh, "buzz_mesh"),
         ("label_coupon", label_coupon, "label_coupon"),
         ("fit_coupon", fit_coupon, "fit_coupon"),
+        ("cap_floor_layout", cap_floor_layout, "cap_floor_layout"),
+        ("pod_floor_layout", lambda: pod_floor_layout("L"), "pod_floor_layout"),
+        ("cw_floor_layout", cw_floor_layout, "cw_floor_layout"),
     ]
 
     # ---- clearance / sanity checks (printed into report) ----
@@ -911,13 +1079,23 @@ def main():
     print("CLEARANCES:", json.dumps(clearances, indent=2))
 
     report = {
-        "revision": "D5_production_durability",
+        "revision": "D5_print_orient_floor_panel_kept",
         "assumptions": D.ASSUMPTIONS,
         "fit_height_note": D.FIT_HEIGHT_NOTE,
         "cody_flags": D.CODY_FLAGS,
+        "decisions": D.DECISIONS,
+        "panel_kept": D.PANEL_KEPT,
+        "panel_decision_date": D.PANEL_DECISION_DATE,
         "colourway_proposal": D.COLOURWAY_PROPOSAL,
+        "floor_glyphs": FLOOR_GLYPHS,
+        "floor_label_table": {k: v[0] for k, v in FLOOR_LABEL_TABLE.items()},
         "clearances": clearances,
         "clamp_orientation": D.CLAMP_ORIENTATION,
+        "print_orientation_note": (
+            "All STLs exported with bed face at z=0. Lids in FLIP_OUTER_DOWN are "
+            "flipped 180° about X on export so OUTER face is on the bed; GNSS/LTE "
+            "cavity openings face +Z (away from bed)."
+        ),
         "layout": D.LAYOUT,
         "pockets": {
             "kit": {"board": list(D.KIT_BOARD), "pocket": list(D.KIT_POCKET),
@@ -945,11 +1123,13 @@ def main():
                       "note": "pod lid 4.0 durability → 26.0 vs cap 25.5 (0.5 mm brand tension)"},
         "waist_frac": D.WAIST_FRAC,
         "panel_open_decision": D.PANEL_OPEN_DECISION,
+        "panel_kept": D.PANEL_KEPT,
         "cap_vs_brand_width": {
             "cap_w": D.CAP_W,
             "brand_max_1_3x_strap": D.CAP_W_MAX_BRAND,
-            "cap_w_slim_if_no_panel": D.CAP_W_SLIM,
-            "conflict": D.CAP_W > D.CAP_W_MAX_BRAND,
+            "cap_w_slim_historical": D.CAP_W_SLIM,
+            "conflict_accepted": D.CAP_W > D.CAP_W_MAX_BRAND,
+            "reason": "P124 KEPT on collar #1 — cap stays 76",
         },
         "bodies": {},
         "pass": True,
@@ -1030,7 +1210,7 @@ def main():
     print("Wio orientation:", D.WIO_ORIENTATION)
     print("FIT_HEIGHT_NOTE:", D.FIT_HEIGHT_NOTE)
     print("CODY_FLAGS:", D.CODY_FLAGS)
-    print("RESULT: PASS (production CAD durability revision)")
+    print("RESULT: PASS (print-orient + floor layout + P124 KEPT)")
 
 
 if __name__ == "__main__":

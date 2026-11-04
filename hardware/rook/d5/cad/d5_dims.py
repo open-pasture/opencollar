@@ -12,12 +12,12 @@ STRAP_T = 4.0            # U — design_thickness; VERIFY WITH CALIPERS
 STRAP_R = 232.0          # U — look-study collar radius (mm); form reference
 
 # Brand: cap width ≤ ~1.3 × strap → 57.8 mm. CONFLICT with P124 (66 mm panel).
-# With P124 pocket (OPEN Cody/strategy) cap stays 76. If panel dropped → CAP_W_SLIM.
+# P124 KEPT on collar #1 (Cody 2026-11-03) → cap stays 76. CAP_W_SLIM retained as note only.
 CAP_W_MAX_BRAND = round(STRAP_W * 1.3, 1)  # 57.8
-CAP_W_SLIM = 58.0                       # brand target when P124 dropped
+CAP_W_SLIM = 58.0                       # historical slim target if panel ever dropped (NOT collar #1)
 
 # ---------------------------------------------------------------- locked / production envelope
-CAP_W, CAP_L = 76.0, 160.0          # V — P124-sized footprint (OPEN panel decision)
+CAP_W, CAP_L = 76.0, 160.0          # V — P124-included footprint (panel KEPT)
 CAP_WALL = 5.0
 CAP_FLOOR = 6.0
 # Internal free height ≈ CAP_CAVITY_H + lid underside (~1.3) ≈ 14.3 mm.
@@ -91,11 +91,14 @@ FAIRING_RUN = 28.0                  # within 25–30 mm brand blend
 FAIRING_R = PLAN_R                  # 7.0 plan radius
 FAIRING_EDGE_R = CROWN_R            # 2.5 soft edge bevel
 
-# P124 — OPEN keep-or-drop (Cody). Pocket kept; ≥2.0 mm lid under panel.
+# P124 — KEPT on collar #1 (Cody decision 2026-11-03 22:19 CT). Pocket + 15 mm
+# metal/antenna keep-clear retained; cap stays panel-included 76×160.
 PANEL_POCKET = (66.6, 113.6, 2.3)   # depth from outer face; lid under = CAP_LID_T-2.3=4.2≥2
 PANEL_SIZE = (66.0, 113.0, 2.6)
 PANEL_Y = 0.0
-PANEL_OPEN_DECISION = True
+PANEL_KEPT = True
+PANEL_DECISION_DATE = "2026-11-03"  # Cody: KEPT on collar #1
+PANEL_OPEN_DECISION = False         # closed — was keep-or-drop OPEN
 PANEL_MIN_LID_UNDER = 2.0
 # Frame flush/recessed to panel top (was proud); chamfer look via low frame.
 PANEL_FRAME_PROUD = -0.4            # mm relative to lid outer (negative = recessed)
@@ -185,7 +188,7 @@ GNSS_COVER_T = 2.0                  # plastic over patch (1–3 mm)
 LTE_FLEX = (44.0, 10.0, 0.8)        # U flex footprint
 LORA_915 = "U.FL or SMA"            # crest; not toward neck
 LORA_AT = (0.0, 64.0)               # crest LoRa U.FL/SMA approx (metal keepout ref)
-ANTENNA_METAL_KEEP = 12.0           # mid of 10–15 mm keepout
+ANTENNA_METAL_KEEP = 15.0           # 15 mm keep-clear (panel KEPT / RF) — was 12 mid-range
 # GNSS past panel +Y end (±56.8) so panel pocket need not go shallow over patch.
 GNSS_AT = (0.0, 64.0)               # was 55 (under panel → cover conflict)
 LTE_AT = (0.0, 40.0)                # crest flex shelf (under panel OK — shallow shelf)
@@ -233,8 +236,8 @@ FIT_HEIGHT_NOTE = (
 
 ASSUMPTIONS = [
     "Strap thickness 4.0 mm assumed — VERIFY WITH CALIPERS before field print.",
-    "P124 on cap is an OPEN Cody/strategy decision; pocket retained for study.",
-    "Cap 76 mm exceeds brand 1.3× strap (~57.8 mm) while P124 is in play; CAP_W_SLIM=58 if panel dropped.",
+    "P124 KEPT on collar #1 (Cody 2026-11-03) — pocket + 15 mm keep-clear retained; cap 76×160.",
+    "Cap 76 mm exceeds brand 1.3× strap (~57.8 mm) because P124 is KEPT; CAP_W_SLIM=58 is not collar #1.",
     "bq24074 / GPS patch heights partially assumed — verify with calipers.",
     FIT_HEIGHT_NOTE,
     "Wio production orientation = lay_flat until Cody raises cavity for upright.",
@@ -242,7 +245,7 @@ ASSUMPTIONS = [
     "Adafruit 353 pack is NOT approved; dual 1781 pods are plan of record.",
     "Rook Connect Kit fitted LOW-PROFILE 7.2 (no headers); ~17 with sockets DOES NOT FIT.",
     "LTE flex 44×10 U; GNSS cover 1–3 mm plastic, no metal above patch.",
-    "Antenna metal keepout 10–15 mm (CAD uses 12 mm) from inserts/screws/CW/cells.",
+    "Antenna metal keepout ≥15 mm (CAD ANTENNA_METAL_KEEP=15) from inserts/screws/CW/cells.",
     "Do not pot the bq24074 charger solid — service access required.",
     "Cell swap needs only an M3 driver (pod lid orange/service screws).",
     "Counterweight tub stays free of electronics — steel pack only.",
@@ -255,10 +258,17 @@ ASSUMPTIONS = [
 ]
 
 CODY_FLAGS = [
-    "FIT HEIGHT: upright Wio 23 mm + kit headers 17 mm vs ~14.3 mm free — choose A/B/C in FIT_HEIGHT_NOTE.",
-    "P124 solar panel KEEP-OR-DROP OPEN — keep cap 76 or drop panel and take CAP_W_SLIM 58 (brand 1.3× strap).",
+    "FIT HEIGHT: option A in force (lay-flat Wio + low-profile kit). B/C still available if Cody revisits.",
+    "P124 KEPT on collar #1 (2026-11-03) — CLOSED. Cap 76; pocket + 15 mm keep-clear stay.",
     "Mono vs stereo buzzer; 1781 purchase (HARDWARE-FIT).",
     "Light-gray colourway proposal — pending op-brand.",
+]
+
+DECISIONS = [
+    {"id": "P124", "status": "KEPT", "date": "2026-11-03",
+     "by": "Cody", "note": "Collar #1 keeps Voltaic P124; cap 76×160; 15 mm keep-clear."},
+    {"id": "FIT_HEIGHT", "status": "OPTION_A", "date": "2026-11-03",
+     "by": "Cody/op-maker", "note": "Lay-flat Wio + low-profile kit; upright/headers nofit."},
 ]
 
 # Layout rule (firmware): Rook pockets in CAP and PODS; CW no electronics.

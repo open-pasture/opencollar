@@ -15,11 +15,15 @@
 
 Light-gray shell colourway was floated in the durability / field-soil review (hides dust better than charcoal in some pastures). **Not approved.** Until op-brand signs off, print study parts in charcoal ASA/PETG with orange `#FF6A2B` service accents. Do not quote light-gray as the production colour.
 
+## Panel (P124) — KEPT
+
+**Decision:** Voltaic P124 **KEPT** on collar #1 — Cody, **2026-11-03**. Cap stays **76×160** (panel-included). Pocket retained. Metal/antenna **15 mm keep-clear** retained in CAD. Do not slim the cap for brand 1.3× strap on collar #1.
+
 ## RF keepout
 
-- GNSS: sky-facing, **1–3 mm plastic** above patch, **no metal** in the cover stack. Recess opens into cavity from z=0.
-- Crest antennas opposite neck; cells in pods, steel in CW — both ≥12 mm from crest / LoRa.
-- Clamp bars (channel section) under saddle at \|y\|≤28.5 — LoRa at y≈64 → clearance ≫12 mm.
+- GNSS: sky-facing, **1–3 mm plastic** above patch, **no metal** in the cover stack. Recess opens into cavity from z=0 (export: openings face +Z with outer face on bed).
+- Crest antennas opposite neck; cells in pods, steel in CW — both ≥**15 mm** from crest / LoRa.
+- Clamp bars (channel section) under saddle at \|y\|≤28.5 — LoRa at y≈64 → clearance ≫15 mm.
 - No CF filament in cap lid / antenna shelves. PA-CF only on saddle/clamps away from RF.
 
 ## Clamp print orientation / load path

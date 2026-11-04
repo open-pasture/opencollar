@@ -31,7 +31,7 @@ Sources: headline dims from enclosure-component-spec (V/U). Spec path on shared 
   - GNSS ceramic 25 × 25 × 4 under **1–3 mm** plastic, **no metal above**.
   - LTE flex ~44 × 10 shelf under lid.
   - 915 MHz LoRa U.FL or SMA on crest.
-  - Metal inserts / screws / steel CW / cells **10–15 mm** away (CAD keepout **12 mm**).
+  - Metal inserts / screws / steel CW / cells **≥15 mm** away (CAD `ANTENNA_METAL_KEEP=15`).
 
 ### Pods
 
@@ -92,4 +92,4 @@ Spares plate ~1.8 h (see `SPARES.md`). Starling ~3 P2S / ~4×220 once CAD exists
 - Cap ≤ ~1.3× strap **conflict** with 76 mm / P124 — documented, not silently broken.
 - ROOK-001 label + label coupon.
 - No visible supports on show faces (orientations above).
-- P124: **OPEN** decision.
+- P124: **KEPT** on collar #1 (Cody **2026-11-03**) — pocket + 15 mm keep-clear retained; cap stays 76×160.
