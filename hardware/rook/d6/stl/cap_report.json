@@ -1,12 +1,15 @@
 {
-  "revision": "D6_cap_v1_contour_skin",
+  "revision": "D7_cap_nose_fairing_flow",
   "contract": {
     "cap_w": 76.0,
     "cap_l": 164.0,
     "stack_h": 31.0,
     "seam_z": 9.0,
     "crown": 2.7,
-    "end_taper": 20.0,
+    "end_taper": 22.0,
+    "nose_tip_h": 7.5,
+    "nose_plan_r": 12.0,
+    "nose_bull_r": 5.0,
     "panel_pocket": [
       66.6,
       113.6,
@@ -94,7 +97,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 49586
+        "faces": 45612
       },
       "print": "cavity UP; bed=underside z=0"
     },
@@ -120,10 +123,10 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 7228
+        "faces": 7692
       },
       "print": "mating_down",
-      "bed_face_mm2": 10210.3,
+      "bed_face_mm2": 10157.4,
       "support_ceiling_mm2": 1857.6
     },
     "cap_floor_layout": {
@@ -138,18 +141,18 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 39534
+        "faces": 39538
       }
     }
   },
   "orient": {
     "mating_down": {
-      "bed_face_mm2": 10210.3,
+      "bed_face_mm2": 10157.4,
       "support_ceiling_mm2": 1857.6
     },
     "outer_down": {
-      "bed_face_mm2": 1201.2,
-      "support_ceiling_mm2": 11065.1
+      "bed_face_mm2": 1130.7,
+      "support_ceiling_mm2": 10849.6
     },
     "picked": "mating_down",
     "note": "Mating-down: panel pocket +Z, GNSS/LTE are bed recesses (small trees OK). Outer-down: flat panel land on bed; mating bosses become ceilings. Crown is shallow (2.7 mm) outside the land."

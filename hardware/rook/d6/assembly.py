@@ -76,15 +76,31 @@ SADDLE_CHANNEL_D = STRAP_T
 SADDLE_ROOF = 1.6
 SADDLE_H = SADDLE_ROOF + SADDLE_CHANNEL_D
 
-# Fairings: widen to span 92 mm pods / 88 mm CW; taper so the join reads intentional.
-# Cap–pod run shortened toward D4's ~16.6 mm so they sit in the 2–3 mm body gap
+# Fairings (D7 continuous wedge) — parametric on pod/cap/CW outlines so a later
+# slim-pod agent can re-loft by changing POD_L / PLAN_R / CAP_W without rewriting
+# the solid. Width eases along the bridge run (not a vertical trapezoid block).
+# Cap–pod run shortened toward D4's ~16.6 mm so they sit in the 1.3–3 mm body gap
 # without swallowing the pods; strap/CW keep the 28 mm brand run.
+FAIRING_POD_OUTER_X = POD_L          # 92 — across-strap outer (follow pod.py)
+FAIRING_POD_OUTER_Y = POD_W          # 92 — along-strap outer
+FAIRING_POD_PLAN_R = 7.0             # pod plan R (D.PLAN_R); bump when pod outline lands
+FAIRING_CAP_W = CAP_W                # 76
+FAIRING_CAP_PLAN_R = 7.0
+FAIRING_CW_OUTER = CW_L              # 88
 FAIRING_RUN = 28.0
 FAIRING_RUN_CAP_POD = 18.0
-FAIRING_W0 = 88.0            # wide end toward body
-FAIRING_W1 = 66.0            # narrow end toward strap / mate
+# Wide end spans pod/CW outer with a small inset so the loft kisses the skin;
+# narrow end sits inside the cap width / strap path (66 blends toward neighbours).
+FAIRING_W0 = FAIRING_POD_OUTER_X - 4.0   # 88 — wide end toward body
+FAIRING_W1 = 66.0                        # narrow end toward strap / mate
 FAIRING_H = 14.0
-FAIRING_INTERFERE_TOL = 0.2  # mm contact: must touch a body within this (no float)
+FAIRING_EDGE_R = 4.0                     # D7: filleted edges R >= 4 mm (was 2.5)
+FAIRING_PLAN_R0 = max(FAIRING_POD_PLAN_R, 8.0)  # soft wide-end plan (matches pod)
+FAIRING_PLAN_R1 = max(FAIRING_CAP_PLAN_R, 6.0)  # soft narrow-end plan
+FAIRING_TOP_CROWN = 1.2                  # shallow top shoulder (not a flat slab)
+FAIRING_INTERFERE_TOL = 0.2              # mm contact: must touch a body within this (no float)
+# 1.3 mm design gap between cap body end (~±82) and pod face (~±86) — fairings bridge it.
+FAIRING_CAP_POD_GAP = 1.3
 
 # Explicit world centres — in the bridge gaps (not raw D4 centres, which sit
 # inside the larger D6 envelopes). Cap–pod: between cap end (±82) and pod face

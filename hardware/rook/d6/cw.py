@@ -79,11 +79,14 @@ SADDLE_L = A.SADDLE_L
 SADDLE_ROOF = A.SADDLE_ROOF
 SADDLE_H = A.SADDLE_H
 
-# Fairings — widen to span 88 mm CW (assembly.py)
+# Fairings — D7 continuous wedge (assembly.py FAIRING_* + fairing.py loft)
 FAIRING_RUN = A.FAIRING_RUN
 FAIRING_W0 = A.FAIRING_W0
 FAIRING_W1 = A.FAIRING_W1
 FAIRING_H = A.FAIRING_H
+FAIRING_EDGE_R = A.FAIRING_EDGE_R
+
+import fairing as F  # noqa: E402
 
 # Glyphs — same spec as D5 build_d5.py @ 6b1f882
 FLOOR_GLYPHS = True
@@ -607,28 +610,9 @@ def clamp_bar():
     return prepare(flange)
 
 
-def _fairing_body(name, run, w0, w1, h):
-    f = oc.prism_y(name, [
-        (0.0, 0.0),
-        (w0 / 2, 0.0),
-        (w1 / 2, h),
-        (-w1 / 2, h),
-        (-w0 / 2, 0.0),
-    ], run)
-    bound = oc.rounded_rect(f"{name}_bnd", (max(w0, w1) + 2, run + 2, h + 2),
-                            D.FAIRING_R, at=(0, 0, -1), anchor="bottom", segments=10)
-    oc.intersect(f, bound)
-    try:
-        oc.bevel(f, D.FAIRING_EDGE_R, segments=3)
-        oc.apply_modifiers(f)
-    except Exception:
-        pass
-    return f
-
-
 def fairing_cw(side="L"):
-    """CW↔strap fairing at bottom of loop. W0=88→W1=66 × run 28 × H 14."""
-    f = prepare(_fairing_body(f"fairing_cw_{side}", FAIRING_RUN, FAIRING_W0, FAIRING_W1, FAIRING_H))
+    """CW↔strap fairing at bottom of loop. Continuous W0→W1 wedge, R≥4."""
+    f = prepare(F.fairing_cw(side))
     if side == "R":
         # Mirror of L across X (matches pod fairings)
         oc.bake(f)
@@ -670,8 +654,8 @@ PART_META = {
                "strap→rails→clamp ALONG layers", "ASA/PETG or PA-CF*", False),
     "clamp_bar": ("PRINT: flange on bed z=0; channel +Z; load ALONG Y WITH layers",
                   "strap compression; holes y=±28.5", "ASA/PETG or PA-CF*", True),
-    "fairing_cw_L": ("PRINT: long axis on bed; slope=WALL", "88→66×28×14 CW↔strap", "ASA/PETG", True),
-    "fairing_cw_R": ("PRINT: long axis on bed; slope=WALL", "mirror of L", "ASA/PETG", True),
+    "fairing_cw_L": ("PRINT: widest face on bed z=0; walls=slope", "D7 continuous 88→66×28×14", "ASA/PETG", True),
+    "fairing_cw_R": ("PRINT: widest face on bed z=0; walls=slope", "mirror of L", "ASA/PETG", True),
     "cw_floor_layout": ("PRINT: floor underside z=0; ribs/glyphs UP",
                         "PLA steel-pack + fill/screw glyphs", "PLA", False),
 }

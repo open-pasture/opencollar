@@ -152,6 +152,46 @@ for n in [k for k in mesh if k.startswith("fairing")]:
         f"~{A.FAIRING_W0}×{A.FAIRING_RUN}×{A.FAIRING_H}",
     )
 
+# D7 fairing / nose contract (continuous loft, R>=4, parametric outline)
+chk(
+    "FAIRING_EDGE_R >= 4 mm",
+    float(getattr(A, "FAIRING_EDGE_R", 0)) >= 4.0 - 1e-6,
+    getattr(A, "FAIRING_EDGE_R", None),
+    ">=4",
+)
+chk(
+    "FAIRING_W0 follows pod outer (POD_L - 4)",
+    abs(A.FAIRING_W0 - (A.POD_L - 4.0)) < 1e-6,
+    A.FAIRING_W0,
+    A.POD_L - 4.0,
+)
+fairing_src = open(os.path.join(HERE, "fairing.py")).read() if os.path.isfile(os.path.join(HERE, "fairing.py")) else ""
+chk(
+    "fairing.py continuous loft (smootherstep / plan outline)",
+    "_smootherstep" in fairing_src and "_plan_outline" in fairing_src,
+    "fairing.py present" if fairing_src else "missing fairing.py",
+    "shared D7 loft module",
+)
+chk(
+    "cap.py rounded nose (end_nose_contoured)",
+    "end_nose_contoured" in cap_src and "NOSE_PLAN_R" in cap_src,
+    "end_nose_contoured" if "end_nose_contoured" in cap_src else "hard taper only",
+    "D7 rounded/chamfered nose",
+)
+# Cap↔pod fairings should bridge the design gap (overlap both bodies already checked;
+# also assert run matches FAIRING_RUN_CAP_POD envelope).
+for n in ("fairing_cap_pod_L", "fairing_cap_pod_R"):
+    if n not in mesh:
+        continue
+    e = mesh[n].extents
+    run_close = any(abs(float(v) - A.FAIRING_RUN_CAP_POD) < 1.5 for v in e)
+    chk(
+        f"{n} short run ~{A.FAIRING_RUN_CAP_POD}",
+        run_close,
+        [round(float(v), 1) for v in e],
+        f"one axis ~{A.FAIRING_RUN_CAP_POD}",
+    )
+
 cb = mesh["clamp_bar"].extents
 chk(
     "clamp_bar 10x70x8",

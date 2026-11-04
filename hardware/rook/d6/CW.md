@@ -24,7 +24,7 @@ Electronics stay out of the CW (D5 / contract).
 | `cw_lid` | 87 × 73 × 12.7 | Domed; flat crown land 42 × 36; reveal 0.5 |
 | `saddle` | 76 × 96 × 5.0 (+pins → ~6.5) | Roof ≥1.6; channel W=46.45 D=3.4 |
 | `clamp_bar` | **10 × 70 × 8** | Flange 10×70×3; walls to depth 8; **print 8×** |
-| `fairing_cw_L/R` | ~66 × 28 × 14 | 28 mm run (brand 25–30) |
+| `fairing_cw_L/R` | **88 → 66 × 28 × 14**, R≥4 | D7 continuous loft (`fairing.py`) |
 | `cw_floor_layout` | ~78 × 58 × 2 (+ribs/glyphs) | PLA coupon |
 
 ### Screws / clamps
@@ -48,7 +48,7 @@ Farmer repair: one M3 driver; orange = service elsewhere; CW lid charcoal plugs 
 | `cw_lid` | **OUTER** (export: 180° about X, normals recalc — **never** `flip_normals`) | **No large supports.** Flat crown land ≈ **787 mm²** bed face; strap channel is a bed pocket |
 | `saddle` | Roof; channel +Z | None |
 | `clamp_bar` | Flange; channel +Z; load along Y WITH layers | None |
-| Fairings | Long axis on bed; slope = WALL | None |
+| Fairings | Widest face on bed z=0; walls = slope | None (R≥4 continuous wedge) |
 | Floor layout | Underside; ribs/glyphs UP | None |
 
 ## Floor glyphs
