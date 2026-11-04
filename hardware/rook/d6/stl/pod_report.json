@@ -31,13 +31,23 @@
     "mount_face_y": 46.0,
     "swell_half_y_mm": 38.0,
     "shoulder_run_mm": 8.0,
-    "plan_r_mm": 8.0,
+    "plan_r_mm": 3.0,
+    "outer_strap_flare_mm": 76.0,
+    "lid_inset_mm": 3.0,
     "outer_lid_mm": [
-      67.0,
-      96.0,
+      62.0,
+      91.0,
       4.0
     ],
     "lid_crown_sagitta_mm": 1.8,
+    "public_id": {
+      "text": "001",
+      "h_mm": 6.0,
+      "depth_mm": 0.6,
+      "cutter": "straight_prism",
+      "letter_up": "-X",
+      "along": "+Y 0\u21920\u21921"
+    },
     "cavity_mm": [
       82.0,
       58.0,
@@ -119,9 +129,9 @@
   "bodies": {
     "pod_L_base": {
       "size_mm": [
-        68.0,
-        98.8,
-        37.4
+        76.0,
+        98.79,
+        37.396
       ],
       "watertight": {
         "watertight": true,
@@ -131,7 +141,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 457702
+        "faces": 265602
       },
       "pass": true,
       "stl_path": "stl/pod_L_base.stl",
@@ -144,8 +154,8 @@
     },
     "pod_L_lid": {
       "size_mm": [
-        67.0,
-        96.0,
+        70.0,
+        91.0,
         5.95
       ],
       "watertight": {
@@ -156,22 +166,22 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 17302
+        "faces": 6830
       },
       "pass": true,
       "stl_path": "stl/pod_L_lid.stl",
       "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 1318.8,
+      "bed_face_area_mm2": 1104.5,
       "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X on export)",
       "load_path": "lid screws; ribs"
     },
     "pod_R_base": {
       "size_mm": [
-        68.0,
+        76.0,
         98.79,
-        37.387
+        37.396
       ],
       "watertight": {
         "watertight": true,
@@ -181,7 +191,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 259276
+        "faces": 265568
       },
       "pass": true,
       "stl_path": "stl/pod_R_base.stl",
@@ -194,8 +204,8 @@
     },
     "pod_R_lid": {
       "size_mm": [
-        67.0,
-        96.0,
+        70.0,
+        91.0,
         5.95
       ],
       "watertight": {
@@ -206,14 +216,14 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 17302
+        "faces": 6830
       },
       "pass": true,
       "stl_path": "stl/pod_R_lid.stl",
       "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 1318.8,
+      "bed_face_area_mm2": 1104.5,
       "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X on export)",
       "load_path": "true mirror of L"
     },
@@ -269,8 +279,8 @@
     },
     "fairing_pod_strap_L": {
       "size_mm": [
-        68.204,
-        27.994,
+        76.614,
+        28.0,
         18.0
       ],
       "watertight": {
@@ -281,7 +291,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4096
+        "faces": 4100
       },
       "pass": true,
       "stl_path": "stl/fairing_pod_strap_L.stl",
@@ -294,8 +304,8 @@
     },
     "fairing_pod_strap_R": {
       "size_mm": [
-        68.204,
-        27.994,
+        76.614,
+        28.0,
         18.0
       ],
       "watertight": {
@@ -306,7 +316,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4096
+        "faces": 4100
       },
       "pass": true,
       "stl_path": "stl/fairing_pod_strap_R.stl",
@@ -346,12 +356,12 @@
   "pass": true,
   "lid_print": {
     "pod_L_lid": {
-      "bed_face_area_mm2": 1318.8,
+      "bed_face_area_mm2": 1104.5,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
       "note": "Outer-down; soft tip taper only \u2014 not a deep crown"
     },
     "pod_R_lid": {
-      "bed_face_area_mm2": 1318.8,
+      "bed_face_area_mm2": 1104.5,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
       "note": "Outer-down; soft tip taper only \u2014 not a deep crown"
     }

@@ -82,8 +82,8 @@ NOSE_ARC_SEGS = 10                     # smoother elliptical roof (D4-like)
 NOSE_PLAN_R = 14.0                     # match pod tip plan R — no shadow line
 NOSE_BULL_R = 6.0                      # bullnose blends into fairing
 PANEL_LAND = (68.0, 116.0)             # flat plateau containing 66.6×113.6 pocket
-PLAN_R = 7.0
-REVEAL = 0.5
+PLAN_R = 3.0                               # D8: R3 plan corners (D4 / r19)
+REVEAL = 0.5                               # cap lid stay near-flush; pods use 3 mm
 
 # Pod interface — shared with assembly.py / pod.py (D4 tilt signs; D6 outboard anchors)
 POD_ANCHOR_Y = A.POD_ANCHOR_Y

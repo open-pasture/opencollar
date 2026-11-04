@@ -97,7 +97,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 37710
+        "faces": 37700
       },
       "print": "cavity UP; bed=underside z=0"
     },
@@ -123,7 +123,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 6984
+        "faces": 6972
       },
       "print": "mating_down",
       "bed_face_mm2": 10118.1,

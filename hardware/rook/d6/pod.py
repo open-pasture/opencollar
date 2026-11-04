@@ -65,9 +65,10 @@ CAV_X = POD_CAVITY[1]                        # 58 — across strap
 CAV_Y = POD_CAVITY[0]                        # 82 — along spine
 CAV_Z = POD_CAVITY[2]                        # 19.5
 POD_WALL = 5.0                               # ≥3.5 at cells → outer X = 68
-POD_X_MAX = CAV_X + 2 * POD_WALL             # 68 — swell (narrower than cap 76)
-POD_X_END = 66.0                             # slight tip taper (≤70)
-POD_L = POD_X_MAX                            # max X extent
+POD_X_MAX = CAV_X + 2 * POD_WALL             # 68 — mid swell (narrower than cap 76)
+POD_X_END = 66.0                             # mount-end tip (~cap fairing kiss)
+POD_X_STRAP = 76.0                           # D8: strap-end flare (D4 outer ~79)
+POD_L = POD_X_MAX                            # max X extent (mid); strap flare separate
 POD_LEN = A.POD_W                            # 97 — total Y length
 POD_MOUNT_FACE_Y = A.POD_MOUNT_FACE_Y        # 46 — LOCKED recess face
 POD_Y0 = POD_MOUNT_FACE_Y - POD_LEN / 2.0    # -2.5 — body centre (asymmetric)
@@ -77,16 +78,19 @@ POD_BASE_H = A.POD_BASE_H                    # 22.2 mating plane
 POD_LID_T = 4.0                              # locked durability
 POD_STACK_H = POD_BASE_H + POD_LID_T         # ~26.2
 POD_LID_CROWN = 1.8                          # convex dome sagitta (1.5–2.0)
-PLAN_R = 8.0
-PLAN_R_SWELL = 10.0
-POD_TOP_EDGE_R = 6.0                         # R6 along top perimeter (D7r3)
+# D8: R3 plan corners (D4_contoured_v3 / r19 silhouette)
+PLAN_R = 3.0
+PLAN_R_SWELL = 3.0
+POD_TOP_EDGE_R = 3.0
+POD_LID_INSET = 3.0                          # lid inset from base wall (lip read)
 # Full-width band covers most of the long cavity; soft tip taper only
 POD_Y_SWELL = 38.0                           # half-length of full-width band
-POD_SHOULDER_RUN = 8.0                       # 68→66 shoulder run
+POD_SHOULDER_RUN = 8.0                       # 68→66 shoulder run (mount end)
+POD_STRAP_FLARE_RUN = 14.0                   # mid 68 → strap-end 76
 # Groove / lip follow oriented cavity + wall
 POD_GROOVE_X = CAV_X + 2 * POD_WALL          # 68
 POD_GROOVE_Y = CAV_Y + 2 * POD_WALL          # 92
-# Screw bosses inset from oriented cavity corners
+# Screw bosses inset from oriented cavity corners (real M3)
 POD_COLS = [(sx * 22.0, sy * 36.0) for sx in (-1, 1) for sy in (-1, 1)]
 POD_TAPER_LEN = 20.0                         # D7r3: slightly longer tip run
 POD_TAPER_DROP = 6.0                         # D7r3: roof tip drop ~6 mm to fairing
@@ -99,8 +103,15 @@ POD_SKIRT_PLAN_R = 12.0                      # large rounded ends (D4)
 POD_SKIRT_SHOULDER_R = 18.0
 POD_SKIRT_FLARE_RUN = 18.0                   # vertical run of the tangent flare
 POD_PUBLIC_ID = "001"                        # recessed mono on lid outer
-POD_ID_H = 9.5                               # D7r8: 9–10 mm (D4 dot row height)
-POD_ID_DEPTH = 0.8                           # visible at iso; still low-contrast
+# D8 / r19: 6 mm tall straight-prism, 0.6 mm deep, letter-up −X
+POD_ID_H = 6.0
+POD_ID_W = 3.7
+POD_ID_STROKE = 1.0
+POD_ID_DEPTH = 0.6
+POD_ID_GAP = 1.2
+# Decorative screw-head recesses (not the M3 fastener holes)
+POD_SCREW_RECESS_D = 2.0
+POD_SCREW_RECESS_DEPTH = 0.4
 
 # Cap↔pod M3 joint (matches cap.py pad) — recess on +Y mount face
 POD_MOUNT_SIZE = A.POD_MOUNT_SIZE            # 36×4×14
@@ -203,8 +214,8 @@ def slab(name, w, l, h, r=PLAN_R):
 
 def contoured_slab(name, x_max, x_end, length, height, y_swell, r_end=PLAN_R,
                    r_swell=PLAN_R_SWELL, shoulder_run=POD_SHOULDER_RUN,
-                   y0=0.0):
-    """Tapered plan: ~68 wide × length long; soft tip taper; optional Y shift.
+                   y0=0.0, x_strap=None, strap_flare_run=None):
+    """Tapered plan: ~68 mid × length; mount tip ~66; optional strap-end flare.
 
     y0 is the body centre so the +Y face sits on POD_MOUNT_FACE_Y while length
     grows toward the strap end (asymmetric about local origin). Mesh is built
@@ -218,6 +229,24 @@ def contoured_slab(name, x_max, x_end, length, height, y_swell, r_end=PLAN_R,
     oc.union(body, swell)
     chamfer_plan_shoulder(body, x_max, x_end, y_swell, length / 2.0, height,
                           shoulder_run, y0=y0)
+    # D8: flare strap-end (−Y local) out to x_strap for D4 shoulder read.
+    # Keep entirely inside the existing length so POD_LEN / plate fit stay locked.
+    xs = float(x_strap) if x_strap is not None else None
+    if xs is not None and xs > x_max + 0.5:
+        run = min(float(strap_flare_run or POD_STRAP_FLARE_RUN), length * 0.35)
+        y_strap = y0 - length / 2.0
+        # Flare block length = run; centre inset so −Y face ≈ body −Y + 0.5 mm
+        flare_l = run
+        flare_y = y_strap + 0.5 + flare_l * 0.5
+        flare = oc.rounded_rect(
+            f"{name}_strap_flare",
+            (xs, flare_l, height),
+            min(PLAN_R_SWELL, xs * 0.18, flare_l * 0.4),
+            at=(0.0, flare_y, 0.0),
+            anchor="bottom",
+            segments=12,
+        )
+        oc.union(body, flare)
     return body
 
 
@@ -293,6 +322,8 @@ def strap_flare_skirt(body, w, l, y0=0.0, h=POD_SKIRT_H, flare=POD_SKIRT_FLARE):
     ch_d = float(A.SADDLE_CHANNEL_D)
     strap_w = float(A.STRAP_W)
     bar_w, bar_l, bar_h = A.CLAMP_BAR  # 10×70×8 — after 90°Z, long axis = X
+    # Skirt plan ≤ mid body width (68). Strap-end flare lives on the upper
+    # contoured shell only — widening the whole skirt past mid overhangs the bed.
     skirt_w = min(w, max(bar_l, ch_w + 4.0))
     skirt_l = min(l * 0.82, 82.0)
     plan_r = min(POD_SKIRT_PLAN_R, skirt_w / 2.0 - 1.0, skirt_l / 2.0 - 1.0)
@@ -432,9 +463,12 @@ def pod_base(side="L"):
     Mount face / recess / hole pattern locked at Y=+POD_MOUNT_FACE_Y.
     Cell bay axis along Y; buzzer toward +Y; cable + countersink on mount end.
     """
-    b = contoured_slab(f"pod_{side}_base", POD_X_MAX, POD_X_END, POD_LEN, POD_BASE_H,
-                       POD_Y_SWELL, r_end=PLAN_R, r_swell=PLAN_R_SWELL,
-                       shoulder_run=POD_SHOULDER_RUN, y0=POD_Y0)
+    b = contoured_slab(
+        f"pod_{side}_base", POD_X_MAX, POD_X_END, POD_LEN, POD_BASE_H,
+        POD_Y_SWELL, r_end=PLAN_R, r_swell=PLAN_R_SWELL,
+        shoulder_run=POD_SHOULDER_RUN, y0=POD_Y0,
+        x_strap=POD_X_STRAP, strap_flare_run=POD_STRAP_FLARE_RUN,
+    )
     # Oriented cavity centred on origin (Y from -41..+41); body +Y face at +46
     cut_cav(b, CAV_X, CAV_Y, POD_FLOOR, CAV_Z + 1, r=5.0)
     d5.columns(b, POD_COLS, POD_FLOOR, POD_BASE_H)
@@ -510,25 +544,29 @@ def pod_base(side="L"):
 
 
 def pod_lid(side="L"):
-    """Print: OUTER face DOWN. Closed convex dome; screws on flat rim; ID 001."""
-    reveal = D.REVEAL
-    # D7r6: nearly full outline so end-on view is a closed lid, not an open box
+    """Print: OUTER face DOWN. Lid inset ~3 mm; prism 001; screw recesses."""
+    reveal = float(POD_LID_INSET)
     lx_max = POD_X_MAX - 2 * reveal
     lx_end = POD_X_END - 2 * reveal
+    lx_strap = POD_X_STRAP - 2 * reveal
     ll = POD_LEN - 2 * reveal
     y_swell = max(8.0, POD_Y_SWELL - reveal)
-    lid = contoured_slab(f"pod_{side}_lid", lx_max, lx_end, ll, POD_LID_T, y_swell,
-                         r_end=max(PLAN_R - 0.5, 8.0), r_swell=max(PLAN_R_SWELL - 0.5, 8.0),
-                         shoulder_run=max(POD_SHOULDER_RUN - 1.0, 6.0),
-                         y0=POD_Y0)
+    lid = contoured_slab(
+        f"pod_{side}_lid", lx_max, lx_end, ll, POD_LID_T, y_swell,
+        r_end=max(PLAN_R, 2.0), r_swell=max(PLAN_R_SWELL, 2.0),
+        shoulder_run=max(POD_SHOULDER_RUN - 1.0, 6.0),
+        y0=POD_Y0,
+        x_strap=lx_strap,
+        strap_flare_run=POD_STRAP_FLARE_RUN,
+    )
     d5.lid_fasteners(lid, POD_COLS, POD_LID_T)
 
     # Landing ring on mating face only (z≈0) — outer stays closed
     ring_w = 1.5
     ring_out_w = POD_GROOVE_X - 2 * reveal - 5.0
     ring_out_l = POD_GROOVE_Y - 2 * reveal - 5.0
-    r_o = 3.5
-    r_i = r_o - ring_w
+    r_o = 3.0
+    r_i = max(0.8, r_o - ring_w)
     groove_depth = min(1.3, POD_LID_T - 2.5)
     outer = oc.rounded_rect("plring_o", (ring_out_w, ring_out_l, groove_depth), r_o,
                             at=(0, 0, -0.1), anchor="bottom")
@@ -547,39 +585,66 @@ def pod_lid(side="L"):
                            anchor="bottom", segments=16)
         oc.union(lid, post)
 
-    # Closed convex dome across full outline; light tip ease only (no open end)
     smooth_lid_crown(lid, lx_max, ll, POD_LID_T, sagitta=POD_LID_CROWN, y0=POD_Y0)
     end_taper_skin(lid, lx_max, ll, POD_LID_T + POD_LID_CROWN,
                    POD_TAPER_LEN * 0.55, min(POD_TAPER_DROP * 0.25, 1.5), y0=POD_Y0)
     top_perimeter_chamfer(lid, lx_max, ll, POD_LID_T + POD_LID_CROWN,
-                          r=min(2.0, POD_TOP_EDGE_R * 0.35), y0=POD_Y0)
+                          r=min(1.5, POD_TOP_EDGE_R * 0.5), y0=POD_Y0)
 
-    # Screw heads ON the flat rim (proud of outer deck) — D4 closed-lid read
-    z_rim = POD_LID_T
-    for i, (sx, sy) in enumerate(POD_COLS):
-        head = oc.cylinder(
-            f"pscrew_head{i}", 5.2, 1.2,
-            at=(sx, sy, z_rim), anchor="bottom", segments=20,
+    # D8: Ø2 × 0.4 mm recesses — four, on outer deck, clear of M3 POD_COLS
+    z_outer = POD_LID_T + POD_LID_CROWN
+    hw = lx_max * 0.5 - 3.0
+    hl = ll * 0.5 - 5.0
+    # Mid-edge stations (not extreme corners) keep ≥10 mm from M3 bosses
+    screw_xy = [
+        (-hw, POD_Y0 - hl * 0.55),
+        (+hw, POD_Y0 - hl * 0.55),
+        (-hw, POD_Y0 + hl * 0.55),
+        (+hw, POD_Y0 + hl * 0.55),
+    ]
+    n_screws = 0
+    for i, (px, py) in enumerate(screw_xy):
+        if any(math.hypot(px - cx, py - cy) < 10.0 for cx, cy in POD_COLS):
+            continue
+        oc.cut(
+            lid,
+            oc.cylinder(
+                f"pscrew_rec{i}",
+                POD_SCREW_RECESS_D * 0.5,
+                POD_SCREW_RECESS_DEPTH + 0.2,
+                at=(px, py, z_outer - POD_SCREW_RECESS_DEPTH),
+                anchor="bottom",
+                segments=20,
+            ),
         )
-        oc.union(lid, head)
+        n_screws += 1
+    print(f"  pod_{side}_lid screw recesses: {n_screws}/4")
 
-    # D7r8: debossed "001" — baseline across collar width (local +X), like D4's
-    # orange-dot row. Reads L→R when the collar hangs; NO 90° spin. 9.5×0.8 mm.
+    # D8: straight-prism 001 — along +Y, letter-up −X, 6×3.7×0.6
     try:
-        z_outer = POD_LID_T + POD_LID_CROWN
-        font_size = POD_ID_H * 2.0  # DejaVu size≈2× capital H
-        glyph = d5._text_mesh(POD_PUBLIC_ID, font_size, POD_ID_DEPTH + 0.2)
-        lo, hi = oc.bounds(glyph)
-        id_y = POD_Y0 - (ll * 0.28)  # toward strap end (−Y for L)
-        oc.move(
-            glyph,
-            dx=0.0 - (lo[0] + hi[0]) / 2.0,
-            dy=id_y - (lo[1] + hi[1]) / 2.0,
-            dz=(z_outer - POD_ID_DEPTH) - lo[2],
+        import d8_glyphs as g001
+
+        cutters, span = g001.make_001_cutters(
+            size=POD_ID_H, depth=POD_ID_DEPTH + 0.4,
+            stroke=POD_ID_STROKE, width=POD_ID_W, gap=POD_ID_GAP,
         )
-        oc.cut(lid, glyph)
+        # Centre cluster on lid roof, toward strap end, clear of orange-dot zone
+        id_y = POD_Y0 - (ll * 0.18)
+        id_z = z_outer - POD_ID_DEPTH * 0.5
+        for ci, cutter in enumerate(cutters):
+            along = float(cutter.location.y)
+            cutter.location = (0.0, id_y + along, id_z)
+            for cc in list(cutter.users_collection):
+                cc.objects.unlink(cutter)
+            bpy.context.scene.collection.objects.link(cutter)
+            oc.cut(lid, cutter)
+            try:
+                bpy.data.objects.remove(cutter, do_unlink=True)
+            except Exception:
+                pass
+        print(f"  pod_{side}_lid 001 prism span≈{span:.1f} mm at y={id_y:.1f}")
     except Exception as exc:
-        print(f"  public ID emboss skipped: {exc}")
+        print(f"  public ID prism skipped: {exc}")
 
     if side == "R":
         mirror_for_R(lid)
@@ -671,10 +736,25 @@ def export_part(obj, path, meta_key=None):
             if wt["watertight"]:
                 break
     dims = list(oc.size(obj))
+    # D8 sanity: collapsed boolean stacks can still report watertight with a
+    # tiny face count / short AABB — reject before writing a bad plate STL.
+    n_faces = len(obj.data.polygons) if obj.data else 0
+    if meta_key and "base" in meta_key:
+        if dims[1] < 94.0 or dims[1] > 104.0 or dims[2] < 34.0 or n_faces < 5000:
+            print(f"  SANITY FAIL {meta_key}: dims={dims} faces={n_faces}")
+            wt = dict(wt)
+            wt["watertight"] = False
+    if meta_key and "lid" in meta_key:
+        if dims[0] < 58.0 or dims[1] < 88.0 or n_faces < 1000:
+            print(f"  SANITY FAIL {meta_key}: dims={dims} faces={n_faces}")
+            wt = dict(wt)
+            wt["watertight"] = False
     bed_area = bed_face_area_xy(obj) if flipped or (meta_key and "lid" in meta_key) else None
     oc.export_stl(obj, path)
     stl = check_stl(path)
-    ok = bool(stl["watertight"] and wt["normals_outward"])
+    ok = bool(stl["watertight"] and wt["normals_outward"] and (
+        not (meta_key and "base" in meta_key and (dims[1] < 94.0 or dims[2] < 34.0 or n_faces < 5000))
+    ))
     tag = "OK" if ok else "LOOK"
     print(f"{tag}  {os.path.basename(path)}: {[round(x, 1) for x in dims]}  "
           f"bad_mesh={wt['bad_edges']} bad_stl={stl['bad_edges']}  out={wt['normals_outward']}  "
@@ -834,8 +914,22 @@ def main():
             "swell_half_y_mm": POD_Y_SWELL,
             "shoulder_run_mm": POD_SHOULDER_RUN,
             "plan_r_mm": PLAN_R,
-            "outer_lid_mm": [POD_X_MAX - 2 * D.REVEAL, POD_LEN - 2 * D.REVEAL, POD_LID_T],
+            "outer_strap_flare_mm": POD_X_STRAP,
+            "lid_inset_mm": POD_LID_INSET,
+            "outer_lid_mm": [
+                POD_X_MAX - 2 * POD_LID_INSET,
+                POD_LEN - 2 * POD_LID_INSET,
+                POD_LID_T,
+            ],
             "lid_crown_sagitta_mm": POD_LID_CROWN,
+            "public_id": {
+                "text": POD_PUBLIC_ID,
+                "h_mm": POD_ID_H,
+                "depth_mm": POD_ID_DEPTH,
+                "cutter": "straight_prism",
+                "letter_up": "-X",
+                "along": "+Y 0→0→1",
+            },
             "cavity_mm": list(POD_CAVITY),
             "cavity_oriented_xyz": [CAV_X, CAV_Y, CAV_Z],
             "stack_mm": POD_STACK_H,

@@ -11,7 +11,7 @@ D4 contoured skin around D5 internals (PR head `6b1f882`). Script: `hardware/roo
 | Seam Z (assembly) | **9.0** | Low seam ~0.29 of stack; lid perimeter step 3.2 mm (no hanging skirt) |
 | Base H (mating) | 19.0 | Floor 6.0 + cavity 13.0 (D5) |
 | Lid H (above mating) | 12.0 | Flat panel land; crown 3.5 outside land |
-| Plan R / reveal | 7.0 / 0.5 | Soft plan; 0.5 inset lid |
+| Plan R / reveal | 3.0 / 0.5 | Soft plan; 0.5 inset lid |
 | End nose | 32.0 taper / tip 3.0 / plan R 14.0 | D7 rounded ellipse + bullnose (was hard ~4 mm cut) |
 | Panel land (flat) | 68.0 × 116.0 | Contains pocket; crown outside |
 | Panel pocket | 66.6 × 113.6 × 2.3 | P124 KEPT; 15 mm keep-clear |

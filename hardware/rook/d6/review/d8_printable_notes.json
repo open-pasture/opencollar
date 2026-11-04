@@ -1,0 +1,38 @@
+{
+  "round": "D8",
+  "branch": "cursor/d8-printable-candidate-1b5c",
+  "base_r19_head": "425d1fe",
+  "vs_d6_debb5de": {
+    "pod_plan_r": "8 → 3",
+    "pod_strap_flare_mm": "none → 76 (mid swell still 68, tip 66)",
+    "pod_lid_inset_mm": "0.5 reveal → 3.0",
+    "pod_001": "font emboss 9.5×0.8 → straight-prism 6×0.6 letter-up −X along +Y",
+    "pod_screw_heads": "proud Ø5.2 heads → 4× Ø2×0.4 recesses clear of M3",
+    "fairing_cap_pod": "added 1.5 mm top groove (fastening intact)",
+    "fairing_pod_strap_w0": "68 → 76 (kiss strap-end flare)",
+    "cap_plan_r": "8 → 3",
+    "heights_arc_panel": "unchanged (height-neutral; panel 15 mm keep-clear)"
+  },
+  "checks": {
+    "assembly_check": "0 FAIL / 149",
+    "geometry_hygiene": "PASS thin=[] floating=[] non_mesh=[]",
+    "pod_L_base_mm": [76.0, 98.8, 37.4],
+    "pod_L_lid_mm": [70.0, 91.0, 6.0],
+    "fit_coupon_mm": [76.0, 70.6, 12.0],
+    "fit_coupon_along_strap_mm": 70.6
+  },
+  "fdm_p2s_notes": [
+    "Pod lids outer-down: 001 + Ø2 recesses are bed-face features (0.4–0.6 mm) — first layers may soften; ASA brim 8 mm still recommended on full shells",
+    "Strap-end flare 76 mm: both pod bases still fit side-by-side on P2 with brims (2×(76+16)≈184 ≤ 240 usable)",
+    "Cap↔pod fairing groove is a top trough only — no bridging change vs prior fairing print (long face on bed)",
+    "Lid inset creates a 3 mm lip shelf — print as-designed; no new steep overhangs on outer-down lid",
+    "Fit coupon PLA on P0 (~76×71×12) before any ASA plate — owner must approve before print"
+  ],
+  "unverified": [
+    "Physical fit of cap↔pod M3 joint after R3 / groove / flare (geometry fastening path unchanged; no printed coupon assembled)",
+    "001 crispness and screw-recess depth after real ASA first-layer squash",
+    "Whether inset lid gasket/land still seats with 3 mm reveal vs prior 0.5 mm (lip/groove engagement still present in assembly_check)",
+    "Full-collar ASA slice times/grams — PRINT.md estimates only"
+  ],
+  "print_gate": "Nothing is printed without the owner's explicit say-so."
+}

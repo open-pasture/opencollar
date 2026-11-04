@@ -1,0 +1,25 @@
+{
+  "name": "d8_fit_coupon",
+  "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/d8_fit_coupon.stl",
+  "dims_mm": [
+    76.0,
+    70.6,
+    12.0
+  ],
+  "along_strap_mm": 70.6,
+  "features": [
+    "1.5 mm cap\u2194pod joint groove",
+    "pod strap-end flare ~76 mm",
+    "lid inset 3 mm + lip",
+    "prism 001 span\u224812.3 mm",
+    "\u00d82 screw-head recess"
+  ],
+  "print": {
+    "material": "PLA",
+    "orientation": "lay-flat, features UP",
+    "brim": "optional",
+    "plate": "P0 with other floor coupons",
+    "bed": "Bambu P2S 256"
+  },
+  "note": "Fit-check only \u2014 not a structural part. Owner must approve before any print."
+}

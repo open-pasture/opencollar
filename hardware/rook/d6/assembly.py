@@ -43,7 +43,7 @@ POD_X_END = 66.0           # tip width (slight taper; ≤70)
 POD_W = 97.0               # along strap (Y) — D4-ish length; strap-end grows
 POD_MOUNT_FACE_Y = 46.0    # LOCKED local |Y| of recess face (was POD_W/2 when W=92)
 POD_FLOOR = 1.5
-POD_PLAN_R = 8.0           # outer tip plan R (pod.py PLAN_R)
+POD_PLAN_R = 3.0           # D8: R3 plan corners (D4 / r19 silhouette)
 
 CAP_Z0 = -3.6              # D4 cap_base world min z
 CAP_BASE_H = 19.0
@@ -87,9 +87,9 @@ SADDLE_H = SADDLE_ROOF + SADDLE_CHANNEL_D
 FAIRING_POD_OUTER_X = POD_L              # 68 swell
 FAIRING_POD_TIP_X = POD_X_END            # 66 — join width at ±Y ends
 FAIRING_POD_OUTER_Y = POD_W
-FAIRING_POD_PLAN_R = POD_PLAN_R          # 8
+FAIRING_POD_PLAN_R = POD_PLAN_R          # 3
 FAIRING_CAP_W = CAP_W                    # 76
-FAIRING_CAP_PLAN_R = 7.0
+FAIRING_CAP_PLAN_R = 3.0                 # D8: R3
 FAIRING_CW_OUTER = CW_L                  # 89.4
 FAIRING_RUN = 28.0
 # D7r3: D4-like short rounded nose (~16.6); must not sail past pod tip outline.
@@ -98,6 +98,9 @@ FAIRING_RUN_CW = 32.0                    # longer blend saddle ↔ lower CW
 # Wide end = pod outer (narrower than cap); fairing_cw() overrides W0 to CW.
 FAIRING_W0 = FAIRING_POD_OUTER_X         # 68 — kiss swell / tip band
 FAIRING_W1 = 52.0                        # narrow end toward strap / mate (strap+CW)
+# D8 joint groove (visual separation; fastening intact below)
+JOINT_GROOVE_W = 1.5
+JOINT_GROOVE_D = 3.0
 # Cap↔pod: nearly constant width (no sail taper / creases at tip).
 FAIRING_W1_CAP_POD = FAIRING_W0          # 68 — flush rounded nose, not a flap
 FAIRING_W0_CW = FAIRING_CW_OUTER         # 89.4 — wide end = CW outer (no plan step)
@@ -114,8 +117,10 @@ FAIRING_EDGE_R = 4.0
 FAIRING_BEVEL_OVERSIZE = 0.75
 # Cap↔pod stadium (W1=W0, large plan R) barely shrinks under bevel — skip oversize.
 FAIRING_BEVEL_OVERSIZE_CAP_POD = 0.0
-FAIRING_PLAN_R0 = max(FAIRING_POD_PLAN_R, 8.0)
-FAIRING_PLAN_R1 = max(FAIRING_CAP_PLAN_R, 6.0)
+FAIRING_PLAN_R0 = max(FAIRING_POD_PLAN_R, 3.0)
+FAIRING_PLAN_R1 = max(FAIRING_CAP_PLAN_R, 3.0)
+# Pod↔strap fairing wide end follows strap-end flare
+FAIRING_W0_POD_STRAP = 76.0              # kiss POD_X_STRAP
 FAIRING_TOP_CROWN = 0.0                 # D7r3: no crown cuts → no crease lines
 FAIRING_RAMP_DROP = 8.0                 # D7r7: stronger tangent step-down (D4-like)
 FAIRING_INTERFERE_TOL = 0.2
