@@ -104,7 +104,7 @@ enum welfare_event_kind {
 	WELFARE_PULSE_CUTOFF = 0,    /* Outside cue budget spent; suspended until inside */
 	WELFARE_RETURNED,            /* Clear inside after a crossing (one escape cycle) */
 	WELFARE_AUTO_SHUTOFF,        /* Escape-cycle limit hit; enforcement off */
-	WELFARE_ENFORCEMENT_RESUMED, /* Cleared by caretaker cue_clear_shutoff only */
+	WELFARE_ENFORCEMENT_RESUMED, /* Cleared by serial or signed server rearm only */
 };
 
 struct welfare_event {
@@ -112,6 +112,10 @@ struct welfare_event {
 	int64_t at_ms;
 	uint8_t outside_cues;  /* Outside cues delivered on the crossing just ended */
 	uint8_t escape_cycles; /* Cycles counted in the window at this event */
+	/* enforcement_resumed only */
+	bool has_by;
+	char by[8]; /* "serial" or "server" */
+	uint32_t rearm_seq; /* server path; 0 for serial */
 };
 
 #define CUE_WELFARE_MAX 8
@@ -135,6 +139,8 @@ struct cue {
 	uint8_t escape_cycles;          /* Completed escape→return cycles in the window */
 	int64_t escape_window_start_ms; /* Start of the current cycle window; 0 = none */
 	bool enforcement_off; /* Auto shut-off: no cues until cue_clear_shutoff */
+	bool has_shutoff_at;
+	int64_t shutoff_at_s; /* Unix seconds when shut-off tripped (for rearm match) */
 
 	bool ep_open;
 	struct episode ep;
@@ -166,8 +172,21 @@ void cue_rearm_at(struct cue *c, int64_t now_ms);
  */
 void cue_clear_shutoff(struct cue *c);
 
-/* cue_clear_shutoff() at now_ms */
+/* cue_clear_shutoff() at now_ms; by = "serial" */
 void cue_clear_shutoff_at(struct cue *c, int64_t now_ms);
+
+/* Signed server rearm: same clear, enforcement_resumed with by=server + seq */
+void cue_clear_shutoff_server(struct cue *c, int64_t now_ms, uint32_t rearm_seq);
+
+/* Stamp shutoff_at once GNSS time is known (no-op if already set or not off). */
+void cue_note_shutoff_at(struct cue *c, int64_t utc_s);
+
+/*
+ * Restore persisted shut-off after boot (no welfare event). Does not touch
+ * rearm_seq (held outside cue).
+ */
+void cue_restore_shutoff(struct cue *c, bool enforcement_off, uint8_t escape_cycles,
+			 bool has_shutoff_at, int64_t shutoff_at_s);
 
 /* Switch between cueing and tracking only. A running episode ends as
  * boundary_changed: the mode comes with a boundary. */

@@ -20,8 +20,8 @@
 #define HERD_A "herd_01J7GOLDEN"
 #define HERD_B "herd_01J7OTHER"
 
-#define OLD_STATUS "collar " COLLAR " herd " HERD_A " fw 0.2.0 config - active 10 slots 10 13 enforcement on"
-#define NEW_STATUS "collar " COLLAR " herd " HERD_B " fw 0.2.0 config 1 active 10 slots 10 enforcement on"
+#define OLD_STATUS "collar " COLLAR " herd " HERD_A " fw 0.2.0 config - active 10 slots 10 13 enforcement on rearm_seq 0"
+#define NEW_STATUS "collar " COLLAR " herd " HERD_B " fw 0.2.0 config 1 active 10 slots 10 enforcement on rearm_seq 0"
 
 static struct app a;
 static char reply[512];

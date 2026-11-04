@@ -28,6 +28,8 @@ static const char *const codes[REJECT_COUNT] = {
 	[REJECT_BAD_MARGINS] = "bad_margins",
 	[REJECT_SLOTS_FULL] = "slots_full",
 	[REJECT_BAD_CONFIG] = "bad_config",
+	[REJECT_BAD_CBOR] = "bad_cbor",
+	[REJECT_EXPIRED] = "expired",
 };
 
 const char *reject_str(enum reject_code code)

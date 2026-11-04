@@ -1,0 +1,139 @@
+{
+  "seed_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "public_key": "A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg=",
+  "collar_id": "col_01J9SIMCOLLAR",
+  "held_rearm_seq": 0,
+  "shutoff_at": "2026-09-27T11:00:00Z",
+  "trusted_now": "2026-09-27T12:00:00Z",
+  "cases": [
+    {
+      "name": "valid",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"bndVtPVU9T5n53ihyRLpX0bUiANLXAMnkeMC1zCZMl2hoDB6WlGM031PLyV+bhMP7pMJjGkJyypUOoEmIwrFBQ==\"}",
+      "valid": true,
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}"
+    },
+    {
+      "name": "valid_seq_2",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V2\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":2,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"d8Epobsl6Cpdu/63Ht9PWYGc9d5gBzNHNqTy6hWb5EYxYlWhf9rD1beb7YEbWrrcx7gKIjZu1+QBeeS01uM2Ag==\"}",
+      "valid": true,
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V2\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":2,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}"
+    },
+    {
+      "name": "wrong_collar",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9OTHER\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"mvCssOX/I7/cIaPsWNQFhPxZg4+boIP9XeEg5LYWdHjCcC2wRZsQvqdSzpZ/3I1OJPiO5LcM7IuvHEWVb2TFBQ==\"}",
+      "valid": false,
+      "canonical": "{\"collar_id\":\"col_01J9OTHER\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}",
+      "code": "wrong_collar"
+    },
+    {
+      "name": "bad_sig",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ==\"}",
+      "valid": false,
+      "code": "bad_sig"
+    },
+    {
+      "name": "stale_seq_equal",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"bndVtPVU9T5n53ihyRLpX0bUiANLXAMnkeMC1zCZMl2hoDB6WlGM031PLyV+bhMP7pMJjGkJyypUOoEmIwrFBQ==\"}",
+      "valid": false,
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}",
+      "code": "stale",
+      "held_rearm_seq": 1
+    },
+    {
+      "name": "stale_seq_lower",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_old\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"31R01QhYHVUG3m3T1KTeeUri/SJtswX3CXPCKmmvt5RmnUz5YngbiyTpdFajva8dSx/n8dV5iNpmNdkykVl9AQ==\"}",
+      "valid": false,
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_old\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}",
+      "code": "stale",
+      "held_rearm_seq": 5
+    },
+    {
+      "name": "expired",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-27T11:59:59Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"m2EhDdyf3FmCChvgTPHo1tdEEj9IBJpR2z6hiOEeSe312BaQLfB9u2t0ClSX/ruge4HQGYcyoukJ3pM1k0HtBA==\"}",
+      "valid": false,
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-27T11:59:59Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}",
+      "code": "expired",
+      "trusted_now": "2026-09-27T12:00:00Z"
+    },
+    {
+      "name": "shutoff_at_match",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"bndVtPVU9T5n53ihyRLpX0bUiANLXAMnkeMC1zCZMl2hoDB6WlGM031PLyV+bhMP7pMJjGkJyypUOoEmIwrFBQ==\"}",
+      "valid": true,
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}",
+      "shutoff_at": "2026-09-27T11:00:00Z"
+    },
+    {
+      "name": "shutoff_at_older",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T10:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"hzef1X1ftRCuJmO2xklqiGSrxWKs8y25iEAdv7KJwuNeOynSQL/q7puoAmwQfNNMEq+1bvP8kj19nweKyIpcBg==\"}",
+      "valid": false,
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T10:00:00Z\",\"type\":\"rearm\"}",
+      "code": "stale",
+      "shutoff_at": "2026-09-27T11:00:00Z"
+    },
+    {
+      "name": "shutoff_at_newer",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T12:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"TmSMJZOc9Z+vP4ZH8acdqbNXPxL49GIRcTQ7et+M/iSUMW3qAQl2JkDSn0CMAzX8x1ZC8fLr+p6Cki9QEbQoDg==\"}",
+      "valid": false,
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T12:00:00Z\",\"type\":\"rearm\"}",
+      "code": "stale",
+      "shutoff_at": "2026-09-27T11:00:00Z"
+    },
+    {
+      "name": "not_shut_off",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"bndVtPVU9T5n53ihyRLpX0bUiANLXAMnkeMC1zCZMl2hoDB6WlGM031PLyV+bhMP7pMJjGkJyypUOoEmIwrFBQ==\"}",
+      "valid": false,
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}",
+      "code": "stale",
+      "enforcement": "on"
+    },
+    {
+      "name": "missing_collar_id",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"oT7kJsgOs6dgJ6k+F8bkaUhm6AttP1I+2E2fqG2NPmyOi8vtZFjHr2wC9T6k4unszdehJmvE+YKvrlSc7MA0Dw==\"}",
+      "valid": false,
+      "code": "bad_json",
+      "canonical": "{\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}"
+    },
+    {
+      "name": "missing_type",
+      "wire": "{\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"WaaOiim31sN5S+4sYndzXaOusVnJeWsYGeuvo8DluKLRAtbDxRcp+g/t1MZIoWCeVI+ZaT8kFNsE0cPli+B0Cg==\"}",
+      "valid": false,
+      "code": "bad_json",
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\"}"
+    },
+    {
+      "name": "wrong_type",
+      "wire": "{\"type\":\"config\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"Pm7mTO80f5Zz5cgs+odfC3ztaROHMB/eiQ0IPGXaBTU/y0j7BtVHtzI5Zp9/kWMHvrAs2iFT2NdUfn4xghVuCw==\"}",
+      "valid": false,
+      "code": "bad_json",
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"config\"}"
+    },
+    {
+      "name": "missing_reason_code",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"sig\":\"W4AUCSz4JVi3uEztdKBYNSC0yNqErGZPZrhEN04EUHLXCxS2xi+Jzf7kypRM1bMg83eIoqdJMsjG9PMM1+GJDQ==\"}",
+      "valid": false,
+      "code": "bad_json",
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}"
+    },
+    {
+      "name": "missing_shutoff_at",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"i/kBPm8ctMTKYLWUPMEAgrflvYTbYAyciUNFlES/5Zh3+MojRreUIzCbiWHPRCGzarX6Pa5p6/lErdw1+skoAw==\"}",
+      "valid": false,
+      "code": "bad_json",
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2026-09-28T12:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"type\":\"rearm\"}"
+    },
+    {
+      "name": "missing_expires_at",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"+3w+BPYU4VhTufw1uoUGV7278KHUSoBjBEQVoI5hxsQ8uLS8yZ7BVeWwNuWF8xWbzw6eAeKrbYSNHaQoAy2gAQ==\"}",
+      "valid": false,
+      "code": "bad_json",
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}"
+    },
+    {
+      "name": "no_trusted_time_accepts",
+      "wire": "{\"type\":\"rearm\",\"command_id\":\"rrm_01J9V1\",\"collar_id\":\"col_01J9SIMCOLLAR\",\"herd_id\":\"herd_01J7GOLDEN\",\"rearm_seq\":1,\"issued_at\":\"2026-09-27T12:00:00Z\",\"expires_at\":\"2020-01-01T00:00:00Z\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"reason_code\":\"caretaker_checked\",\"sig\":\"ESYMXu9Bak/BNKAGA7Ajrer+toZy0P1fYs427UumkyIRFZpluX6BliosJ2hibx0mRFmi34QE07pRepnHXeN6BA==\"}",
+      "valid": true,
+      "canonical": "{\"collar_id\":\"col_01J9SIMCOLLAR\",\"command_id\":\"rrm_01J9V1\",\"expires_at\":\"2020-01-01T00:00:00Z\",\"herd_id\":\"herd_01J7GOLDEN\",\"issued_at\":\"2026-09-27T12:00:00Z\",\"rearm_seq\":1,\"reason_code\":\"caretaker_checked\",\"shutoff_at\":\"2026-09-27T11:00:00Z\",\"type\":\"rearm\"}",
+      "no_trusted_time": true
+    }
+  ]
+}

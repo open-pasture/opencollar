@@ -17,6 +17,8 @@
 #define STORE_ID_PROVISION 1   /* The provisioning payload (§3.9) */
 #define STORE_ID_ACKS 2        /* Acks not yet delivered */
 #define STORE_ID_CONFIG 3      /* The applied config command (§3.4) */
+/* 4 is reserved on rook-lte-v1 (STORE_ID_ROOK_FENCE); do not reuse. */
+#define STORE_ID_WELFARE 5     /* Shut-off + rearm_seq (welfare_store.c) */
 #define STORE_ID_SLOT_BASE 0x100 /* Slot records: 0x100 + i */
 
 /* Mount the store. 0 or a negative errno. */

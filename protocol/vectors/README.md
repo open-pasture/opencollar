@@ -7,7 +7,7 @@ The files are written by the Rust reference in `crates/op-protocol` (Apache-2.0)
 ```sh
 OP_WRITE_VECTORS=1 cargo test -p op-protocol --test vectors --test vectors_v2   # in openpasture
 cp -R crates/op-protocol/vectors/. ../opencollar/protocol/vectors/
-cp ../opencollar/protocol/vectors/{commands,config,shapes,geofence,slots,cue}.json ../opencollar/firmware/tests/host/vectors/
+cp ../opencollar/protocol/vectors/{commands,config,shapes,geofence,slots,cue,rearm}.json ../opencollar/firmware/tests/host/vectors/
 ```
 
 Without `OP_WRITE_VECTORS` the same tests fail when a file is out of date, and check op-protocol against every case.
@@ -80,6 +80,12 @@ Expect after each step: `{ cue, armed, episodes }`. `cue` is `null` (silent) or 
 ### config.json
 
 Same shape, plus `collar_id` and `held_version`: the collar's own id and the config version it already holds. Check with `verify_config_wire`, then `ConfigCommand::check(collar_id, held_version)`: ids (`bad_json`), `wrong_collar`, `stale` (version ≤ held), `bad_config` (an interval outside 10-3600 s, `fast_until` without both fast intervals, an endpoint not `https://…` or over 256 bytes).
+
+### rearm.json
+
+`{ seed_hex, public_key, collar_id, held_rearm_seq, shutoff_at, trusted_now, cases: [{ name, wire, valid, code?, canonical?, held_rearm_seq?, shutoff_at?, trusted_now?, enforcement?, no_trusted_time? }] }`
+
+Signed rearm commands (cap `rearm`). Verify like config (canonical JSON, Ed25519, same server key), then check: `wrong_collar`; `stale` when `rearm_seq ≤ held` or `shutoff_at` ≠ persisted shut-off (or enforcement is on); `expired` when `expires_at` is before trusted time. Case fields override the file defaults. `no_trusted_time: true` means the collar has no GNSS clock: an otherwise valid command is accepted even if `expires_at` is in the past (exception to `not_now`). Host tests also cover reboot persistence, serial `rearm`, fence-change-does-not-clear, and that `rearm_seq` never lowers.
 
 ## v2
 

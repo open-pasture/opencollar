@@ -36,21 +36,30 @@ should be re-checked after field data from the pilot farm.
 | Then suspend until clear inside (`GEOFENCE_INSIDE`) | always | (state: `pulse_cutoff`) |
 | Escape→return cycles before auto shut-off | **3** | `escape_cycle_limit` |
 | Fixed window for those cycles (starts at first escape; resets after 24 h) | **24 hours** | `escape_cycle_window_ms` |
-| Clear shut-off | explicit caretaker re-arm only (`cue_clear_shutoff` / serial `rearm`); a new boundary never clears it | — |
+| Clear shut-off | explicit caretaker re-arm only: serial `rearm` (physical) or signed server `rearm` (cap `rearm`); a new boundary never clears it | — |
+| Survive reboot | shut-off + `shutoff_at` + cycle counters + `rearm_seq` persisted in NVS; boot restores shut-off | — |
+| Queued remote re-arm lifetime | server should expire undelivered rearms after **24 h** (`expires_at`); collar rejects past `expires_at` when it has trusted time | — |
 
 Existing caps still apply: warning cues at most 20 s continuous then 30 s
 rest; outside cues also stop after `outside_max_ms` (10 s) if the count
 budget has not already been spent.
 
 While auto shut-off is active, the fence still evaluates (state and margin)
-but no warn or outside cue plays. `status` reports `enforcement off`. Only an
-explicit caretaker re-arm (per collar) clears shut-off, resets the escape-cycle
-counters, and emits `enforcement_resumed`. A new boundary / fence update
-disarms cueing for the usual "animal left outside stays silent" reasons, but
-leaves shut-off and the cycle counters alone.
+but no warn or outside cue plays. `status` reports `enforcement off`. Shut-off
+survives a hard reboot. Only an explicit caretaker re-arm (per collar) clears
+it, resets the escape-cycle counters, and emits `enforcement_resumed`
+(`by:"serial"` or `by:"server"`). A new boundary / fence update disarms cueing
+for the usual "animal left outside stays silent" reasons, but leaves shut-off
+and the cycle counters alone. `rearm_seq` never goes backwards.
 
 **Decision (Cody, Nov 3):** a fence move must not clear auto shut-off. Once
 shut-off trips, enforcement stays off until a person re-arms that collar.
+
+**Decision (Cody, Nov 3 / protocol record L):** agents and servers may re-arm
+remotely with a signed `rearm` that matches the collar's persisted
+`shutoff_at`; shut-off must survive reboot; a queued re-arm expires after 24 h
+on the server (`expires_at`). If the collar has no trusted time, it still
+accepts an otherwise valid rearm (`rearm_seq` blocks replay).
 
 ## Welfare events
 
@@ -62,7 +71,7 @@ Queued like episodes; drained by `cue_take_welfare`, logged as
 | `pulse_cutoff` | Outside cue budget (count or time) spent for this crossing |
 | `returned` | Clear inside after a counted crossing (one escape cycle) |
 | `auto_shutoff` | Escape-cycle limit hit; enforcement off |
-| `enforcement_resumed` | Shut-off cleared by explicit caretaker re-arm |
+| `enforcement_resumed` | Shut-off cleared by serial or signed server re-arm (`by`, and `rearm_seq` when server) |
 
 ## Open questions for welfare review
 
@@ -72,8 +81,9 @@ Queued like episodes; drained by `cue_take_welfare`, logged as
   collar goes on an animal before that review.
 - When the pulse board ships, should warning **audio** share the same count
   budget as the pulse, or stay on the existing time/rest caps only?
-- Should welfare events be a separate report array, or folded into episodes /
-  a `welfare` cap in the protocol registry?
+- Report shape settled for v1: a `welfare` object plus optional
+  `welfare_events[]` under cap `rearm` (field names may still rename slightly
+  when the protocol record lands; firmware keeps them in `wire_fields.h`).
 
 ## Basis for the defaults
 

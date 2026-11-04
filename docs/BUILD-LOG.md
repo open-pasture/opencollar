@@ -1,5 +1,13 @@
 # Build log
 
+## 2026-11-04
+
+### Persist shut-off + signed remote rearm (Cody / protocol record L)
+- NVS id 5: shut-off, `shutoff_at`, escape-cycle counters, lifetime `rearm_seq` (never lowered). Boot restores shut-off.
+- Signed `rearm` command (cap `rearm`): `shutoff_at` must match exactly; `reason_code` token (no free-text on collar); no trusted time → accept; else `expired`. Serial `rearm` remains physical clear (`by:serial`).
+- Report hooks: `welfare` / `welfare_events` / cap `rearm` in `report.c` (does not touch Rook LTE on #12; store id 5 avoids Rook's id 4).
+- Host tests + `protocol/vectors/rearm.json`. Docs: README, registry, CHANGELOG, WELFARE-POLICY. **Nothing run on hardware.**
+
 ## 2026-11-03
 
 ### Auto shut-off: caretaker re-arm only (Cody)

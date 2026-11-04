@@ -73,7 +73,7 @@ static void test_valid_payload_is_stored_and_wipes_slots(void)
 
 	CHECK(strcmp(provision("col_1", "herd_01J7GOLDEN", KEY, URL, server_key), "ok col_1") == 0);
 	CHECK(strcmp(say("status"),
-		     "collar col_1 herd herd_01J7GOLDEN fw 0.2.0 config - active - slots - enforcement on") == 0);
+		     "collar col_1 herd herd_01J7GOLDEN fw 0.2.0 config - active - slots - enforcement on rearm_seq 0") == 0);
 
 	/* A boundary for this herd applies once the collar has GNSS time past it */
 	fix_at(T0 + 60);
@@ -81,7 +81,7 @@ static void test_valid_payload_is_stored_and_wipes_slots(void)
 	CHECK(strcmp(say(line), "applied 57") == 0);
 	CHECK(a.fence != NULL && a.fence->version == 57);
 	CHECK(strcmp(say("status"),
-		     "collar col_1 herd herd_01J7GOLDEN fw 0.2.0 config - active 57 slots 57 enforcement on") == 0);
+		     "collar col_1 herd herd_01J7GOLDEN fw 0.2.0 config - active 57 slots 57 enforcement on rearm_seq 0") == 0);
 
 	/* Kept over a reboot */
 	store_ram_reboot();
@@ -93,7 +93,7 @@ static void test_valid_payload_is_stored_and_wipes_slots(void)
 	/* Provisioning again wipes slots, config and pending acks */
 	CHECK(strcmp(provision("col_2", "herd_2", KEY, URL, server_key), "ok col_2") == 0);
 	CHECK(a.fence == NULL && a.slots.n == 0 && a.acks.n == 0);
-	CHECK(strcmp(say("status"), "collar col_2 herd herd_2 fw 0.2.0 config - active - slots - enforcement on") ==
+	CHECK(strcmp(say("status"), "collar col_2 herd herd_2 fw 0.2.0 config - active - slots - enforcement on rearm_seq 0") ==
 	      0);
 	store_ram_reboot();
 	boot();
@@ -169,7 +169,7 @@ static void test_each_bad_field(void)
 
 static void test_lines(void)
 {
-	CHECK(strcmp(say("  status  "), "collar col_3 herd herd_3 fw 0.2.0 config - active - slots - enforcement on") ==
+	CHECK(strcmp(say("  status  "), "collar col_3 herd herd_3 fw 0.2.0 config - active - slots - enforcement on rearm_seq 0") ==
 	      0);
 	/* Caretaker re-arm (clears shut-off); not a fence move */
 	CHECK(strcmp(say("rearm"), "ok enforcement on") == 0);

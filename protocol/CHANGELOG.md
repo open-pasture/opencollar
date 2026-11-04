@@ -3,6 +3,38 @@
 Wire-visible changes, newest first. Versions name the protocol, not any firmware or server
 release.
 
+## 2026-11-04
+
+### Signed remote rearm + persisted shut-off (Cody)
+
+Not a full wire version bump; new optional cap and report fields. Host-tested only;
+**nothing was run on hardware.**
+
+- **Persist shut-off** in NVS id 5 (`enforcement_off`, `shutoff_at`, escape-cycle
+  counters, `rearm_seq`). Boot restores shut-off so a hard reboot does not resume
+  enforcement. A fence / boundary change still never clears it (2026-11-03).
+- **`rearm_seq`**: lifetime monotonic counter per collar. Never reset or lowered
+  (provision wipe, serial `rearm`, boot, or a server DB restore that goes
+  backwards). Reject `rearm_seq <= held` as `stale`.
+- **Signed `rearm` command** (cap `rearm`): JSON
+  `{type, command_id, collar_id, herd_id?, rearm_seq, issued_at, expires_at,
+  shutoff_at, reason_code, sig}` — Ed25519 over canonical JSON without `sig`
+  (same as boundary/config). `shutoff_at` must equal the persisted shut-off
+  time exactly or `stale` (also when not shut off). `reason_code` is a short
+  token; free-text reason stays on the server. On success: clear shut-off,
+  persist `rearm_seq`, emit `enforcement_resumed` with `by:"server"` and
+  `rearm_seq`, ack `applied` with `version=rearm_seq`.
+- **No trusted time:** accept an otherwise valid rearm (exception to `not_now`;
+  see registry). With trusted time, `expires_at` in the past is `expired`
+  (reject code 22, now also used in v1).
+- **Report:** `welfare {enforcement, shutoff_at?, escape_cycles, rearm_seq}`,
+  optional `welfare_events[]`, device cap `rearm`.
+- **Serial `rearm`:** physical caretaker clear (`by:"serial"`); clears
+  persisted shut-off; does not change `rearm_seq`.
+- **v2:** same fields as a signed CBOR (COSE) command when that record lands.
+  Field names are centralized in firmware `wire_fields.h` for easy rename.
+- **Vectors:** [`vectors/rearm.json`](vectors/rearm.json).
+
 ## 2026-11-03
 
 ### Auto shut-off: caretaker re-arm only (Cody)

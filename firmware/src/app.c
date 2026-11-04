@@ -3,6 +3,29 @@
 #include <stdio.h>
 #include <string.h>
 
+static void sync_welfare_from_cue(struct app *a)
+{
+	bool dirty = false;
+
+	if (a->cue.enforcement_off != a->welfare.enforcement_off) {
+		a->welfare.enforcement_off = a->cue.enforcement_off;
+		dirty = true;
+	}
+	if (a->cue.has_shutoff_at != a->welfare.has_shutoff_at ||
+	    (a->cue.has_shutoff_at && a->cue.shutoff_at_s != a->welfare.shutoff_at)) {
+		a->welfare.has_shutoff_at = a->cue.has_shutoff_at;
+		a->welfare.shutoff_at = a->cue.shutoff_at_s;
+		dirty = true;
+	}
+	if (a->cue.escape_cycles != a->welfare.escape_cycles) {
+		a->welfare.escape_cycles = a->cue.escape_cycles;
+		dirty = true;
+	}
+	if (dirty) {
+		(void)welfare_store_save(&a->welfare);
+	}
+}
+
 static void apply_boundary(void *ctx, const struct slot_hdr *hdr, const int32_t (*v)[2])
 {
 	struct app *a = ctx;
@@ -18,6 +41,7 @@ static void apply_boundary(void *ctx, const struct slot_hdr *hdr, const int32_t 
 		return;
 	}
 	a->fence = next;
+	/* New boundary only: never clears shut-off (PR #22). */
 	cue_rearm_at(&a->cue, a->now_ms);
 	cue_set_mode(&a->cue, (hdr->flags & SLOT_F_TRACK) ? CUE_MODE_TRACK : CUE_MODE_AUDIO);
 }
@@ -29,6 +53,7 @@ void app_init(struct app *a, const struct cue_config *cue_cfg,
 	a->defaults = *defaults;
 	cue_init(&a->cue, cue_cfg);
 	config_init(&a->cfg);
+	welfare_store_init(&a->welfare);
 	slots_init(&a->slots, &LIMITS_V0, a->e7, apply_boundary, a);
 	a->slots.warn_m = defaults->warn_m;
 	a->slots.hysteresis_m = defaults->hysteresis_m;
@@ -56,6 +81,10 @@ void app_boot(struct app *a, int64_t now_ms)
 	cue_rearm_at(&a->cue, now_ms);
 
 	provision_load(&a->prov);
+	welfare_store_load(&a->welfare);
+	/* Restore shut-off so a hard reboot does not resume enforcement. */
+	cue_restore_shutoff(&a->cue, a->welfare.enforcement_off, a->welfare.escape_cycles,
+			    a->welfare.has_shutoff_at, a->welfare.shutoff_at);
 	if (!a->prov.ok) {
 		return; /* GNSS only */
 	}
@@ -93,6 +122,8 @@ bool app_now(const struct app *a, int64_t now_ms, int64_t *utc)
 struct app_fix_out app_fix(struct app *a, const struct app_fix_in *f, int64_t now_ms)
 {
 	struct app_fix_out out = {0};
+	bool was_off = a->cue.enforcement_off;
+	bool had_shutoff_at = a->cue.has_shutoff_at;
 
 	a->now_ms = now_ms;
 	if (f->valid && f->has_time) {
@@ -116,6 +147,19 @@ struct app_fix_out app_fix(struct app *a, const struct app_fix_in *f, int64_t no
 
 	out.r = geofence_update(a->fence, p, f->accuracy_m);
 	out.cmd = cue_update(&a->cue, &out.r, a->fence->cfg.warn_m, now_ms);
+
+	/* Stamp shutoff_at from GNSS once shut-off is on. */
+	if (a->cue.enforcement_off && !a->cue.has_shutoff_at && a->has_clock) {
+		int64_t utc;
+
+		if (app_now(a, now_ms, &utc)) {
+			cue_note_shutoff_at(&a->cue, utc);
+		}
+	}
+	if (a->cue.enforcement_off != was_off || a->cue.has_shutoff_at != had_shutoff_at ||
+	    a->cue.escape_cycles != a->welfare.escape_cycles) {
+		sync_welfare_from_cue(a);
+	}
 	return out;
 }
 
@@ -134,6 +178,28 @@ static bool unverified_ack(const char *wire, size_t len, enum reject_code code,
 	ver = wire_find(wire, &sc, "version");
 	if (!id || !ver || !wire_read_id(wire, id, false, NULL, &ack->command_id) ||
 	    !wire_u32(wire + ver->val, ver->val_len, &ack->version)) {
+		return false;
+	}
+	ack->status = ACK_REJECTED;
+	ack->code = (uint8_t)code;
+	return true;
+}
+
+/* Rearm acks use rearm_seq as version; fall back to reading rearm_seq. */
+static bool unverified_rearm_ack(const char *wire, size_t len, enum reject_code code,
+				 struct slot_ack *ack)
+{
+	struct wire_scan sc;
+	const struct wire_span *id, *seq;
+
+	memset(ack, 0, sizeof(*ack));
+	if (wire_scan(wire, len, &sc) != REJECT_NONE) {
+		return false;
+	}
+	id = wire_find(wire, &sc, OC_FIELD_COMMAND_ID);
+	seq = wire_find(wire, &sc, OC_FIELD_REARM_SEQ);
+	if (!id || !seq || !wire_read_id(wire, id, false, NULL, &ack->command_id) ||
+	    !wire_u32(wire + seq->val, seq->val_len, &ack->version)) {
 		return false;
 	}
 	ack->status = ACK_REJECTED;
@@ -193,6 +259,62 @@ enum reject_code app_config(struct app *a, const char *wire, size_t len, int64_t
 	return code;
 }
 
+enum reject_code app_rearm(struct app *a, const char *wire, size_t len, int64_t now_ms,
+			   struct slot_ack *ack, bool *has_ack)
+{
+	enum reject_code code;
+	int64_t now = 0;
+	bool has_now;
+	bool has_held;
+
+	*has_ack = false;
+	a->now_ms = now_ms;
+	if (!a->prov.ok) {
+		return REJECT_BAD_SIG;
+	}
+	has_now = app_now(a, now_ms, &now);
+	code = rearm_parse(wire, len, a->prov.server_key, &a->rearm_cmd);
+	if (code != REJECT_NONE) {
+		if (unverified_rearm_ack(wire, len, code, ack)) {
+			ack->has_at = has_now;
+			ack->at = has_now ? now : 0;
+			acks_push(&a->acks, ack);
+			*has_ack = true;
+		}
+		return code;
+	}
+
+	has_held = a->welfare.rearm_seq > 0;
+	code = rearm_check(&a->rearm_cmd, &a->prov.collar_id, has_held, a->welfare.rearm_seq,
+			   a->cue.enforcement_off, a->cue.has_shutoff_at, a->cue.shutoff_at_s,
+			   has_now, now);
+	memset(ack, 0, sizeof(*ack));
+	ack->command_id = a->rearm_cmd.command_id;
+	ack->version = a->rearm_cmd.rearm_seq;
+	ack->has_at = has_now;
+	ack->at = has_now ? now : 0;
+	if (code != REJECT_NONE) {
+		ack->status = ACK_REJECTED;
+		ack->code = (uint8_t)code;
+		acks_push(&a->acks, ack);
+		*has_ack = true;
+		return code;
+	}
+
+	cue_clear_shutoff_server(&a->cue, now_ms, a->rearm_cmd.rearm_seq);
+	welfare_store_accept_rearm(&a->welfare, a->rearm_cmd.rearm_seq);
+	/* Keep cue and store aligned after clear. */
+	a->welfare.enforcement_off = false;
+	a->welfare.has_shutoff_at = false;
+	a->welfare.escape_cycles = 0;
+
+	ack->status = ACK_APPLIED;
+	ack->code = REJECT_NONE;
+	acks_push(&a->acks, ack);
+	*has_ack = true;
+	return REJECT_NONE;
+}
+
 static void do_provision(struct app *a, const char *payload, size_t len, char *reply,
 			 size_t cap)
 {
@@ -205,10 +327,13 @@ static void do_provision(struct app *a, const char *payload, size_t len, char *r
 	}
 
 	/* Wipe first: a power cut part way leaves the old provisioning with
-	 * fewer slots, never the new provisioning with the old server's slots */
+	 * fewer slots, never the new provisioning with the old server's slots.
+	 * rearm_seq is never reset. */
 	slots_wipe(&a->slots);
 	config_wipe(&a->cfg);
 	acks_clear(&a->acks);
+	welfare_store_wipe_shutoff_keep_seq(&a->welfare);
+	cue_restore_shutoff(&a->cue, false, 0, false, 0);
 	a->fence = NULL;
 	cue_rearm_at(&a->cue, a->now_ms);
 	cue_set_mode(&a->cue, CUE_MODE_AUDIO);
@@ -253,8 +378,11 @@ static void do_status(struct app *a, char *reply, size_t cap)
 		n += (size_t)snprintf(reply + n, cap - n, " -");
 	}
 	if (n < cap) {
-		snprintf(reply + n, cap - n, " enforcement %s",
-			 a->cue.enforcement_off ? "off" : "on");
+		n += (size_t)snprintf(reply + n, cap - n, " enforcement %s",
+				      a->cue.enforcement_off ? "off" : "on");
+	}
+	if (n < cap) {
+		snprintf(reply + n, cap - n, " rearm_seq %u", (unsigned)a->welfare.rearm_seq);
 	}
 }
 
@@ -296,6 +424,26 @@ static void do_config(struct app *a, const char *wire, size_t len, char *reply, 
 		snprintf(reply, cap, "error %s", reject_str(code));
 	} else {
 		snprintf(reply, cap, "ok %u", (unsigned)a->cfg.version);
+	}
+}
+
+static void do_rearm_signed(struct app *a, const char *wire, size_t len, char *reply, size_t cap)
+{
+	struct slot_ack ack;
+	bool has_ack;
+	enum reject_code code;
+
+	if (!a->prov.ok) {
+		snprintf(reply, cap, "error unprovisioned");
+		return;
+	}
+	code = app_rearm(a, wire, len, a->now_ms, &ack, &has_ack);
+	if (!has_ack) {
+		snprintf(reply, cap, "error %s", reject_str(code));
+	} else if (ack.status == ACK_REJECTED) {
+		snprintf(reply, cap, "rejected %u %s", (unsigned)ack.version, reject_str(ack.code));
+	} else {
+		snprintf(reply, cap, "%s %u", ack_status_str(ack.status), (unsigned)ack.version);
 	}
 }
 
@@ -347,10 +495,15 @@ void app_line(struct app *a, const char *line, size_t len, bool overflow, int64_
 	} else if (command_is(line, len, "status", &rest, &rest_len) && rest_len == 0) {
 		do_status(a, reply, cap);
 	} else if (command_is(line, len, "rearm", &rest, &rest_len) && rest_len == 0) {
-		/* Explicit caretaker clear of auto shut-off (not a fence move). */
+		/* Physical caretaker clear: persisted, by:serial; rearm_seq kept. */
 		cue_clear_shutoff_at(&a->cue, now_ms);
+		welfare_store_clear_shutoff(&a->welfare);
 		snprintf(reply, cap, "ok enforcement %s",
 			 a->cue.enforcement_off ? "off" : "on");
+	} else if (command_is(line, len, "rearm", &rest, &rest_len) && rest_len > 0 &&
+		   rest[0] == '{') {
+		/* Signed server rearm (JSON object); anything else is unknown. */
+		do_rearm_signed(a, rest, rest_len, reply, cap);
 	} else if (command_is(line, len, "config", &rest, &rest_len)) {
 		do_config(a, rest, rest_len, reply, cap);
 	} else {

@@ -90,7 +90,7 @@ int main(void)
 	CHECK(strcmp(send("boundary", cmds, "v0_compact"), "received 57") == 0);
 	CHECK(a.fence == NULL);
 	CHECK(strcmp(say("status"), "collar col_01J9SIMCOLLAR herd herd_01J7GOLDEN fw 0.2.0 config - "
-				    "active - slots 57 enforcement on") == 0);
+				    "active - slots 57 enforcement on rearm_seq 0") == 0);
 	/* The same command again: re-acked as received */
 	CHECK(strcmp(send("boundary", cmds, "v0_compact"), "received 57") == 0);
 
@@ -133,7 +133,7 @@ int main(void)
 	boot();
 	CHECK(a.fence != NULL && a.fence->version == 57 && !a.has_clock);
 	CHECK(strcmp(say("status"), "collar col_01J9SIMCOLLAR herd herd_01J7GOLDEN fw 0.2.0 config - "
-				    "active 57 slots 57 58 enforcement on") == 0);
+				    "active 57 slots 57 58 enforcement on rearm_seq 0") == 0);
 	/* received 57 twice, applied 57, rejected 59, received 58 */
 	CHECK(a.acks.n == 5);
 	CHECK(a.acks.q[3].version == 59 && a.acks.q[3].code == REJECT_BAD_SIG);
@@ -175,7 +175,7 @@ int main(void)
 	boot();
 	CHECK(a.fence->version == 58 && a.cue.mode == CUE_MODE_TRACK && a.cfg.version == 3);
 	CHECK(strcmp(say("status"), "collar col_01J9SIMCOLLAR herd herd_01J7GOLDEN fw 0.2.0 config 3 "
-				    "active 58 slots 58 enforcement on") == 0);
+				    "active 58 slots 58 enforcement on rearm_seq 0") == 0);
 
 	return test_done("app");
 }
