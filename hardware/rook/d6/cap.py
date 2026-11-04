@@ -11,8 +11,8 @@ Print:
   cap_floor_layout  — underside on bed; ribs/glyphs UP
 
 Reuses D5 FLOOR_LABEL_TABLE + emboss glyph code via import of build_d5 helpers.
-Clamp/saddle family matches CW agent (cursor/d6-cw-9a36): clamp 10×70×8,
-holes family y=±28.5, saddle W=76, channel 46.45×3.4.
+Clamp/saddle family (D6 strap-along-Y): CAP_CLAMP (±28.5, ±20), clamp 10×70×8
+holes ±28.5, saddle W=76, channel 46.45×3.4 along Y. See assembly.py.
 
 Run:
   cd hardware/rook/d6
@@ -38,12 +38,14 @@ _D5_CAD = os.path.join(_ROOK, "d5", "cad")
 _COMMON = os.path.abspath(os.path.join(_ROOK, "..", "common", "cad", "lib"))
 sys.path.insert(0, _COMMON)
 sys.path.insert(0, _D5_CAD)
+sys.path.insert(0, _D6)
 
 import oc  # noqa: E402
 import d5_dims as D  # noqa: E402
 
 # Import D5 glyph table + helpers (do NOT run build_d5.main).
 import build_d5 as d5  # noqa: E402
+import assembly as A  # noqa: E402
 
 CHARCOAL = (0x26 / 255, 0x28 / 255, 0x2B / 255, 1.0)
 PANEL_NAVY = (0.10, 0.14, 0.22, 1.0)
@@ -73,26 +75,28 @@ PANEL_LAND = (68.0, 116.0)             # flat plateau containing 66.6×113.6 poc
 PLAN_R = 7.0
 REVEAL = 0.5
 
-# Pod interface (world, cap-centre origin) — pod agent matches the other side
-POD_ANCHOR_Y = 113.8
-POD_ANCHOR_Z = -27.8
-POD_TILT_DEG = 29.141828721535205      # from d4.json pod_*_anchor
-# Mount face is a flush end-cut / inset pad — must NOT grow outer L past 164.
-POD_MOUNT_FACE_Y = CAP_L / 2 - 2.0     # inset from end
-POD_MOUNT_SIZE = (36.0, 4.0, 14.0)     # W × thickness × H; thickness inset into end
-POD_MOUNT_SCREWS = [(sx * 10.0, sz) for sx in (-1, 1) for sz in (3.0, 10.0)]  # local Y-face
+# Pod interface — shared with assembly.py / pod.py (D4 tilt signs; D6 outboard anchors)
+POD_ANCHOR_Y = A.POD_ANCHOR_Y
+POD_ANCHOR_Z = A.POD_ANCHOR_Z
+POD_TILT_DEG = A.TILT_DEG
+# Mount pad: 36×4×14 boss protruding past the end to meet the pod face.
+POD_MOUNT_FACE_Y = CAP_L / 2 + 2.5     # pad centre past end (joint at ~|y|=84.5)
+POD_MOUNT_SIZE = A.POD_MOUNT_SIZE      # W × thickness × H
+POD_MOUNT_SCREWS = list(A.POD_MOUNT_SCREWS)  # local Y-face (lx, lz)
 
-# Clamp family — must match CW agent / D5
+# Clamp family — D6 strap-along-Y (see assembly.py / DECISIONS.md)
 assert abs(D.CLAMP_FLANGE_W - 10.0) < 1e-6
 assert abs(D.CLAMP_L - 70.0) < 1e-6
 assert abs(D.CLAMP_DEPTH - 8.0) < 1e-6
 assert abs(D.SADDLE_W - 76.0) < 1e-6
 assert abs(D.SADDLE_CHANNEL_W - 46.45) < 1e-6
 assert abs(D.SADDLE_CHANNEL_D - 3.4) < 1e-6
-# Cap clamp inserts: (±20, ±28.5) — 4 in cap; CW prints 8× clamp_bar qty
-CAP_CLAMP = D.CAP_CLAMP
+# Cap clamp inserts: (±28.5, ±20) — outside 44.45 strap; 4 in cap; 8× clamp_bar
+CAP_CLAMP = list(A.CAP_CLAMP)
 assert len(CAP_CLAMP) == 4
-assert all(abs(abs(y) - 28.5) < 1e-6 for _, y in CAP_CLAMP)
+assert all(abs(abs(x) - 28.5) < 1e-6 for x, _ in CAP_CLAMP)
+assert all(abs(abs(y) - 20.0) < 1e-6 for _, y in CAP_CLAMP)
+assert all(abs(x) > A.STRAP_HALF for x, _ in CAP_CLAMP)
 
 # Rescale D5 column Y to 164 length (D5 was 160): keep x, stretch y by 164/160
 _Y_SCALE = CAP_L / D.CAP_L  # 164/160 = 1.025
@@ -246,12 +250,14 @@ def add_wrap_step(body, w, l, step_h, lid_h, r=PLAN_R - 0.5):
 
 
 def pod_mount_pad(side):
-    """Cap-end mount face for pod at ±Y. Inset into the end (does not grow L).
+    """Cap-end mount boss for pod at ±Y. Protrudes past the end to meet the pod.
 
-    Tilted ±29.1° about X. side 'L' → −Y (+tilt), 'R' → +Y (−tilt).
+    Tilted ±29.142° about X matching pod.py / d4.json:
+      side 'L' → −Y, tilt = +29.142°; side 'R' → +Y, tilt = −29.142°.
+    4× M3 clear through the pad; pod carries matching holes + 36×4×14 recess.
     """
-    sign = -1 if side == "L" else 1
-    tilt = sign * POD_TILT_DEG
+    place_sign = -1 if side == "L" else 1          # L at −Y, R at +Y
+    tilt = A.pod_tilt_sign(side) * POD_TILT_DEG    # L +29.142, R −29.142
     pw, pt, ph = POD_MOUNT_SIZE
     pad = oc.box(f"pod_pad_{side}", (pw, pt, ph), anchor="center")
     for i, (lx, lz) in enumerate(POD_MOUNT_SCREWS):
@@ -259,10 +265,8 @@ def pod_mount_pad(side):
                                 at=(lx, 0, lz - ph / 2), axis="Y", segments=24))
     oc.bake(pad)
     pad.data.transform(Matrix.Rotation(math.radians(tilt), 4, "X"))
-    # After tilt, Y half-extent ≈ (pt/2)|cosθ| + (ph/2)|sinθ| — keep inside ±CAP_L/2.
-    y_ext = (pt / 2) * abs(math.cos(math.radians(tilt))) + \
-            (ph / 2) * abs(math.sin(math.radians(tilt)))
-    y_place = sign * (CAP_L / 2 - y_ext - 0.8)
+    # Place pad centre just past the cap end so the outer face meets the pod.
+    y_place = place_sign * POD_MOUNT_FACE_Y
     z_place = CAP_FLOOR + 5.0
     oc.move(pad, dy=y_place, dz=z_place)
     return pad
@@ -601,7 +605,8 @@ def save_review_blend(path):
         e.empty_display_type = "ARROWS"
         e.empty_display_size = 15
         e.location = (0, sy * POD_ANCHOR_Y, POD_ANCHOR_Z)
-        e.rotation_euler = (math.radians(sy * POD_TILT_DEG), 0, 0)
+        # L = +tilt, R = −tilt (matches pod.py / d4.json)
+        e.rotation_euler = (math.radians(-sy * POD_TILT_DEG), 0, 0)
         oc._link(e)
     bpy.ops.wm.save_as_mainfile(filepath=path)
     return path

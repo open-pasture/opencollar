@@ -41,10 +41,12 @@ _D5_CAD = os.path.abspath(os.path.join(_HERE, "..", "d5", "cad"))
 _COMMON = os.path.abspath(os.path.join(_HERE, "..", "..", "common", "cad", "lib"))
 sys.path.insert(0, _COMMON)
 sys.path.insert(0, _D5_CAD)
+sys.path.insert(0, _D6)
 
 import oc  # noqa: E402
 import d5_dims as D  # noqa: E402
 import build_d5 as d5  # noqa: E402 — glyph table, emboss, groove, flip_outer_down
+import assembly as A  # noqa: E402
 
 CHARCOAL = (0x26 / 255, 0x28 / 255, 0x2B / 255, 1.0)
 ORANGE = (0xFF / 255, 0x6A / 255, 0x2B / 255, 1.0)
@@ -53,15 +55,15 @@ WORLD = (0.94, 0.93, 0.90)
 
 # ---------------------------------------------------------------- D6 pod envelope (D4 look + D5 cavity)
 
-# D5 cavity kept; outer grown from D4 67×89–97×19.4
-POD_CAVITY = D.POD_CAVITY                    # (82, 58, 19.5)
+# D5 cavity kept; outer X forced to 92 (82+2×5). Slimmer Y/Z toward D4 67×97×19.4.
+POD_CAVITY = D.POD_CAVITY                    # (82, 58, 19.5) — locked
 POD_WALL = D.POD_WALL                        # 5.0
-POD_L = POD_CAVITY[0] + 2 * POD_WALL         # 92 — across strap / cell axis
-POD_W = 97.0                                 # along strap — D4 length look (was D5 68)
-POD_FLOOR = D.POD_FLOOR                      # 2.5
-POD_BASE_H = POD_FLOOR + POD_CAVITY[2]       # 22.0
-POD_LID_T = D.POD_LID_T                      # 4.0
-POD_STACK_H = POD_BASE_H + POD_LID_T         # 26.0
+POD_L = A.POD_L                              # 92 — min across strap for cavity
+POD_W = A.POD_W                              # 92 — along strap (was 97; still > D5 68)
+POD_FLOOR = A.POD_FLOOR                      # 1.5 (slim vs D5 2.5)
+POD_BASE_H = A.POD_BASE_H                    # 21.0
+POD_LID_T = A.POD_LID_T                      # 4.0
+POD_STACK_H = POD_BASE_H + POD_LID_T         # 25.0
 PLAN_R = D.PLAN_R                            # 7.0
 # Screw bosses stay inside cavity envelope (same as D5 relative to cavity)
 POD_COLS = list(D.POD_COLS)                  # (±37, ±27)
@@ -69,10 +71,14 @@ POD_COLS = list(D.POD_COLS)                  # (±37, ±27)
 POD_TAPER_LEN = 18.0
 POD_TAPER_DROP = 3.5                         # outer tip height drop (keeps cavity full)
 
-# D4 mount (d4.json pod_L/R_anchor) — report + empty in review.blend
-MOUNT_Y = 113.830                            # ± along strap from cap centre
-MOUNT_Z = -27.839
-MOUNT_ROT_X_DEG = 29.142                     # L = +; R = −
+# Cap↔pod M3 joint (matches cap.py pad)
+POD_MOUNT_SIZE = A.POD_MOUNT_SIZE            # 36×4×14 recess on +Y end
+POD_MOUNT_SCREWS = list(A.POD_MOUNT_SCREWS)
+
+# D6 mount — D4 tilt; anchors shifted outboard (see assembly.py / DECISIONS.md)
+MOUNT_Y = A.POD_ANCHOR_Y                     # ±124 (was D4 113.8)
+MOUNT_Z = A.POD_ANCHOR_Z
+MOUNT_ROT_X_DEG = A.TILT_DEG                 # L = +; R = −
 MOUNT_L = {"loc": (0.0, -MOUNT_Y, MOUNT_Z), "rot_x_deg": +MOUNT_ROT_X_DEG}
 MOUNT_R = {"loc": (0.0, +MOUNT_Y, MOUNT_Z), "rot_x_deg": -MOUNT_ROT_X_DEG}
 
@@ -86,16 +92,16 @@ GLYPH_EXPORT_WELD = {
     "pod_L_base", "pod_R_base", "pod_floor_layout",
 }
 
-# Fairings — match CW agent (cursor/d6-cw-9a36 @ 05ef563): ~66×28×14
-FAIRING_RUN = D.FAIRING_RUN                  # 28 (Y run / long axis on bed)
-FAIRING_W0 = 66.0                            # wide end (assembly agree with CW @ 05ef563)
-FAIRING_W1 = 50.0                            # narrow end — same as CW fairing_cw
-FAIRING_H = 14.0
+# Fairings — widened to span 92 mm pods (see assembly.py)
+FAIRING_RUN = A.FAIRING_RUN
+FAIRING_W0 = A.FAIRING_W0                    # 88 wide end
+FAIRING_W1 = A.FAIRING_W1                    # 66 narrow end
+FAIRING_H = A.FAIRING_H
 FAIRING_R = D.FAIRING_R
 FAIRING_EDGE_R = D.FAIRING_EDGE_R
 # Assembly agree (owned by CW agent; pods do not re-export these):
-#   clamp_bar 10×70×8, flange down, holes y=±28.5, qty 8
-#   saddle W=76; strap channel 46.45×3.4
+#   clamp_bar 10×70×8, flange down, holes ±28.5, qty 8
+#   saddle W=76; strap channel 46.45×3.4 along Y
 
 
 # ---------------------------------------------------------------- helpers (thin wrappers)
@@ -264,6 +270,16 @@ def pod_base(side="L"):
                           at=(0.0, POD_W / 2 - CABLE_SINK_H / 2, cable_z),
                           axis="Y", segments=32))
 
+    # Cap↔pod M3 joint: 36×4×14 recess + 4× clear holes matching cap.py pad
+    pw, pt, ph = POD_MOUNT_SIZE
+    recess = oc.box("pmount_rec", (pw + 0.4, pt + 0.3, ph + 0.4),
+                    at=(0.0, POD_W / 2 - pt / 2, POD_FLOOR + 5.0), anchor="center")
+    oc.cut(b, recess)
+    for i, (lx, lz) in enumerate(POD_MOUNT_SCREWS):
+        oc.cut(b, oc.cylinder(f"pmount_h{i}", D.CLEAR, POD_WALL + 8,
+                              at=(lx, POD_W / 2 - pt / 2, POD_FLOOR + lz),
+                              axis="Y", segments=24))
+
     # Floor glyphs — one table (d5.FLOOR_LABEL_TABLE)
     # (D4 tip taper applied AFTER glyphs — see end of function — so emboss stays
     # on a flat floor; taper only shaves outer roof near ±Y tips.)
@@ -375,7 +391,7 @@ def _fairing_body(name, run, w0, w1, h):
 
 
 def fairing_cap_pod(side="L"):
-    """Bridge cap end → pod mount. Envelope ~66×28×14 (agree with CW fairings)."""
+    """Bridge cap end → pod mount. W0=88→W1=66 × run 28 × H 14 (spans 92 mm pod)."""
     f = prepare(_fairing_body(f"fairing_cap_pod_{side}", FAIRING_RUN,
                               FAIRING_W0, FAIRING_W1, FAIRING_H))
     if side == "R":
@@ -384,7 +400,7 @@ def fairing_cap_pod(side="L"):
 
 
 def fairing_pod_strap(side="L"):
-    """Blend pod into strap. Envelope ~66×28×14 (agree with CW fairings)."""
+    """Blend pod into strap. W0=88→W1=66 × run 28 × H 14."""
     f = prepare(_fairing_body(f"fairing_pod_strap_{side}", FAIRING_RUN,
                               FAIRING_W0, FAIRING_W1, FAIRING_H))
     if side == "R":

@@ -5,18 +5,16 @@ cw_floor_layout. Cap/pods are other agents.
 
 CHOICE (mass): keep D5 envelope 88×74×30 mm tub. D4's ~59×85×24 cannot hold the
 required steel pack (4× 76.2×50.8×6.35 mm flat bar ≈ 772 g). Lid takes D4's
-domed ~12.7 mm look with a flat crown land so outer-down prints without large
-supports.
+domed ~12.7 mm look. Print orientation: mating-face-down (less support than
+outer-down; same rule as cap_lid). Rotation only — never flip_normals().
 
 Print orientation (bed at z=0):
   cw_tub           — cavity UP
-  cw_lid           — OUTER face DOWN (model mating@z=0; export rotates 180° about X)
-  saddle           — roof on bed; channel opens +Z
+  cw_lid           — MATING face DOWN z=0 (chosen vs outer-down)
+  saddle           — roof on bed; channel opens +Z (strap along Y)
   clamp_bar        — flange on bed; channel +Z; load along Y WITH layers
   fairing_cw_*     — long axis on bed; slope as WALL
   cw_floor_layout  — underside on bed; ribs/glyphs UP
-
-Lid flip: Matrix.Rotation(180°, X) + recalc normals — never flip_normals().
 
 Run:
   cd hardware/rook/d6
@@ -41,8 +39,10 @@ _COMMON = os.path.abspath(os.path.join(_ROOK, "..", "common", "cad", "lib"))
 _D5_CAD = os.path.abspath(os.path.join(_ROOK, "d5", "cad"))
 sys.path.insert(0, _COMMON)
 sys.path.insert(0, _D5_CAD)
+sys.path.insert(0, _HERE)
 import oc  # noqa: E402
 import d5_dims as D  # noqa: E402
+import assembly as A  # noqa: E402
 
 CHARCOAL = (0x26 / 255, 0x28 / 255, 0x2B / 255, 1.0)
 ORANGE = (0xFF / 255, 0x6A / 255, 0x2B / 255, 1.0)
@@ -57,10 +57,12 @@ CW_WALL = 6.0
 CW_LID_T = 12.7                                     # D4 domed lid height
 CW_LID_FLAT = 4.0                                   # mating slab thickness
 CW_CROWN_RISE = CW_LID_T - CW_LID_FLAT              # ~8.7 mm dome above flat
-CW_CROWN_LAND = (42.0, 36.0)                        # flat bed land on dome apex (X,Y)
+CW_CROWN_LAND = (42.0, 36.0)                        # flat land on dome apex (X,Y)
 CW_SCREWS = list(D.CW_SCREWS)                       # (±22, ±31.5)
-CW_CLAMP = list(D.CW_CLAMP)                         # (±36, ±29.5)
+# D6: unify Y with clamp_bar holes (±28.5); X stays ±36 (see assembly.py)
+CW_CLAMP = list(A.CW_CLAMP)                         # (±36, ±28.5)
 PLAN_R = D.PLAN_R
+CAP_CLAMP = list(A.CAP_CLAMP)                       # (±28.5, ±20) strap-along-Y
 
 # Steel pack (node_v1 / D5 required mass)
 STEEL_PIECE = (76.2, 50.8, 6.35)                    # 3 in of 2×1/4 in flat bar
@@ -69,19 +71,19 @@ STEEL_DENSITY = 7.85                                # g/cm³ mild steel
 STEEL_CLEAR = 1.2                                   # pocket oversize per side of pack XY
 FOAM_PAD_T = 1.5                                    # foam above steel under lid
 
-# Strap interface (bottom of loop)
-CHANNEL_W = D.SADDLE_CHANNEL_W                      # STRAP_W + 2
-CHANNEL_D = D.SADDLE_CHANNEL_D                      # 3.4
-SADDLE_W = D.SADDLE_W
-SADDLE_L = D.SADDLE_L
-SADDLE_ROOF = D.SADDLE_ROOF
-SADDLE_H = D.SADDLE_H
+# Strap interface (bottom of loop) — channel width across X, run along Y
+CHANNEL_W = A.SADDLE_CHANNEL_W                      # STRAP_W + 2 = 46.45
+CHANNEL_D = A.SADDLE_CHANNEL_D                      # 3.4
+SADDLE_W = A.SADDLE_W
+SADDLE_L = A.SADDLE_L
+SADDLE_ROOF = A.SADDLE_ROOF
+SADDLE_H = A.SADDLE_H
 
-# Fairings (D4 cw fairings ~66×32×25; D5 brand run 25–30)
-FAIRING_RUN = D.FAIRING_RUN
-FAIRING_W0 = 66.0
-FAIRING_W1 = 50.0
-FAIRING_H = 14.0
+# Fairings — widen to span 88 mm CW (assembly.py)
+FAIRING_RUN = A.FAIRING_RUN
+FAIRING_W0 = A.FAIRING_W0
+FAIRING_W1 = A.FAIRING_W1
+FAIRING_H = A.FAIRING_H
 
 # Glyphs — same spec as D5 build_d5.py @ 6b1f882
 FLOOR_GLYPHS = True
@@ -107,7 +109,9 @@ FLOOR_LABEL_TABLE = {
     "UP": ("UP", "cavity orientation cue"),
 }
 
-FLIP_OUTER_DOWN = {"cw_lid"}
+# Mating-face-down chosen over outer-down (larger bed face / far less support;
+# same rule as cap_lid). Rotation only + recalc normals — never flip_normals().
+FLIP_OUTER_DOWN = set()
 GLYPH_EXPORT_WELD = {"cw_tub", "cw_floor_layout"}
 
 STL_DIR = os.path.join(_HERE, "stl")
@@ -522,11 +526,12 @@ def cw_tub():
 
 
 def cw_lid():
-    """Domed D4-look lid. Modeled mating@z=0; export flips outer-down.
+    """Domed D4-look lid. Mating@z=0; PRINT mating-face-down (no outer flip).
 
+    Compared outer-down (~787 mm² bed / ~5544 mm² support) vs mating-down
+    (large bed face / far less support) — picked mating-down like cap_lid.
     Seal: lid mates to tub O-ring land; 4× M3 button into tub inserts;
-    foam pad compresses steel. Strap channel on OUTER face (bed after flip =
-    pocket, no bridge).
+    foam pad compresses steel. Strap channel on OUTER (+Z) face, width across X.
     """
     lw, ll = CW_L - 2 * D.REVEAL, CW_W - 2 * D.REVEAL
     lid = _domed_lid_solid("cw_lid", lw, ll, CW_LID_FLAT, CW_LID_T,
@@ -542,7 +547,7 @@ def cw_lid():
     inner = oc.rounded_rect("lring_i", (ring_out_w - 2 * ring_w, ring_out_l - 2 * ring_w, 2.0),
                             r_i, at=(0, 0, -0.2), anchor="bottom")
     oc.cut(lid, oc.cut(outer, inner))
-    # Strap channel on OUTER face (toward neck / strap at bottom of loop)
+    # Strap channel on OUTER face — width along X, run along Y (strap-along-Y)
     oc.cut(lid, oc.box("cwchan",
                        (CHANNEL_W, ll + 2, CHANNEL_D + 0.3),
                        at=(0, 0, CW_LID_T - CHANNEL_D), anchor="bottom"))
@@ -556,20 +561,23 @@ def cw_lid():
 
 
 def saddle():
-    """Strap saddle at bottom of loop. Roof on bed; channel +Z. Roof ≥1.6."""
+    """Strap saddle. Roof on bed; channel +Z. Strap along Y: width across X.
+
+    Channel 46.45 × 3.4; body 76 wide; holes at CAP_CLAMP (±28.5, ±20).
+    """
     s = oc.rounded_rect("saddle", (SADDLE_W, SADDLE_L, SADDLE_H), 3.0,
                         anchor="bottom", segments=8)
+    # Channel: width = CHANNEL_W along X, run along Y (was D5 cross-strap)
     oc.cut(s, oc.box("schan",
-                     (SADDLE_W + 2, CHANNEL_W, CHANNEL_D + 0.2),
+                     (CHANNEL_W, SADDLE_L + 2, CHANNEL_D + 0.2),
                      at=(0, 0, SADDLE_ROOF), anchor="bottom"))
-    for sx in (-1, 1):
-        oc.cut(s, oc.prism_y(f"lead{sx}", [
-            (sx * (SADDLE_W / 2 + 0.3), SADDLE_H + 0.2),
-            (sx * (SADDLE_W / 2 + 0.3), SADDLE_ROOF - 0.3),
-            (sx * (SADDLE_W / 2 - 3.5), SADDLE_H + 0.2),
-        ], CHANNEL_W + 2))
-    # Clamp holes — same XY as CW_CLAMP / CAP_CLAMP family for farmer M3 path
-    for i, (x, y) in enumerate(D.CAP_CLAMP):
+    # Lead-ins at ±Y ends (strap entry/exit) — chamfer the channel mouths
+    for sy in (-1, 1):
+        oc.cut(s, oc.box(
+            f"lead{sy}", (CHANNEL_W + 2, 5.0, SADDLE_H),
+            at=(0, sy * (SADDLE_L / 2 - 1.0), SADDLE_ROOF - 0.2), anchor="bottom"))
+    # Clamp holes — D6 CAP_CLAMP (±28.5, ±20)
+    for i, (x, y) in enumerate(CAP_CLAMP):
         oc.cut(s, oc.cylinder(f"scl{i}", D.CLEAR, SADDLE_H + 2, at=(x, y, -1), anchor="bottom"))
     for i, (x, y) in enumerate([(sx * 28.0, sy * 32.0) for sx in (-1, 1) for sy in (-1, 1)]):
         pin = oc.cylinder(f"spin{i}", 4.0, 1.5, at=(x, y, SADDLE_H), anchor="bottom")
@@ -619,9 +627,20 @@ def _fairing_body(name, run, w0, w1, h):
 
 
 def fairing_cw(side="L"):
-    """CW↔strap fairing at bottom of loop (D4 fairing_cw_* look, D5 run)."""
-    f = _fairing_body(f"fairing_cw_{side}", FAIRING_RUN, FAIRING_W0, FAIRING_W1, FAIRING_H)
-    return prepare(f)
+    """CW↔strap fairing at bottom of loop. W0=88→W1=66 × run 28 × H 14."""
+    f = prepare(_fairing_body(f"fairing_cw_{side}", FAIRING_RUN, FAIRING_W0, FAIRING_W1, FAIRING_H))
+    if side == "R":
+        # Mirror of L across X (matches pod fairings)
+        oc.bake(f)
+        f.data.transform(Matrix.Scale(-1.0, 4, (1.0, 0.0, 0.0)))
+        import bmesh
+        bm = bmesh.new()
+        bm.from_mesh(f.data)
+        bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+        bm.to_mesh(f.data)
+        bm.free()
+        f.data.update()
+    return f
 
 
 def cw_floor_layout():
@@ -645,13 +664,13 @@ def cw_floor_layout():
 PART_META = {
     "cw_tub": ("PRINT: cavity UP; bed=underside z=0; glyphs UP",
                "steel pack; NO antennas; M3 farmer path", "ASA/PETG", False),
-    "cw_lid": ("PRINT: OUTER face DOWN z=0 (180° about X on export)",
-               "lid screws; strap channel pocket on bed", "ASA/PETG", True),
-    "saddle": ("PRINT: roof on bed z=0; channel opens +Z",
+    "cw_lid": ("PRINT: MATING face DOWN z=0 (no outer flip; less support)",
+               "lid screws; dome up; strap channel on outer", "ASA/PETG", True),
+    "saddle": ("PRINT: roof on bed z=0; channel +Z; strap along Y",
                "strap→rails→clamp ALONG layers", "ASA/PETG or PA-CF*", False),
     "clamp_bar": ("PRINT: flange on bed z=0; channel +Z; load ALONG Y WITH layers",
-                  "strap compression; 35.5 mm from LoRa crest", "ASA/PETG or PA-CF*", True),
-    "fairing_cw_L": ("PRINT: long axis on bed; slope=WALL", "28 mm CW↔strap blend", "ASA/PETG", True),
+                  "strap compression; holes y=±28.5", "ASA/PETG or PA-CF*", True),
+    "fairing_cw_L": ("PRINT: long axis on bed; slope=WALL", "88→66×28×14 CW↔strap", "ASA/PETG", True),
     "fairing_cw_R": ("PRINT: long axis on bed; slope=WALL", "mirror of L", "ASA/PETG", True),
     "cw_floor_layout": ("PRINT: floor underside z=0; ribs/glyphs UP",
                         "PLA steel-pack + fill/screw glyphs", "PLA", False),
@@ -786,7 +805,7 @@ def main():
         ("cw_floor_layout", cw_floor_layout, "cw_floor_layout"),
     ]
 
-    lora_clear = D.LORA_AT[1] - max(abs(y) for _, y in D.CAP_CLAMP)
+    lora_clear = D.LORA_AT[1] - max(abs(y) for _, y in CAP_CLAMP)
     mass_g = steel_mass_g()
     vol_mm3 = steel_volume_mm3()
 
@@ -823,9 +842,11 @@ def main():
             "font": GLYPH_FONT,
         },
         "print_orientation_note": (
-            "All STLs bed face at z=0. cw_lid: rotated 180° about X on export "
-            "(recalc normals, never flip_normals)."
+            "All STLs bed face at z=0. cw_lid: mating-face-down (no outer flip; "
+            "chosen vs outer-down for less support). Never flip_normals()."
         ),
+        "cw_clamp": [list(p) for p in CW_CLAMP],
+        "cap_clamp": [list(p) for p in CAP_CLAMP],
         "bodies": {},
         "pass": True,
     }
@@ -883,9 +904,8 @@ def main():
         "fairing_cw_R": fairing_cw("R"),
         "cw_floor_layout": cw_floor_layout(),
     }
-    # Lineup for review
+    # Lineup for review (cw_lid shown mating-down = print orientation)
     oc.move(parts["cw_lid"], dx=110)
-    flip_outer_down(parts["cw_lid"])  # show print orientation in review
     oc.move(parts["saddle"], dx=220)
     oc.move(parts["clamp_bar"], dx=300)
     oc.move(parts["fairing_cw_L"], dx=360)
