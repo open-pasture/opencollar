@@ -1,0 +1,366 @@
+{
+  "concept": "D_hybrid",
+  "revision": "D3b_panel",
+  "envelope": {
+    "fits": [
+      "Cap footprint 76.0\u00d7160.0 (locked)",
+      "Cap columns [(-29.5, -68.0), (-29.5, -42.0), (-29.5, 42.0), (-29.5, 68.0), (29.5, -68.0), (29.5, -42.0), (29.5, 42.0), (29.5, 68.0)] (locked)",
+      "Cap clamp [(-20.0, -28.5), (-20.0, 28.5), (20.0, -28.5), (20.0, 28.5)] (locked)",
+      "Cap cavity height 13.0 mm \u2265 13 (locked)",
+      "Cap base height 18.0 mm (floor 5.0 + cavity)",
+      "Cap plan R=10.0 \u2014 soft corners inside 76\u00d7160 outline",
+      "Pod outer 92.0\u00d768.0 matches cavity 82.0\u00d758.0 + wall 5.0",
+      "Pod columns [(-37.0, -27.0), (-37.0, 27.0), (37.0, -27.0), (37.0, 27.0)] (locked XY)",
+      "Reveal inset 0.55 mm on all lids (aesthetic)",
+      "Orange option-1: latch + 3 cap screws only",
+      "P124 pocket 66.6\u00d7113.6\u00d72.3 centered PANEL_Y=0.0 (HARDWARE-FIT sized)",
+      "Orange screws at |y|=68 clear of panel \u00b156.8"
+    ],
+    "breaks_or_flags": [
+      {
+        "item": "Pod base height",
+        "study": "20.0 mm",
+        "guide": "\u2265 24.5 mm for full 21.5 cavity",
+        "note": "Low slab for cow-look; cavity short \u2014 electronics pack may not fit"
+      },
+      {
+        "item": "CW / counterweight outer",
+        "study": "80.0\u00d764.0\u00d722.0",
+        "guide": "~88\u00d774\u00d730",
+        "note": "Intentionally small low pod for the AI-cow silhouette"
+      },
+      {
+        "item": "CW screw XY",
+        "study": "[(-20.0, -26.0), (-20.0, 26.0), (20.0, -26.0), (20.0, 26.0)]",
+        "guide": "(\u00b122, \u00b131.5)",
+        "note": "Moved inboard for the smaller tub footprint"
+      },
+      {
+        "item": "Slim visual profile",
+        "study": "Soft R10 + flat lid + long low proportions",
+        "guide": "Envelope XY locked; visual slim is radii/proportion, not a shrink",
+        "note": "Does NOT break 76\u00d7160 \u2014 silhouette reads slimmer via radii"
+      }
+    ]
+  },
+  "orange_screws": [
+    [
+      29.5,
+      68.0
+    ],
+    [
+      -29.5,
+      68.0
+    ],
+    [
+      29.5,
+      -68.0
+    ]
+  ],
+  "panel": {
+    "pocket_mm": [
+      66.6,
+      113.6,
+      2.3
+    ],
+    "body_mm": [
+      66.0,
+      113.0,
+      2.6
+    ],
+    "panel_y": 0.0,
+    "proud_mm": 0.3,
+    "border_mm": {
+      "w": 1.4,
+      "h": 0.7
+    }
+  },
+  "bodies": {
+    "cap_base": {
+      "size_mm": [
+        76.0,
+        160.0,
+        18.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 5534
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/cap_base.stl"
+    },
+    "cap_lid": {
+      "size_mm": [
+        74.9,
+        158.9,
+        6.7
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 4622
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/cap_lid.stl"
+    },
+    "panel_p124": {
+      "size_mm": [
+        66.0,
+        113.0,
+        2.6
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 188
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/panel_p124.stl"
+    },
+    "pod_base": {
+      "size_mm": [
+        92.0,
+        70.0,
+        20.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 3128
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/pod_base.stl"
+    },
+    "pod_lid": {
+      "size_mm": [
+        90.9,
+        66.9,
+        5.5
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 2254
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/pod_lid.stl"
+    },
+    "cw_tub": {
+      "size_mm": [
+        80.0,
+        64.0,
+        22.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 2400
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/cw_tub.stl"
+    },
+    "cw_lid": {
+      "size_mm": [
+        78.9,
+        62.9,
+        5.5
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 2258
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/cw_lid.stl"
+    },
+    "saddle": {
+      "size_mm": [
+        70.0,
+        50.0,
+        7.5
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 188
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/saddle.stl"
+    },
+    "keeper": {
+      "size_mm": [
+        49.45,
+        9.0,
+        6.5
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 128
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/keeper.stl"
+    },
+    "buckle": {
+      "size_mm": [
+        47.45,
+        26.0,
+        5.5
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 396
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/buckle.stl"
+    },
+    "latch": {
+      "size_mm": [
+        6.5,
+        11.0,
+        2.2
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 108
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/latch.stl"
+    },
+    "strap": {
+      "size_mm": [
+        44.45,
+        240.0,
+        3.5
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 76
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/strap.stl"
+    },
+    "plug_service_orange": {
+      "size_mm": [
+        7.6,
+        7.6,
+        1.1
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 124
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/plug_service_orange.stl"
+    },
+    "plug_struct_charcoal": {
+      "size_mm": [
+        7.6,
+        7.6,
+        1.1
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 124
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/plug_struct_charcoal.stl"
+    },
+    "test_corner": {
+      "size_mm": [
+        20.0,
+        20.0,
+        10.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "normals_outward": true
+      },
+      "stl": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 172
+      },
+      "pass": true,
+      "stl_path": "stl/D_hybrid/test_corner.stl"
+    }
+  },
+  "pass": true
+}
