@@ -37,13 +37,14 @@
 #define OC_FIELD_BATTERY "battery"
 #define OC_FIELD_HEALTH "health"
 #define OC_FIELD_LAST_CUE_AT "last_cue_at"
-#define OC_FIELD_RSRP_DBM "rsrp_dbm"
+#define OC_FIELD_CELL "cell"
+#define OC_FIELD_RSRP_DBM "rsrp_dbm" /* nested: health.cell.rsrp_dbm (v1); not flat health.rsrp_dbm */
 #define OC_FIELD_FIXES "fixes"
 #define OC_FIELD_POINT "point"
 #define OC_FIELD_ACCURACY_M "accuracy_m"
 #define OC_FIELD_SATS "sats"
 #define OC_FIELD_CN0 "cn0"
-#define OC_FIELD_HDOP "hdop"
+#define OC_FIELD_HDOP "hdop" /* existing v1 fixes[].hdop */
 
 /* Cap advertised in device.caps */
 #define OC_CAP_REARM "rearm"

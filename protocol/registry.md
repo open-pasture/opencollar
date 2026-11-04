@@ -157,10 +157,12 @@ Optional keys on the v1 position report. Firmware keeps the string tokens in
 
 | Name | Where | Type | Notes |
 |---|---|---|---|
-| `last_cue_at` | `health` | RFC3339 Z | Most recent delivered cue; omit if none / time untrusted; **not persisted across reboot** |
-| `hdop` | each `fixes[]` element | float | As GNSS reports; omit when unavailable; `accuracy_m` still required |
-| `rsrp_dbm` | `health` | int (dBm) | LTE RSRP via `report_set_signal_dbm`; omit until set; no `rssi_dbm` |
+| `last_cue_at` | `health` | RFC3339 Z | Most recent delivered cue; omit if none / time untrusted; **lost on reboot** (not persisted) |
+| `hdop` | each `fixes[]` element | float | Existing v1; encode when GNSS provides it on a valid fix; omit otherwise; `accuracy_m` still required |
+| `rsrp_dbm` | `health.cell` | int (dBm) | Existing v1 nested field; `report_set_signal_dbm` fills a partial `cell`; omit until set; **not** flat `health.rsrp_dbm` |
 | `battery` | report root | float 0–1 | Omit when unknown; never send `0` for unknown |
+
+No report `armed` key: use `welfare.enforcement` (cap `rearm`). `health.charging` is unchanged.
 
 ## Ack and slot statuses
 

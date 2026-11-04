@@ -5,22 +5,24 @@ release.
 
 ## 2026-11-04
 
-### Report telemetry for the farmer app (read-only)
+### Report telemetry for the farmer app (read-only; protocol record N)
 
-Not a wire version bump; optional report fields only. Host-tested; **nothing was
-run on hardware.** Does not change welfare or cue behaviour. Does not edit
-Rook LTE (PR #12).
+Not a wire version bump. Host-tested; **nothing was run on hardware.** Does
+not change welfare or cue behaviour. Does not edit Rook LTE (PR #12). No
+report `armed` field (`welfare.enforcement` from the rearm work covers it).
 
 Exact field names (also in firmware `wire_fields.h` for easy rename):
 
 - **`health.last_cue_at`** (RFC3339 Z): time of the most recent cue the collar
   delivered (warn / outside / future pulse-equivalent). Omitted if none since
-  boot or GNSS time untrusted. **Not persisted across reboot.**
-- **`fixes[].hdop`** (float): as the GNSS source reports (nRF PVT `hdop`);
-  omitted when unavailable. `accuracy_m` remains required and unchanged.
-- **`health.rsrp_dbm`** (integer dBm): LTE RSRP when set via
-  `report_set_signal_dbm()` (Rook LTE wires the modem reading). Omitted until
-  set. `health.rssi_dbm` is not used.
+  boot or GNSS time untrusted. **Lost on reboot** (not persisted).
+- **`fixes[].hdop`** (existing v1): encoded on valid fixes when GNSS provides
+  it (nRF PVT `hdop`); omitted otherwise. `accuracy_m` unchanged. Does not
+  invent a new field or alter `health.charging`.
+- **`health.cell.rsrp_dbm`** (existing v1 nested field): filled via
+  `report_set_signal_dbm()` (Rook LTE wires the modem reading) as a partial
+  `cell` object when only RSRP is known. Omitted until set. **No flat
+  `health.rsrp_dbm`.**
 - **`battery`**: still omitted when unknown; never reported as `0` to mean
   unknown (host test covers this).
 

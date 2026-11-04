@@ -1,5 +1,5 @@
 {
-  "note": "v1 report telemetry fragments (health.last_cue_at, fixes[].hdop, health.rsrp_dbm, battery omit-when-unknown). Encoded by firmware report.c; Rook LTE merges into the full report body. last_cue_at is not persisted across reboot.",
+  "note": "v1 report telemetry fragments (health.last_cue_at, existing fixes[].hdop, health.cell.rsrp_dbm, battery omit-when-unknown). Encoded by firmware report.c; Rook LTE merges into the full report body. last_cue_at is lost on reboot (not persisted). No flat health.rsrp_dbm; no report armed.",
   "cases": [
     {"name": "battery_unknown_omitted", "wire": ""},
     {"name": "battery_known", "wire": "\"battery\":0.81"},
@@ -8,7 +8,7 @@
     {"name": "fix_without_hdop", "wire": "{\"at\":\"2026-09-27T12:02:00Z\",\"point\":[-92.405,38.124],\"accuracy_m\":1.8,\"sats\":9,\"cn0\":41.0}"},
     {"name": "health_empty", "wire": "{}"},
     {"name": "health_last_cue_at", "wire": "{\"last_cue_at\":\"2026-09-27T12:02:00Z\"}"},
-    {"name": "health_last_cue_and_rsrp", "wire": "{\"last_cue_at\":\"2026-09-27T12:02:00Z\",\"rsrp_dbm\":-104}"},
-    {"name": "health_rsrp_only", "wire": "{\"rsrp_dbm\":-104}"}
+    {"name": "health_last_cue_and_cell_rsrp", "wire": "{\"last_cue_at\":\"2026-09-27T12:02:00Z\",\"cell\":{\"rsrp_dbm\":-104}}"},
+    {"name": "health_cell_rsrp_only", "wire": "{\"cell\":{\"rsrp_dbm\":-104}}"}
   ]
 }

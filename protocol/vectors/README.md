@@ -97,8 +97,8 @@ byte-for-byte in host tests.
 |---|---|
 | `battery_unknown_omitted` | empty string: unknown battery is omitted (never `"battery":0`) |
 | `battery_known` / `battery_known_zero` | top-level `"battery":…` when measured |
-| `fix_with_hdop` / `fix_without_hdop` | one `fixes[]` element; `accuracy_m` always; `hdop` only when GNSS provides it |
-| `health_empty` / `health_last_cue_at` / `health_rsrp_only` / `health_last_cue_and_rsrp` | `health` keys this module owns; `last_cue_at` is RFC3339 Z and not persisted across reboot; `rsrp_dbm` only after `report_set_signal_dbm` |
+| `fix_with_hdop` / `fix_without_hdop` | one `fixes[]` element; `accuracy_m` always; existing `hdop` only when GNSS provides it on a valid fix |
+| `health_empty` / `health_last_cue_at` / `health_cell_rsrp_only` / `health_last_cue_and_cell_rsrp` | `health` keys this module owns; `last_cue_at` is RFC3339 Z and **lost on reboot**; `cell.rsrp_dbm` only after `report_set_signal_dbm` (no flat `health.rsrp_dbm`) |
 
 ## v2
 

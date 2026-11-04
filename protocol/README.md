@@ -441,7 +441,7 @@ optional.
   "welfare_events": [{"kind":"auto_shutoff","at":"…","outside_cues":3,"escape_cycles":3}],
   "battery": 0.81,
   "health": {"fix_attempts":120,"fix_ok":118,
-             "last_cue_at":"2026-09-27T12:02:00Z","rsrp_dbm":-104,
+             "last_cue_at":"2026-09-27T12:02:00Z",
              "cell": {"rsrp_dbm":-104,"rsrq_db":-11,"snr_db":6,"mode":"ltem","band":12,"cell_id":"1A2B3C","tac":1234,"at":"…"},
              "still_s":40,"tilt_deg":12,"temp_c":21.5,"battery_v":3.31,"charging":true,"uptime_s":86400,"reset":"power_on"}
 }
@@ -455,21 +455,23 @@ optional.
 - `welfare` (cap `rearm`): `enforcement` `on`|`off`, `shutoff_at` when off
   (RFC3339 Z), `escape_cycles`, `rearm_seq`. `welfare_events[]` carries kinds
   1–4 when the encoder includes them (`by` / `rearm_seq` on
-  `enforcement_resumed`).
-- `fixes[].hdop`: float as the GNSS source reports (nRF PVT `hdop`), omitted
-  when the source does not provide it. `accuracy_m` stays required.
+  `enforcement_resumed`). There is no separate report `armed` field;
+  `welfare.enforcement` is the welfare gate the farmer app should read.
 - `health.last_cue_at`: RFC3339 Z of the most recent cue the collar delivered
   (warn / outside / future pulse-equivalent). Omitted if none since boot or
-  GNSS time is untrusted. **Not persisted across reboot.**
-- `health.rsrp_dbm`: integer LTE RSRP in dBm when the transport has set it
-  (`report_set_signal_dbm` for Rook LTE). Omitted until set. `health.rssi_dbm`
-  is not used. A fuller `cell` object may still appear when measured.
+  GNSS time is untrusted. **Lost on reboot** (not persisted).
+- `fixes[].hdop` and `health.charging` are existing v1 fields (shown above).
+  Firmware includes `hdop` on a fix only when the GNSS source provides it for
+  a valid fix (nRF PVT `hdop`); otherwise omitted. `accuracy_m` stays
+  required. This PR does not change `charging` behaviour.
+- `cell` only when measured (never on GNSS-only boards). When the LTE
+  transport has only RSRP, a partial `cell` with `rsrp_dbm` is enough
+  (`report_set_signal_dbm`); omitted until set. No flat `health.rsrp_dbm`.
+  `still_s` and `tilt_deg` only with an IMU.
 - `battery`: fraction 0–1 when known; **omitted when unknown** (never sent as
   `0` to mean unknown).
-- `cell` only when measured (never on GNSS-only boards). `still_s` and
-  `tilt_deg` only with an IMU.
 - Training mode has no collar flag: only `warn_m` changes.
-- Field names for these keys are centralized in firmware `wire_fields.h` so
+- New telemetry field names are centralized in firmware `wire_fields.h` so
   a server-side rename is one edit.
 
 ## Provisioning over USB serial
@@ -523,7 +525,7 @@ every case. Signing key: Ed25519 seed bytes `00 01 02 … 1f`.
 | `slots.json` | supersede, dead prune, duplicate re-ack, stale, slots_full by count and by bytes, boot without clock, wrong collar, herd change (step `{"op": "set_herd", "herd_id": …}`, the signed config's herd taking effect) |
 | `cue.json` | the cue rule: only a crossing, warning levels, the 20 s cap and rest, outside tone + pulse cutoff, auto shut-off, boundary rearm vs caretaker clear_shutoff, track mode, holes, episodes |
 | `rearm.json` | signed rearm: valid, wrong_collar, bad_sig, stale seq / shutoff_at / not shut off, expired, no trusted time accepts |
-| `report.json` | report telemetry fragments: `last_cue_at`, `hdop`, `rsrp_dbm`, battery omit-when-unknown |
+| `report.json` | report telemetry fragments: `last_cue_at`, `fixes[].hdop`, `health.cell.rsrp_dbm`, battery omit-when-unknown |
 
 ## Transport
 

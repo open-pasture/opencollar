@@ -2,9 +2,9 @@
 
 ## 2026-11-04
 
-### Report telemetry fields for farmer app (read-only)
-- Based on `cursor/persist-rearm-shutoff-550e` (draft PR #25). Reporting only: **no welfare / cue behaviour change**; **did not edit** Rook LTE (PR #12 / `rook-lte-v1`).
-- Fields: `health.last_cue_at` (RFC3339 Z, RAM-only — not across reboot), `fixes[].hdop` (nRF PVT `hdop`, `accuracy_m` unchanged), `health.rsrp_dbm` (setter hook `report_set_signal_dbm()` for Rook to wire). Battery still omitted when unknown (host test: never `0` for unknown).
+### Report telemetry fields for farmer app (read-only; protocol record N)
+- Based on `cursor/persist-rearm-shutoff-550e` (draft PR #25). Reporting only: **no welfare / cue behaviour change**; **did not edit** Rook LTE (PR #12 / `rook-lte-v1`). No report `armed` (`welfare.enforcement` covers it).
+- Fields: `health.last_cue_at` (RFC3339 Z, **lost on reboot**), existing `fixes[].hdop` on valid fixes only, existing `health.cell.rsrp_dbm` via `report_set_signal_dbm()` (no flat `health.rsrp_dbm`; no new `charging` behaviour). Battery still omitted when unknown (host test: never `0` for unknown).
 - Names in `wire_fields.h`. Host tests + `protocol/vectors/report.json`. Docs: README, registry, CHANGELOG. **Nothing run on hardware.**
 
 ### Persist shut-off + signed remote rearm (Cody / protocol record L)

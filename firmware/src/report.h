@@ -5,9 +5,11 @@
  * Hooks only: the Rook LTE transport (PR #12 / rook-lte-v1) owns the full
  * report body. Call these to append welfare, list caps that include `rearm`,
  * and to encode / supply the farmer-app telemetry fields:
- *   health.last_cue_at, fixes[].hdop, health.rsrp_dbm, battery (omit unknown).
- * Field names are in wire_fields.h for easy rename when the protocol record
- * lands. Do not edit the Rook transport from this tree.
+ *   health.last_cue_at, fixes[].hdop (existing v1), health.cell.rsrp_dbm,
+ *   battery (omit unknown). No flat health.rsrp_dbm; no report `armed`
+ *   (use welfare.enforcement). Field names are in wire_fields.h for easy
+ *   rename when the protocol record lands. Do not edit the Rook transport
+ *   from this tree.
  */
 #ifndef OPENCOLLAR_REPORT_H
 #define OPENCOLLAR_REPORT_H
@@ -76,25 +78,26 @@ int report_encode_battery(bool known, double soc, char *out, size_t cap);
 /*
  * health object with only the telemetry keys this module owns:
  *   last_cue_at (RFC3339 Z) when a cue was noted with trusted time
- *   rsrp_dbm when report_set_signal_dbm() has been called
+ *   cell.rsrp_dbm when report_set_signal_dbm() has been called (partial cell)
  * Returns "{}" when neither is set, bytes written, or -1.
- * last_cue_at is RAM-only: not persisted across reboot.
+ * last_cue_at is RAM-only: lost on reboot (not persisted).
  */
 int report_encode_health_telemetry(char *out, size_t cap);
 
 /*
  * Note the time of a cue the collar delivered (warn / outside / future pulse).
  * Call only with trusted GNSS UTC. Omitted from the report until then.
- * Not persisted across reboot.
+ * Lost on reboot (not persisted).
  */
 void report_note_cue_at(int64_t utc_s);
 void report_clear_last_cue_at(void);
 bool report_get_last_cue_at(int64_t *out);
 
 /*
- * LTE RSRP for health.rsrp_dbm. Wired by op-fw-rook-lte from the modem
- * reading; this tree only stores and encodes. Omit the field until set.
- * health.rssi_dbm is not used.
+ * LTE RSRP for health.cell.rsrp_dbm (existing v1 nested field). Wired by
+ * op-fw-rook-lte from the modem reading; this tree only stores and encodes a
+ * partial cell object when set. Omit cell until set. No flat health.rsrp_dbm;
+ * health.rssi_dbm is not used. Does not touch health.charging.
  */
 void report_set_signal_dbm(int rsrp_dbm);
 void report_clear_signal_dbm(void);

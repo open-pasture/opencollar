@@ -1,6 +1,7 @@
 /*
- * Report telemetry encoders: last_cue_at, hdop on fixes, rsrp_dbm setter,
- * battery omitted when unknown (never reported as 0 for unknown).
+ * Report telemetry encoders: last_cue_at, existing fixes[].hdop,
+ * health.cell.rsrp_dbm via report_set_signal_dbm, battery omitted when
+ * unknown (never reported as 0 for unknown). No flat health.rsrp_dbm.
  * Cases also live in protocol/vectors/report.json (byte-identical copy here).
  */
 #include "../../src/app.h"
@@ -123,13 +124,17 @@ static void test_health_telemetry(void)
 	CHECK(report_get_signal_dbm(&got_rsrp) && got_rsrp == -104);
 	n = report_encode_health_telemetry(buf, sizeof(buf));
 	CHECK(n > 0);
-	expect_wire("health_last_cue_and_rsrp", buf);
+	expect_wire("health_last_cue_and_cell_rsrp", buf);
+	CHECK(strstr(buf, "\"cell\":{\"rsrp_dbm\":-104}") != NULL);
+	/* No flat health.rsrp_dbm */
+	CHECK(strstr(buf, "\"last_cue_at\":\"2026-09-27T12:02:00Z\",\"rsrp_dbm\"") == NULL);
 	CHECK(strstr(buf, "\"rssi_dbm\"") == NULL);
 
 	report_clear_last_cue_at();
 	n = report_encode_health_telemetry(buf, sizeof(buf));
 	CHECK(n > 0);
-	expect_wire("health_rsrp_only", buf);
+	expect_wire("health_cell_rsrp_only", buf);
+	CHECK(strcmp(buf, "{\"cell\":{\"rsrp_dbm\":-104}}") == 0);
 
 	report_clear_signal_dbm();
 	n = report_encode_health_telemetry(buf, sizeof(buf));

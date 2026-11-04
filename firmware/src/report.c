@@ -253,8 +253,9 @@ int report_encode_health_telemetry(char *out, size_t cap)
 		any = true;
 	}
 	if (g_has_rsrp) {
-		n = snprintf(out + used, cap - used, "%s\"%s\":%d", any ? "," : "", OC_FIELD_RSRP_DBM,
-			     g_rsrp_dbm);
+		/* Nested health.cell.rsrp_dbm — never flat health.rsrp_dbm */
+		n = snprintf(out + used, cap - used, "%s\"%s\":{\"%s\":%d}", any ? "," : "",
+			     OC_FIELD_CELL, OC_FIELD_RSRP_DBM, g_rsrp_dbm);
 		if (n < 0 || (size_t)n >= cap - used) {
 			return -1;
 		}
