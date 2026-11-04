@@ -26,10 +26,15 @@ and a ready module; the server offers no pulse settings otherwise.
 - **Report** `health.module` with `hw_rev`, `state`, optional `fault` — only when
   fitted; no v1 `present`. v2 must not reuse the fence `armed` status bit.
 - **Latch:** `GATE_LATCH` is an MCU output (one-shot, cleared on reset); not
-  firmware-independent. Protection is `pulse_grant` + HW current limit + kill.
+  firmware-independent. Protection is `pulse_grant` + module HW current limit +
+  kill. Prefer latch/kill on the module.
+- **Partition:** all HV converter / driver / HW current limit on the module;
+  main board is LV connector + sense + ID bus + MCU signals only (unfitted
+  collar has no pulse circuit — regulatory, e.g. California).
 - Cross-links: `welfare.enforcement` (record L), `cue_state` `pulse_off` (record N).
 - Normative text: [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md)
-  (op-architect records O + review; Cody standing rule 2026-11-04).
+  (op-architect records O + review; op-strategy HV-on-module; Cody standing
+  rule 2026-11-04).
 
 ## 2026-11-03
 

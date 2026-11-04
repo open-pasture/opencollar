@@ -57,9 +57,10 @@ enum shock_fault {
 #define SHOCK_FAULT_NAME_BAD_ID "bad_id"
 
 /* Logical connector nets (MCU pin numbers TBD; see interface doc).
- * GATE_LATCH is an MCU output: firmware arms a one-shot latch (cleared on
- * reset); not firmware-independent. Protection is pulse_grant + HW current
- * limit + kill line. */
+ * All HV / driver / HW current limit live on the module; main board has only
+ * these LV signals. GATE_LATCH is an MCU output: firmware arms a one-shot
+ * latch on the module (cleared on reset); not firmware-independent.
+ * Protection is pulse_grant + module HW current limit + kill line. */
 #define SHOCK_NET_SENSE "SENSE"
 #define SHOCK_NET_I2C_SDA "I2C_SDA"
 #define SHOCK_NET_I2C_SCL "I2C_SCL"

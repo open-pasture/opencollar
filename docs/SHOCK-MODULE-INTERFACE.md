@@ -29,6 +29,19 @@ treat either as settled in this reservation:
 This file reserves **logical** connectors, rails, and report fields that work
 either way. Mechanical choice is out of scope here.
 
+**Design rule (op-strategy): all high-voltage and pulse driver circuitry lives
+on the module itself** — HV converter, driver stage, and the fixed hardware
+current limit. A collar with the module bay **unfitted** has **no** pulse
+circuit on the main / crest board: **no HV rail, no converter, no driver**.
+The main board carries only the **connector**, the **sense** line, the
+**I2C pins** that reach the module’s **ID chip footprint** (chip on the
+module), and the **MCU signal pins** (`HV_EN`, `GATE_LATCH`, `KILL_SENSE`,
+and related low-voltage nets). Prefer putting the **gate latch** and
+**kill** path on the module when that is practical; the MCU still **arms**
+the latch over `GATE_LATCH` (firmware does fire that output — see §2).
+Rationale: a collar without the module must not be “designed to be capable”
+of a pulse, which matters to regulators in some places (e.g. California).
+
 Related: [`WELFARE-POLICY.md`](WELFARE-POLICY.md),
 [`protocol/registry.md`](../protocol/registry.md)
 (including reserved `welfare.enforcement` from record L and `cue_state` /
@@ -42,8 +55,8 @@ Related: [`WELFARE-POLICY.md`](WELFARE-POLICY.md),
 | Item | Reservation |
 | --- | --- |
 | **Sense pin** | A dedicated presence / sense line on the module connector shows whether a module is mechanically and electrically fitted. |
-| **ID chip** | A small ID chip **on the module** holds serial and hardware revision (I2C footprint reserved; part TBD). |
-| **Unfitted** | With no module, the collar **reports nothing** about shock/pulse hardware in the uplink. Firmware may still hold internal state `not_fitted`. |
+| **ID chip** | A small ID chip **on the module** (footprint reserved; part TBD) holds serial and hardware revision. Main board has only the connector / I2C pins to reach it — not a pulse or HV part. |
+| **Unfitted** | With no module, the collar **reports nothing** about shock/pulse hardware in the uplink, and the main board has **no** pulse/HV circuit. Firmware may still hold internal state `not_fitted`. |
 
 Detection method details (pull-up/down resistor value, sense polarity, ID
 address) are **TBD**. Constraints: sense must not share a net with the
@@ -56,30 +69,31 @@ module rides off-board).
 
 ## 2. Dual enable: firmware HV enable + gate latch
 
-High voltage may run only when **both** are asserted:
+High voltage exists only **on the fitted module** (design rule above). It may
+run only when **both** are asserted:
 
-1. **Firmware enable** (`HV_EN` / logical driver enable) — software path,
-   welfare-gated; default inactive at reset, on fault, and whenever the
-   module is not in a ready state.
-2. **Hardware gate latch**, armed by the MCU output **`GATE_LATCH`**.
-   Firmware **does** fire this output: the latch is **one-shot**, cleared on
-   any reset, and **not** firmware-independent. Firmware arms it only after
-   checking a valid **`pulse_grant`** (below). Saying the latch is
-   “hardware” means the latch *holds* until reset once set — **not** that
-   firmware cannot assert it alone.
+1. **Firmware enable** (`HV_EN` / logical driver enable) — MCU output into
+   the module; welfare-gated; default inactive at reset, on fault, and
+   whenever the module is not in a ready state.
+2. **Hardware gate latch** (preferably on the **module**). The MCU output
+   **`GATE_LATCH`** **arms** it: firmware **does** fire that pin. The latch
+   is **one-shot**, cleared on any reset, and **not** firmware-independent.
+   Firmware arms it only after checking a valid **`pulse_grant`** (below).
+   “Hardware latch” means the latch *holds* on the module until reset once
+   set — **not** that firmware cannot assert `GATE_LATCH` alone.
 
 **What actually protects against firmware alone enabling HV:** the
-server-signed **`pulse_grant`**, the **fixed hardware current limit**, and
-the **independent kill line**. Do not claim the latch itself is outside
-firmware’s reach.
+server-signed **`pulse_grant`**, the **fixed hardware current limit on the
+module**, and the **independent kill line** (prefer on the module). Do not
+claim the latch itself is outside firmware’s reach.
 
-Under that AND-gate sit, always:
+Under that AND-gate sit, always (on the **module**, not the main board):
 
 | Layer | Role |
 | --- | --- |
-| **Fixed hardware current limit** | Value **TBD by the named welfare reviewer**. Firmware never programs above it; any software limit is strictly lower. |
-| **Independent kill line** | Cuts the driver / HV rail **independent of firmware** (kill switch, fuse, or equivalent). Firmware **observes** kill asserted; it does not implement the cut. |
-| **Hardware watchdog** | Loss of kick or latch integrity forces HV off. |
+| **Fixed hardware current limit** | On the module. Value **TBD by the named welfare reviewer**. Firmware never programs above it; any software limit is strictly lower. |
+| **Independent kill line** | Prefer on the module. Cuts the driver / HV rail **independent of firmware** (kill switch, fuse, or equivalent). Firmware **observes** kill via `KILL_SENSE`; it does not implement the cut on the main board. |
+| **Hardware watchdog** | Prefer on the module. Loss of kick or latch integrity forces HV off. |
 
 **Safe state is always high voltage off:** unfitted, unknown, reset, fault,
 kill asserted, latch cleared, watchdog trip, missing / revoked `pulse_grant`,
@@ -121,26 +135,29 @@ Wire shape TBD; name reserved so it is not confused with `shock_module`.
 One module connector (or equivalent harness to the reserved module bay).
 Logical names; **physical pin numbers are TBD** and must not collide with
 existing carrier wiring in [`hardware/carrier/SPEC.md`](../hardware/carrier/SPEC.md).
+These are **low-voltage interface** nets only. The main board must not route
+an HV rail or host the converter / driver / hardware current limit.
 
 | Logical | Direction (collar ↔ module) | Constraint |
 | --- | --- | --- |
 | `SENSE` | in (collar) | Presence. Must not float into an “enable” interpretation when unfitted. |
-| `I2C_SDA` / `I2C_SCL` | bidirectional | ID chip (serial, `hw_rev`). Prefer the protected external bus pattern if off-board; **must not** share pins with GNSS UART or GNSS control lines. |
-| `HV_EN` | out (collar) | Firmware enable into the AND with the gate latch. **Pulldown** so unfitted / unpowered / floating never enables. **Must not** share a pin with the buzzer path or GNSS. |
-| `KILL` | in (collar observes) | Independent kill / rail-cut sense. |
+| `I2C_SDA` / `I2C_SCL` | bidirectional | To the **module** ID chip (serial, `hw_rev`). Prefer the protected external bus pattern if off-board; **must not** share pins with GNSS UART or GNSS control lines. |
+| `HV_EN` | out (collar) | Logic-level firmware enable into the module’s AND with the gate latch. **Pulldown** so unfitted / unpowered / floating never enables. **Must not** share a pin with the buzzer path or GNSS. Not an HV net. |
+| `KILL` | in (collar observes) | Sense of the independent kill / rail-cut (prefer kill hardware on the module). |
 | `FAULT` | in (collar) | Driver / module fault (open-drain preferred). |
 | `GND` | — | Return. |
-| `BAT` / pack rail | power | Module power as decided with placement; must not back-power the Kit VIO rail unsafely. |
+| `BAT` / pack rail | power | Pack / system power into the module as decided with placement; must not back-power the Kit VIO rail unsafely. **Not** a generated HV rail on the main board. |
 
 **MCU pins to reserve (TBD numbers, two free GPIOs minimum):**
 
 | Logical MCU net | Use | Constraints vs today’s map |
 | --- | --- | --- |
-| `GATE_LATCH` | **MCU output** that arms the one-shot hardware gate latch (only after a verified `pulse_grant`). Cleared on reset. Not firmware-independent — see §2. | Not P0.30/P0.31 (I2C/buzzer), not GNSS (P0.22–P0.27, P0.24 PPS/SAFEBOOT), not FLASH SPI (P0.01–P0.04), not `EXT_EN` (P0.07) reused as HV enable. Prefer a spare such as the NC analog bank **only after** a pin audit; mark **TBD** until assigned. Pulldown / safe-off at reset. |
-| `KILL_SENSE` | Observe the independent kill line | Same exclusion set. Input with defined idle level so an open connector is not “ok”. |
+| `GATE_LATCH` | **MCU output** that **arms** the one-shot gate latch on the module (only after a verified `pulse_grant`). Cleared on reset. Firmware does fire this pin — see §2. | Not P0.30/P0.31 (I2C/buzzer), not GNSS (P0.22–P0.27, P0.24 PPS/SAFEBOOT), not FLASH SPI (P0.01–P0.04), not `EXT_EN` (P0.07) reused as HV enable. Prefer a spare such as the NC analog bank **only after** a pin audit; mark **TBD** until assigned. Pulldown / safe-off at reset. |
+| `KILL_SENSE` | Observe the independent kill line (prefer kill path on the module) | Same exclusion set. Input with defined idle level so an open connector is not “ok”. |
 
-**ID chip footprint:** reserved on the module PCB (package TBD; I2C). Collar
-side needs only the bus and presence sense.
+**On the module (not the main board):** HV converter, driver stage, hardware
+current limit, ID chip footprint, and preferably the gate latch and kill
+path / watchdog.
 
 Optional per-pod duplication (if Cody chooses side-pod electrodes): the same
 logical set may be indexed `_*_N` for pod index `N` (0 = left / `CUE_L`, 1 =
@@ -260,8 +277,10 @@ field. No CDDL / vector change in this PR (reservation only).
    software limits stay strictly below that hardware limit once set.
 6. One production design: leave mechanical and connector room even when the
    module is not fitted for early builds.
-7. Protection against firmware-alone HV is `pulse_grant` + HW current limit
-   + kill line — not a claim that `GATE_LATCH` is outside firmware.
+7. Protection against firmware-alone HV is `pulse_grant` + module HW current
+   limit + kill line — not a claim that `GATE_LATCH` is outside firmware.
+8. **No pulse/HV circuitry on the main board** when the module is unfitted
+   (all converter / driver / HW current limit on the module).
 
 Enum / field-name constants only (no drivers): optional
 [`firmware/src/shock_iface.h`](../firmware/src/shock_iface.h).
