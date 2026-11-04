@@ -1,5 +1,5 @@
 {
-  "revision": "D5_print_orient_floor_panel_kept",
+  "revision": "D5_real_glyphs_caplid_mating_down",
   "assumptions": [
     "Strap thickness 4.0 mm assumed \u2014 VERIFY WITH CALIPERS before field print.",
     "P124 KEPT on collar #1 (Cody 2026-11-03) \u2014 pocket + 15 mm keep-clear retained; cap 76\u00d7160.",
@@ -49,12 +49,22 @@
   "panel_decision_date": "2026-11-03",
   "colourway_proposal": "Light-gray shell colourway proposed (durability/field-soil review). PENDING op-brand review \u2014 charcoal #26282B + orange #FF6A2B remain current locked accents.",
   "floor_glyphs": true,
+  "floor_glyph_spec": {
+    "char_h_mm": 5.0,
+    "blender_font_size": 10.0,
+    "stroke_mm": 0.85,
+    "relief_mm": 0.6,
+    "solidify_depth_mm": 0.75,
+    "font": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "on_bases": true,
+    "on_floor_layouts": true
+  },
   "floor_label_table": {
     "KIT": "KIT",
     "BQ": "BQ",
     "WIO": "WIO",
     "USB": "USB",
-    "CELL": "CELL",
+    "BATT": "BATT",
     "BUZZ": "BUZZ",
     "GNSS": "GNSS",
     "LTE": "LTE",
@@ -64,8 +74,10 @@
     "SCR3": "3",
     "SCR4": "4",
     "PLUS": "+",
-    "MINUS": "\u2212",
-    "PIN1": "\u25b6"
+    "MINUS": "-",
+    "PIN1": "ARROW",
+    "STEEL": "STEEL",
+    "ONLY": "ONLY"
   },
   "clearances": {
     "wio_plus_x_wall_mm": 5.1,
@@ -95,7 +107,8 @@
     "colourway": "Light-gray shell colourway proposed (durability/field-soil review). PENDING op-brand review \u2014 charcoal #26282B + orange #FF6A2B remain current locked accents."
   },
   "clamp_orientation": "Print: flange flat on bed, web/walls rising in +Z (channel opens up). Load path: strap compression along bar length (Y) WITH layers \u2014 never peel across layers.",
-  "print_orientation_note": "All STLs exported with bed face at z=0. Lids in FLIP_OUTER_DOWN are flipped 180\u00b0 about X on export so OUTER face is on the bed; GNSS/LTE cavity openings face +Z (away from bed).",
+  "print_orientation_note": "All STLs exported with bed face at z=0. cap_lid: MATING face on bed (as-built) \u2014 P124 pocket faces +Z; outer-down rejected (large panel ceiling + small rim bed). pod/cw lids: rotated 180\u00b0 about X on export (recalc normals, no flip_normals) so OUTER face is on the bed.",
+  "cap_lid_orientation_rationale": "Outer-down leaves the P124 pocket open on the bed (~66\u00d7113 mm ceiling needing support, rim bed area much smaller). Mating-down prints the panel pocket facing +Z (no support); GNSS/LTE recesses may need small tree supports on the bed side. Pocket depth kept at PANEL_POCKET for fit.",
   "layout": {
     "cap": [
       "Rook Connect Kit",
@@ -258,11 +271,12 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 11980
+        "faces": 51744
       },
       "pass": true,
       "stl_path": "stl/cap_base.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: cavity UP; bed=underside z=0",
       "load_path": "clamp\u2192inserts WITH layers",
@@ -279,7 +293,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "normals_outward": false
+        "normals_outward": true
       },
       "stl": {
         "watertight": true,
@@ -288,9 +302,10 @@
       },
       "pass": true,
       "stl_path": "stl/cap_lid.stl",
-      "export_flipped_outer_down": true,
+      "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
-      "orientation": "PRINT: OUTER face DOWN z=0 (flipped on export); GNSS/LTE open +Z",
+      "orientation": "PRINT: MATING face DOWN z=0 (as-built); outer UP; P124 pocket +Z",
       "load_path": "lid screws INTO base",
       "material": "ASA/PETG",
       "farmer_swappable": true,
@@ -315,6 +330,7 @@
       "pass": true,
       "stl_path": "stl/panel_p124.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flat; bed=either face z=0",
       "load_path": "bonded in pocket \u2014 P124 KEPT collar #1",
@@ -336,11 +352,12 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4562
+        "faces": 18890
       },
       "pass": true,
       "stl_path": "stl/pod_L_base.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: cavity UP; bed=underside z=0",
       "load_path": "lid screws; cell cradle",
@@ -357,7 +374,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "normals_outward": false
+        "normals_outward": true
       },
       "stl": {
         "watertight": true,
@@ -367,6 +384,7 @@
       "pass": true,
       "stl_path": "stl/pod_L_lid.stl",
       "export_flipped_outer_down": true,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: OUTER face DOWN z=0 (flipped on export)",
       "load_path": "lid screws; ribs clear cell",
@@ -388,11 +406,12 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4560
+        "faces": 18890
       },
       "pass": true,
       "stl_path": "stl/pod_R_base.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: cavity UP; bed=underside z=0",
       "load_path": "mirror of L",
@@ -409,7 +428,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "normals_outward": false
+        "normals_outward": true
       },
       "stl": {
         "watertight": true,
@@ -419,6 +438,7 @@
       "pass": true,
       "stl_path": "stl/pod_R_lid.stl",
       "export_flipped_outer_down": true,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: OUTER face DOWN z=0 (flipped on export)",
       "load_path": "mirror of L",
@@ -440,11 +460,12 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4168
+        "faces": 19492
       },
       "pass": true,
       "stl_path": "stl/cw_tub.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: cavity UP; bed=underside z=0",
       "load_path": "steel pack; NO antennas",
@@ -461,7 +482,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "normals_outward": false
+        "normals_outward": true
       },
       "stl": {
         "watertight": true,
@@ -471,6 +492,7 @@
       "pass": true,
       "stl_path": "stl/cw_lid.stl",
       "export_flipped_outer_down": true,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: OUTER face DOWN z=0 (flipped on export)",
       "load_path": "lid screws",
@@ -497,6 +519,7 @@
       "pass": true,
       "stl_path": "stl/saddle.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: roof on bed z=0; channel opens +Z",
       "load_path": "strap\u2192rails\u2192clamp ALONG layers",
@@ -523,6 +546,7 @@
       "pass": true,
       "stl_path": "stl/clamp_bar.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flange on bed z=0; channel +Z; load ALONG Y WITH layers",
       "load_path": "strap compression; \u226515 mm from LoRa crest",
@@ -549,6 +573,7 @@
       "pass": true,
       "stl_path": "stl/keeper.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flat; bed z=0",
       "load_path": "strap tail guide",
@@ -575,6 +600,7 @@
       "pass": true,
       "stl_path": "stl/buckle.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flat; bed z=0",
       "load_path": "strap open/close",
@@ -601,6 +627,7 @@
       "pass": true,
       "stl_path": "stl/latch.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flat; bed z=0",
       "load_path": "lid open cue (orange)",
@@ -627,6 +654,7 @@
       "pass": true,
       "stl_path": "stl/plug_service.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flat; bed z=0",
       "load_path": "covers farmer screws",
@@ -653,6 +681,7 @@
       "pass": true,
       "stl_path": "stl/plug_struct.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flat; bed z=0",
       "load_path": "charcoal cosmetic",
@@ -679,6 +708,7 @@
       "pass": true,
       "stl_path": "stl/fairing_cap_pod_L.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: long axis on bed; slope=WALL",
       "load_path": "28 mm blend",
@@ -705,6 +735,7 @@
       "pass": true,
       "stl_path": "stl/fairing_cap_pod_R.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: long axis on bed; slope=WALL",
       "load_path": "mirror",
@@ -731,6 +762,7 @@
       "pass": true,
       "stl_path": "stl/fairing_pod_strap_L.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: long axis on bed; slope=WALL",
       "load_path": "28 mm blend",
@@ -757,6 +789,7 @@
       "pass": true,
       "stl_path": "stl/fairing_pod_strap_R.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: long axis on bed; slope=WALL",
       "load_path": "mirror",
@@ -783,6 +816,7 @@
       "pass": true,
       "stl_path": "stl/usbc_cap.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flat; bed z=0",
       "load_path": "charge-port gasket cap",
@@ -809,6 +843,7 @@
       "pass": true,
       "stl_path": "stl/buzz_mesh.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flat; bed z=0",
       "load_path": "rimmed mesh disc \u00d72",
@@ -835,6 +870,7 @@
       "pass": true,
       "stl_path": "stl/label_coupon.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flat; bed z=0",
       "load_path": "0.16 mm layer label test",
@@ -861,6 +897,7 @@
       "pass": true,
       "stl_path": "stl/fit_coupon.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flat; bed z=0",
       "load_path": "FIRST print \u2014 gauges",
@@ -870,8 +907,8 @@
     },
     "cap_floor_layout": {
       "size_mm": [
-        60.0,
-        110.0,
+        70.0,
+        130.0,
         5.0
       ],
       "watertight": {
@@ -882,11 +919,12 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 1058
+        "faces": 39530
       },
       "pass": true,
       "stl_path": "stl/cap_floor_layout.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: floor underside z=0; ribs/glyphs UP",
       "load_path": "PLA layout coupon",
@@ -896,8 +934,8 @@
     },
     "pod_floor_layout": {
       "size_mm": [
-        70.0,
-        50.0,
+        80.0,
+        58.0,
         5.0
       ],
       "watertight": {
@@ -908,11 +946,12 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 598
+        "faces": 14626
       },
       "pass": true,
       "stl_path": "stl/pod_floor_layout.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: floor underside z=0; ribs/glyphs UP",
       "load_path": "PLA layout coupon (L=R mirror)",
@@ -922,8 +961,8 @@
     },
     "cw_floor_layout": {
       "size_mm": [
-        60.0,
-        50.0,
+        70.0,
+        55.0,
         4.5
       ],
       "watertight": {
@@ -934,11 +973,12 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 316
+        "faces": 15490
       },
       "pass": true,
       "stl_path": "stl/cw_floor_layout.stl",
       "export_flipped_outer_down": false,
+      "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: floor underside z=0",
       "load_path": "PLA steel-pack outline",

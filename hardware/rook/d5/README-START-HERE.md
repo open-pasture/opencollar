@@ -11,7 +11,9 @@ cd hardware/rook/d5/cad
 blender --background --factory-startup --python build_d5.py
 ```
 
-All exported STLs are in **intended print orientation** (bed face at `z=0`). Lids are flipped on export so the **outer face is on the bed**.
+All exported STLs are in **intended print orientation** (bed face at `z=0`).
+
+**Floor glyphs:** real embossed letterforms (DejaVu Bold / stroke symbols), char **≥5 mm**, stroke **≥0.8 mm**, relief **≥0.6 mm**, on floor-layout coupons **and** on `cap_base` / `pod_*_base` / `cw_tub` when `FLOOR_GLYPHS=True`. Labels from `FLOOR_LABEL_TABLE` in `cad/build_d5.py`.
 
 ## Decisions (closed)
 
@@ -39,11 +41,12 @@ All exported STLs are in **intended print orientation** (bed face at `z=0`). Lid
 
 | Part | Face at z=0 (bed) | Notes |
 | --- | --- | --- |
-| `cap_base`, `pod_*_base`, `cw_tub` | Outer underside | Cavity opens +Z |
-| `cap_lid`, `pod_*_lid`, `cw_lid` | **Outer face** (flipped on export) | GNSS/LTE openings face +Z |
+| `cap_base`, `pod_*_base`, `cw_tub` | Outer underside | Cavity + glyphs open +Z |
+| `cap_lid` | **Mating face** (as-built) | Outer UP; **P124 pocket faces +Z**. Outer-down rejected (large panel ceiling / small rim bed). GNSS/LTE may need small bed supports. |
+| `pod_*_lid`, `cw_lid` | **Outer face** (rotate 180° X on export) | Proper rotation + recalc normals (no `flip_normals`) |
 | `saddle` | Roof | Channel opens +Z |
 | `clamp_bar` | Flange | Channel opens +Z; load along Y WITH layers |
-| `cap_floor_layout`, `pod_floor_layout`, `cw_floor_layout` | Floor underside | Ribs/glyphs UP |
+| `cap_floor_layout`, `pod_floor_layout`, `cw_floor_layout` | Floor underside | Ribs + real glyphs UP |
 | Small parts / coupons | Flat as built | — |
 
 ## Plate list (est. from Orca baseline + durability)

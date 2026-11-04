@@ -7,7 +7,7 @@
 | Mesh | PETG or TPU | `buzz_mesh` ×2 | Press into port counterbore |
 | Non-RF structure | ASA/PETG or **PA-CF** | Saddle, clamp bars **only if** ≥12 mm from antennas | PA-CF OK away from RF |
 | **Forbidden near RF** | Carbon fiber, metal foil, large metal plates | Cap crest, GNSS cover, LTE/LoRa runs | Keep inserts/screws/CW/cells 10–15 mm from antennas |
-| Verify | **PLA** | `fit_coupon`, `label_coupon` first | Do not field PLA shells |
+| Verify | **PLA** | `fit_coupon`, `label_coupon`, floor-layout coupons first | Do not field PLA shells |
 | Cosmetic | ASA charcoal `#26282B` / orange `#FF6A2B` | Plugs, latch | Orange = service |
 | Colourway (proposed) | Light-gray shells | Cap/pod/CW/fairings | **PENDING op-brand review** — not locked; charcoal+orange accents stay |
 
@@ -21,7 +21,7 @@ Light-gray shell colourway was floated in the durability / field-soil review (hi
 
 ## RF keepout
 
-- GNSS: sky-facing, **1–3 mm plastic** above patch, **no metal** in the cover stack. Recess opens into cavity from z=0 (export: openings face +Z with outer face on bed).
+- GNSS: sky-facing, **1–3 mm plastic** above patch, **no metal** in the cover stack. Cap lid prints **mating-down** (P124 pocket +Z); GNSS/LTE recesses may need small bed supports.
 - Crest antennas opposite neck; cells in pods, steel in CW — both ≥**15 mm** from crest / LoRa.
 - Clamp bars (channel section) under saddle at \|y\|≤28.5 — LoRa at y≈64 → clearance ≫15 mm.
 - No CF filament in cap lid / antenna shelves. PA-CF only on saddle/clamps away from RF.

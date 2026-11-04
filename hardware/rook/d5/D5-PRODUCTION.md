@@ -54,8 +54,9 @@ Sources: headline dims from enclosure-component-spec (V/U). Spec path on shared 
 
 | Part | Bed | Load WITH layers |
 | --- | --- | --- |
-| Cap / pod / CW bases | cavity up (underside on bed) | Clamp → inserts; walls take drop |
-| Lids | mating face down | Screws into base inserts |
+| Cap / pod / CW bases | cavity up (underside on bed); floor glyphs embossed UP | Clamp → inserts; walls take drop |
+| `cap_lid` | **mating face down** (P124 pocket +Z; do not print outer-down) | Screws into base inserts |
+| Pod / CW lids | outer face down (rotate on export) | Screws into base inserts |
 | Saddle | flank on bed; channel = pocket | Strap tension → rails → clamp → cap |
 | Fairings | long axis on bed | Visible slope is a WALL |
 | Clamp bars | flat | Compression along bar |

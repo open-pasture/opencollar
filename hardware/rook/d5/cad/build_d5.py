@@ -1,20 +1,22 @@
 """D5 production CAD — printable parametric rebuild of the D5 look study.
 
-Exported STLs are in INTENDED PRINT ORIENTATION: bed face at z=0, no flip needed.
+Exported STLs are in INTENDED PRINT ORIENTATION: bed face at z=0.
 
-  cap/pod/cw bases     — cavity UP; bed = outer underside (z=0)
-  cap/pod/cw lids      — OUTER face DOWN (z=0); mating/landing features UP
-                         (GNSS/LTE cavity openings face +Z after flip)
+  cap/pod/cw bases     — cavity UP; bed = outer underside (z=0); floor glyphs UP
+  cap_lid              — MATING face DOWN (z=0); outer UP — P124 pocket faces +Z
+                         (outer-down would put ~7k mm² panel ceiling on supports)
+  pod/cw lids          — OUTER face DOWN (z=0); mating UP (rotated on export)
   saddle               — roof on bed (z=0); strap channel opens +Z (no bridge)
   clamp_bar            — flange on bed (z=0); channel opens +Z
   fairings             — long axis on bed; slope as WALL
   floor_layout coupons — floor underside on bed; ribs/glyphs UP
   small parts          — flat on bed as built
 
-Assembly orientation (mating at z=0) is used while modeling lids; export_part
-flips lids 180° about X then normalizes min-z → 0 so the STL matches print.
+Pod/CW lids are modeled mating-at-z=0; export_part rotates 180° about X
+(recalc normals — never mirror / flip_normals) then normalize_z0.
 
-FLOOR_GLYPHS: locating ribs + engraved labels on floor-layout variants.
+FLOOR_GLYPHS: real embossed letterforms (≥5 mm, stroke ≥0.8, relief ≥0.6)
+on floor-layout coupons AND on cap_base / pod_*_base / cw_tub floors.
 
 Run:
   cd hardware/rook/d5/cad
@@ -53,48 +55,72 @@ WORLD = (0.94, 0.93, 0.90)
 FLOOR_GLYPHS = True
 FLOOR_RIB_H = 3.0
 FLOOR_LAYOUT_H = 8.0          # trimmed coupon height
-GLYPH_DEPTH = 0.6             # ≥0.6 mm engrave
-GLYPH_SIZE = 3.2              # ~1 mm stroke on 0.4 mm nozzle
+GLYPH_DEPTH = 0.75            # solidify thickness; exposed relief = DEPTH - EMBED ≥ 0.6
+# Blender FONT size; DejaVu Bold @10 → capital height ≈5.05 mm (≥5), "I" stroke ≈1.5 mm.
+GLYPH_SIZE = 10.0
+GLYPH_STROKE = 0.85           # target stroke width ≥0.8 mm (outline offset + bold stem)
+GLYPH_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+GLYPH_EMBED = 0.15            # sink into floor so boolean stays manifold
+GLYPH_REMESH = 0.2            # voxel remesh text before union (keeps EXACT boolean manifold)
+GLYPH_CHAR_H = 5.0            # nominal capital height (mm) documented for reviewers
 
-# id → (short label, notes) — single source for floor glyphs
+# id → (short printable label, notes) — SINGLE SOURCE for floor glyphs
 FLOOR_LABEL_TABLE = {
     "KIT": ("KIT", "nRF9151 Connect Kit; USB→−Y; pin1 mark"),
     "BQ": ("BQ", "bq24074 charger; DO NOT POT"),
     "WIO": ("WIO", "SX1262 lay-flat; U.FL→crest"),
     "USB": ("USB", "USB-C charge"),
-    "CELL": ("CELL", "18650 + / −"),
+    "BATT": ("BATT", "18650 cell bay"),
     "BUZZ": ("BUZZ", "Qwiic buzzer"),
-    "GNSS": ("GNSS", "patch sky; lid"),
-    "LTE": ("LTE", "flex; lid"),
-    "POST": ("P", "lid support"),
-    "SCR1": ("1", "screw order"),
-    "SCR2": ("2", "screw order"),
-    "SCR3": ("3", "screw order"),
-    "SCR4": ("4", "screw order"),
-    "PLUS": ("+", "cell +"),
-    "MINUS": ("−", "cell −"),
-    "PIN1": ("▶", "pin-1 / connector"),
+    "GNSS": ("GNSS", "patch sky; lid / crest"),
+    "LTE": ("LTE", "flex; lid / crest"),
+    "POST": ("P", "lid support post"),
+    "SCR1": ("1", "screw order 1"),
+    "SCR2": ("2", "screw order 2"),
+    "SCR3": ("3", "screw order 3"),
+    "SCR4": ("4", "screw order 4"),
+    "PLUS": ("+", "cell + polarity"),
+    "MINUS": ("-", "cell - polarity"),
+    "PIN1": ("ARROW", "pin-1 / connector direction"),
+    "STEEL": ("STEEL", "CW steel pack only"),
+    "ONLY": ("ONLY", "no electronics in CW"),
 }
 
-# Parts whose assembly model has mating/features at z=0 but print OUTER face down.
-# export_part flips these 180° about X so outer face lands at z=0.
+# Parts modeled mating-at-z=0 that print OUTER face down.
+# cap_lid intentionally NOT listed — P124 pocket must face +Z (mating on bed).
 FLIP_OUTER_DOWN = {
-    "cap_lid", "pod_L_lid", "pod_R_lid", "cw_lid",
+    "pod_L_lid", "pod_R_lid", "cw_lid",
 }
 
 # ---------------------------------------------------------------- mesh helpers
 
 def prepare(obj, merge=1e-4):
+    """Triangulate, weld near-coincident verts, drop degenerates, fill tiny holes.
+
+    Default merge=1e-4 preserves fine gauges (fit_coupon). Glyph-bearing parts
+    pass merge=0.008 at export so remesh/boolean STLs stay watertight in float32.
+    """
     import bmesh
     bm = bmesh.new()
     bm.from_mesh(obj.data)
-    bmesh.ops.triangulate(bm, faces=bm.faces)
     bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=merge)
+    bmesh.ops.dissolve_degenerate(bm, dist=merge, edges=list(bm.edges))
+    bmesh.ops.triangulate(bm, faces=bm.faces)
+    boundary = [e for e in bm.edges if len(e.link_faces) < 2]
+    if boundary:
+        bmesh.ops.holes_fill(bm, edges=boundary, sides=8)
     bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
     bm.to_mesh(obj.data)
     bm.free()
     obj.data.update()
     return obj
+
+
+# Parts with embossed floor glyphs need a slightly looser weld at export.
+GLYPH_EXPORT_WELD = {
+    "cap_base", "pod_L_base", "pod_R_base", "cw_tub",
+    "cap_floor_layout", "pod_floor_layout", "cw_floor_layout",
+}
 
 
 def normalize_z0(obj):
@@ -107,29 +133,168 @@ def normalize_z0(obj):
 
 
 def flip_outer_down(obj):
-    """Rotate 180° about X so former +Z (outer) becomes bed at z=0 after normalize."""
+    """Rotate 180° about X so former +Z (outer) becomes bed at z=0 after normalize.
+
+    Proper rotation only — do NOT mirror or flip_normals() (that inverts winding /
+    yields negative volume). prepare() recalculates outward normals.
+    """
     oc.bake(obj)
     obj.data.transform(Matrix.Rotation(math.radians(180), 4, "X"))
-    obj.data.flip_normals()
-    return normalize_z0(obj)
+    return normalize_z0(prepare(obj))
 
 
-def engrave_glyph(body, text, at, size=GLYPH_SIZE, depth=GLYPH_DEPTH):
-    """Raised label pad on the floor (emboss ≥0.6 mm). Text-cut glyphs were
-    non-manifold on thin floors; pads + short ID keep assembly readable on 0.4 mm nozzle.
+def _glyph_font():
+    """Load (or reuse) the emboss font. Re-load if a prior oc.reset() dropped it."""
+    for f in bpy.data.fonts:
+        if getattr(f, "filepath", "") == GLYPH_FONT or f.name.startswith("DejaVuSans-Bold"):
+            try:
+                _ = f.filepath
+                return f
+            except ReferenceError:
+                break
+    return bpy.data.fonts.load(GLYPH_FONT)
+
+
+def _glyph_char_mesh(ch, size, depth, stroke=GLYPH_STROKE):
+    """One character: FONT → solidify → voxel remesh (manifold)."""
+    outline = max(0.05, (stroke - 0.55) / 2)
+    safe = ch if ch.isalnum() else "x"
+    cu = bpy.data.curves.new(f"cu_{safe}", "FONT")
+    cu.body = ch
+    cu.size = size
+    cu.extrude = 0.0
+    cu.fill_mode = "FRONT"
+    cu.offset = outline
+    cu.font = _glyph_font()
+    cu.align_x = "CENTER"
+    cu.align_y = "CENTER"
+    obj = oc._link(bpy.data.objects.new(f"ch_{safe}", cu))
+    bpy.context.view_layer.objects.active = obj
+    for o in bpy.context.selected_objects:
+        o.select_set(False)
+    obj.select_set(True)
+    bpy.ops.object.convert(target="MESH")
+    obj = bpy.context.view_layer.objects.active
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-5)
+    bm.to_mesh(obj.data)
+    bm.free()
+    sol = obj.modifiers.new("sol", "SOLIDIFY")
+    sol.thickness = depth
+    sol.offset = 1.0
+    bpy.ops.object.convert(target="MESH")
+    obj = bpy.context.view_layer.objects.active
+    vox = obj.modifiers.new("vox", "REMESH")
+    vox.mode = "VOXEL"
+    vox.voxel_size = GLYPH_REMESH
+    bpy.ops.object.convert(target="MESH")
+    obj = bpy.context.view_layer.objects.active
+    prepare(obj, merge=1e-4)
+    return obj
+
+
+def _text_mesh(label, size, depth, stroke=GLYPH_STROKE):
+    """Manifold letterforms. Spelled letter-by-letter — whole-word remesh of
+    some strings (e.g. LTE) yields non-manifold solids.
     """
-    if not FLOOR_GLYPHS or not text:
+    chars = [c for c in label if not c.isspace()]
+    if not chars:
+        return oc.box("empty_glyph", (1, 1, depth), anchor="bottom")
+    parts = []
+    cursor_x = 0.0
+    gap = 0.8
+    for ch in chars:
+        g = _glyph_char_mesh(ch, size, depth, stroke=stroke)
+        lo, hi = oc.bounds(g)
+        w = hi[0] - lo[0]
+        oc.move(g,
+                dx=cursor_x - (lo[0] + hi[0]) / 2,
+                dy=-(lo[1] + hi[1]) / 2,
+                dz=-lo[2])
+        parts.append(g)
+        cursor_x += w + gap
+    body = parts[0]
+    for p in parts[1:]:
+        oc.union(body, p)
+    return prepare(body)
+
+
+def _stroke_plus(size, depth, stroke=GLYPH_STROKE):
+    """Manifold + as crossed bars (stroke ≥0.8)."""
+    arm = size * 0.9
+    h = oc.box("plus_h", (arm, stroke, depth), anchor="bottom")
+    v = oc.box("plus_v", (stroke, arm, depth), anchor="bottom")
+    return oc.union(h, v)
+
+
+def _stroke_minus(size, depth, stroke=GLYPH_STROKE):
+    arm = size * 0.9
+    return oc.box("minus", (arm, stroke, depth), anchor="bottom")
+
+
+def _stroke_arrow(size, depth, stroke=GLYPH_STROKE):
+    """Connector / pin-1 arrow pointing +Y (stem + chevron head)."""
+    stem = oc.box("arr_stem", (stroke, size * 0.7, depth),
+                  at=(0.0, -size * 0.1, 0.0), anchor="bottom")
+
+    def chevron_bar(name, angle_deg):
+        bar = oc.box(name, (size * 0.55, stroke, depth), anchor="bottom")
+        oc.bake(bar)
+        bar.data.transform(Matrix.Rotation(math.radians(angle_deg), 4, "Z"))
+        lo, hi = oc.bounds(bar)
+        oc.move(bar,
+                dx=-(lo[0] + hi[0]) / 2,
+                dy=size * 0.32 - (lo[1] + hi[1]) / 2,
+                dz=-lo[2])
+        return bar
+
+    return oc.union(oc.union(stem, chevron_bar("arr_l", 40)), chevron_bar("arr_r", -40))
+
+
+def emboss_glyph(body, key_or_text, at, size=GLYPH_SIZE, depth=GLYPH_DEPTH,
+                 rot_z=0.0):
+    """Emboss a real glyph onto the floor (relief ≥0.6). Uses FLOOR_LABEL_TABLE
+    when key_or_text is a table id; otherwise treats the string as literal text.
+    Symbols +, -, ARROW use stroke geometry; letters use DejaVu Bold.
+    """
+    if not FLOOR_GLYPHS or not key_or_text:
         return body
-    # Pad sized for ≥1.0 mm effective stroke width when viewed / marked by hand
-    tw = max(6.0, 0.7 * size * max(len(text), 1))
-    th = max(4.0, size + 1.0)
-    pad = oc.rounded_rect(f"gp_{text}_{at[0]:.0f}_{at[1]:.0f}",
-                          (tw, th, depth), 0.6,
-                          at=(at[0], at[1], at[2]), anchor="bottom", segments=4)
-    oc.union(body, pad)
-    # Letterforms: skip boolean text (non-manifold on thin floors). Pads are the
-    # printable glyph markers; assemblers mark IDs from FLOOR_LABEL_TABLE / README.
+    if key_or_text in FLOOR_LABEL_TABLE:
+        label = FLOOR_LABEL_TABLE[key_or_text][0]
+    else:
+        label = key_or_text
+    # Stroke symbols use capital-height mm; FONT labels use Blender font size.
+    stroke_h = GLYPH_CHAR_H if abs(size - GLYPH_SIZE) < 1e-6 else size * (GLYPH_CHAR_H / GLYPH_SIZE)
+    if label in ("+", "PLUS"):
+        glyph = _stroke_plus(stroke_h, depth)
+    elif label in ("-", "−", "MINUS"):
+        glyph = _stroke_minus(stroke_h, depth)
+    elif label in ("ARROW", "▶", ">", "PIN1"):
+        glyph = _stroke_arrow(stroke_h, depth)
+    else:
+        glyph = _text_mesh(label, size, depth)
+    # Recentre XY on `at`; sink fill plane by GLYPH_EMBED for manifold union.
+    lo, hi = oc.bounds(glyph)
+    oc.move(glyph,
+            dx=at[0] - (lo[0] + hi[0]) / 2,
+            dy=at[1] - (lo[1] + hi[1]) / 2,
+            dz=(at[2] - GLYPH_EMBED) - lo[2])
+    if abs(rot_z) > 1e-6:
+        oc.bake(glyph)
+        cx, cy = at[0], at[1]
+        T = (Matrix.Translation((cx, cy, 0)) @
+             Matrix.Rotation(math.radians(rot_z), 4, "Z") @
+             Matrix.Translation((-cx, -cy, 0)))
+        glyph.data.transform(T)
+    oc.union(body, glyph)
     return body
+
+
+def emboss_label(body, key, at, size=GLYPH_SIZE, depth=GLYPH_DEPTH, rot_z=0.0):
+    """Emboss by FLOOR_LABEL_TABLE key (preferred call site)."""
+    return emboss_glyph(body, key, at, size=size, depth=depth, rot_z=rot_z)
 
 
 def locate_rib_rect(body, name, size_xy, at_xy, floor_z, h=FLOOR_RIB_H, wall=1.2):
@@ -398,11 +563,32 @@ def cap_base():
         oc.cut(b, oc.cylinder(f"cablesink{sx}", 8.0, 1.2,
                               at=(sx * (D.CAP_W / 2 - 0.6), 0, D.CAP_FLOOR + 6),
                               axis="X", segments=32))
+
+    # Floor glyphs (assembly IDs) — embossed on cavity floor when FLOOR_GLYPHS.
+    # Keep clear of pocket booleans and support posts.
+    fz = D.CAP_FLOOR
+    emboss_label(b, "KIT", (-18.0, D.KIT_AT[1] + 2.0, fz))
+    emboss_label(b, "BQ", (-18.0, D.BQ_AT[1] - 2.0, fz))
+    emboss_label(b, "WIO", (D.WIO_AT[0] - 2.0, D.WIO_AT[1] + 14.0, fz))
+    emboss_label(b, "USB", (0.0, -58.0, fz))
+    emboss_label(b, "POST", (14.0, -1.5, fz))
+    emboss_label(b, "GNSS", (-18.0, 55.0, fz))
+    emboss_label(b, "LTE", (18.0, 48.0, fz))
+    emboss_label(b, "PIN1", (22.0, D.KIT_AT[1] - 4.0, fz), rot_z=-90.0)
+    # Screw numerals clear of USB glyph at (0,-58) and crest labels
+    for key, (sx, sy) in (("SCR1", (1, 1)), ("SCR2", (-1, 1)),
+                          ("SCR3", (1, -1)), ("SCR4", (-1, -1))):
+        emboss_label(b, key, (sx * 28.0, sy * 62.0, fz))
     return prepare(b)
 
 
 def cap_lid():
-    """Print: OUTER FACE DOWN — landing-ring UP. GNSS/LTE open into cavity from z=0.
+    """Print: MATING FACE DOWN (z=0), outer UP.
+
+    P124 pocket opens on the outer face. Outer-down put ~66×113 mm of pocket
+    ceiling on supports with a small rim bed — not printable cleanly. Mating-down
+    puts the panel pocket facing +Z (no support) and accepts small supports for
+    GNSS/LTE recesses on the bed side. Not in FLIP_OUTER_DOWN.
 
     Panel pocket leaves ≥2.0 mm lid under it. GNSS past panel +Y so cover stays
     1–3 mm plastic with no metal above. Frame recessed to panel top.
@@ -422,7 +608,9 @@ def cap_lid():
                             r_i, at=(0, 0, -0.2), anchor="bottom")
     oc.cut(lid, oc.cut(outer, inner))
 
-    # P124 pocket — KEPT on collar #1 (2026-11-03); ≥2 mm lid under (CAP_LID_T - pz ≥ 2)
+    # P124 pocket — KEPT on collar #1 (2026-11-03); ≥2 mm lid under (CAP_LID_T - pz ≥ 2).
+    # Full-depth full-size pocket (panel fit). Print mating-down so this opens +Z;
+    # outer-down would need ~7k mm² supports on a small rim bed — not recommended.
     px, py, pz = D.PANEL_POCKET
     assert D.CAP_LID_T - pz >= D.PANEL_MIN_LID_UNDER
     oc.cut(lid, oc.rounded_rect("ppocket", (px, py, pz + 0.2), 1.2,
@@ -506,10 +694,18 @@ def pod_base(side="L"):
     oc.cut(b, oc.cylinder("pcable", 6.0, D.POD_WALL + 4,
                           at=(D.POD_L / 2 - D.POD_WALL / 2, 0, 12.0), axis="X"))
 
+    # Floor glyphs — cell polarity, BATT, BUZZ, pin-1 arrow toward crest cable
+    fz = D.POD_FLOOR
+    emboss_label(b, "BATT", (0.0, D.CELL_AT[1] - 18.0, fz))
+    emboss_label(b, "PLUS", (-28.0, 14.0, fz))
+    emboss_label(b, "MINUS", (28.0, 14.0, fz))
+    emboss_label(b, "BUZZ", (D.BUZZ_AT[0], D.BUZZ_AT[1] - 16.0, fz))
+    emboss_label(b, "PIN1", (D.POD_L / 2 - 14.0, 0.0, fz), rot_z=-90.0)
+
     if side == "R":
-        from mathutils import Matrix
         oc.bake(b)
         b.data.transform(Matrix.Scale(-1, 4, (1, 0, 0)))
+        # Mirror scales invert winding — flip once to restore outward normals.
         b.data.flip_normals()
     return prepare(b)
 
@@ -564,6 +760,8 @@ def cw_tub():
     reg_lip(b, D.CW_L, D.CW_W, D.PLAN_R, D.CW_H, 6.0)
     for i, (x, y) in enumerate(D.CW_CLAMP):
         oc.cut(b, oc.cylinder(f"cwcl{i}", D.CLEAR, D.CW_H + 2, at=(x, y, -1), anchor="bottom"))
+    emboss_label(b, "STEEL", (0.0, 8.0, 3.0))
+    emboss_label(b, "ONLY", (0.0, -8.0, 3.0))
     return prepare(b)
 
 
@@ -783,40 +981,43 @@ def fit_coupon():
 # ---------------------------------------------------------------- floor-layout coupons (PLA assembly aids)
 
 def cap_floor_layout():
-    """Trimmed cap floor + locating ribs + ID pads. Bed = underside (z=0); ribs UP."""
-    w, l = 60.0, 110.0
+    """Trimmed cap floor + locating ribs + real embossed IDs. Bed = underside; ribs UP."""
+    w, l = 70.0, 130.0
     floor = oc.rounded_rect("cap_floor", (w, l, 2.0), 3.0, anchor="bottom", segments=6)
     fz = 2.0
-    # Keep fences well inside the plate
     locate_rib_rect(floor, "kit", (40.0, 18.0), (0.0, -22.0), fz, wall=1.2)
     locate_rib_rect(floor, "bq", (30.0, 24.0), (0.0, 22.0), fz, wall=1.2)
     locate_rib_rect(floor, "wio", (18.0, 14.0), (18.0, -5.0), fz, wall=1.2)
     for i, py in enumerate((5.0, -8.0)):
         oc.union(floor, oc.cylinder(f"flpost{i}", 8.0, FLOOR_RIB_H,
                                     at=(0.0, py, fz), anchor="bottom", segments=16))
-    for lab, xy in (("KIT", (0, -8)), ("BQ", (0, 38)), ("WIO", (18, 8)),
-                    ("USB", (0, -48)), ("P", (10, 5)), ("1", (-22, -45)),
-                    ("2", (22, -45)), ("3", (-22, 45)), ("4", (22, 45))):
-        engrave_glyph(floor, lab, (xy[0], xy[1], fz), size=3.0)
+    # Spaced clear of locating ribs (bq fence covers |y-22|<12 near x=0).
+    for key, xy in (("KIT", (0, -8)), ("BQ", (0, 42)), ("WIO", (22, 10)),
+                    ("USB", (0, -50)), ("POST", (22, -2)),
+                    ("GNSS", (0, 58)), ("LTE", (-22, 28)),
+                    ("SCR1", (-28, -60)), ("SCR2", (28, -60)),
+                    ("SCR3", (-28, 60)), ("SCR4", (28, 42)),
+                    ("PIN1", (-26, -22))):
+        emboss_label(floor, key, (xy[0], xy[1], fz))
     return normalize_z0(prepare(floor))
 
 
 def pod_floor_layout(side="L"):
-    """Trimmed pod floor + cell cradle + buzzer fence + polarity pads."""
-    w, l = 70.0, 50.0
+    """Trimmed pod floor + cell cradle + buzzer fence + polarity glyphs."""
+    w, l = 80.0, 58.0
     floor = oc.rounded_rect(f"pod_{side}_floor", (w, l, 2.0), 3.0, anchor="bottom", segments=6)
     fz = 2.0
-    # Cell rails (short, inside plate)
     for sy in (-1, 1):
         oc.union(floor, oc.box(f"cellrail{sy}", (50.0, 1.4, FLOOR_RIB_H),
                                at=(0.0, sy * 11.0, fz), anchor="bottom"))
-    for sx, lab in ((-1, "+"), (1, "-")):
+    for sx, key in ((-1, "PLUS"), (1, "MINUS")):
         oc.union(floor, oc.box(f"cellend{sx}", (1.6, 18.0, FLOOR_RIB_H),
                                at=(sx * 28.0, 0.0, fz), anchor="bottom"))
-        engrave_glyph(floor, lab, (sx * 22.0, 16.0, fz), size=4.0)
-    engrave_glyph(floor, "CELL", (0.0, -18.0, fz), size=3.0)
-    locate_rib_rect(floor, "buzz", (20.0, 20.0), (18.0, 12.0), fz, wall=1.2)
-    engrave_glyph(floor, "BUZZ", (18.0, -6.0, fz), size=3.0)
+        emboss_label(floor, key, (sx * 22.0, 18.0, fz))
+    emboss_label(floor, "BATT", (0.0, -20.0, fz))
+    locate_rib_rect(floor, "buzz", (20.0, 20.0), (22.0, 12.0), fz, wall=1.2)
+    emboss_label(floor, "BUZZ", (-18.0, 18.0, fz))
+    emboss_label(floor, "PIN1", (30.0, -18.0, fz), rot_z=-90.0)
     if side == "R":
         oc.bake(floor)
         floor.data.transform(Matrix.Scale(-1, 4, (1, 0, 0)))
@@ -825,12 +1026,12 @@ def pod_floor_layout(side="L"):
 
 
 def cw_floor_layout():
-    """CW floor plate with steel-pack outline pads."""
-    w, l = 60.0, 50.0
+    """CW floor plate with steel-pack outline + STEEL/ONLY glyphs."""
+    w, l = 70.0, 55.0
     floor = oc.rounded_rect("cw_floor", (w, l, 2.0), 3.0, anchor="bottom", segments=6)
-    locate_rib_rect(floor, "steel", (48.0, 38.0), (0, 0), 2.0, h=2.5, wall=1.5)
-    engrave_glyph(floor, "STEEL", (0, 10, 2.0), size=4.0)
-    engrave_glyph(floor, "ONLY", (0, -10, 2.0), size=4.0)
+    locate_rib_rect(floor, "steel", (50.0, 40.0), (0, 0), 2.0, h=2.5, wall=1.5)
+    emboss_label(floor, "STEEL", (0, 12, 2.0))
+    emboss_label(floor, "ONLY", (0, -12, 2.0))
     return normalize_z0(prepare(floor))
 
 
@@ -840,7 +1041,7 @@ PART_META = {
     # name: orientation, load_path, material_field, farmer_swappable, rf_near
     # orientation string = intended PRINT orientation; STL z=0 is the bed face.
     "cap_base": ("PRINT: cavity UP; bed=underside z=0", "clamp→inserts WITH layers", "ASA/PETG", False, True),
-    "cap_lid": ("PRINT: OUTER face DOWN z=0 (flipped on export); GNSS/LTE open +Z", "lid screws INTO base", "ASA/PETG", True, True),
+    "cap_lid": ("PRINT: MATING face DOWN z=0 (as-built); outer UP; P124 pocket +Z", "lid screws INTO base", "ASA/PETG", True, True),
     "panel_p124": ("PRINT: flat; bed=either face z=0", "bonded in pocket — P124 KEPT collar #1", "bought", True, True),
     "pod_L_base": ("PRINT: cavity UP; bed=underside z=0", "lid screws; cell cradle", "ASA/PETG", False, True),
     "pod_L_lid": ("PRINT: OUTER face DOWN z=0 (flipped on export)", "lid screws; ribs clear cell", "ASA/PETG", True, True),
@@ -872,7 +1073,8 @@ PART_META = {
 
 def export_part(obj, path, meta_key=None):
     """Export STL in intended PRINT orientation: bed face at z=0."""
-    prepare(obj)
+    weld = 0.008 if meta_key in GLYPH_EXPORT_WELD else 1e-4
+    prepare(obj, merge=weld)
     flipped = False
     if meta_key in FLIP_OUTER_DOWN:
         flip_outer_down(obj)
@@ -884,11 +1086,13 @@ def export_part(obj, path, meta_key=None):
     oc.export_stl(obj, path)
     stl = check_stl(path)
     tag = "OK" if wt["watertight"] and stl["watertight"] else "LOOK"
+    bed = "OUTER" if flipped else ("MATING" if meta_key == "cap_lid" else "as-built")
     print(f"{tag}  {os.path.basename(path)}: {[round(x,1) for x in dims]}  bad={wt['bad_edges']}"
-          f"  bed_z0={'OUTER' if flipped else 'as-built'}")
+          f"  bed_z0={bed}  normals_out={wt['normals_outward']}")
     body = {"size_mm": dims, "watertight": wt, "stl": stl, "pass": True,
             "stl_path": os.path.relpath(path, _D5),
             "export_flipped_outer_down": flipped,
+            "normals_outward": wt["normals_outward"],
             "bed_face_at_z0": True}
     if meta_key and meta_key in PART_META:
         o, load, mat, swap, rf = PART_META[meta_key]
@@ -1079,7 +1283,7 @@ def main():
     print("CLEARANCES:", json.dumps(clearances, indent=2))
 
     report = {
-        "revision": "D5_print_orient_floor_panel_kept",
+        "revision": "D5_real_glyphs_caplid_mating_down",
         "assumptions": D.ASSUMPTIONS,
         "fit_height_note": D.FIT_HEIGHT_NOTE,
         "cody_flags": D.CODY_FLAGS,
@@ -1088,13 +1292,31 @@ def main():
         "panel_decision_date": D.PANEL_DECISION_DATE,
         "colourway_proposal": D.COLOURWAY_PROPOSAL,
         "floor_glyphs": FLOOR_GLYPHS,
+        "floor_glyph_spec": {
+            "char_h_mm": GLYPH_CHAR_H,
+            "blender_font_size": GLYPH_SIZE,
+            "stroke_mm": GLYPH_STROKE,
+            "relief_mm": round(GLYPH_DEPTH - GLYPH_EMBED, 2),
+            "solidify_depth_mm": GLYPH_DEPTH,
+            "font": GLYPH_FONT,
+            "on_bases": True,
+            "on_floor_layouts": True,
+        },
         "floor_label_table": {k: v[0] for k, v in FLOOR_LABEL_TABLE.items()},
         "clearances": clearances,
         "clamp_orientation": D.CLAMP_ORIENTATION,
         "print_orientation_note": (
-            "All STLs exported with bed face at z=0. Lids in FLIP_OUTER_DOWN are "
-            "flipped 180° about X on export so OUTER face is on the bed; GNSS/LTE "
-            "cavity openings face +Z (away from bed)."
+            "All STLs exported with bed face at z=0. "
+            "cap_lid: MATING face on bed (as-built) — P124 pocket faces +Z; "
+            "outer-down rejected (large panel ceiling + small rim bed). "
+            "pod/cw lids: rotated 180° about X on export (recalc normals, no "
+            "flip_normals) so OUTER face is on the bed."
+        ),
+        "cap_lid_orientation_rationale": (
+            "Outer-down leaves the P124 pocket open on the bed (~66×113 mm ceiling "
+            "needing support, rim bed area much smaller). Mating-down prints the "
+            "panel pocket facing +Z (no support); GNSS/LTE recesses may need small "
+            "tree supports on the bed side. Pocket depth kept at PANEL_POCKET for fit."
         ),
         "layout": D.LAYOUT,
         "pockets": {
@@ -1135,11 +1357,15 @@ def main():
         "pass": True,
     }
 
+    coupon_dir = os.path.join(_D5, "coupons")
+    os.makedirs(coupon_dir, exist_ok=True)
     for name, fn, meta in builders:
         oc.reset()
         obj = fn()
         path = os.path.join(stl_dir, f"{name}.stl")
         report["bodies"][name] = export_part(obj, path, meta)
+        if name in ("cap_floor_layout", "pod_floor_layout", "fit_coupon", "label_coupon"):
+            shutil.copy2(path, os.path.join(coupon_dir, f"{name}.stl"))
 
     plates = build_plate_layout_doc(plates_dir)
     report["plates"] = {
@@ -1210,7 +1436,7 @@ def main():
     print("Wio orientation:", D.WIO_ORIENTATION)
     print("FIT_HEIGHT_NOTE:", D.FIT_HEIGHT_NOTE)
     print("CODY_FLAGS:", D.CODY_FLAGS)
-    print("RESULT: PASS (print-orient + floor layout + P124 KEPT)")
+    print("RESULT: PASS (real glyphs + cap_lid mating-down + P124 KEPT)")
 
 
 if __name__ == "__main__":
