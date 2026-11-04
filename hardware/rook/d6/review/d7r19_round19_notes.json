@@ -1,0 +1,32 @@
+{
+  "round": "D7r19",
+  "head_parent": "debb5de",
+  "review_skin_only": true,
+  "print_stls_untouched": true,
+  "changes": [
+    "TOP: 1.5 mm grooves at cap↔pod joints (±27.2°) through shell to strap outer; D4 station plan widths (mid-pod notch ~67, outer flare ~79); R3 plan-corner bevel; 4× Ø2 mm dark screw heads per pod lid at ±31°/±39° clear of dot/001",
+    "SIDE: lid inset 3 mm + lip drop 4 mm in section; pod-end shoulder flare from D4 width curve; heights unchanged cap 48.2 / pod 25",
+    "001: 6 mm tall × 3.7 mm wide, stroke 1.0, depth 0.6; letter-up −X; L→R increasing +Y = 0,0,1 both lids",
+    "ORANGE: two lid dots only (no cap tab)"
+  ],
+  "literal_reads": {
+    "top_ref": "pod | groove | cap | groove | pod; navy strips flush on cap; orange dots; 001 on both lids; screw heads at lid corners; outer ends notch/flare vs strap",
+    "side_along_strap": "three units with vertical grooves to strap; tall cap ~48 mm, pods ~25 mm; stepped roof; strap arc intact",
+    "lid001_L": "L→R 0,0,1 upright sharp pockets",
+    "lid001_R": "L→R 0,0,1 upright sharp pockets",
+    "pod_unit_R": "groove at cap joint; orange dot; 001; four corner screws; plan width flare toward strap end"
+  },
+  "vs_d4": {
+    "units": "now three separate units with real grooves (was one slab)",
+    "plan": "D4 station widths drive notch + outer flare; R3 corners",
+    "side": "lid inset+lip in section; shoulder flare; heights kept",
+    "gaps": "YZ side silhouette still under-emphasizes X-inset (needs plan/oblique to read lip); screw heads subtle in ortho studio"
+  },
+  "checks": {
+    "assembly_check": "144/144",
+    "hygiene": "PASS",
+    "cap_h_mm": 48.2,
+    "pod_h_mm": 25.0,
+    "arc_deg": [-43.5, 45.0]
+  }
+}

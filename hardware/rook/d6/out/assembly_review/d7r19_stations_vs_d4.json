@@ -1,0 +1,596 @@
+{
+  "round": "D7r19",
+  "profile_path": "/agent/repos/opencollar/hardware/rook/d6/review/d4_profile.json",
+  "d4_r_outer": 235.56,
+  "d6_r_outer": 228.5,
+  "d6_angle_span_deg": [
+    -43.5,
+    45.0
+  ],
+  "d6_outer_arc_mm": 352.9,
+  "d4_angle_span_deg": [
+    -43.47,
+    44.95
+  ],
+  "d4_outer_arc_mm": 363.5,
+  "arc_driver": "review shell matches D4 \u221243.5\u2026+45.0\u00b0 (\u2248363 mm outer arc at D4 r). Print pod_L/R_base tips |Y|\u2248183 (~\u00b153.7\u00b0) are hidden under shell; that tip would set the min arc if the shell had to cover exposed pods.",
+  "cap_roof_need_mm": 48.25,
+  "cap_height_driver": "cap_lid panel land z=41.4 (+1.5 skin); cannot reach ~39 mm (1.4\u00d7D4) without lowering the land / lid stack \u2014 see review/height_options.md",
+  "pod_roof_mm": 25.0,
+  "pod_height_driver": "review target \u22481.4\u00d7 D4 pod (print lids hidden; STL stack still 26.4)",
+  "mid_landing_mm": 36.62,
+  "stage_drop_mm": 11.62,
+  "cap_block": {
+    "half_angle_deg": 15.85,
+    "arc_mm": 126.4,
+    "set_by": "panel land 116.0 mm + 4.0 mm wall",
+    "d4_half_angle_deg": 17.0,
+    "d4_arc_mm": 139.8
+  },
+  "step_angles_deg": {
+    "cap_end": 15.85,
+    "ramp1_end": 18.77,
+    "landing_end": 24.27,
+    "ramp2_end": 27.18
+  },
+  "silhouette_polyline": [
+    {
+      "a": -40,
+      "h": 25.0,
+      "drv": "review target \u22481.4\u00d7 D4 pod"
+    },
+    {
+      "a": -36,
+      "h": 25.0,
+      "drv": "review target \u22481.4\u00d7 D4 pod"
+    },
+    {
+      "a": -30,
+      "h": 25.0,
+      "drv": "review target \u22481.4\u00d7 D4 pod"
+    },
+    {
+      "a": -27,
+      "h": 25.72,
+      "drv": "stage2 45\u00b0 ramp \u226411.6mm"
+    },
+    {
+      "a": -24,
+      "h": 36.62,
+      "drv": "mid landing 36.6mm"
+    },
+    {
+      "a": -21,
+      "h": 36.62,
+      "drv": "mid landing 36.6mm"
+    },
+    {
+      "a": -18,
+      "h": 39.68,
+      "drv": "stage1 45\u00b0 ramp \u226411.6mm"
+    },
+    {
+      "a": -15,
+      "h": 48.25,
+      "drv": "cap_lid panel land z=41.4"
+    },
+    {
+      "a": -10,
+      "h": 48.25,
+      "drv": "cap_lid panel land z=41.4"
+    },
+    {
+      "a": 0,
+      "h": 48.25,
+      "drv": "cap_lid panel land z=41.4"
+    },
+    {
+      "a": 10,
+      "h": 48.25,
+      "drv": "cap_lid panel land z=41.4"
+    },
+    {
+      "a": 15,
+      "h": 48.25,
+      "drv": "cap_lid panel land z=41.4"
+    },
+    {
+      "a": 18,
+      "h": 39.68,
+      "drv": "stage1 45\u00b0 ramp \u226411.6mm"
+    },
+    {
+      "a": 21,
+      "h": 36.62,
+      "drv": "mid landing 36.6mm"
+    },
+    {
+      "a": 24,
+      "h": 36.62,
+      "drv": "mid landing 36.6mm"
+    },
+    {
+      "a": 27,
+      "h": 25.72,
+      "drv": "stage2 45\u00b0 ramp \u226411.6mm"
+    },
+    {
+      "a": 30,
+      "h": 25.0,
+      "drv": "review target \u22481.4\u00d7 D4 pod"
+    },
+    {
+      "a": 36,
+      "h": 25.0,
+      "drv": "review target \u22481.4\u00d7 D4 pod"
+    },
+    {
+      "a": 40,
+      "h": 25.0,
+      "drv": "review target \u22481.4\u00d7 D4 pod"
+    }
+  ],
+  "d4_cap_max_mm": 27.6,
+  "bottom_rel_mm": -4.9,
+  "chamfer_mm": 1.8,
+  "plan_corner_r_mm": 3.0,
+  "joint_groove_mm": 1.5,
+  "joint_angle_deg": 27.18,
+  "lid_inset_mm": 3.0,
+  "lip_drop_mm": 4.0,
+  "build": "extruded arc + D4 plan width (notch/flare); 1.5 mm cap\u2194pod grooves to strap; lid inset 3 + lip; R3 corners; shoulder flare; 4\u00d7\u00d82 screws/pod; straight-prism 001 6 mm letter-up \u2212X; auto_smooth 30\u00b0",
+  "id_001": {
+    "L": {
+      "angle_deg": -35.5,
+      "dot_angle_deg": -29.0,
+      "clearance_to_dot_mm": 25.9,
+      "clearance_to_ramp_mm": 33.2,
+      "modifier_applied": "id_001_L_0/1/2 (3\u00d7 EXACT BOOLEAN, straight roof-normal prisms)",
+      "object": "review_shell",
+      "verified_in_mesh": true,
+      "measured_depth_mm": 0.6,
+      "target_depth_mm": 0.6,
+      "height_mm": 6.0,
+      "width_mm": 3.7,
+      "stroke_mm": 1.0,
+      "material": "same charcoal as lid",
+      "reads_in": "D4 ref top (+Z, screen-up=\u2212X, screen-right=+Y): L\u2192R increasing +Y = 0,0,1; tops toward \u2212X; both lids identical",
+      "glyph_gap_mm": 1.2,
+      "glyphs": "straight prism 0=rounded-rect ring 3.7\u00d76, 1=bar+flag; flat bottom roof\u22120.6; no channel",
+      "glyph_centres_xyz": [
+        [
+          0.0,
+          -150.36,
+          -30.457
+        ],
+        [
+          0.0,
+          -146.371,
+          -27.612
+        ],
+        [
+          -1.029,
+          -142.4,
+          -24.779
+        ]
+      ],
+      "glyph_placement": [
+        {
+          "glyph": "0",
+          "along_offset_mm": -4.3,
+          "world_xyz": [
+            0.0,
+            -150.651,
+            -30.05
+          ],
+          "normal": [
+            0.0,
+            -0.5807,
+            0.8141
+          ]
+        },
+        {
+          "glyph": "0",
+          "along_offset_mm": 0.6,
+          "world_xyz": [
+            0.0,
+            -146.662,
+            -27.205
+          ],
+          "normal": [
+            0.0,
+            -0.5807,
+            0.8141
+          ]
+        },
+        {
+          "glyph": "1",
+          "along_offset_mm": 4.9,
+          "world_xyz": [
+            0.0,
+            -143.161,
+            -24.708
+          ],
+          "normal": [
+            0.0,
+            -0.5807,
+            0.8141
+          ]
+        }
+      ],
+      "y_order_sign": 1,
+      "y_order_note": "0,0,1 with increasing world Y (ref screen-right=+Y)"
+    },
+    "R": {
+      "angle_deg": 35.5,
+      "dot_angle_deg": 29.0,
+      "clearance_to_dot_mm": 25.9,
+      "clearance_to_ramp_mm": 33.2,
+      "modifier_applied": "id_001_R_0/1/2 (3\u00d7 EXACT BOOLEAN, straight roof-normal prisms)",
+      "object": "review_shell",
+      "verified_in_mesh": true,
+      "measured_depth_mm": 0.6,
+      "target_depth_mm": 0.6,
+      "height_mm": 6.0,
+      "width_mm": 3.7,
+      "stroke_mm": 1.0,
+      "material": "same charcoal as lid",
+      "reads_in": "D4 ref top (+Z, screen-up=\u2212X, screen-right=+Y): L\u2192R increasing +Y = 0,0,1; tops toward \u2212X; both lids identical",
+      "glyph_gap_mm": 1.2,
+      "glyphs": "straight prism 0=rounded-rect ring 3.7\u00d76, 1=bar+flag; flat bottom roof\u22120.6; no channel",
+      "glyph_centres_xyz": [
+        [
+          0.0,
+          143.359,
+          -25.463
+        ],
+        [
+          0.0,
+          147.348,
+          -28.309
+        ],
+        [
+          -1.029,
+          151.32,
+          -31.142
+        ]
+      ],
+      "glyph_placement": [
+        {
+          "glyph": "0",
+          "along_offset_mm": -4.3,
+          "world_xyz": [
+            0.0,
+            143.649,
+            -25.056
+          ],
+          "normal": [
+            0.0,
+            0.5807,
+            0.8141
+          ]
+        },
+        {
+          "glyph": "0",
+          "along_offset_mm": 0.6,
+          "world_xyz": [
+            0.0,
+            147.639,
+            -27.902
+          ],
+          "normal": [
+            0.0,
+            0.5807,
+            0.8141
+          ]
+        },
+        {
+          "glyph": "1",
+          "along_offset_mm": 4.9,
+          "world_xyz": [
+            0.0,
+            151.139,
+            -30.399
+          ],
+          "normal": [
+            0.0,
+            0.5807,
+            0.8141
+          ]
+        }
+      ],
+      "y_order_sign": 1,
+      "y_order_note": "0,0,1 with increasing world Y (ref screen-right=+Y)"
+    }
+  },
+  "pod_screws": {
+    "L": [
+      {
+        "angle_deg": -31.0,
+        "x_mm": -27.85,
+        "dia_mm": 2.0,
+        "proud_mm": 0.4
+      },
+      {
+        "angle_deg": -31.0,
+        "x_mm": 27.85,
+        "dia_mm": 2.0,
+        "proud_mm": 0.4
+      },
+      {
+        "angle_deg": -39.0,
+        "x_mm": -31.06,
+        "dia_mm": 2.0,
+        "proud_mm": 0.4
+      },
+      {
+        "angle_deg": -39.0,
+        "x_mm": 31.06,
+        "dia_mm": 2.0,
+        "proud_mm": 0.4
+      }
+    ],
+    "R": [
+      {
+        "angle_deg": 31.0,
+        "x_mm": -26.29,
+        "dia_mm": 2.0,
+        "proud_mm": 0.4
+      },
+      {
+        "angle_deg": 31.0,
+        "x_mm": 26.29,
+        "dia_mm": 2.0,
+        "proud_mm": 0.4
+      },
+      {
+        "angle_deg": 39.0,
+        "x_mm": -29.96,
+        "dia_mm": 2.0,
+        "proud_mm": 0.4
+      },
+      {
+        "angle_deg": 39.0,
+        "x_mm": 29.96,
+        "dia_mm": 2.0,
+        "proud_mm": 0.4
+      }
+    ]
+  },
+  "dot_angle_deg": 29.0,
+  "id_001_angle_deg": 35.5,
+  "cap_roof_note": "D7r19 units. Cap 48.2 / mid 36.6 / pod 25; grooves @ \u00b127.2\u00b0; lid inset 3.0; R3; 001 6 mm at \u00b135.5\u00b0 (letter-up \u2212X); dots \u00b129.0\u00b0; 4 screws/pod; navy strips; orange=dots only.",
+  "n_stations_loft": "n/a (extruded solids)",
+  "hidden": [
+    "cap_base",
+    "cap_lid",
+    "fairing_cap_pod_L",
+    "fairing_cap_pod_R",
+    "fairing_cw_L",
+    "fairing_cw_R",
+    "fairing_pod_strap_L",
+    "fairing_pod_strap_R",
+    "pod_L_base",
+    "pod_L_lid",
+    "pod_R_base",
+    "pod_R_lid",
+    "saddle"
+  ],
+  "stations_vs_d4": [
+    {
+      "angle_d4_deg": -40.52,
+      "angle_d6_deg": -40.55,
+      "d4_width_mm": 77.7,
+      "d6_lid_width_mm": 71.7,
+      "d6_skirt_width_mm": 77.7,
+      "d4_roof_mm": 17.3,
+      "d6_roof_mm": 25.0,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 7.7,
+      "height_driver": "review target \u22481.4\u00d7 D4 pod (print lids hidden; STL stack still 26.4)"
+    },
+    {
+      "angle_d4_deg": -34.62,
+      "angle_d6_deg": -34.64,
+      "d4_width_mm": 79.3,
+      "d6_lid_width_mm": 73.3,
+      "d6_skirt_width_mm": 92.89,
+      "d4_roof_mm": 17.5,
+      "d6_roof_mm": 25.0,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 7.5,
+      "height_driver": "review target \u22481.4\u00d7 D4 pod (print lids hidden; STL stack still 26.4)"
+    },
+    {
+      "angle_d4_deg": -28.73,
+      "angle_d6_deg": -28.75,
+      "d4_width_mm": 67.0,
+      "d6_lid_width_mm": 61.0,
+      "d6_skirt_width_mm": 71.64,
+      "d4_roof_mm": 15.6,
+      "d6_roof_mm": 25.0,
+      "d4_bottom_rel_mm": -4.6,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 9.4,
+      "height_driver": "review target \u22481.4\u00d7 D4 pod (print lids hidden; STL stack still 26.4)"
+    },
+    {
+      "angle_d4_deg": -22.84,
+      "angle_d6_deg": -22.85,
+      "d4_width_mm": 77.0,
+      "d6_lid_width_mm": 72.53,
+      "d6_skirt_width_mm": 77.0,
+      "d4_roof_mm": 17.5,
+      "d6_roof_mm": 36.62,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 19.12,
+      "height_driver": "mid landing 36.6mm"
+    },
+    {
+      "angle_d4_deg": -16.94,
+      "angle_d6_deg": -16.95,
+      "d4_width_mm": 69.3,
+      "d6_lid_width_mm": 66.91,
+      "d6_skirt_width_mm": 69.3,
+      "d4_roof_mm": 26.5,
+      "d6_roof_mm": 43.88,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 17.38,
+      "height_driver": "stage1 45\u00b0 ramp \u226411.6mm"
+    },
+    {
+      "angle_d4_deg": -11.05,
+      "angle_d6_deg": -11.05,
+      "d4_width_mm": 69.3,
+      "d6_lid_width_mm": 67.3,
+      "d6_skirt_width_mm": 69.3,
+      "d4_roof_mm": 27.6,
+      "d6_roof_mm": 48.25,
+      "d4_bottom_rel_mm": -1.4,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 20.65,
+      "height_driver": "cap_lid panel land z=41.4 (+1.5 skin); cannot reach ~39 mm (1.4\u00d7D4) without lowering the land / lid stack \u2014 see review/height_options.md"
+    },
+    {
+      "angle_d4_deg": -5.15,
+      "angle_d6_deg": -5.15,
+      "d4_width_mm": 70.0,
+      "d6_lid_width_mm": 68.0,
+      "d6_skirt_width_mm": 70.0,
+      "d4_roof_mm": 25.3,
+      "d6_roof_mm": 48.25,
+      "d4_bottom_rel_mm": -3.6,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 22.95,
+      "height_driver": "cap_lid panel land z=41.4 (+1.5 skin); cannot reach ~39 mm (1.4\u00d7D4) without lowering the land / lid stack \u2014 see review/height_options.md"
+    },
+    {
+      "angle_d4_deg": 0.74,
+      "angle_d6_deg": 0.75,
+      "d4_width_mm": 70.0,
+      "d6_lid_width_mm": 68.0,
+      "d6_skirt_width_mm": 70.0,
+      "d4_roof_mm": 23.9,
+      "d6_roof_mm": 48.25,
+      "d4_bottom_rel_mm": -3.8,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 24.35,
+      "height_driver": "cap_lid panel land z=41.4 (+1.5 skin); cannot reach ~39 mm (1.4\u00d7D4) without lowering the land / lid stack \u2014 see review/height_options.md"
+    },
+    {
+      "angle_d4_deg": 6.64,
+      "angle_d6_deg": 6.66,
+      "d4_width_mm": 70.0,
+      "d6_lid_width_mm": 68.0,
+      "d6_skirt_width_mm": 70.0,
+      "d4_roof_mm": 27.5,
+      "d6_roof_mm": 48.25,
+      "d4_bottom_rel_mm": -3.3,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 20.75,
+      "height_driver": "cap_lid panel land z=41.4 (+1.5 skin); cannot reach ~39 mm (1.4\u00d7D4) without lowering the land / lid stack \u2014 see review/height_options.md"
+    },
+    {
+      "angle_d4_deg": 12.53,
+      "angle_d6_deg": 12.55,
+      "d4_width_mm": 69.3,
+      "d6_lid_width_mm": 67.3,
+      "d6_skirt_width_mm": 69.3,
+      "d4_roof_mm": 27.6,
+      "d6_roof_mm": 48.25,
+      "d4_bottom_rel_mm": -0.5,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 20.65,
+      "height_driver": "cap_lid panel land z=41.4 (+1.5 skin); cannot reach ~39 mm (1.4\u00d7D4) without lowering the land / lid stack \u2014 see review/height_options.md"
+    },
+    {
+      "angle_d4_deg": 18.42,
+      "angle_d6_deg": 18.45,
+      "d4_width_mm": 76.7,
+      "d6_lid_width_mm": 73.78,
+      "d6_skirt_width_mm": 76.7,
+      "d4_roof_mm": 25.6,
+      "d6_roof_mm": 37.9,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 12.3,
+      "height_driver": "stage1 45\u00b0 ramp \u226411.6mm"
+    },
+    {
+      "angle_d4_deg": 24.32,
+      "angle_d6_deg": 24.35,
+      "d4_width_mm": 77.0,
+      "d6_lid_width_mm": 72.0,
+      "d6_skirt_width_mm": 77.0,
+      "d4_roof_mm": 17.5,
+      "d6_roof_mm": 36.28,
+      "d4_bottom_rel_mm": -4.7,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 18.78,
+      "height_driver": "stage2 45\u00b0 ramp \u226411.6mm"
+    },
+    {
+      "angle_d4_deg": 30.21,
+      "angle_d6_deg": 30.25,
+      "d4_width_mm": 67.0,
+      "d6_lid_width_mm": 61.0,
+      "d6_skirt_width_mm": 74.98,
+      "d4_roof_mm": 15.8,
+      "d6_roof_mm": 25.0,
+      "d4_bottom_rel_mm": -4.6,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 9.2,
+      "height_driver": "review target \u22481.4\u00d7 D4 pod (print lids hidden; STL stack still 26.4)"
+    },
+    {
+      "angle_d4_deg": 36.11,
+      "angle_d6_deg": 36.15,
+      "d4_width_mm": 79.4,
+      "d6_lid_width_mm": 73.4,
+      "d6_skirt_width_mm": 91.62,
+      "d4_roof_mm": 17.5,
+      "d6_roof_mm": 25.0,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 7.5,
+      "height_driver": "review target \u22481.4\u00d7 D4 pod (print lids hidden; STL stack still 26.4)"
+    },
+    {
+      "angle_d4_deg": 42.0,
+      "angle_d6_deg": 42.05,
+      "d4_width_mm": 72.2,
+      "d6_lid_width_mm": 66.2,
+      "d6_skirt_width_mm": 72.2,
+      "d4_roof_mm": 17.3,
+      "d6_roof_mm": 25.0,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 7.7,
+      "height_driver": "review target \u22481.4\u00d7 D4 pod (print lids hidden; STL stack still 26.4)"
+    }
+  ],
+  "end_shoulder_d4": {
+    "method": "arc distance from the last roofline bin at pod plateau height (~17 mm) to the housing end (top ~1.5 mm above strap). Roofline bins are 4.5 mm wide, so +/-4.5 mm.",
+    "L": {
+      "plateau_arc_mm": -167.3,
+      "plateau_top_mm": 17.1,
+      "end_arc_mm": -176.4,
+      "end_top_mm": 1.7,
+      "drop_arc_mm": 9.1
+    },
+    "R": {
+      "plateau_arc_mm": 164.3,
+      "plateau_top_mm": 17.3,
+      "end_arc_mm": 182.5,
+      "end_top_mm": 1.4,
+      "drop_arc_mm": 18.2,
+      "note": "R falls 17.3 -> 8.2 -> 5.3 -> 3.0 -> 1.4: a softer, longer tail than L"
+    },
+    "cap_to_pod_step": "roof steps from ~17.5 (pod) to ~22.4-27.6 (cap) at arc about +/-79 mm; pod tops dip to ~15.2 mm in the middle of the pod (arc about +/-120 mm)"
+  },
+  "solar_cut": false
+}

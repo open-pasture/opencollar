@@ -1,0 +1,27 @@
+{
+  "round": "D7r16",
+  "base_head": "9421609",
+  "keeps": [
+    "arc -43.5..+45.0",
+    "two-stage drop ≤12 mm (48.25 / 36.62 / 25)",
+    "closed underside",
+    "navy strips as layout (no lit outline / no centre rib)",
+    "Ø5 flat orange dots 0.3 proud, no recess",
+    "print STLs + assembly_check 144/144 untouched"
+  ],
+  "fixes": {
+    "001": "polygon glyphs (0=rounded-rect ring, 1=bar+flag); WORLD +X L→R on BOTH lids (no mirror); flat pod roof ~35.5° (31–40°); cut AFTER bevel; measured depth ≈0.59 mm; ≥1.2 mm gaps; ≥3 mm clear of ramp + orange",
+    "streaks_creases": "bevel weights = ±X rails + tier-break lips + corners only (never every dense across-roof edge); mesh cleanup after boolean; flat shade planar roofs; auto_smooth 30°",
+    "navy": "arc-inlaid (not flat world-Z): pocket boolean into shell; strip top ≈0.06 mm below local roof; chamfer-free planar top",
+    "tier_chamfer": "1.8 mm WEIGHT bevel on every tier-break lip + side rails; stages ≤12 mm; heights 48.2/25 stay",
+    "ripples": "arc-concentric extruded slabs; denser flat stations (0.15°); no subdiv; planar/arc roofs flat-shaded"
+  },
+  "verify": {
+    "lid001_L": "reads 001 L→R top-down, flat roof, no stray tab",
+    "lid001_R": "reads 001 L→R top-down, flat roof, no stray tab",
+    "navy_inset_mm": 0.06,
+    "assembly_check": "144/144",
+    "hygiene": "PASS"
+  },
+  "heights_mm": {"cap": 48.25, "mid": 36.62, "pod": 25.0, "stage": 11.62}
+}
