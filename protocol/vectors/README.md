@@ -7,7 +7,7 @@ The files are written by the Rust reference in `crates/op-protocol` (Apache-2.0)
 ```sh
 OP_WRITE_VECTORS=1 cargo test -p op-protocol --test vectors --test vectors_v2   # in openpasture
 cp -R crates/op-protocol/vectors/. ../opencollar/protocol/vectors/
-cp ../opencollar/protocol/vectors/{commands,config,shapes,geofence,slots,cue,rearm}.json ../opencollar/firmware/tests/host/vectors/
+cp ../opencollar/protocol/vectors/{commands,config,shapes,geofence,slots,cue,rearm,report}.json ../opencollar/firmware/tests/host/vectors/
 ```
 
 Without `OP_WRITE_VECTORS` the same tests fail when a file is out of date, and check op-protocol against every case.
@@ -86,6 +86,19 @@ Same shape, plus `collar_id` and `held_version`: the collar's own id and the con
 `{ seed_hex, public_key, collar_id, held_rearm_seq, shutoff_at, trusted_now, cases: [{ name, wire, valid, code?, canonical?, held_rearm_seq?, shutoff_at?, trusted_now?, enforcement?, no_trusted_time? }] }`
 
 Signed rearm commands (cap `rearm`). Verify like config (canonical JSON, Ed25519, same server key), then check: `wrong_collar`; `stale` when `rearm_seq ≤ held` or `shutoff_at` ≠ persisted shut-off (or enforcement is on); `expired` when `expires_at` is before trusted time. Case fields override the file defaults. `no_trusted_time: true` means the collar has no GNSS clock: an otherwise valid command is accepted even if `expires_at` is in the past (exception to `not_now`). Host tests also cover reboot persistence, serial `rearm`, fence-change-does-not-clear, and that `rearm_seq` never lowers.
+
+### report.json
+
+`{ note, cases: [{ name, wire }] }`: exact JSON fragments produced by the
+firmware report encoders for farmer-app telemetry. `wire` is compared
+byte-for-byte in host tests.
+
+| Case | Means |
+|---|---|
+| `battery_unknown_omitted` | empty string: unknown battery is omitted (never `"battery":0`) |
+| `battery_known` / `battery_known_zero` | top-level `"battery":…` when measured |
+| `fix_with_hdop` / `fix_without_hdop` | one `fixes[]` element; `accuracy_m` always; existing `hdop` only when GNSS provides it on a valid fix |
+| `health_empty` / `health_last_cue_at` / `health_cell_rsrp_only` / `health_last_cue_and_cell_rsrp` | `health` keys this module owns; `last_cue_at` is RFC3339 Z and **lost on reboot**; `cell.rsrp_dbm` only after `report_set_signal_dbm` (no flat `health.rsrp_dbm`) |
 
 ## v2
 
