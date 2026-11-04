@@ -26,6 +26,14 @@ config ROOK_LTE_SEC_TAG
 	int "Modem TLS security tag holding the server's CA"
 	default 42
 
+config ROOK_LTE_CA_PEM
+	string "Root CA PEM embedded and written to the sec tag before attach (empty: none)"
+	default ""
+	help
+	  Path relative to firmware/, e.g. "rook/certs/isrg-root-x1.pem". At the
+	  first attach after boot (modem offline) the reporter compares the sec
+	  tag's CA with it and writes it when missing or different.
+
 config ROOK_LTE_APN
 	string "APN (empty: network default)"
 	default "hologram"

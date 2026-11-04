@@ -18,6 +18,7 @@
 #include "rook_queue.h"
 #include "rook_report.h"
 #include "rook_state.h"
+#include "rook_ca.h"
 
 LOG_MODULE_REGISTER(rook_lte, LOG_LEVEL_INF);
 
@@ -189,9 +190,18 @@ static int exchange(const char *method, const char *suffix, const char *req_body
 		sec_tag_t tags[] = {CONFIG_ROOK_LTE_SEC_TAG};
 		int verify = ZSOCK_TLS_PEER_VERIFY_REQUIRED;
 
-		zsock_setsockopt(fd, ZSOCK_SOL_TLS, ZSOCK_TLS_SEC_TAG_LIST, tags, sizeof(tags));
-		zsock_setsockopt(fd, ZSOCK_SOL_TLS, ZSOCK_TLS_HOSTNAME, url.host, strlen(url.host));
-		zsock_setsockopt(fd, ZSOCK_SOL_TLS, ZSOCK_TLS_PEER_VERIFY, &verify, sizeof(verify));
+		/* SNI and the certificate name check use the endpoint's host; a failed
+		 * option means no verification, so don't connect */
+		if (zsock_setsockopt(fd, ZSOCK_SOL_TLS, ZSOCK_TLS_SEC_TAG_LIST, tags,
+				     sizeof(tags)) ||
+		    zsock_setsockopt(fd, ZSOCK_SOL_TLS, ZSOCK_TLS_HOSTNAME, url.host,
+				     strlen(url.host)) ||
+		    zsock_setsockopt(fd, ZSOCK_SOL_TLS, ZSOCK_TLS_PEER_VERIFY, &verify,
+				     sizeof(verify))) {
+			k = -errno;
+			zsock_freeaddrinfo(res);
+			goto out;
+		}
 	}
 	{
 		struct zsock_timeval tv = {.tv_sec = 60};
@@ -387,6 +397,13 @@ static int lte_up(void)
 {
 	int err;
 
+	static bool ca_done;
+
+	if (!ca_done) {
+		/* Credentials can only be written with LTE off */
+		lte_lc_func_mode_set(LTE_LC_FUNC_MODE_DEACTIVATE_LTE);
+		ca_done = rook_ca_provision() == 0;
+	}
 	if (strlen(CONFIG_ROOK_LTE_APN)) {
 		/* Default PDN context; must be set while offline */
 		lte_lc_func_mode_set(LTE_LC_FUNC_MODE_DEACTIVATE_LTE);

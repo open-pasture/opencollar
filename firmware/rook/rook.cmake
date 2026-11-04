@@ -11,7 +11,17 @@ if(CONFIG_ROOK_LTE)
     ${ROOK_DIR}/src/rook_http.c
     ${ROOK_DIR}/src/rook_fence.c
     ${ROOK_DIR}/src/rook_state.c
+    ${ROOK_DIR}/src/rook_ca.c
     ${ROOK_DIR}/src/rook_battery_math.c
     ${ROOK_DIR}/src/rook_battery_max17260.c
   )
+  if(NOT "${CONFIG_ROOK_LTE_CA_PEM}" STREQUAL "")
+    set(ROOK_CA_PATH ${ROOK_DIR}/../${CONFIG_ROOK_LTE_CA_PEM})
+    if(NOT EXISTS ${ROOK_CA_PATH})
+      message(FATAL_ERROR "CONFIG_ROOK_LTE_CA_PEM: ${ROOK_CA_PATH} not found")
+    endif()
+    generate_inc_file_for_target(app ${ROOK_CA_PATH}
+      ${ZEPHYR_BINARY_DIR}/include/generated/rook_ca.pem.inc)
+    target_compile_definitions(app PRIVATE ROOK_CA_EMBEDDED)
+  endif()
 endif()
