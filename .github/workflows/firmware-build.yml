@@ -372,9 +372,11 @@ jobs:
             bash -lc "
               set -euo pipefail
               export ZEPHYR_BASE='${ZEPHYR_BASE}'
-              west build -b xiao_ble/nrf52840 firmware/starling -p
-              test -f build/zephyr/zephyr.hex
-              ls -l build/zephyr/zephyr.hex
+              # -d build keeps the tree under ./build; NCS sysbuild still nests
+              # the image at build/starling/zephyr/zephyr.hex (not build/zephyr/).
+              west build -b xiao_ble/nrf52840 -d build firmware/starling -p
+              test -f build/starling/zephyr/zephyr.hex
+              ls -l build/starling/zephyr/zephyr.hex
             " 2>&1 | tee "${log}"
 
       - name: Upload starling-xiao_ble-bench-hex (BENCH ONLY, not a release)
@@ -383,7 +385,7 @@ jobs:
         with:
           name: starling-xiao_ble-bench-hex
           path: |
-            build/zephyr/zephyr.hex
+            build/starling/zephyr/zephyr.hex
             firmware/build-ci-logs/starling-xiao_ble.log
           retention-days: 7
           if-no-files-found: error
