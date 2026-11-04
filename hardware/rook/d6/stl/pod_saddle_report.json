@@ -1,0 +1,128 @@
+{
+  "revision": "D8_saddle_shock_bay",
+  "module_placeholder": {
+    "MODULE_L": 40.0,
+    "MODULE_W": 25.0,
+    "MODULE_H": 8.0,
+    "ELECTRODE_D": 6.0,
+    "ELECTRODE_SPACING": 25.0,
+    "pending": "op-firmware"
+  },
+  "bodies": {
+    "pod_L_saddle": {
+      "size_mm": [
+        52.0,
+        97.0,
+        11.7
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 2988
+      },
+      "side": "L",
+      "saddle_R_mm": 220.0,
+      "sagitta_mm": 5.36,
+      "total_h_mm": 11.7,
+      "extra_toward_neck_mm": 4.29,
+      "height_above_strap_mm": 0.0,
+      "module_placeholder": {
+        "flag": true,
+        "L_W_H_mm": [
+          40.0,
+          25.0,
+          8.0
+        ],
+        "pending": "op-firmware"
+      },
+      "electrode_compliance_travel_mm": 3.0,
+      "print": {
+        "orientation": "flat pod-face on bed; concave neck-face UP; light bowl supports",
+        "why": "mating/seal face gets bed accuracy; curve never on bed",
+        "material": "ASA",
+        "brim_mm": 8
+      }
+    },
+    "pod_L_bay_cover": {
+      "size_mm": [
+        30.0,
+        45.0,
+        2.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 412
+      },
+      "print": {
+        "orientation": "flat; label UP",
+        "material": "ASA or PLA"
+      }
+    },
+    "pod_R_saddle": {
+      "size_mm": [
+        52.0,
+        97.0,
+        11.7
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 2988
+      },
+      "side": "R",
+      "saddle_R_mm": 220.0,
+      "sagitta_mm": 5.36,
+      "total_h_mm": 11.7,
+      "extra_toward_neck_mm": 4.29,
+      "height_above_strap_mm": 0.0,
+      "module_placeholder": {
+        "flag": true,
+        "L_W_H_mm": [
+          40.0,
+          25.0,
+          8.0
+        ],
+        "pending": "op-firmware"
+      },
+      "electrode_compliance_travel_mm": 3.0,
+      "print": {
+        "orientation": "flat pod-face on bed; concave neck-face UP; light bowl supports",
+        "why": "mating/seal face gets bed accuracy; curve never on bed",
+        "material": "ASA",
+        "brim_mm": 8
+      }
+    },
+    "pod_R_bay_cover": {
+      "size_mm": [
+        30.0,
+        45.0,
+        2.0
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 412
+      },
+      "print": {
+        "orientation": "flat; label UP",
+        "material": "ASA or PLA"
+      }
+    }
+  },
+  "part_count_delta": {
+    "per_pod_was": 2,
+    "per_pod_now": 4,
+    "added": [
+      "pod_*_saddle",
+      "pod_*_bay_cover"
+    ],
+    "collar_added_qty": 4
+  },
+  "pass": true,
+  "height": {
+    "above_strap_mm": 0.0,
+    "toward_neck_mm": 5.41,
+    "note": "R220 sagitta\u22485.41 mm fills flat-underside gap; MODULE_H=8.0 mm \u2014 module deeper than sagitta by 2.6 mm; extra grows toward neck only (0 mm above strap)."
+  }
+}

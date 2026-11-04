@@ -1,10 +1,5 @@
 D8 P0 fit coupon — Bambu P2S 256×256 (PLA, features UP)
-┌────────────────────────────────────────┐
-│                 256 mm                 │
-│   ┌──────────┐                         │
-│   │ d8_fit_  │  ~76 × 71 mm             │
-│   │ coupon   │  centre; no brim req.   │
-│   └──────────┘                         │
-│   (optional: pod/cap/cw floor coupons) │
-└────────────────────────────────────────┘
+bbox ≈ 238 × 207 × 14 mm  est ≈ 11.7 h PLA
+Contents: feature block (groove/flare/lip/001) + R208/218/221/350
+gauges + flat & saddle 97 mm footprints.
 Owner must approve before any print.

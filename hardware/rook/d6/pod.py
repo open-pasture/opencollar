@@ -83,6 +83,14 @@ PLAN_R = 3.0
 PLAN_R_SWELL = 3.0
 POD_TOP_EDGE_R = 3.0
 POD_LID_INSET = 3.0                          # lid inset from base wall (lip read)
+POD_LID_LIP_H = 1.5                          # D8: raised base lip — reads in side view
+POD_STRAP_NOTCH_W = 6.0                      # D4-like plan notch at strap-end corners
+POD_STRAP_NOTCH_D = 4.0
+# Saddle / shock-bay wire pass-through (cell cavity size unchanged)
+POD_WIRE_GLAND_Y = -28.0                     # toward strap end, clear of cells
+POD_WIRE_CH_D = 6.0
+POD_WIRE_GLAND_D = 10.0
+POD_SADDLE_MOUNT = [(sx * 18.0, sy * 32.0) for sx in (-1, 1) for sy in (-1, 1)]
 # Full-width band covers most of the long cavity; soft tip taper only
 POD_Y_SWELL = 38.0                           # half-length of full-width band
 POD_SHOULDER_RUN = 8.0                       # 68→66 shoulder run (mount end)
@@ -531,12 +539,88 @@ def pod_base(side="L"):
 
     end_taper_skin(b, POD_L, POD_LEN, POD_BASE_H, POD_TAPER_LEN, POD_TAPER_DROP,
                    y0=POD_Y0)
+
+    # D8: stronger lid-lip — raised outer terrace so inset lid reads in side view
+    lip_h = float(POD_LID_LIP_H)
+    if lip_h > 0.4:
+        outer = oc.rounded_rect(
+            "plip_o",
+            (POD_X_MAX, POD_LEN, lip_h),
+            PLAN_R,
+            at=(0.0, POD_Y0, POD_BASE_H),
+            anchor="bottom",
+            segments=10,
+        )
+        inner = oc.rounded_rect(
+            "plip_i",
+            (POD_X_MAX - 2.0 * POD_LID_INSET, POD_LEN - 2.0 * POD_LID_INSET, lip_h + 0.4),
+            max(PLAN_R - 0.5, 2.0),
+            at=(0.0, POD_Y0, POD_BASE_H - 0.1),
+            anchor="bottom",
+            segments=10,
+        )
+        oc.union(b, oc.cut(outer, inner))
+
+    # D8: D4-like plan notches at strap-end (−Y) corners
+    y_end = POD_Y0 - POD_LEN / 2.0
+    for sx in (-1.0, 1.0):
+        oc.cut(
+            b,
+            oc.box(
+                f"strap_notch_{int(sx+2)}",
+                (POD_STRAP_NOTCH_W, POD_STRAP_NOTCH_D + 2.0, POD_BASE_H + 8.0),
+                at=(sx * (POD_X_STRAP * 0.5 - POD_STRAP_NOTCH_W * 0.35),
+                    y_end + POD_STRAP_NOTCH_D * 0.3,
+                    POD_BASE_H * 0.5),
+                anchor="center",
+            ),
+        )
+
+    # D8: wire pass-through toward saddle — Ø6 through floor into cavity
+    # (cavity envelope 82×58×19.5 unchanged; hole only).
+    oc.cut(
+        b,
+        oc.cylinder(
+            "saddle_wire",
+            POD_WIRE_CH_D,
+            POD_BASE_H + 4.0,
+            at=(0.0, POD_WIRE_GLAND_Y, POD_BASE_H * 0.5),
+            anchor="center",
+            segments=24,
+        ),
+    )
+
     # Heal the boolean-heavy shell BEFORE attaching the skirt so the union
     # doesn't inherit open edges that collapse under remesh.
     prepare(b, merge=0.012)
     heal(b, merge=0.03)
     # D7r6: skirt ≤ pod width, tangent into strap, clamp pockets
     strap_flare_skirt(b, POD_L, POD_LEN, y0=POD_Y0)
+
+    # Underside features after skirt exists (bed = z=0 after normalize)
+    oc.cut(
+        b,
+        oc.cylinder(
+            "saddle_gland",
+            POD_WIRE_GLAND_D,
+            2.2,
+            at=(0.0, POD_WIRE_GLAND_Y, -POD_SKIRT_H),
+            anchor="bottom",
+            segments=24,
+        ),
+    )
+    for i, (mx, my) in enumerate(POD_SADDLE_MOUNT):
+        oc.cut(
+            b,
+            oc.cylinder(
+                f"saddle_mnt{i}",
+                3.4,
+                POD_SKIRT_H + 6.0,
+                at=(mx, my, -POD_SKIRT_H),
+                anchor="bottom",
+                segments=16,
+            ),
+        )
 
     if side == "R":
         mirror_for_R(b)

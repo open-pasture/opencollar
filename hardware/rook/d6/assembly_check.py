@@ -484,6 +484,11 @@ EXPECTED = {
     ("pod_L_base", "pod_L_lid"),
     ("pod_R_base", "pod_R_lid"),
     ("cw_tub", "cw_lid"),
+    # D8 neck saddle mates flat-to-flat on pod skirt bed; cover seals bay
+    ("pod_L_base", "pod_L_saddle"),
+    ("pod_R_base", "pod_R_saddle"),
+    ("pod_L_saddle", "pod_L_bay_cover"),
+    ("pod_R_saddle", "pod_R_bay_cover"),
 }
 # Cap pad into pod recess is the bolted M3 joint — expected engagement.
 MOUNT_JOINT = {
@@ -516,6 +521,10 @@ for i in res["interference"]:
         # D7r5: bars seat in skirt/saddle pockets (≤1 mm proud) — allow pocket volume
         i["class"] = (
             "clamp pocket engagement (OK)" if i["mm3"] < 2500 else "REAL clash"
+        )
+    elif "saddle" in i["a"] or "saddle" in i["b"] or "bay_cover" in i["a"] or "bay_cover" in i["b"]:
+        i["class"] = (
+            "saddle/bay engagement (OK)" if i["mm3"] < 12000 else "REAL clash"
         )
     else:
         i["class"] = "REAL clash"
@@ -653,6 +662,76 @@ for n in ("fairing_cw_L", "fairing_cw_R"):
         f"Δh={h_step:.2f} (fairing {e[2]:.1f} vs H_CW {A.FAIRING_H_CW:.1f})",
         f"≤{SEAM_MAX}",
     )
+
+# D8 neck saddle + sealed blank shock bay
+saddle_src = ""
+saddle_path = os.path.join(HERE, "pod_saddle.py")
+if os.path.isfile(saddle_path):
+    saddle_src = open(saddle_path).read()
+for side in ("L", "R"):
+    sn, cn = f"pod_{side}_saddle", f"pod_{side}_bay_cover"
+    chk(f"{sn} present", sn in mesh, sn in mesh, "stl")
+    chk(f"{cn} present", cn in mesh, cn in mesh, "stl")
+    if sn in mesh:
+        e = mesh[sn].extents
+        chk(
+            f"{sn} fits under pod length (~90×52)",
+            float(e[1]) <= 100.0 and float(e[0]) <= 70.0,
+            [round(float(v), 1) for v in e],
+            "≤70 × ≤100 × h",
+        )
+chk(
+    "pod_saddle.py MODULE_* PLACEHOLDER block",
+    "MODULE_PLACEHOLDER" in saddle_src and "MODULE_L = 40" in saddle_src,
+    "PLACEHOLDER 40×25×8" if "MODULE_L = 40" in saddle_src else "missing",
+    "40×25×8 pending op-firmware",
+)
+chk(
+    "saddle neck radius R≈220",
+    "SADDLE_R = 220" in saddle_src or "SADDLE_R=220" in saddle_src,
+    "R220" if "220" in saddle_src else "missing",
+    "220",
+)
+chk(
+    "electrode compliance travel reserved (unpopulated)",
+    "ELECTRODE_COMPLIANCE_TRAVEL" in saddle_src,
+    "compliance travel" if "ELECTRODE_COMPLIANCE_TRAVEL" in saddle_src else "missing",
+    "spring/elastomer reserve",
+)
+chk(
+    "cell cavity size unchanged 82×58×19.5",
+    "POD_CAVITY" in pod_src and "(82" in pod_src,
+    "POD_CAVITY locked",
+    "82×58×19.5",
+)
+asm_src = open(os.path.join(HERE, "assembly.py")).read()
+fair_src = open(os.path.join(HERE, "fairing.py")).read()
+chk(
+    "blind joint groove (floor + closed ends)",
+    "JOINT_GROOVE_FLOOR_MIN" in asm_src and "groove_len_x" in fair_src,
+    "blind groove helpers present",
+    "floor≥4 + closed ends",
+)
+for side in ("L", "R"):
+    sn = f"pod_{side}_saddle"
+    if sn not in world:
+        continue
+    for other in ("cap_base", "cw_tub"):
+        if other not in world:
+            continue
+        try:
+            inter = trimesh.boolean.intersection(
+                [world[sn], world[other]], engine="manifold"
+            )
+            v = float(inter.volume) if inter is not None and not inter.is_empty else 0.0
+        except Exception:
+            v = 0.0
+        chk(
+            f"{sn} no overlap with {other}",
+            v < 50.0,
+            round(v, 1),
+            "<50 mm³",
+        )
 
 # D7r7: review-blend geometry hygiene (no dim<2mm / floating / stray non-mesh)
 hygiene_paths = [

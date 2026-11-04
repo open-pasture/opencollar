@@ -208,17 +208,21 @@ def fairing_cap_pod(side: str = "L"):
             ]
         oc.cut(f, oc.prism_x(f"fairing_cap_pod_{side}_ramp", profile, w0 + 8.0))
         oc.bake(f)
-    # D8: 1.5 mm visual groove at mid-run (cap↔pod joint) — top trough only;
-    # keeps lower body + mount path intact for fastening/fit.
+    # D8: blind joint groove — solid floor + closed ends (no see-through sliver).
+    # Keeps lower body + mount path intact for fastening/fit; not a dirt tunnel.
     groove_w = float(getattr(A, "JOINT_GROOVE_W", 1.5))
     groove_d = float(getattr(A, "JOINT_GROOVE_D", 3.0))
+    floor_min = float(getattr(A, "JOINT_GROOVE_FLOOR_MIN", 4.0))
     if groove_w > 0.4 and groove_d > 0.4:
+        depth = min(groove_d, max(0.8, h - floor_min))
+        # Inset from ±X edges so the channel ends are closed (blind).
+        groove_len_x = max(12.0, w0 - 8.0)
         oc.cut(
             f,
             oc.box(
                 f"fairing_cap_pod_{side}_groove",
-                (w0 + 6.0, groove_w, groove_d + 0.4),
-                at=(0.0, 0.0, h - groove_d),
+                (groove_len_x, groove_w, depth),
+                at=(0.0, 0.0, h - depth),
                 anchor="bottom",
             ),
         )

@@ -98,9 +98,10 @@ FAIRING_RUN_CW = 32.0                    # longer blend saddle ↔ lower CW
 # Wide end = pod outer (narrower than cap); fairing_cw() overrides W0 to CW.
 FAIRING_W0 = FAIRING_POD_OUTER_X         # 68 — kiss swell / tip band
 FAIRING_W1 = 52.0                        # narrow end toward strap / mate (strap+CW)
-# D8 joint groove (visual separation; fastening intact below)
+# D8 joint groove — blind (closed ends + solid floor); fastening intact below
 JOINT_GROOVE_W = 1.5
 JOINT_GROOVE_D = 3.0
+JOINT_GROOVE_FLOOR_MIN = 4.0           # solid floor under trough (≥4 mm)
 # Cap↔pod: nearly constant width (no sail taper / creases at tip).
 FAIRING_W1_CAP_POD = FAIRING_W0          # 68 — flush rounded nose, not a flap
 FAIRING_W0_CW = FAIRING_CW_OUTER         # 89.4 — wide end = CW outer (no plan step)
@@ -189,6 +190,14 @@ def world_poses():
         poses[f"pod_{side}_base"] = A @ T([0, 0, POD_Z0])
         poses[f"pod_{side}_lid"] = (
             A @ T([0, 0, POD_Z0 + POD_MATING_Z]) @ R(math.pi, X) @ T([0, 0, -POD_LID_T])
+        )
+        # Neck saddle: flat mates pod skirt bed (z=0); Rx(π) points concave to neck.
+        poses[f"pod_{side}_saddle"] = (
+            A @ T([0, 0, POD_Z0]) @ R(math.pi, X)
+        )
+        # Blank bay cover — sits on saddle neck face (approx; cover is thin)
+        poses[f"pod_{side}_bay_cover"] = (
+            A @ T([0, 0, POD_Z0]) @ R(math.pi, X) @ T([0, 0, -2.0])
         )
 
     CWA = T([0, 0, CW_ANCH_Z]) @ R(math.pi, X)

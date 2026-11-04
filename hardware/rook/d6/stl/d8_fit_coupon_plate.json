@@ -1,6 +1,8 @@
 {
   "plate": "D8_P0_fit_coupon",
   "bed_mm": 256,
+  "material": "PLA",
+  "est_hours": 11.65,
   "parts": [
     {
       "stl": "d8_fit_coupon.stl",
@@ -8,5 +10,14 @@
       "material": "PLA"
     }
   ],
-  "arrange": "centre; features UP; no brim required"
+  "arrange": "centre; features UP; no brim required; leave 4 mm margin",
+  "contains": [
+    "blind 1.5 mm cap\u2194pod groove (floor + closed ends)",
+    "strap-end flare + D4 notches",
+    "lid inset 3 mm + strengthened lip",
+    "prism 001 span\u224812.3 mm",
+    "\u00d82 screw-head recess",
+    "convex gauges R208/218/221 + R350",
+    "flat + saddle 97 mm footprints (feeler mid-mark)"
+  ]
 }
