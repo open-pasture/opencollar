@@ -207,15 +207,15 @@ jobs:
           cp -a "${fw}/build-rook/dfu_application.zip" \
             firmware/build-rook/dfu_application.zip
           # Bench-only marker shipped with the artifact.
-          cat > firmware/build-rook/BENCH-ONLY-DEV-KEY.txt <<'EOF'
-BENCH BUILD — NOT FOR FIELD USE
-
-This image is signed with MCUboot's public default ECDSA P-256 key.
-That private half is public; anyone can forge images for boards
-flashed with it. Replace SB_CONFIG_BOOT_SIGNATURE_KEY_FILE before
-any field/production build. See docs/runbooks/mcuboot-flash.md and
-docs/runbooks/ci-firmware.md.
-EOF
+          printf '%s\n' \
+            'BENCH BUILD - NOT FOR FIELD USE' \
+            '' \
+            "This image is signed with MCUboot's public default ECDSA P-256 key." \
+            'That private half is public; anyone can forge images for boards' \
+            'flashed with it. Replace SB_CONFIG_BOOT_SIGNATURE_KEY_FILE before' \
+            'any field/production build. See docs/runbooks/mcuboot-flash.md and' \
+            'docs/runbooks/ci-firmware.md.' \
+            > firmware/build-rook/BENCH-ONLY-DEV-KEY.txt
 
       - name: Upload Rook LTE flashable artifacts (BENCH / MCUboot DEV KEY)
         if: success()
