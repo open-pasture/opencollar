@@ -457,164 +457,219 @@ def _flared_section_xz(hw_lid, hw_skirt, z_bot, z_top, chamfer=1.8):
     return pts, ch
 
 
-def _bevel_vertical_corners(obj, corner_r, depth):
-    """Round only pure-Z corner edges — keeps top/bottom faces sharp (no pillow)."""
-    import bmesh as _bm
-    bm = _bm.new()
-    bm.from_mesh(obj.data)
-    bm.edges.ensure_lookup_table()
-    vert_edges = []
-    for e in bm.edges:
-        v0, v1 = e.verts
-        if abs(v0.co.x - v1.co.x) > 1e-4 or abs(v0.co.y - v1.co.y) > 1e-4:
-            continue
-        if abs(v0.co.z - v1.co.z) < float(depth) * 0.4:
-            continue
-        vert_edges.append(e)
-    if vert_edges and corner_r > 0.05:
-        _bm.ops.bevel(
-            bm, geom=vert_edges,
-            offset=float(corner_r),
-            segments=3, affect="EDGES",
-        )
-    bm.to_mesh(obj.data)
-    bm.free()
+def _shade_smooth_autosmooth(obj, angle_deg=30.0):
+    """Shade smooth WITH auto-smooth angle. Plain shade_smooth() clears use_auto_smooth
+    in Blender 4.0, which streaks the roof and pillows the 001 pockets — always use this.
+    Also mark sharp edges by angle so pocket walls stay crisp after boolean.
+    """
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    try:
+        bpy.ops.mesh.customdata_custom_splitnormals_clear()
+    except Exception:
+        pass
+    ang = math.radians(float(angle_deg))
+    try:
+        bpy.ops.object.shade_smooth(use_auto_smooth=True, auto_smooth_angle=ang)
+    except TypeError:
+        # older / newer ops signature
+        try:
+            obj.data.use_auto_smooth = True
+            obj.data.auto_smooth_angle = ang
+        except Exception:
+            pass
+        bpy.ops.object.shade_smooth()
+        try:
+            obj.data.use_auto_smooth = True
+            obj.data.auto_smooth_angle = ang
+        except Exception:
+            pass
+    # Explicit sharp marks: edges with face angle > limit (boolean pocket walls ~90°)
+    try:
+        import bmesh as _bm
+
+        bm = _bm.new()
+        bm.from_mesh(obj.data)
+        _bm.ops.recalc_face_normals(bm, faces=bm.faces)
+        limit = float(ang)
+        for e in bm.edges:
+            e.smooth = True
+            if len(e.link_faces) == 2:
+                a = e.link_faces[0].normal.angle(e.link_faces[1].normal)
+                if a > limit:
+                    e.smooth = False
+            elif len(e.link_faces) < 2:
+                e.smooth = False
+        bm.to_mesh(obj.data)
+        bm.free()
+        obj.data.update()
+    except Exception as exc:
+        print(f"  sharp-mark warn: {exc}")
+    # Re-assert auto_smooth after bmesh write
+    try:
+        obj.data.use_auto_smooth = True
+        obj.data.auto_smooth_angle = ang
+    except Exception:
+        pass
+    on = bool(getattr(obj.data, "use_auto_smooth", False))
+    print(f"  shade {obj.name}: auto_smooth={on} angle={angle_deg}°")
 
 
-def _rounded_rect_ring(width, height, depth, stroke, corner_r):
-    """Sharp-walled rounded-rect RING (XY profile). No pillow/top bevel.
+def _extrude_profile_prism(profile_xy, depth, name="prism"):
+    """Straight prism: clean 2D outline extruded ±depth/2 along local Z.
 
-    Local: X = letter-up (across strap), Y = baseline (along strap), Z = depth.
-    '0' is taller in X than wide in Y when upright in a strap-horizontal view.
+    profile_xy: list of (x, y) CCW. Flat top/bottom, vertical walls. No bevel.
     """
     import bmesh as _bm
     bm = _bm.new()
-    _bm.ops.create_cube(bm, size=1.0)
-    for v in bm.verts:
-        v.co.x *= float(height)
-        v.co.y *= float(width)
-        v.co.z *= float(depth)
-    mesh = bpy.data.meshes.new("rr_outer")
+    half = float(depth) * 0.5
+    bot = [bm.verts.new((p[0], p[1], -half)) for p in profile_xy]
+    top = [bm.verts.new((p[0], p[1], +half)) for p in profile_xy]
+    bm.verts.ensure_lookup_table()
+    n = len(profile_xy)
+    bm.faces.new(bot)
+    bm.faces.new(list(reversed(top)))
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new([bot[i], bot[j], top[j], top[i]])
+    _bm.ops.recalc_face_normals(bm, faces=bm.faces)
+    mesh = bpy.data.meshes.new(name + "_mesh")
     bm.to_mesh(mesh)
     bm.free()
-    outer = bpy.data.objects.new("rr_outer", mesh)
-    bpy.context.scene.collection.objects.link(outer)
-    _bevel_vertical_corners(
-        outer, min(float(corner_r), width * 0.35, height * 0.35), depth,
-    )
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    return obj
 
-    iw = max(0.6, float(width) - 2.0 * float(stroke))
-    ih = max(0.6, float(height) - 2.0 * float(stroke))
-    bm = _bm.new()
-    _bm.ops.create_cube(bm, size=1.0)
-    for v in bm.verts:
-        v.co.x *= ih
-        v.co.y *= iw
-        v.co.z *= float(depth) * 1.4
-    hmesh = bpy.data.meshes.new("rr_hole")
-    bm.to_mesh(hmesh)
-    bm.free()
-    hole = bpy.data.objects.new("rr_hole", hmesh)
-    bpy.context.scene.collection.objects.link(hole)
-    _bevel_vertical_corners(
-        hole, min(float(corner_r) * 0.7, iw * 0.3, ih * 0.3), depth * 1.4,
-    )
 
+def _rounded_rect_ring_profile(width, height, stroke, corner_r, n_arc=6):
+    """Return (outer_pts, hole_pts) CCW rounded-rect outlines in (x,y)."""
+    def rr(w, h, r):
+        r = min(float(r), w * 0.45, h * 0.45)
+        hw, hh = w * 0.5, h * 0.5
+        arcs = [
+            (hw - r, -hh + r, -0.5 * math.pi, 0.0),
+            (hw - r, hh - r, 0.0, 0.5 * math.pi),
+            (-hw + r, hh - r, 0.5 * math.pi, math.pi),
+            (-hw + r, -hh + r, math.pi, 1.5 * math.pi),
+        ]
+        pts = []
+        for cx, cy, a0, a1 in arcs:
+            for k in range(n_arc + 1):
+                ang = a0 + (a1 - a0) * k / n_arc
+                pts.append((cx + r * math.cos(ang), cy + r * math.sin(ang)))
+        out = [pts[0]]
+        for p in pts[1:]:
+            if math.hypot(p[0] - out[-1][0], p[1] - out[-1][1]) > 1e-6:
+                out.append(p)
+        if math.hypot(out[0][0] - out[-1][0], out[0][1] - out[-1][1]) < 1e-6:
+            out.pop()
+        return out
+
+    outer = rr(width, height, corner_r)
+    hole = rr(
+        max(0.8, width - 2.0 * stroke),
+        max(0.8, height - 2.0 * stroke),
+        max(0.2, corner_r - stroke * 0.5),
+    )
+    return outer, hole
+
+
+def _poly_digit_0(height=5.0, width=3.4, depth=1.2, stroke=0.9):
+    """Straight-prism rounded-rect ring. Letter-up = −X (ref cam screen-up)."""
+    # Local: X = letter axis (top toward −X), Y = along strap, Z = depth
+    # Build profile in (X,Y) then the prism is extruded in Z.
+    # For top toward −X: the "height" extent is along X, centred.
+    outer, hole = _rounded_rect_ring_profile(
+        width=width, height=height, stroke=stroke,
+        corner_r=min(0.9, width * 0.28, height * 0.18),
+    )
+    # Profiles above are in (x=along-width, y=along-height) of a standard rect.
+    # Remap: profile (px, py) → local (X=−py, Y=px) so +py (top of digit) → −X.
+    def remap(pts):
+        return [(-py, px) for px, py in pts]
+
+    outer_m = remap(outer)
+    hole_m = remap(hole)
+    o = _extrude_profile_prism(outer_m, depth, name="digit0_outer")
+    h = _extrude_profile_prism(hole_m, depth * 1.3, name="digit0_hole")
     bpy.ops.object.select_all(action="DESELECT")
-    outer.select_set(True)
-    bpy.context.view_layer.objects.active = outer
-    mod = outer.modifiers.new("hole", "BOOLEAN")
+    o.select_set(True)
+    bpy.context.view_layer.objects.active = o
+    mod = o.modifiers.new("hole", "BOOLEAN")
     mod.operation = "DIFFERENCE"
-    mod.object = hole
+    mod.object = h
     try:
         mod.solver = "EXACT"
     except Exception:
         pass
     bpy.ops.object.modifier_apply(modifier=mod.name)
-    bpy.data.objects.remove(hole, do_unlink=True)
-    bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.mesh.remove_doubles(threshold=0.01)
-    bpy.ops.mesh.normals_make_consistent(inside=False)
-    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.data.objects.remove(h, do_unlink=True)
     bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY", center="BOUNDS")
-    return outer
+    return o
 
 
-def _poly_digit_0(height=5.0, depth=1.4, stroke=0.9):
-    """Plain rounded-rectangle ring '0' — sharp walls, no pillow bevel."""
-    # taller in X (letter-up) than in Y (baseline)
-    return _rounded_rect_ring(
-        width=float(height) * 0.62,
-        height=float(height),
-        depth=depth,
-        stroke=stroke,
-        corner_r=min(1.1, float(height) * 0.18),
-    )
-
-
-def _poly_digit_1(height=5.0, depth=1.4, stroke=0.9):
-    """Plain vertical bar + short top flag — sharp walls, letter-up = +X."""
+def _poly_digit_1(height=5.0, depth=1.2, stroke=0.9):
+    """Straight-prism bar + flag. Letter-up = −X; flag at top-left (−X, −Y)."""
     h = float(height)
     d = float(depth)
     sw = float(stroke)
-    fw, fh = sw * 1.5, sw * 0.85
-
-    # Stem: tall in X, stroke in Y
-    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, 0.0))
-    stem = bpy.context.active_object
-    stem.scale = (h, sw, d)
-    bpy.ops.object.transform_apply(scale=True)
-
-    # Flag at top-left in strap-horizontal view: +X (top), −Y (left of stem)
-    bpy.ops.mesh.primitive_cube_add(
-        size=1.0,
-        location=(0.5 * h - 0.55 * fh, -0.5 * sw - 0.30 * fw, 0.0),
-    )
-    flag = bpy.context.active_object
-    flag.scale = (fh, fw, d)
-    bpy.ops.object.transform_apply(scale=True)
-
+    # Stem: extent in X = h, in Y = sw. Top at −X.
+    stem = [
+        (-0.5 * h, -0.5 * sw),
+        (0.5 * h, -0.5 * sw),
+        (0.5 * h, 0.5 * sw),
+        (-0.5 * h, 0.5 * sw),
+    ]
+    # Flag at top (−X) and left (−Y)
+    fw, fh = sw * 1.5, sw * 0.9
+    fx0 = -0.5 * h
+    fx1 = -0.5 * h + fh
+    fy0 = -0.5 * sw - fw
+    fy1 = -0.5 * sw + 0.15  # slight overlap with stem
+    flag = [
+        (fx0, fy0),
+        (fx1, fy0),
+        (fx1, fy1),
+        (fx0, fy1),
+    ]
+    s = _extrude_profile_prism(stem, d, name="digit1_stem")
+    f = _extrude_profile_prism(flag, d, name="digit1_flag")
     bpy.ops.object.select_all(action="DESELECT")
-    stem.select_set(True)
-    bpy.context.view_layer.objects.active = stem
-    mod = stem.modifiers.new("flag_u", "BOOLEAN")
+    s.select_set(True)
+    bpy.context.view_layer.objects.active = s
+    mod = s.modifiers.new("flag_u", "BOOLEAN")
     mod.operation = "UNION"
-    mod.object = flag
+    mod.object = f
     try:
         mod.solver = "EXACT"
     except Exception:
         pass
     bpy.ops.object.modifier_apply(modifier=mod.name)
-    bpy.data.objects.remove(flag, do_unlink=True)
-
-    bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.mesh.remove_doubles(threshold=0.01)
-    bpy.ops.mesh.normals_make_consistent(inside=False)
-    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.data.objects.remove(f, do_unlink=True)
     bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY", center="BOUNDS")
-    return stem
+    return s
 
 
-def _make_001_cutters(size=5.0, depth=1.4, font_path=None, stroke=0.9):
-    """Three polygon glyphs spaced along the STRAP (world +Y / baseline).
+def _make_001_cutters(size=5.0, depth=1.2, font_path=None, stroke=0.9, width=3.4):
+    """Three straight-prism glyphs along the strap (increasing world +Y = 0,0,1).
 
-    Local frame BEFORE lid tip:
-      +X = letter-up (across strap) — 0 taller in X than Y
-      +Y = baseline (along strap) — digits spaced here, increasing +Y = 0,0,1
-      +Z = cut depth
-    Same layout on BOTH lids (no mirror). ≥1.2 mm gap. No trough.
+    Local frame BEFORE lid tip (D4 reference: screen-up=−X, screen-right=+Y):
+      −X = letter-up (tops toward screen-up)
+      +Y = baseline (along strap); increasing +Y = 0, 0, 1
+      +Z = prism depth (→ roof normal after tip)
+    Same on BOTH lids. ≥1.2 mm gap. No trough / no swept channel.
     """
     gap = 1.2
     half = float(depth) * 0.5
     parts = []
     for i, kind in enumerate(("0", "0", "1")):
         if kind == "0":
-            c = _poly_digit_0(height=size, depth=depth, stroke=stroke)
+            c = _poly_digit_0(height=size, width=width, depth=depth, stroke=stroke)
         else:
             c = _poly_digit_1(height=size, depth=depth, stroke=stroke)
         c.name = f"cutter_001_{kind}_{i}"
+        # Exact prism depth along Z
         zs = [v.co.z for v in c.data.vertices]
         z0, z1 = min(zs), max(zs)
         span = max(z1 - z0, 1e-6)
@@ -625,27 +680,23 @@ def _make_001_cutters(size=5.0, depth=1.4, font_path=None, stroke=0.9):
         c.select_set(True)
         bpy.context.view_layer.objects.active = c
         bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY", center="BOUNDS")
-        bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.mesh.select_all(action="SELECT")
-        bpy.ops.mesh.normals_make_consistent(inside=False)
-        bpy.ops.object.mode_set(mode="OBJECT")
         ys = [v.co.y for v in c.data.vertices]
         xs = [v.co.x for v in c.data.vertices]
         parts.append((c, max(ys) - min(ys), max(xs) - min(xs)))
         print(
-            f"  poly '{kind}': alongY={parts[-1][1]:.2f} upX={parts[-1][2]:.2f} "
-            f"(want upX≈{size:.1f}) verts={len(c.data.vertices)}"
+            f"  prism '{kind}': alongY={parts[-1][1]:.2f} spanX={parts[-1][2]:.2f} "
+            f"(letter-up −X, height≈{size:.1f}) verts={len(c.data.vertices)}"
         )
     spans = [w for _, w, _ in parts]
     total = sum(spans) + gap * (len(spans) - 1)
-    # Space 0,0,1 toward decreasing local Y. After lid tip, local +Y → +world Y
-    # (both lids). Verify cam uses screen-right = −Y so L→R on screen = 001.
-    y = 0.5 * total
+    # 0,0,1 with increasing local +Y → increasing world +Y after tip
+    y = -0.5 * total
     cutters = []
     for c, w, _xh in parts:
-        c.location = (0.0, y - 0.5 * w, 0.0)
+        c.location = (0.0, y + 0.5 * w, 0.0)
         cutters.append(c)
-        y -= w + gap
+        y += w + gap
+    print(f"  001 span along strap ≈ {total:.2f} mm (want ≤12)")
     return cutters
 
 
@@ -802,7 +853,7 @@ def _add_d4_loft_shell(details_col, body_rgb):
     Cap / mid / pod are arc-concentric slabs extruded across the strap; ramps
     are straight 45° wedges. Bevel ONLY side rails + tier-break lips (never
     every dense across-strap roof edge — that caused ripples/creases).
-    Closed charcoal roof; polygon 001 cut AFTER bevel on WORLD +X.
+    Closed charcoal roof; straight-prism 001 cut AFTER bevel (letter-up −X, +Y = 0,0,1).
     """
     profile, profile_path = _load_d4_profile()
     stations = profile["stations"]
@@ -1038,17 +1089,8 @@ def _add_d4_loft_shell(details_col, body_rgb):
         bpy.ops.object.modifier_apply(modifier=bev.name)
     except Exception as exc:
         print(f"  chamfer bevel warn: {exc}")
-    # Flat roofs: clear custom normals; smooth only with 30° angle limit
-    try:
-        bpy.ops.mesh.customdata_custom_splitnormals_clear()
-    except Exception:
-        pass
-    try:
-        obj.data.use_auto_smooth = True
-        obj.data.auto_smooth_angle = math.radians(30.0)
-    except Exception:
-        pass
-    bpy.ops.object.shade_smooth()
+    # Flat roofs: smooth only with 30° angle limit (no streaks)
+    _shade_smooth_autosmooth(obj, 30.0)
 
     def _bool_cut(cutter, tag, solver="EXACT"):
         bpy.ops.object.select_all(action="DESELECT")
@@ -1151,42 +1193,45 @@ def _add_d4_loft_shell(details_col, body_rgb):
             sorted(_roof_samples)[int(0.9 * (len(_roof_samples) - 1))]
             if len(_roof_samples) >= 8 else h_p
         )
-        # Cutter depth 1.4 → centre at roof+0.1 → pit floor at roof-0.6
-        cut_h = mesh_roof + 0.10
-        # Along-strap baseline (+Y local → tangent); letter-up +X; same on BOTH lids
-        cutters = _make_001_cutters(size=5.0, depth=1.4, stroke=0.9)
-        tangent = Vector((0.0, math.cos(a), -math.sin(a)))  # along +angle ≈ +Y
+        # Straight prism along roof normal: flat bottom at roof−0.6 at glyph centre.
+        # Prism spans [roof−0.6, roof+0.4] → depth 1.0, centre at roof−0.1.
+        cut_depth = 1.0
+        cut_h = mesh_roof - 0.10
+        # Letter-up −X; baseline +Y increasing = 0,0,1; same BOTH lids (ref cam)
+        cutters = _make_001_cutters(
+            size=5.0, depth=cut_depth, stroke=0.9, width=3.4,
+        )
+        tangent = Vector((0.0, math.cos(a), -math.sin(a)))  # +angle ≈ +Y
+        normal = Vector((0.0, ny, nz))
         glyph_world = []
         for ci, cutter in enumerate(cutters):
             cutter.name = f"cutter_001_{side}_{ci}"
-            along_y = float(cutter.location.y)  # baseline offset along strap
+            along_y = float(cutter.location.y)
             cutter.location = (0.0, 0.0, 0.0)
-            # Tip depth into lid normal; letter-up stays world +X; baseline → tangent
+            # Tip: local Z → roof normal; local X stays world X (letter-up −X);
+            # local Y → tangent (along strap).
             cutter.rotation_euler = (-a, 0.0, 0.0)
             bpy.ops.object.select_all(action="DESELECT")
             cutter.select_set(True)
             bpy.context.view_layer.objects.active = cutter
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
             lid = Vector((0.0, cy + ny * cut_h, cz + nz * cut_h))
-            # Identical on L and R: increasing along_y → increasing world Y → 0,0,1
             pos = lid + tangent * along_y
             cutter.location = pos
             glyph_world.append({
                 "glyph": ("0", "0", "1")[ci],
                 "along_offset_mm": round(along_y, 3),
                 "world_xyz": [round(pos.x, 3), round(pos.y, 3), round(pos.z, 3)],
+                "normal": [round(normal.x, 4), round(normal.y, 4), round(normal.z, 4)],
             })
             for cc in list(cutter.users_collection):
                 cc.objects.unlink(cutter)
             details_col.objects.link(cutter)
             _bool_cut(cutter, f"id_001_{side}_{ci}")
         ok, measured = _verify_001_pit(obj, a_id, r_out, zc, mesh_roof, depth=0.5)
-        # Centres returned Y-ascending; 0,0,1 reading order is Y-descending
-        centres_asc = _glyph_centres_001(obj, a_id, r_out, zc, mesh_roof)
-        centres = list(reversed(centres_asc))  # 0,0,1 order
+        centres = _glyph_centres_001(obj, a_id, r_out, zc, mesh_roof)  # Y-ascending = 001
         y_order_sign = 0
         if len(centres) >= 2:
-            # sign of ΔY from first glyph (0) to last (1) in reading order
             y_order_sign = 1 if centres[-1][1] > centres[0][1] else -1
         clear_mm = abs(ID_001_A - DOT_A) * math.pi / 180.0 * r_out
         clear_ramp_mm = abs(ID_001_A - A_R2_1) * math.pi / 180.0 * r_out
@@ -1196,36 +1241,36 @@ def _add_d4_loft_shell(details_col, body_rgb):
             "clearance_to_dot_mm": round(clear_mm, 1),
             "clearance_to_ramp_mm": round(clear_ramp_mm, 1),
             "modifier_applied": (
-                f"id_001_{side}_0/1/2 (3× BOOLEAN DIFFERENCE, along-strap +Y baseline)"
+                f"id_001_{side}_0/1/2 (3× EXACT BOOLEAN, straight roof-normal prisms)"
             ),
             "object": "review_shell",
             "verified_in_mesh": ok,
             "measured_depth_mm": measured,
             "target_depth_mm": 0.6,
             "height_mm": 5.0,
+            "width_mm": 3.4,
             "stroke_mm": 0.9,
             "material": "same charcoal as lid",
             "reads_in": (
-                "strap-horizontal world top (+Z, screen-up=+X, screen-right=−Y): "
-                "L→R = 0,0,1 on BOTH lids (letter-up +X; baseline along strap)"
+                "D4 ref top (+Z, screen-up=−X, screen-right=+Y): "
+                "L→R increasing +Y = 0,0,1; tops toward −X; both lids identical"
             ),
             "glyph_gap_mm": 1.2,
-            "glyphs": "polygon 0=rounded-rect ring, 1=bar+flag; sharp walls; cut AFTER bevel",
+            "glyphs": (
+                "straight prism 0=rounded-rect ring 3.4×5, 1=bar+flag; "
+                "flat bottom roof−0.6; no channel"
+            ),
             "glyph_centres_xyz": centres,
             "glyph_placement": glyph_world,
             "y_order_sign": y_order_sign,
-            "y_order_note": (
-                "0,0,1 ordered by decreasing world Y so strap-H crop "
-                "(screen-right=−Y) reads 001 L→R; letter-up = +X"
-            ),
-            "x_order_note": "baseline is along strap (world Y), not across (X)",
+            "y_order_note": "0,0,1 with increasing world Y (ref screen-right=+Y)",
         }
         print(
             f"  001 {side}: verified={ok} depth≈{measured} mm at a={a_id:.1f}° "
             f"(dot at {sy * DOT_A:.1f}°, clear_dot≈{clear_mm:.1f} mm, "
-            f"clear_ramp≈{clear_ramp_mm:.1f} mm, along-strap +Y)"
+            f"clear_ramp≈{clear_ramp_mm:.1f} mm, prism along-strap +Y)"
         )
-        print(f"  001 {side} centres (Y-asc): {centres}  y_order_sign={y_order_sign}")
+        print(f"  001 {side} centres Y-asc=001: {centres}  y_order_sign={y_order_sign}")
 
     # Post-boolean cleanup — kill stray tabs / non-manifold from cuts
     bpy.ops.object.select_all(action="DESELECT")
@@ -1245,42 +1290,19 @@ def _add_d4_loft_shell(details_col, body_rgb):
             bpy.ops.object.mode_set(mode="OBJECT")
         except Exception:
             pass
+    # Recompute normals; shade smooth ONLY with 30° angle limit (no streaks)
     try:
-        bpy.ops.mesh.customdata_custom_splitnormals_clear()
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+        bpy.ops.object.mode_set(mode="OBJECT")
     except Exception:
-        pass
-    try:
-        obj.data.use_auto_smooth = True
-        obj.data.auto_smooth_angle = math.radians(30.0)
-    except Exception:
-        pass
-    bpy.ops.object.shade_smooth()
-    # Explicit flat shade on near-planar roof faces (dihedral-stable lids)
-    try:
-        import bmesh as _bm2
-        bm = _bm2.new()
-        bm.from_mesh(obj.data)
-        bm.faces.ensure_lookup_table()
-        flat_n = 0
-        for f in bm.faces:
-            # Roof face: centroid high above strap, normal ~ radial
-            c = f.calc_center_median()
-            h = math.hypot(c.y, c.z - zc) - r_out
-            if h < (POD_H - 1.5):
-                continue
-            n = f.normal
-            radial = Vector((0.0, c.y, c.z - zc))
-            if radial.length < 1e-6:
-                continue
-            radial.normalize()
-            if n.dot(radial) > 0.92:
-                f.smooth = False
-                flat_n += 1
-        bm.to_mesh(obj.data)
-        bm.free()
-        print(f"  flat-shaded roof faces: {flat_n}")
-    except Exception as exc:
-        print(f"  flat roof shade warn: {exc}")
+        try:
+            bpy.ops.object.mode_set(mode="OBJECT")
+        except Exception:
+            pass
+    _shade_smooth_autosmooth(obj, 30.0)
+    print("  roof shading: smooth + auto_smooth 30° + sharp-by-angle (no streaks)")
 
     _sil = []
     for a_s in [-40, -36, -30, -27, -24, -21, -18, -15, -10, 0,
@@ -1336,7 +1358,7 @@ def _add_d4_loft_shell(details_col, body_rgb):
 
     outer_arc_mm = (d6_ang1 - d6_ang0) * math.pi / 180.0 * r_out
     meta = {
-        "round": "D7r17",
+        "round": "D7r18",
         "profile_path": profile_path,
         "d4_r_outer": d4_r_out,
         "d6_r_outer": r_out,
@@ -1370,16 +1392,16 @@ def _add_d4_loft_shell(details_col, body_rgb):
         "chamfer_mm": 1.8,
         "build": (
             "extruded arc slabs + 45° ramps; Bevel 1.8 mm on rails+tier lips only; "
-            "polygon 001 WORLD +X after bevel; flat roofs auto_smooth 30°; NO subdiv"
+            "straight-prism 001 along-strap +Y after bevel; letter-up −X; auto_smooth 30°; NO subdiv"
         ),
         "id_001": id_001_info,
         "dot_angle_deg": DOT_A,
         "id_001_angle_deg": ID_001_A,
         "cap_roof_note": (
-            f"D7r17 extruded tiers. Cap {CAP_H:.1f} / mid {MID_H:.1f} "
-            f"/ pod {POD_H:.0f}; chamfer 1.8 mm on every tier lip + rails; "
-            f"closed charcoal roof; polygon 001 along-strap +Y at ±{ID_001_A}° "
-            f"(letter-up +X); dots at ±{DOT_A}°; navy strips arc-inlaid."
+            f"D7r18 extruded tiers. Cap {CAP_H:.1f} / mid {MID_H:.1f} "
+            f"/ pod {POD_H:.0f}; chamfer 1.8 mm; closed charcoal roof; "
+            f"001 straight-prism along-strap +Y at ±{ID_001_A}° "
+            f"(letter-up −X); dots at ±{DOT_A}°; navy strips arc-inlaid."
         ),
         "n_stations_loft": "n/a (extruded solids)",
         "hidden": hide_names,
@@ -1388,9 +1410,9 @@ def _add_d4_loft_shell(details_col, body_rgb):
         "solar_cut": False,
     }
     print(
-        f"  review_shell r17: angles {d6_ang0:.1f}→{d6_ang1:.1f} "
+        f"  review_shell r18: angles {d6_ang0:.1f}→{d6_ang1:.1f} "
         f"cap={CAP_H:.1f} mid={MID_H:.1f} pod={POD_H:.0f} "
-        f"tier-chamfer 1.8 + polygon 001 along-strap (no subdiv, no solar cut)"
+        f"tier-chamfer 1.8 + prism 001 along-strap (no subdiv, no solar cut)"
     )
     print(f"  hidden under shell: {hide_names}")
     return obj, meta
@@ -1666,27 +1688,15 @@ solar_meta = _add_solar_review_detail(
     r_out=227.0 + STRAP_T / 2.0,
     cap_h=float(_shell_meta.get("cap_roof_need_mm", 48.25)),
 )
-# Re-shade shell after pocket cuts
-bpy.ops.object.select_all(action="DESELECT")
-_shell_obj.select_set(True)
-bpy.context.view_layer.objects.active = _shell_obj
-try:
-    bpy.ops.mesh.customdata_custom_splitnormals_clear()
-except Exception:
-    pass
-try:
-    _shell_obj.data.use_auto_smooth = True
-    _shell_obj.data.auto_smooth_angle = math.radians(30.0)
-except Exception:
-    pass
-bpy.ops.object.shade_smooth()
+# Re-shade shell after pocket cuts (must keep auto_smooth 30°)
+_shade_smooth_autosmooth(_shell_obj, 30.0)
 
-_shell_report_path = os.path.join(OUT, "d7r17_stations_vs_d4.json")
+_shell_report_path = os.path.join(OUT, "d7r18_stations_vs_d4.json")
 json.dump(_shell_meta, open(_shell_report_path, "w"), indent=2)
 os.makedirs(os.path.join(_HERE, "review"), exist_ok=True)
 shutil.copy2(
     _shell_report_path,
-    os.path.join(_HERE, "review", "d7r17_stations_vs_d4.json"),
+    os.path.join(_HERE, "review", "d7r18_stations_vs_d4.json"),
 )
 
 # Ø5 mm flat orange dots — 0.3 mm proud on the lid, NO recess / no dark rim
@@ -1718,19 +1728,7 @@ for side, sy in (("L", -1.0), ("R", 1.0)):
     bpy.context.view_layer.objects.active = dot
     bpy.ops.object.shade_flat()
 
-bpy.ops.object.select_all(action="DESELECT")
-_shell_obj.select_set(True)
-bpy.context.view_layer.objects.active = _shell_obj
-try:
-    bpy.ops.mesh.customdata_custom_splitnormals_clear()
-except Exception:
-    pass
-try:
-    _shell_obj.data.use_auto_smooth = True
-    _shell_obj.data.auto_smooth_angle = math.radians(30.0)
-except Exception:
-    pass
-bpy.ops.object.shade_smooth()
+_shade_smooth_autosmooth(_shell_obj, 30.0)
 
 note = bpy.data.objects.new("NOTE_d4_ghost", None)
 note.empty_display_type = "PLAIN_AXES"
@@ -1739,12 +1737,12 @@ note["ghost_note"] = ghost_note
 note["palette"] = _palette
 note["solar_shade"] = solar_meta.get("shade_note", "")
 note["solar_rib_w_mm"] = float(solar_meta.get("rib_w_mm", 0))
-note["review_shell"] = "d4_extruded_r16"
+note["review_shell"] = "d4_extruded_r18"
 note["cap_roof_note"] = _shell_meta.get("cap_roof_note", "")
 note["cap_height_driver"] = _shell_meta.get("cap_height_driver", "")
 note["id_001"] = (
-    "deboss 0.6mm charcoal; polygon glyphs; along-strap +Y L→R BOTH lids; "
-    "letter-up +X; flat pod roof 31–40°; clear of orange"
+    "deboss 0.6mm charcoal; straight-prism glyphs; along-strap +Y L→R BOTH lids; "
+    "letter-up −X (D4 ref); flat pod roof 31–40°; clear of orange"
 )
 details.objects.link(note)
 
@@ -1796,11 +1794,10 @@ for name, d in {
     d = Vector(d).normalized()
     cam.location = ctr + d * ext * 2
     if name == "top":
-        # Strap-horizontal world top (right-handed): look −Z;
-        # screen-up=+X (letter-up upright); screen-right=−Y (strap horizontal).
-        # Glyphs ordered decreasing world Y so L→R = 0,0,1 on both lids.
-        _r = Vector((0.0, -1.0, 0.0))
-        _u = Vector((1.0, 0.0, 0.0))
+        # D4 reference top: look −Z; screen-up=−X; screen-right=+Y (strap H).
+        # 001 increasing +Y L→R; letter tops toward −X.
+        _r = Vector((0.0, 1.0, 0.0))
+        _u = Vector((-1.0, 0.0, 0.0))
         _b = Vector((0.0, 0.0, 1.0))
         _o = ctr + Vector((0.0, 0.0, ext * 2))
         from mathutils import Matrix as _Mtop
@@ -1843,30 +1840,46 @@ if joint_objs:
     dst = f"d6_assembly_joint.png" if not suffix else f"d6_assembly_joint{suffix}.png"
     shutil.copy2(sc.render.filepath, os.path.join(render_dir, dst))
 
-# ---- 001 world-+Z lid crops, strap horizontal (charcoal only) -------------
+# ---- 001 D4-reference lid crops (charcoal only) ---------------------------
 if _palette == "charcoal":
     from mathutils import Matrix as _Mlid
+    # Crisp Workbench: studio light, no cavity soft-pillow, material color
     sc.display.shading.light = "STUDIO"
     sc.display.shading.color_type = "MATERIAL"
-    sc.render.resolution_x, sc.render.resolution_y = 1200, 1200
+    try:
+        sc.display.shading.show_cavity = False
+        sc.display.shading.show_object_outline = True
+        sc.display.shading.show_shadows = False
+    except Exception:
+        pass
+    sc.render.resolution_x, sc.render.resolution_y = 2000, 2000
     _id_a = float(_shell_meta.get("id_001_angle_deg", 35.5))
     _h_pod = float(_shell_meta.get("pod_roof_mm", 25.0))
+    # Glyph cluster centres from id_001_info (increasing +Y = 0,0,1)
+    _id_meta = _shell_meta.get("id_001") or {}
     for side, sy in (("L", -1.0), ("R", 1.0)):
-        # REQUIRED verify cam: orthographic from +Z; screen-up = +X;
-        # screen-right = +Y (strap horizontal). Letter-up +X → upright;
-        # baseline +Y → 001 L→R identical on both lids.
+        # D4 REFERENCE cam: look −Z; screen-up = −X; screen-right = +Y.
+        # Must read 0,0,1 L→R (increasing +Y); tops toward −X; both lids.
         a_id = math.radians(sy * _id_a)
-        cy = _r_out * math.sin(a_id)
-        cz = _zc + _r_out * math.cos(a_id)
-        ny, nz = math.sin(a_id), math.cos(a_id)
-        lid = Vector((0.0, cy + ny * _h_pod, cz + nz * _h_pod))
+        info = _id_meta.get(side) or {}
+        places = info.get("glyph_placement") or []
+        if places:
+            # Aim at mid glyph centre (world)
+            _mx = sum(p["world_xyz"][0] for p in places) / len(places)
+            _my = sum(p["world_xyz"][1] for p in places) / len(places)
+            _mz = sum(p["world_xyz"][2] for p in places) / len(places)
+            lid = Vector((_mx, _my, _mz))
+        else:
+            cy = _r_out * math.sin(a_id)
+            cz = _zc + _r_out * math.cos(a_id)
+            ny, nz = math.sin(a_id), math.cos(a_id)
+            lid = Vector((0.0, cy + ny * _h_pod, cz + nz * _h_pod))
         cam_d.type = "ORTHO"
-        cam_d.ortho_scale = 36.0
-        # Right-handed: screen-right=−Y, screen-up=+X, look −Z.
-        # 001 ordered decreasing world Y → L→R on screen; letter-up +X upright.
-        _r = Vector((0.0, -1.0, 0.0))
-        _u = Vector((1.0, 0.0, 0.0))
-        _b = Vector((0.0, 0.0, 1.0))
+        # ~18 mm frame: three glyphs (~11.5 mm) with margin; crisp digits
+        cam_d.ortho_scale = 18.0
+        _r = Vector((0.0, 1.0, 0.0))    # screen-right = +Y
+        _u = Vector((-1.0, 0.0, 0.0))   # screen-up = −X
+        _b = Vector((0.0, 0.0, 1.0))    # cam +Z; looks −Z
         _o = Vector((lid.x, lid.y, lid.z + 250.0))
         _mw = _Mlid((
             (_r.x, _u.x, _b.x, _o.x),
@@ -1874,14 +1887,15 @@ if _palette == "charcoal":
             (_r.z, _u.z, _b.z, _o.z),
             (0.0, 0.0, 0.0, 1.0),
         ))
-        cam.location = _o
-        cam.rotation_euler = _mw.to_euler()
+        # Set matrix directly — to_euler can lose axis intent
+        cam.matrix_world = _mw
         bpy.context.view_layer.update()
         _ax = cam.matrix_world
         print(
-            f"  001 cam {side}: right={tuple(round(v,2) for v in _ax.col[0][:3])} "
+            f"  001 REF cam {side}: right={tuple(round(v,2) for v in _ax.col[0][:3])} "
             f"up={tuple(round(v,2) for v in _ax.col[1][:3])} "
-            f"back={tuple(round(v,2) for v in _ax.col[2][:3])}"
+            f"back={tuple(round(v,2) for v in _ax.col[2][:3])} "
+            f"aim=({lid.x:.2f},{lid.y:.2f},{lid.z:.2f}) ortho=18"
         )
         for out_name in (
             f"d6_001_closeup_{side}{suffix}.png",
@@ -1894,7 +1908,7 @@ if _palette == "charcoal":
             art = "/opt/cursor/artifacts"
             if os.path.isdir(art):
                 shutil.copy2(sc.render.filepath, os.path.join(art, out_name))
-            print(f"  001 worldZ strap-H {side}: {out_name}")
+            print(f"  001 D4-ref {side}: {out_name}")
 
 os.makedirs(os.path.dirname(review_blend), exist_ok=True)
 if _palette == "charcoal":

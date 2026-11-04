@@ -1,0 +1,20 @@
+{
+  "round": "D7r18",
+  "head_parent": "2690a1a",
+  "defects_fixed": [
+    "ORIENTATION: 001 rotated 180° about lid normal vs r17; letter-up = world −X (D4 ref screen-up); L→R = increasing +Y = 0,0,1 on BOTH lids; verify cam is D4 ref (right=+Y, up=−X, look=−Z), not the prior 180°-flipped cam",
+    "GEOMETRY: straight-prism EXACT boolean cutters (flat bottom roof−0.6 at glyph centre, vertical walls); 0 = rounded-rect ring 3.4×5 stroke 0.9; 1 = bar+flag; gap 1.2; span ≈11.45 mm; no swept channel",
+    "SHADING: shade_smooth() was clearing use_auto_smooth in Blender 4.0 — fixed via shade_smooth(use_auto_smooth=True, angle=30°) + sharp-by-angle marks; kills roof streaks / pillow look"
+  ],
+  "literal_crop_reads": {
+    "camera": "ortho look −Z; screen-up=world −X; screen-right=world +Y; ortho_scale=18; aim=glyph cluster",
+    "lid001_L": "L→R: 0, 0, 1; tops toward screen-up (−X); sharp prism pockets",
+    "lid001_R": "L→R: 0, 0, 1; tops toward screen-up (−X); sharp prism pockets"
+  },
+  "unchanged": [
+    "print STLs",
+    "assembly_check 144/144",
+    "heights 48.2/25",
+    "arc shell / flush navy / chamfers / orange dots"
+  ]
+}
