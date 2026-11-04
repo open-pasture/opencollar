@@ -834,7 +834,7 @@ def main():
             report["pass"] = False
 
     write_cap_md(report, os.path.join(_D6, "CAP.md"))
-    with open(os.path.join(STL_DIR, "report.json"), "w") as f:
+    with open(os.path.join(STL_DIR, "cap_report.json"), "w") as f:
         json.dump(report, f, indent=2)
 
     print("\nRESULT:", "PASS" if report["pass"] else "FAIL")

@@ -104,4 +104,4 @@ All internals: kit/bq/wio pockets, U.FL slack, lid posts, gasket+lip, columns/in
 
 ## STLs
 
-`stl/cap_base.stl`, `stl/cap_lid.stl`, `stl/cap_floor_layout.stl` — print orientation, watertight-checked (see `stl/report.json`).
+`stl/cap_base.stl`, `stl/cap_lid.stl`, `stl/cap_floor_layout.stl` — print orientation, watertight-checked (see `stl/cap_report.json`).
