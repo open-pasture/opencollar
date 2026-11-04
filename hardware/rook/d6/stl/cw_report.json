@@ -1,14 +1,18 @@
 {
-  "revision": "D6_cw_d4_skin_d5_mass",
+  "revision": "D7_cw_long_shallow_2x2_pack",
   "choice": {
-    "envelope": "88.0\u00d774.0\u00d730.0 tub (D5 mass envelope)",
-    "lid": "D4-style dome 12.7 mm with flat crown land (42.0, 36.0)",
-    "why_not_d4_tub": "D4 tub ~59\u00d785\u00d724 cannot fit steel pack (76.2, 50.8, 6.35)\u00d74 (stack H=25.4 mm, XY 76.2\u00d750.8)",
+    "envelope": "89.4\u00d7115.8\u00d718.0 tub (2\u00d72 pack, longer along strap)",
+    "plan_r_mm": 10.0,
+    "taper_inset_top_mm": 2.2,
+    "lid": "low dome 7.5 mm with flat crown land (36.0, 48.0)",
+    "pack_layout": "2 high \u00d7 2 along Y; footprint 76.2\u00d7102.6\u00d712.7 mm (still 4\u00d7 piece)",
+    "why_not_stacked_4": "D5/D6 4-high stack forced 30 mm tub; 2\u00d72 keeps 771.8 g steel but drops visual height and stretches along the strap",
     "fill_material": "4\u00d7 mild steel flat bar 76.2\u00d750.8\u00d76.35 mm (3 in of 2\u00d71/4 in) + 1.5 mm foam pad",
     "steel_mass_g": 771.8,
     "steel_volume_mm3": 98322.4,
     "steel_volume_cm3": 98.32,
-    "lid_seal": "2.0 mm O-ring groove in tub rim + registered lip; 4\u00d7 M3 button-head screws through lid into heat-set inserts; foam pad compresses steel pack under lid"
+    "lid_seal": "2.0 mm O-ring groove in tub rim + registered lip; 4\u00d7 M3 button-head screws through lid into heat-set inserts; foam pad compresses steel pack under lid",
+    "colour_rule": "Body: one calm light-gray ASA; orange (#FF6A2B) only on small functional accents (latch, screw heads, cue tab, clamp end caps)"
   },
   "clamp_lora_clear_mm": 44.0,
   "clamp_note": "Print clamp_bar \u00d71 STL; print 8 physical bars per collar",
@@ -97,20 +101,20 @@
   "bodies": {
     "cw_tub": {
       "size_mm": [
-        88.0,
-        74.0,
-        31.2
+        89.123,
+        116.0,
+        19.2
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 84994.41330239648
+        "volume_mm3": 59868.63067250622
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 28684
+        "faces": 32882
       },
       "pass": true,
       "stl_path": "stl/cw_tub.stl",
@@ -124,27 +128,27 @@
     },
     "cw_lid": {
       "size_mm": [
-        87.0,
-        73.0,
-        12.7
+        88.4,
+        114.8,
+        6.35
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 61416.39378105769
+        "volume_mm3": 46333.90948343443
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 3760
+        "faces": 4450
       },
       "pass": true,
       "stl_path": "stl/cw_lid.stl",
       "export_flipped_outer_down": false,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 5836.2,
+      "bed_face_area_mm2": 9464.0,
       "support_note": "Flat crown land on bed (~42\u00d736 mm). Strap channel is a pocket on the bed (no bridge). Internal cbore/landing after flip face UP \u2014 no large tree supports expected; optional tiny supports only if land bridges fail.",
       "orientation": "PRINT: MATING face DOWN z=0 (no outer flip; less support)",
       "load_path": "lid screws; dome up; strap channel on outer",
@@ -161,12 +165,12 @@
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 21057.73995977571
+        "volume_mm3": 20915.871087480475
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 2268
+        "faces": 2392
       },
       "pass": true,
       "stl_path": "stl/saddle.stl",
@@ -261,20 +265,20 @@
     },
     "cw_floor_layout": {
       "size_mm": [
-        79.2,
-        58.0,
+        82.2,
+        108.6,
         4.5
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 10127.83820367034
+        "volume_mm3": 19674.714294561865
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 27244
+        "faces": 25262
       },
       "pass": true,
       "stl_path": "stl/cw_floor_layout.stl",

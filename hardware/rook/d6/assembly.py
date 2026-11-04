@@ -48,9 +48,10 @@ CAP_L = 164.0
 
 CW_ANCH_Z = -465.75
 CW_Z0 = -3.2
-CW_TUB_H = 30.0
-CW_LID_T = 12.7
-CW_L, CW_W = 88.0, 74.0
+# D7 CW: 2×2 steel pack → longer along strap / shallower (was 88×74×30)
+CW_TUB_H = 18.0
+CW_LID_T = 7.5
+CW_L, CW_W = 89.4, 115.8
 
 STRAP_W = 44.45
 STRAP_T = 3.4              # channel depth family (SADDLE_CHANNEL_D)
@@ -96,9 +97,9 @@ FAIRING_CENTRES = {
     # Just outboard of pod strap-end (local −Y for L / +Y for R after raise)
     "fairing_pod_strap_L": (0.0, -178.0, -38.0),
     "fairing_pod_strap_R": (0.0, 178.0, -38.0),
-    # Beside CW tub (±Y), kissing the 74 mm-wide envelope
-    "fairing_cw_L": (0.0, 48.0, -467.8),
-    "fairing_cw_R": (0.0, -48.0, -467.8),
+    # Beside CW tub (±Y), kissing the D7 ~116 mm-along-strap envelope
+    "fairing_cw_L": (0.0, 72.0, -470.5),
+    "fairing_cw_R": (0.0, -72.0, -470.5),
 }
 # Back-compat alias
 D4_FAIRING_CENTRES = FAIRING_CENTRES
