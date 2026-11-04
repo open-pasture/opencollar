@@ -227,7 +227,7 @@ The first failure is the reject code:
 | bind | The new server key it carries, and only while unclaimed (`claimed`) |
 | confirm | The pending handover key, naming the current key in `replaces` and the digest of the handover that staged it in `handover` (`bad_sig`) |
 | handover, reason rotate | The current server key or the owner key |
-| handover, reason transfer; release; owner | The owner key when one is enrolled; the server key only while none is (`unknown_kid`). A stolen server key can't erase the owner's recovery or sell the collar |
+| handover, reason transfer; release; owner | The owner key when one is enrolled; the server key only while none is (`unknown_kid`). The owner key is **optional** and **OFF for the pilot**: without one, the server key signs, so a Hand who can edit the collar can use the app's **release** path. Whether a Hand may also **issue** a transfer code is undecided (Cody; [server.md §13](server.md#13-same-farm-moves-and-cross-farm-handover)). Enrolling an owner key protects against a stolen phone (server session). When enrolled, a stolen server key can't erase the owner's recovery or sell the collar |
 | everything else | The current server key alone (`unknown_kid`) |
 
 ### 4.5 Acknowledgements
