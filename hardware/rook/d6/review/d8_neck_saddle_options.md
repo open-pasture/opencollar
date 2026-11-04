@@ -1,74 +1,62 @@
-# D8 neck contact — one design for 75–130 cm
+# D8 neck contact — one table before anything becomes the plan
 
 **Draft only. No print. No merge.**  
-Pilot unit **is** the production design (Cody, 2026-11-04): leave room for the completed shock module on this same geometry.
+op-strategy: compare **A / B / C in one table** before picking. The as-drafted saddle (A) conflicts with Cody’s **ease of build** and **same production design** rules (extra parts, end standoff).
 
-**Location caveat:** where the pulse module finally goes is **NOT decided**. `docs/BOTTOM-BAY.md` l.95–97 puts it in the top unit; `hardware/rook/cad/assembly/node_v1.py` l.2 says side pods. Do not treat either as final. The **pod bay is the working assumption** under Cody’s Nov 4 stance (placement pending Cody). Shock-module interface: draft PR #30 — do not edit from this work.
+**Location:** pulse module in the **side pods** (Cody). Shock off in all builds for now. Interface draft PR #30 — do not edit from this work.
 
-**Design guardrail (op-strategy):** do **not** move toward a narrow low bridge, soft rounded blending, raised ribbed bridge top, vent slots at the pod–bridge joint, or glass-look flat pod tops. Keep cap dominant + faceted/segmented; blind groove stays a distinct step; plan corners ≤ **R3**.
+**How to read height:** numbers below are **neck → pod lid-top standoff (mm)**, not “mm above the strap.” Strap-relative review height is a different metric; do **not** treat “25 mm holds” as a neck-fit claim. Measured standoffs use the height-clarification stack (underside end-plane → lid-top ≈ **31 mm** constant + local underside↔neck). Detail: `d8_saddle_height_standoff.md`.
 
-## What the D8 pod underside actually is
+**assembly_check note:** `assembly_check.py` is a **geometry / interference** check on posed STLs. It is **not** a fit test and **not** a print test. A pass count is **not** proof of fit. Opt-B was checked with a separate geometry sanity script only (see below).
 
-Measured on `stl/pod_L_base.stl` (print frame, cavity UP, bed = z=0):
+---
 
-| Region | Shape | Notes |
-| --- | --- | --- |
-| Skirt / channel floor | **Flat** | Large bed face ≈ 46.5 × 67 mm at z=0 (strap channel 46.45 × 3.4 + clamp lands) |
-| Clamp pockets | **Flat steps** | Recessed in the skirt, still planar |
-| Skirt outer walls | **Curved in section** | Quarter-ellipse flare pod-width → strap-width over ~18 mm vertical — **not** a neck-radius curve |
-| Body outline above skirt | Contoured plan | Mid 68 / tip 66 / strap-end flare 76; R3 corners |
-| `fairing_pod_strap_*` | Wedge loft | Blends pod → strap; plan/height ramp — **not** R≈220 neck saddle |
+## A / B / C comparison
 
-So Cody’s “flat underside” estimate matches the **print bed face** (skirt+channel). The only curves today are the skirt flare walls and the strap fairing — neither is sized to the neck.
-
-Pod centre is 126 mm along-strap from crest; pod length 97 mm. Cody’s quoted local R at that station ≈ 208 / 218 / 221 mm for 75 / 107 / 130 cm (see `gap_calc.py`).
-
-## Gap under a flat 97 mm chord
-
-Independent calc (`review/gap_calc.py`), using Cody’s quoted local radii (authoritative — the raw ellipse@29.5° does not reproduce 208/218/221 without a measured neck model):
-
-| Circumference | Quoted R | Flat mid-gap | R220 fill | Residual |
-| --- | ---: | ---: | ---: | ---: |
-| 75 cm | 208 mm | 5.73 mm | 5.41 mm | **0.32 mm** |
-| 107 cm | 218 mm | 5.46 mm | 5.41 mm | **0.05 mm** |
-| 130 cm | 221 mm | 5.39 mm | 5.41 mm | **0.03 mm** |
-
-Matches Cody’s ~5–6 mm flat gap. **Ask: verify the 25×42 cm ellipse / those radii against any real neck measurements. Do not invent measurements.**
-
-## Options (one design, 75–130 cm)
-
-| | (1) Rigid curved saddle/pad | (2) Flexible TPU contact pad | (3) Hinge/slide at 4×M3 cap joint |
+| | **(A) Saddle as drafted** (separate part / pod) | **(B) Integral R≈220 underside on pod base** | **(C) B + thin compliant pad later** |
 | --- | --- | --- | --- |
-| **Idea** | Separate part/pod: flat → pod, concave R≈220 → neck | Soft pad takes residual + animal variation | Let the rigid pod rock to average contact |
-| **Part count** | **+1 saddle / pod** (+ service lid + wire blank plug) | +1 TPU pad / pod (+ hard carrier or overmold) | 0 new bodies; more fasteners/bushings at joint |
-| **Height above strap** | **0** if saddle lives in the ~5–6 mm underside gap | **0** if pad ≤ gap; thicker foam grows inward only | **0** above strap; joint stack may grow along strap |
-| **Height toward neck** | Fills ~5.4 mm (R220 sagitta) | Same budget; compliance in the pad | None by itself — still needs a pad/electrodes |
-| **Print** | **ASA**, flat pod-face **on bed**, concave neck-face **up** with light bowl supports (preferred). Side-print also possible but puts layer lines on the seal face. Curved face never on the bed. | TPU on flat bed (pad flat or lightly crowned); ASA carrier if needed | Existing ASA parts; no new curved print |
-| **Pros** | Predictable geometry; one hard interface for bay/electrodes; fits all three sizes within ~0.4 mm | Best animal comfort / hair / mud forgiveness | Keeps underside simple |
-| **Cons** | Rigid curve ≠ every neck; **must not** be the only electrode contact | Extra material/process; sealing harder | Caps joint stiffness/IP; doesn’t create electrode land |
+| **Idea** | Flat→pod / R220→neck saddle STL; bay + service lid in the saddle | Cut R≈220 concave into the **pod base** skirt bed; **no** extra saddle part | Same hard geometry as B; add a thin TPU/elastomer pad for electrodes when fitted |
+| **Parts added / pod** | **+3** (saddle, service lid, wire plug) | **+1** (service lid on neck-face bay) | **+2** (service lid + compliant pad) |
+| **Parts / pod total** | **5** (base, lid, saddle, service lid, wire plug) | **3** (base-with-curve, lid, service lid) | **4** (B + pad) |
+| **Parts added / collar** | **+6** | **+2** | **+4** |
+| **Height above the strap** | **0 mm** added (saddle is neck-side only) | **0 mm** added (curve cut into existing skirt) | **0 mm** hard goods; pad is neck-side when fitted |
+| **Neck → lid-top @ centre (mm)** R208 / 218 / 221 | **39.29 / 39.29 / 39.29** (Δ vs flat a6b2118: **+2.55 / +2.82 / +2.90**) | **31.32 / 31.05 / 31.03** (Δ vs flat: **−5.41 / −5.41 / −5.36** — fills mid-gap) | Same as B for the hard shell; pad adds ~1–2 mm toward neck when fitted (TBD) |
+| **Neck → lid-top @ ends (mm)** R208 / 218 / 221 | **44.70 / 44.70 / 44.70** (Δ vs flat: **+13.70** all) | **31.00 / 31.00 / 31.00** (Δ vs flat: **0**) | Same as B (+ pad if it covers ends) |
+| **What drives standoff** | Bay blank is **thickest at the ends** (rim 13.7 mm); centre solid ~8.3 mm | Gap-fill only (~5.4 mm sagitta into the skirt); **ends stay on the old bed plane** | B + soft stack when populated |
+| **Gap vs neck @ 75 / 107 / 130 cm** (flat mid-gap R208/218/221) | Rigid R220 residual after fill: **0.32 / 0.05 / 0.03 mm** — still need compliant electrodes when fitted | Same residual to the hard curve (**≤0.32 mm**); centre air gap of flat design is removed | Hard residual same as B; **pad** takes animal/hair variation |
+| **Print orientation** | Saddle: **flat pod-face on bed**, concave UP, light bowl supports (bed rule OK) | **Chosen after test:** curve UP / cavity DOWN — see experiment | Same hard print as B; pad: flat on bed (TPU) |
+| **Supports / first layer / bed rule** | Bowl supports on saddle only; pod base still cavity-UP on a **large flat bed** (~1900 mm²) | **Bed rule OK** (curve off bed). First-layer area **~872 mm²** (vs ~1900 cavity-UP) — brim recommended. Overhang area on cavity-down features **~8600 mm²** — needs supports under lips/columns + light bowl supports in the concave | Same as B for the base |
+| **Prints cleanly?** | Saddle: yes (proven pattern). Extra plate / ASA part. | **Candidate, not proven on a machine.** Manifold STL built; geometry sanity PASS. Cavity-down is a real process change (supports, adhesion). Side-print rejected. Curve-on-bed rejected. | Same as B + easy TPU pad |
+| **Assembly steps** | Print saddle; screw/gasket to pod bed; fit service lid + wire plug; later drop in module | Print curved base; fit service lid on neck-face bay; no saddle mate step | Same as B; stick/seat pad on lands when module fitted |
+| **Bay + service lid** | In the **saddle** (module+driver keep-outs, gasket, service lid, wire plug) | **Into the pod base**, opening through the curved underside; service lid on the **neck face** of that opening (PLACEHOLDER envelope in experiment) | Same as B; electrodes on the **module**; pad on the skin side |
+| **Ease of build / same production design** | **Conflicts** — +3 parts/pod, end lift +13.7 mm off the neck | **Better** — no extra saddle; same pod count +1 lid; standoff not jacked at ends | Still simple; pad is optional later |
+| **CAD status** | **PR #28 current** (`stl/pod_*_saddle.stl`, …) | **Experiment only** — `experiments/opt_b_integral_underside/` (does **not** overwrite PR #28) | Experiment path same as B; pad not modelled as a solid yet |
 
-### Recommendation (confirmed)
+---
 
-**(1) separate rigid saddle per pod**, with Part B’s sealed blank bay and **reserved electrode compliance** (spring or elastomer-backed studs — unpopulated). Evidence:
+## Opt-B experiment (actually tested)
 
-- Gap math shows R220 leaves ≤0.4 mm residual across 75–130 cm — good enough for a hard locator.
-- Flat bed face already exists on the pod — saddle mates flat-to-flat without redesigning the print bed rule.
-- Hinge/slide (3) does not create electrode lands or a module bay.
-- TPU (2) remains available later as a **skin cover** over the saddle electrodes; it is not required to define the bay.
+Path: `hardware/rook/d6/experiments/opt_b_integral_underside/`
 
-**Print method pick:** flat pod-mating face on the bed, concave R220 up, light supports in the bowl. Why: mating/seal face gets bed accuracy; curve is never on the bed; supports only touch non-critical concave skin. **Reject upside-down-with-lid** (puts the curve on the bed — violates the bed rule). **Reject side-print as default** (gasket/land would be vertical layers). Same write-up: `review/d8_fit_coupon_notes.md`.
-
-## Electrode contact — hinge vs compliant (from residual vs R 208–221)
-
-Measured residual after R220 saddle: **≤0.32 mm** (75 cm) / ~0.05 mm (107/130).
-
-| Need | Verdict |
+| Artefact | Role |
 | --- | --- |
-| **Compliant / floating electrode contact** | **YES — required** when fitted (spring or elastomer). Rigid curve alone is not skin contact. |
-| **Hinge at the 4×M3 joint** | **NOT required** for ≤0.32 mm residual. Overkill; revisit only if real-neck data shows a much larger mismatch. |
+| `build_opt_b.py` | Copies `stl/pod_L_base.stl`, cuts R220 underside + placeholder bay, exports experiment STLs |
+| `stl/pod_L_base_optB_curveUP.stl` | Chosen orientation (curve UP) |
+| `stl/pod_L_base_optB_cavityUP.stl` | Reject orientation (curve on bed) |
+| `stl/optb_bay_cover.stl` | Placeholder service lid |
+| `opt_b_report.json` | Sagitta, orientations, standoff, overhangs |
+| `geometry_check_opt_b.py` | Watertight / bounds / first-layer proxy — **not** a fit/print proof |
 
-A rigid R220 saddle matches **one** ideal ellipse — the 25×42 cm model is **not** measured cattle. Bay reserves travel / compliance (PLACEHOLDER). Still unpopulated when bay is blank.
+Run geometry sanity: `python3 experiments/opt_b_integral_underside/geometry_check_opt_b.py`
 
-## Open measurement ask
+**Plain result:** integral R220 cut is manifold; chosen print is curve-UP with supports; first layer smaller than today’s cavity-UP bed; **not** machine-printed here; **not** assembly_check–qualified as a drop-in for PR #28.
 
-**Please check the 25×42 cm ellipse (and the 208/218/221 mm local radii) against any real neck measurements on hand. Do not invent measurements.** Until then, treat the ellipse as a sizing model only.
+---
+
+## Ellipse measurement ask
+
+Check the 25×42 cm ellipse and R 208 / 218 / 221 mm against any real neck measurements on hand. **Do not invent measurements.**
+
+## Pending pick
+
+op-strategy / Cody: choose **A**, **B**, or **C** before any of this becomes the production plan. Until then PR #28 keeps **A** as drafted geometry; **B/C** live only under `experiments/opt_b_integral_underside/`.
