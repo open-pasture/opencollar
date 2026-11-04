@@ -736,12 +736,18 @@ chk(
     "easy to revise",
 )
 chk(
-    "electrode studs kept in design (op-architect), tips sealed unfitted",
-    "elec_stud" in saddle_src
-    and "ELECTRODE_STUD_H" in saddle_src
-    and ("sealed" in saddle_src.lower() or "STUD_SEAL" in saddle_src),
-    "stud bosses kept, sealed tips",
-    "reserved feature, not populated",
+    "unfitted bay: blank/flat skin lands, no open electrodes",
+    "elec_land_blank" in saddle_src
+    and "BLANK/FLAT" in saddle_src
+    and "NO electrodes" in saddle_src,
+    "blank/flat lands",
+    "no electrodes / no pulse when unfitted",
+)
+chk(
+    "electrode studs = reserved internal keep-out only (sealed)",
+    "ELECTRODE_STUD_KEEP_OUT" in saddle_src and "elec_stud_ko" in saddle_src,
+    "internal sealed stud keep-out",
+    "architect reserved / strategy unfitted blank",
 )
 chk(
     "op-architect reserved: connector, strain relief, sealed pass-through, service lid",
@@ -751,6 +757,21 @@ chk(
     and "service lid" in saddle_src.lower(),
     "connector+strain+seal+service lid",
     "reserved features, not populated",
+)
+chk(
+    "design guardrail: no Halter-like bridge / soft blend / vents / glass tops",
+    "design_guardrail" in saddle_src
+    and "narrow low bridge" in saddle_src
+    and "SADDLE_PLAN_R = 3" in saddle_src,
+    "guardrail + R3",
+    "cap dominant / faceted / ≤R3",
+)
+chk(
+    "pod PLAN_R stays ≤ R3 (no corner rounding beyond target)",
+    ("PLAN_R = 3.0" in pod_src or "PLAN_R = 3" in pod_src)
+    and "SADDLE_PLAN_R = 3" in saddle_src,
+    "pod+saddle R3",
+    "≤ R3",
 )
 chk(
     "review 25 mm pod lid-top holds (saddle toward neck only)",

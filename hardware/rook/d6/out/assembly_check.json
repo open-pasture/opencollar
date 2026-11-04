@@ -554,7 +554,7 @@
   {
    "check": "pod_L_saddle: volume>0",
    "ok": true,
-   "measured": 31042,
+   "measured": 30999,
    "expected": ">0",
    "note": ""
   },
@@ -714,7 +714,7 @@
   {
    "check": "pod_R_saddle: volume>0",
    "ok": true,
-   "measured": 31042,
+   "measured": 30999,
    "expected": ">0",
    "note": ""
   },
@@ -1485,10 +1485,17 @@
    "note": ""
   },
   {
-   "check": "electrode studs kept in design (op-architect), tips sealed unfitted",
+   "check": "unfitted bay: blank/flat skin lands, no open electrodes",
    "ok": true,
-   "measured": "stud bosses kept, sealed tips",
-   "expected": "reserved feature, not populated",
+   "measured": "blank/flat lands",
+   "expected": "no electrodes / no pulse when unfitted",
+   "note": ""
+  },
+  {
+   "check": "electrode studs = reserved internal keep-out only (sealed)",
+   "ok": true,
+   "measured": "internal sealed stud keep-out",
+   "expected": "architect reserved / strategy unfitted blank",
    "note": ""
   },
   {
@@ -1496,6 +1503,20 @@
    "ok": true,
    "measured": "connector+strain+seal+service lid",
    "expected": "reserved features, not populated",
+   "note": ""
+  },
+  {
+   "check": "design guardrail: no Halter-like bridge / soft blend / vents / glass tops",
+   "ok": true,
+   "measured": "guardrail + R3",
+   "expected": "cap dominant / faceted / \u2264R3",
+   "note": ""
+  },
+  {
+   "check": "pod PLAN_R stays \u2264 R3 (no corner rounding beyond target)",
+   "ok": true,
+   "measured": "pod+saddle R3",
+   "expected": "\u2264 R3",
    "note": ""
   },
   {

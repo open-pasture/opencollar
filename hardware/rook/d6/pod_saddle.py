@@ -8,12 +8,19 @@ All MODULE_*/DRIVER_*/WIRE_*/ELECTRODE_* sizes below are
 **PLACEHOLDER, not a spec** — pending op-firmware. No module, driver, or
 electrode has been chosen. Easy to revise for later seal/isolation/vent rules.
 
-Unfitted bay (op-strategy): NO electrodes fitted, NO pulse circuit.
-Only: service lid, connector position, wire path + strain relief, sealed
-pass-through, blank wire plug, blank/flat skin-contact lands. Electrode
-stud geometry is *reserved keep-out* only (sealed blanks) — op-architect
-asked to keep studs; op-strategy wants none open when unfitted. Flagged
-for op-strategy to resolve.
+Unfitted bay (op-strategy): NO electrodes, NO pulse circuit.
+Only: service lid (or blank plug), connector position, wire path with
+strain relief, sealed pass-through (+ blank wire plug). Skin-contact
+lands are BLANK/FLAT only. Electrode studs / pass-throughs = reserved
+geometry only, sealed or blank when unfitted — never open holes.
+Flag: op-architect asked to keep studs; op-strategy wants no electrodes
+in the unfitted state → op-strategy to resolve.
+
+Design guardrail (op-strategy / Halter look-alike): do NOT move toward a
+narrow low bridge, soft rounded blending, raised ribbed bridge top, vent
+slots at the pod–bridge joint, or glass-look flat pod tops. KEEP cap
+dominant + faceted/segmented; blind groove stays a distinct step; plan
+corners ≤ R3.
 
 Print (saddle): flat pod-face on bed; concave R220 UP; light bowl supports.
 Print (service lid / wire plug): flat, features UP.
@@ -63,17 +70,17 @@ DRIVER_MARGIN_Z = 2.0
 
 ELECTRODE_PLACEHOLDER = True       # PLACEHOLDER, not a spec
 ELECTRODE_NOTE = (
-    "placeholder, not a spec — studs kept in the design as reserved features "
-    "(not populated parts); no pulse circuit when unfitted"
+    "placeholder, not a spec — reserved geometry only; unfitted skin face is "
+    "BLANK/FLAT (no electrodes, no open holes, no pulse circuit)"
 )
 ELECTRODE_D = 6.0
 ELECTRODE_SPACING = 25.0
-ELECTRODE_LAND_D = 10.0
-ELECTRODE_STUD_H = 2.5             # reserved stud boss height toward neck
-ELECTRODE_STUD_SEAL_T = 1.0        # sealed tip thickness (no open hole unfitted)
+ELECTRODE_LAND_D = 10.0            # blank/flat skin-contact land diameter
+ELECTRODE_STUD_KEEP_OUT = True     # reserved internal geometry (architect)
 ELECTRODE_COMPLIANCE_TRAVEL = 3.0  # reserved for spring/elastomer when fitted
-# op-architect (record O): keep electrode studs in the design.
-# Unfitted: stud bosses present, tips sealed (not populated conductive parts).
+# Unfitted (op-strategy): NO electrodes, NO pulse. Skin land = blank/flat only.
+# Studs/pass-throughs = reserved sealed keep-outs inside the bay, not open.
+# Flag: op-architect wants studs kept; op-strategy wants none in unfitted state.
 
 WIRE_PLACEHOLDER = True            # PLACEHOLDER, not a spec
 WIRE_NOTE = (
@@ -253,44 +260,36 @@ def saddle_body(side: str = "L"):
     )
     oc.cut(body, oc.cut(ring_o, ring_i))
 
-    # --- Electrode studs KEPT in the design (op-architect record O) ---
-    # Reserved features, not populated parts: Ø6 stud bosses @ 25 mm on the
-    # module bay, sealed tips when unfitted (no open conductive path).
+    # --- Skin-contact lands: BLANK / FLAT only (op-strategy unfitted state) ---
+    # No protruding studs, no open electrode holes, no pulse circuit.
+    # Internal reserved stud/compliance keep-out stays sealed behind the land
+    # face (architect: keep studs in the design as reserved geometry).
     skin_z = total_h - sag_cut
     for i, sy in enumerate((-0.5, 0.5)):
         ey = module_y + sy * ELECTRODE_SPACING
+        # Blank/flat skin-contact land (coplanar pad — not a stud)
         land = oc.cylinder(
-            f"elec_land{i}",
+            f"elec_land_blank{i}",
             ELECTRODE_LAND_D,
-            0.8,
-            at=(0.0, ey, skin_z - 0.4),
+            0.6,
+            at=(0.0, ey, skin_z - 0.5),
             anchor="bottom",
             segments=24,
         )
         oc.union(body, land)
-        # Stud boss toward neck (reserved geometry)
-        stud = oc.cylinder(
-            f"elec_stud{i}",
-            ELECTRODE_D,
-            ELECTRODE_STUD_H,
-            at=(0.0, ey, skin_z - 0.2),
-            anchor="bottom",
-            segments=24,
-        )
-        oc.union(body, stud)
-        # Internal compliance / stud well keep-out — stops short of sealed tip
-        oc.cut(
-            body,
-            oc.cylinder(
-                f"elec_comp_ko{i}",
-                ELECTRODE_D - 1.0,
-                ELECTRODE_COMPLIANCE_TRAVEL,
-                at=(0.0, ey, bay_z0 + bh - ELECTRODE_COMPLIANCE_TRAVEL - 0.5),
-                anchor="bottom",
-                segments=20,
-            ),
-        )
-        # Tip remains sealed by ELECTRODE_STUD_SEAL_T of solid (unfitted)
+        if ELECTRODE_STUD_KEEP_OUT:
+            # Reserved internal stud well — does NOT pierce the skin land
+            oc.cut(
+                body,
+                oc.cylinder(
+                    f"elec_stud_ko{i}",
+                    ELECTRODE_D + 0.5,
+                    ELECTRODE_COMPLIANCE_TRAVEL,
+                    at=(0.0, ey, bay_z0 + bh - ELECTRODE_COMPLIANCE_TRAVEL - 1.0),
+                    anchor="bottom",
+                    segments=20,
+                ),
+            )
 
     # --- Sealed wire path bay → pod face (cell cavity via pod gland @ Y=-28) ---
     module_neg_end = module_y - 0.5 * bl
@@ -443,18 +442,33 @@ def saddle_body(side: str = "L"):
             "electrode": {
                 "note": ELECTRODE_NOTE,
                 "D_spacing": [ELECTRODE_D, ELECTRODE_SPACING],
-                "stud_h_mm": ELECTRODE_STUD_H,
-                "stud_seal_t_mm": ELECTRODE_STUD_SEAL_T,
-                "in_design": "stud bosses kept (reserved feature, not populated)",
-                "unfitted": "stud tips sealed — no open conductive path",
+                "skin_land": "blank/flat only",
+                "stud_keep_out_internal": ELECTRODE_STUD_KEEP_OUT,
+                "unfitted": (
+                    "NO electrodes, NO pulse circuit; blank/flat lands; "
+                    "studs/pass-throughs reserved + sealed"
+                ),
                 "compliance_travel_mm": ELECTRODE_COMPLIANCE_TRAVEL,
+                "architect_vs_strategy": (
+                    "op-architect: keep electrode studs in the design. "
+                    "op-strategy: unfitted bay holds no electrodes. "
+                    "CAD: blank/flat skin lands + internal sealed stud keep-out. "
+                    "Flagged for op-strategy to resolve."
+                ),
             },
             "op_architect_reserved": [
                 "connector_position",
                 "wire_path_with_strain_relief",
                 "sealed_pass_through",
                 "service_lid_gasket_screws",
-                "electrode_studs",
+                "electrode_stud_keep_out_internal",
+            ],
+            "unfitted_bay_contents": [
+                "service_lid_or_blank_plug",
+                "connector_position",
+                "wire_path_with_strain_relief",
+                "sealed_pass_through",
+                "blank_flat_skin_lands",
             ],
             "wire": {
                 "note": WIRE_NOTE,
@@ -485,10 +499,33 @@ def saddle_body(side: str = "L"):
             "material": "ASA",
             "brim_mm": 8,
         },
-        "design_guardrail": (
-            "Keep cap dominant / faceted / segmented; blind groove stays a distinct "
-            "step; no soft bridge blend, no vent slots, no ribbed bridge, no glass-look "
-            "flat pod tops; plan corners ≤ R3."
+        "design_guardrail": {
+            "source": "op-strategy / op-office Halter design-patent comparison",
+            "do_not": [
+                "narrow low bridge between dominant pods",
+                "soft rounded blending",
+                "raised ribbed bridge top",
+                "vent slots at the pod-bridge joint",
+                "glass-look flat pod tops",
+            ],
+            "keep": [
+                "cap dominant",
+                "faceted segmented look",
+                "blind groove at cap-to-pod joint as a distinct step (no soft blend)",
+                "plan corners ≤ R3 (SADDLE_PLAN_R / POD PLAN_R = 3)",
+            ],
+            "saddle_plan_r_mm": SADDLE_PLAN_R,
+            "note": (
+                "Pod and saddle changes must not flatten pod tops or add vents "
+                "or ribs on the bridge. Earlier fixes must not round corners "
+                "beyond the R3 target."
+            ),
+        },
+        "shock_module_interface": (
+            "draft PR #30 docs/SHOCK-MODULE-INTERFACE.md — do not edit from this work"
+        ),
+        "pod_bay_status": (
+            "working assumption under Cody Nov 4 stance; placement pending Cody"
         ),
     }
     return body, meta, {

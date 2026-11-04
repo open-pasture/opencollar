@@ -31,7 +31,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 3166
+        "faces": 2870
       },
       "side": "L",
       "saddle_R_mm": 220.0,
@@ -82,23 +82,30 @@
           ]
         },
         "electrode": {
-          "note": "placeholder, not a spec \u2014 studs kept in the design as reserved features (not populated parts); no pulse circuit when unfitted",
+          "note": "placeholder, not a spec \u2014 reserved geometry only; unfitted skin face is BLANK/FLAT (no electrodes, no open holes, no pulse circuit)",
           "D_spacing": [
             6.0,
             25.0
           ],
-          "stud_h_mm": 2.5,
-          "stud_seal_t_mm": 1.0,
-          "in_design": "stud bosses kept (reserved feature, not populated)",
-          "unfitted": "stud tips sealed \u2014 no open conductive path",
-          "compliance_travel_mm": 3.0
+          "skin_land": "blank/flat only",
+          "stud_keep_out_internal": true,
+          "unfitted": "NO electrodes, NO pulse circuit; blank/flat lands; studs/pass-throughs reserved + sealed",
+          "compliance_travel_mm": 3.0,
+          "architect_vs_strategy": "op-architect: keep electrode studs in the design. op-strategy: unfitted bay holds no electrodes. CAD: blank/flat skin lands + internal sealed stud keep-out. Flagged for op-strategy to resolve."
         },
         "op_architect_reserved": [
           "connector_position",
           "wire_path_with_strain_relief",
           "sealed_pass_through",
           "service_lid_gasket_screws",
-          "electrode_studs"
+          "electrode_stud_keep_out_internal"
+        ],
+        "unfitted_bay_contents": [
+          "service_lid_or_blank_plug",
+          "connector_position",
+          "wire_path_with_strain_relief",
+          "sealed_pass_through",
+          "blank_flat_skin_lands"
         ],
         "wire": {
           "note": "placeholder, not a spec \u2014 pod-to-cap harness channel; count/gauge unknown; sized \u22658 conductors for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; NOT a final pinout",
@@ -137,7 +144,26 @@
         "material": "ASA",
         "brim_mm": 8
       },
-      "design_guardrail": "Keep cap dominant / faceted / segmented; blind groove stays a distinct step; no soft bridge blend, no vent slots, no ribbed bridge, no glass-look flat pod tops; plan corners \u2264 R3."
+      "design_guardrail": {
+        "source": "op-strategy / op-office Halter design-patent comparison",
+        "do_not": [
+          "narrow low bridge between dominant pods",
+          "soft rounded blending",
+          "raised ribbed bridge top",
+          "vent slots at the pod-bridge joint",
+          "glass-look flat pod tops"
+        ],
+        "keep": [
+          "cap dominant",
+          "faceted segmented look",
+          "blind groove at cap-to-pod joint as a distinct step (no soft blend)",
+          "plan corners \u2264 R3 (SADDLE_PLAN_R / POD PLAN_R = 3)"
+        ],
+        "saddle_plan_r_mm": 3.0,
+        "note": "Pod and saddle changes must not flatten pod tops or add vents or ribs on the bridge. Earlier fixes must not round corners beyond the R3 target."
+      },
+      "shock_module_interface": "draft PR #30 docs/SHOCK-MODULE-INTERFACE.md \u2014 do not edit from this work",
+      "pod_bay_status": "working assumption under Cody Nov 4 stance; placement pending Cody"
     },
     "pod_L_bay_cover": {
       "size_mm": [
@@ -182,7 +208,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 3166
+        "faces": 2870
       },
       "side": "R",
       "saddle_R_mm": 220.0,
@@ -233,23 +259,30 @@
           ]
         },
         "electrode": {
-          "note": "placeholder, not a spec \u2014 studs kept in the design as reserved features (not populated parts); no pulse circuit when unfitted",
+          "note": "placeholder, not a spec \u2014 reserved geometry only; unfitted skin face is BLANK/FLAT (no electrodes, no open holes, no pulse circuit)",
           "D_spacing": [
             6.0,
             25.0
           ],
-          "stud_h_mm": 2.5,
-          "stud_seal_t_mm": 1.0,
-          "in_design": "stud bosses kept (reserved feature, not populated)",
-          "unfitted": "stud tips sealed \u2014 no open conductive path",
-          "compliance_travel_mm": 3.0
+          "skin_land": "blank/flat only",
+          "stud_keep_out_internal": true,
+          "unfitted": "NO electrodes, NO pulse circuit; blank/flat lands; studs/pass-throughs reserved + sealed",
+          "compliance_travel_mm": 3.0,
+          "architect_vs_strategy": "op-architect: keep electrode studs in the design. op-strategy: unfitted bay holds no electrodes. CAD: blank/flat skin lands + internal sealed stud keep-out. Flagged for op-strategy to resolve."
         },
         "op_architect_reserved": [
           "connector_position",
           "wire_path_with_strain_relief",
           "sealed_pass_through",
           "service_lid_gasket_screws",
-          "electrode_studs"
+          "electrode_stud_keep_out_internal"
+        ],
+        "unfitted_bay_contents": [
+          "service_lid_or_blank_plug",
+          "connector_position",
+          "wire_path_with_strain_relief",
+          "sealed_pass_through",
+          "blank_flat_skin_lands"
         ],
         "wire": {
           "note": "placeholder, not a spec \u2014 pod-to-cap harness channel; count/gauge unknown; sized \u22658 conductors for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; NOT a final pinout",
@@ -288,7 +321,26 @@
         "material": "ASA",
         "brim_mm": 8
       },
-      "design_guardrail": "Keep cap dominant / faceted / segmented; blind groove stays a distinct step; no soft bridge blend, no vent slots, no ribbed bridge, no glass-look flat pod tops; plan corners \u2264 R3."
+      "design_guardrail": {
+        "source": "op-strategy / op-office Halter design-patent comparison",
+        "do_not": [
+          "narrow low bridge between dominant pods",
+          "soft rounded blending",
+          "raised ribbed bridge top",
+          "vent slots at the pod-bridge joint",
+          "glass-look flat pod tops"
+        ],
+        "keep": [
+          "cap dominant",
+          "faceted segmented look",
+          "blind groove at cap-to-pod joint as a distinct step (no soft blend)",
+          "plan corners \u2264 R3 (SADDLE_PLAN_R / POD PLAN_R = 3)"
+        ],
+        "saddle_plan_r_mm": 3.0,
+        "note": "Pod and saddle changes must not flatten pod tops or add vents or ribs on the bridge. Earlier fixes must not round corners beyond the R3 target."
+      },
+      "shock_module_interface": "draft PR #30 docs/SHOCK-MODULE-INTERFACE.md \u2014 do not edit from this work",
+      "pod_bay_status": "working assumption under Cody Nov 4 stance; placement pending Cody"
     },
     "pod_R_bay_cover": {
       "size_mm": [

@@ -3,7 +3,9 @@
 **Draft only. No print. No merge.**  
 Pilot unit **is** the production design (Cody, 2026-11-04): leave room for the completed shock module on this same geometry.
 
-**Location caveat:** where the pulse module finally goes is **NOT decided**. `docs/BOTTOM-BAY.md` l.95–97 puts it in the top unit; `hardware/rook/cad/assembly/node_v1.py` l.2 says side pods. Do not treat either as final. The **pod bay is the working assumption** under Cody’s Nov 4 stance.
+**Location caveat:** where the pulse module finally goes is **NOT decided**. `docs/BOTTOM-BAY.md` l.95–97 puts it in the top unit; `hardware/rook/cad/assembly/node_v1.py` l.2 says side pods. Do not treat either as final. The **pod bay is the working assumption** under Cody’s Nov 4 stance (placement pending Cody). Shock-module interface: draft PR #30 — do not edit from this work.
+
+**Design guardrail (op-strategy):** do **not** move toward a narrow low bridge, soft rounded blending, raised ribbed bridge top, vent slots at the pod–bridge joint, or glass-look flat pod tops. Keep cap dominant + faceted/segmented; blind groove stays a distinct step; plan corners ≤ **R3**.
 
 ## What the D8 pod underside actually is
 

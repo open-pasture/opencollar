@@ -23,7 +23,8 @@ A rigid R220 saddle matches **one** ideal neck shape. The **25 × 42 cm ellipse 
 - The design **must not** rely on the rigid saddle alone for electrode skin contact.
 - Complete-version bay: electrode **module** keep-out **and** **driver** keep-out (both PLACEHOLDER, not a spec), sealed wire path ≥8 conductors + blank plug, service lid.
 - Residual vs R 208–221 after R220: **≤0.32 mm** → **compliant/floating contact YES; hinge NO.**
-- Reserve **travel / compliance** (`ELECTRODE_COMPLIANCE_TRAVEL` in `pod_saddle.py`). Unfitted = blank lands, no open electrodes.
+- Unfitted (op-strategy): **NO electrodes, NO pulse** — service lid, connector, wire path + strain relief, sealed pass-through; skin land = **blank/flat only**. Studs = reserved sealed internal geometry; flag architect-vs-strategy for op-strategy.
+- Design guardrail: no Halter-like narrow bridge / soft blend / ribbed bridge / vents / glass tops; blind groove stays a distinct step; corners ≤ **R3**.
 
 ## (3) Measurement ask
 
