@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+mainmenu "OpenCollar Starling"
+
+config STARLING_GNSS_FAKE
+	bool "Fake GNSS scripted track (no hardware)"
+	default y
+	help
+	  Replay a scripted track for fence/cue development without a fix.
+	  Disable when the u-blox MAX-M10S UART backend is wired.
+
+config STARLING_SERVE
+	bool "Serve fence updates to Starling neighbors (multi-hop)"
+	default n
+	help
+	  When disabled (default), Starling only adopts fences from Rooks
+	  (one-hop fallback). When enabled, also serve newer fences to
+	  neighbors per op-fw-proto Trickle gossip.
+
+config STARLING_BENCH_FENCE
+	bool "Load demo fence when NVS is empty"
+	default y
+	help
+	  Pilot convenience for fake-GNSS demos. Real collars should ship
+	  with this off once provisioning is wired.
+
+source "Kconfig.zephyr"
