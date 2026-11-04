@@ -90,7 +90,7 @@ With the battery at the bottom, the harness carries the pack itself, not a 5 V b
 
 ## 5. What this does to the boards
 
-- **The integrated board is shaped to the crest unit**, ~55 × 125 mm, with the patch on the board. The pods hold only a piezo (and later an electrode), so they need no boards. The board drives the shell, not the other way round.
+- **The integrated board is shaped to the crest unit**, ~55 × 125 mm, with the patch on the board. The pods hold a piezo and, when fitted, the **shock-module board** in the reserved pod bay (electrodes belong to that module; studs/holes in the pod are reserved geometry, blank or sealed when unfitted). The crest board still drives the shell; the module board is local to the pod.
 - **V1-alpha goes in a plain test box.** Dev boards can't fit a slim collar: the Connect Kit on sockets alone is ~15 mm tall. Draft 1 of the shell becomes that box. The alpha still proves what matters: GNSS, the left/right cue, the battery at the bottom and the harness on animals.
 - **The carrier board is a rectangle under 100 × 100 mm** (JLCPCB's cheapest tier). It replaces the jumper wires in the alpha collars and gains what the alpha needs to test the new layout: the battery on the harness, and a left and a right cue port (`hardware/carrier/SPEC.md`).
 
