@@ -425,9 +425,9 @@ def _add_roof_fairing_sleeves(details_col, body_rgb):
         pb = _world_bbox(pod)
         y_cap = cb[2] if sy < 0 else cb[3]
         y_pod = pb[3] if sy < 0 else pb[2]
-        # Deep overlap so cap+pod read as one band
-        y_a = y_cap - sy * 8.0
-        y_b = y_pod + sy * 12.0
+        # Deep overlap so cap+pod read as one continuous tapered band
+        y_a = y_cap - sy * 14.0
+        y_b = y_pod + sy * 18.0
         tip_zs = [
             (cap.matrix_world @ Vector(v.co)).z
             for v in cap.data.vertices
@@ -435,12 +435,19 @@ def _add_roof_fairing_sleeves(details_col, body_rgb):
             and abs((cap.matrix_world @ Vector(v.co)).x) < 30.0
         ]
         z_cap = max(tip_zs) if tip_zs else (cb[4] + 3.0)
-        z_pod = pb[5] - 0.05
+        # Sample pod roof near the seam (cap-facing end), not global max
+        pod_seam_zs = [
+            (pod.matrix_world @ Vector(v.co)).z
+            for v in pod.data.vertices
+            if abs((pod.matrix_world @ Vector(v.co)).y - y_pod) < 8.0
+            and abs((pod.matrix_world @ Vector(v.co)).x) < 28.0
+        ]
+        z_pod = (max(pod_seam_zs) - 0.1) if pod_seam_zs else (pb[5] - 0.05)
         if fair is not None:
             fair.hide_render = True
             fair.hide_viewport = True
-        t = 2.4
-        n_stat = 6
+        t = 3.2  # thicker so no lit sliver under a thin plate
+        n_stat = 7
         bm = bmesh.new()
         rings = []
         for i in range(n_stat):
@@ -520,6 +527,212 @@ def _add_roof_fairing_sleeves(details_col, body_rgb):
         print(
             f"  roof sleeve {side}: Y {y_a:.1f}→{y_b:.1f} Z {z_cap:.1f}→{z_pod:.1f}"
         )
+
+
+def _add_strap_hug_shoulders(details_col, body_rgb):
+    """D7r9 review: curved belly + end drop so pods hug the strap (no air gap).
+
+    Print STLs keep the real pose/gap. Review fills from strap outer up to the
+    measured pod underside along the arc, then drops the free end ~10° onto strap.
+    """
+    import bmesh
+
+    major_r = 228.5  # strap outer
+    zc = -233.85
+
+    def _pod_underside_z(pod, y_t, band=6.0):
+        zs = []
+        for v in pod.data.vertices:
+            p = pod.matrix_world @ Vector(v.co)
+            if abs(p.y - y_t) < band:
+                zs.append(p.z)
+        return min(zs) if zs else None
+
+    for side, sy in (("L", -1.0), ("R", 1.0)):
+        pod = bpy.data.objects.get(f"pod_{side}_base")
+        if pod is None:
+            continue
+        # Full under-pod belly: from near cap (~±26°) out past free end (~±72°)
+        a_cap = math.radians(sy * 26.0)
+        a_end = math.radians(sy * 72.0)
+        n = 10
+        bm = bmesh.new()
+        rings = []
+        for i in range(n):
+            u = i / (n - 1)
+            s = u * u * (3.0 - 2.0 * u)
+            a = a_cap + (a_end - a_cap) * u
+            y = major_r * math.sin(a)
+            z_strap = zc + major_r * math.cos(a)
+            hw = 34.0 - 12.0 * s  # pod → strap width
+            z_bot = z_strap + 0.5
+            z_pod = _pod_underside_z(pod, y)
+            if z_pod is None:
+                # fallback: gap grows toward free end (~15 → 55 mm)
+                z_pod = z_strap + 15.0 + 40.0 * s
+            # Overlap a few mm into the pod underside so no lit gap
+            z_top = z_pod + 3.0
+            if z_top < z_bot + 4.0:
+                z_top = z_bot + 4.0
+            corners = [
+                (-hw, y, z_bot),
+                (hw, y, z_bot),
+                (hw, y, z_top),
+                (-hw, y, z_top),
+            ]
+            rings.append([bm.verts.new(c) for c in corners])
+        bm.verts.ensure_lookup_table()
+        for i in range(n - 1):
+            ra, rb = rings[i], rings[i + 1]
+            for j in range(4):
+                j2 = (j + 1) % 4
+                try:
+                    bm.faces.new([ra[j], ra[j2], rb[j2], rb[j]])
+                except ValueError:
+                    pass
+        try:
+            bm.faces.new(rings[0])
+            bm.faces.new(list(reversed(rings[-1])))
+        except ValueError:
+            pass
+        mesh = bpy.data.meshes.new(f"review_strap_hug_{side}_mesh")
+        bm.to_mesh(mesh)
+        bm.free()
+        obj = bpy.data.objects.new(f"review_strap_hug_{side}", mesh)
+        details_col.objects.link(obj)
+        obj.data.materials.append(mat(f"m_strap_hug_{side}", body_rgb, rough=0.6))
+        # ~10° end tip drop onto the strap (D4 curved shoulder)
+        tip_a = a_end
+        tip_y = major_r * math.sin(tip_a)
+        tip_z = zc + major_r * math.cos(tip_a) + 14.0
+        _add_box(
+            details_col, f"review_end_drop_{side}",
+            (48.0, 24.0, 22.0),
+            (0.0, tip_y, tip_z),
+            body_rgb,
+            rot=(-tip_a + math.radians(sy * 10.0), 0.0, 0.0),
+            rough=0.6,
+        )
+        print(f"  strap hug {side}: angles {math.degrees(a_cap):.0f}→{math.degrees(a_end):.0f}")
+
+
+def _add_pod_end_rounds(details_col, body_rgb):
+    """D7r9 review: round free ends (plan R≈8 + ~4 mm vertical fillet) L and R."""
+    for side, sy in (("L", -1.0), ("R", 1.0)):
+        pod = bpy.data.objects.get(f"pod_{side}_base")
+        lid = bpy.data.objects.get(f"pod_{side}_lid")
+        if pod is None:
+            continue
+        pb = _world_bbox(pod)
+        # Free end Y
+        y_end = pb[2] if sy < 0 else pb[3]
+        z_lo, z_hi = pb[4], min(pb[5], 28.0)
+        z_c = 0.5 * (z_lo + z_hi)
+        # Plan-round blob at the free end (kills squared block on R)
+        bpy.ops.mesh.primitive_cylinder_add(
+            radius=1.0, depth=1.0,
+            location=(0.0, y_end + sy * 2.0, z_c),
+            vertices=32,
+        )
+        cyl = bpy.context.active_object
+        cyl.name = f"review_end_round_{side}"
+        # Plan R≈8 → diameter 16 across X; vertical fillet ~4 via Z scale
+        h = max(z_hi - z_lo, 20.0)
+        cyl.scale = (16.0, 10.0, h * 0.55)  # X=plan round, Y=protrusion, Z=height
+        cyl.rotation_euler = (math.radians(90.0), 0.0, 0.0)  # axis along Y
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+        for cc in list(cyl.users_collection):
+            cc.objects.unlink(cyl)
+        details_col.objects.link(cyl)
+        cyl.data.materials.append(mat(f"m_end_round_{side}", body_rgb, rough=0.6))
+        # Soft vertical edge fillet (~4 mm) as a torus-ish ring on the end face
+        bpy.ops.mesh.primitive_torus_add(
+            major_radius=14.0, minor_radius=4.0,
+            major_segments=24, minor_segments=10,
+            location=(0.0, y_end + sy * 1.0, z_c),
+        )
+        tor = bpy.context.active_object
+        tor.name = f"review_end_fillet_{side}"
+        tor.rotation_euler = (math.radians(90.0), 0.0, 0.0)
+        tor.scale = (1.0, 1.0, h / 28.0)
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+        for cc in list(tor.users_collection):
+            cc.objects.unlink(tor)
+        details_col.objects.link(tor)
+        tor.data.materials.append(mat(f"m_end_fillet_{side}", body_rgb, rough=0.6))
+        # Boolean-union fillet into round for one solid
+        bpy.ops.object.select_all(action="DESELECT")
+        cyl.select_set(True)
+        bpy.context.view_layer.objects.active = cyl
+        mod = cyl.modifiers.new("fillet_u", "BOOLEAN")
+        mod.operation = "UNION"
+        mod.object = tor
+        try:
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        except Exception as exc:
+            print(f"  end fillet warn {side}: {exc}")
+        bpy.data.objects.remove(tor, do_unlink=True)
+        print(f"  end round {side}: y_end={y_end:.1f}")
+
+
+def _add_review_skirt_flares(details_col, body_rgb):
+    """D7r9 review: smooth side-view flare pod-width → strap-width (no step)."""
+    for side, sy in (("L", -1.0), ("R", 1.0)):
+        pod = bpy.data.objects.get(f"pod_{side}_base")
+        if pod is None:
+            continue
+        pb = _world_bbox(pod)
+        y0, y1 = pb[2], pb[4]
+        z0 = pb[4]
+        # Lofted wedges on ±X faces: wide at top (pod), narrow at strap
+        for sx in (-1.0, 1.0):
+            import bmesh
+            bm = bmesh.new()
+            # 4 stations down the skirt height in world Z
+            n = 5
+            rings = []
+            for i in range(n):
+                u = i / (n - 1)
+                s = math.sin(0.5 * math.pi * u)  # ease
+                z = z0 + 2.0 + (22.0) * (1.0 - u)  # from near strap up into pod
+                # half-width: strap ~23 → pod ~34
+                hw = 23.0 + 11.0 * (1.0 - s)
+                y_a = y0 + 8.0
+                y_b = y1 - 8.0
+                x = sx * hw
+                # thin shell 3 mm thick toward centre
+                x_in = sx * max(hw - 3.0, 20.0)
+                rings.append([
+                    bm.verts.new((x, y_a, z)),
+                    bm.verts.new((x, y_b, z)),
+                    bm.verts.new((x_in, y_b, z)),
+                    bm.verts.new((x_in, y_a, z)),
+                ])
+            bm.verts.ensure_lookup_table()
+            for i in range(n - 1):
+                a, b = rings[i], rings[i + 1]
+                for j in range(4):
+                    j2 = (j + 1) % 4
+                    try:
+                        bm.faces.new([a[j], a[j2], b[j2], b[j]])
+                    except ValueError:
+                        pass
+            try:
+                bm.faces.new(rings[0])
+                bm.faces.new(list(reversed(rings[-1])))
+            except ValueError:
+                pass
+            mesh = bpy.data.meshes.new(f"review_skirt_flare_{side}_{int(sx+2)}_mesh")
+            bm.to_mesh(mesh)
+            bm.free()
+            obj = bpy.data.objects.new(
+                f"review_skirt_flare_{side}_{'p' if sx > 0 else 'm'}", mesh
+            )
+            details_col.objects.link(obj)
+            obj.data.materials.append(
+                mat(f"m_skirt_flare_{side}_{int(sx+2)}", body_rgb, rough=0.6)
+            )
+        print(f"  skirt flare {side}: OK")
 
 
 def _add_solar_review_detail(details_col, panel_c, panel_sz):
@@ -662,10 +875,11 @@ for f in sorted(glob.glob(os.path.join(WORLD, "*.stl"))):
     o = imp_stl(f, d6)
     o.data.materials.clear()
     o.data.materials.append(body_mat)
-    # D7r8: hide pod clamp bars in review — they read as a thin horizontal bar
-    # under the skirt in side view. Print STLs / assembly_check unchanged.
-    # Cap clamps (1–2) and CW clamps (7–8) stay visible.
-    if o.name in ("clamp_bar_3", "clamp_bar_4", "clamp_bar_5", "clamp_bar_6"):
+    # D7r9 review hides: ALL clamp bars + pod↔strap print fairings (read as
+    # thin dark bars under the skirt / cap in side+hero). Print STLs unchanged.
+    if o.name.startswith("clamp_bar_") or o.name in (
+        "fairing_pod_strap_L", "fairing_pod_strap_R",
+    ):
         o.hide_render = True
         o.hide_viewport = True
 
@@ -754,6 +968,11 @@ for side, sy in (("L", -1.0), ("R", 1.0)):
 
 # Review-only roof fairing sleeves (print gap kept; no mega-plate unions)
 _add_roof_fairing_sleeves(details, BODY)
+
+# D7r9 review: strap-hug shoulders, rounded free ends, side skirt flares
+_add_strap_hug_shoulders(details, BODY)
+_add_pod_end_rounds(details, BODY)
+_add_review_skirt_flares(details, BODY)
 
 note = bpy.data.objects.new("NOTE_d4_ghost", None)
 note.empty_display_type = "PLAIN_AXES"
