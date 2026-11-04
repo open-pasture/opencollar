@@ -1,0 +1,6 @@
+# Partitions come from devicetree (boards/partitions_mcuboot.dtsi), not the
+# Partition Manager.
+config PARTITION_MANAGER
+	default n
+
+source "share/sysbuild/Kconfig"

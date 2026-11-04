@@ -2,7 +2,31 @@
 
 Open hardware virtual-fence collar. Off-the-shelf parts, open protocol, works with any software that speaks it.
 
+Two collar types share as much as possible:
+
+- **Rook** — base-station collar (LTE-M + GPS, larger battery)
+- **Starling** — cheaper LoRa mesh-relay collar
+
+## Repo map
+
+| Path | What |
+| --- | --- |
+| [`docs/REPO-STRUCTURE.md`](docs/REPO-STRUCTURE.md) | Layout, old→new moves, conventions, firmware target split |
+| [`docs/rook/`](docs/rook/) | Rook collar docs (flash / control / provision placeholders) |
+| [`docs/starling/`](docs/starling/) | Starling collar docs (same) |
+| [`docs/assembly/`](docs/assembly/) | Assembly pointers |
+| [`docs/firmware/`](docs/firmware/) | Pilot firmware spec and Rook gap list |
+| [`hardware/common/`](hardware/common/) | Shared CAD (`dims`, strap/clamp/insert), shared STLs |
+| [`hardware/rook/`](hardware/rook/) | Rook Node V1 CAD, STLs, print profiles, fit audit |
+| [`hardware/starling/`](hardware/starling/) | Starling skeleton (reuses common) |
+| [`hardware/carrier/`](hardware/carrier/) | Carrier PCB |
+| [`firmware/`](firmware/) | Zephyr firmware (see [`firmware/ARCHITECTURE.md`](firmware/ARCHITECTURE.md) for target layout) |
+| [`protocol/`](protocol/) | Wire protocol and vectors |
+
+### Design and build docs
+
 - `docs/BUILD-LOG.md` — dated record of every step, result, and decision
+- `docs/WELFARE-POLICY.md` — cue limits, auto shut-off, and welfare events (review thresholds before pulse)
 - `docs/PROTOTYPE-V0.md` — current state of the V0 prototype
 - `docs/V1-DESIGN.md` — the V1 collar design and cost estimates
 - `docs/MANUFACTURING.md` — how we get to 1,000 collars, and why FCC and carrier approval matter
@@ -25,8 +49,8 @@ OpenCollar is open so anyone can build, repair and improve their own collar.
 | What | Licence | Folders |
 | --- | --- | --- |
 | Firmware, scripts and the protocol | [Apache-2.0](LICENSE) | `firmware/`, `protocol/`, and code anywhere else |
-| Hardware and CAD (boards, enclosure, print files) | [CERN-OHL-W-2.0](LICENSES/CERN-OHL-W-2.0.txt) | `hardware/`, `mechanical/` |
-| Docs, photos and renders | [CC BY 4.0](LICENSES/CC-BY-4.0.txt) | `docs/`, `hardware/photos/`, `mechanical/renders/` |
+| Hardware and CAD (boards, enclosure, print files) | [CERN-OHL-W-2.0](LICENSES/CERN-OHL-W-2.0.txt) | `hardware/` |
+| Docs, photos and renders | [CC BY 4.0](LICENSES/CC-BY-4.0.txt) | `docs/`, `hardware/photos/`, `hardware/*/renders/` |
 
 In plain terms:
 

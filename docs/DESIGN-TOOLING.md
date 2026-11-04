@@ -26,7 +26,7 @@ Good for: repeatable, version-controlled parts. Every part is a script in the re
 
 ### Recommendation
 
-Use **both**: headless scripts are the source of truth (committed in `mechanical/`), and the MCP session is for looking around and quick iteration. Final parts must come out of a script so they're reproducible and open.
+Use **both**: headless scripts are the source of truth (committed in `hardware/common/cad/` and `hardware/rook/cad/`), and the MCP session is for looking around and quick iteration. Final parts must come out of a script so they're reproducible and open.
 
 ## How the agent checks its own work
 
@@ -51,12 +51,12 @@ For V1-alpha prints, Blender scripts are fine. Before production tooling, consid
 - MCP for Blender add-on (formerly blender-mcp) installed with `uvx mcp-for-blender install-addon` and enabled. Its server auto-starts on port 9876 when Blender opens. Telemetry is off in the add-on and in the server (`DISABLE_TELEMETRY=true`); the Poly Haven / Hyper3D / Sketchfab asset integrations stay off.
 - Registered with Claude Code at user scope: `claude mcp add blender --scope user -e DISABLE_TELEMETRY=true -- uvx mcp-for-blender`. New Claude sessions pick it up.
 - 3D Print Toolbox installed from extensions.blender.org (in Blender 4.2+ it's an extension, not bundled).
-- `mechanical/` pipeline: part scripts, shared helpers, headless build with checks 1–3 and 6 above automated, plus the fit (clearance) check against reference bodies. See `mechanical/README.md`.
-- Reference dimensions gathered into `mechanical/lib/dims.py`, each marked published, estimated, to measure, or to tune.
+- Hardware CAD pipeline: part scripts under `hardware/common/cad/` and `hardware/rook/cad/`, shared helpers, headless build with checks 1–3 and 6 above automated, plus the fit (clearance) check against reference bodies. See `hardware/common/README.md` and `hardware/rook/README.md`.
+- Reference dimensions gathered into `hardware/common/cad/lib/dims.py`, each marked published, estimated, to measure, or to tune.
 
 ## Still open
 
-- [ ] Measure the unpublished dimensions (list in `mechanical/README.md`)
+- [ ] Measure the unpublished dimensions (list in `hardware/common/README.md` / Rook README)
 - [ ] Ask the fabrication partner which printers and materials he has
-- [ ] First print run: `fit_test` and `seal_box`, then put the winning sizes into `lib/dims.py`
+- [ ] First print run: `fit_test` and `seal_box`, then put the winning sizes into `hardware/common/cad/lib/dims.py`
 - [ ] Mass and balance check (step 5) once the top unit and bay exist

@@ -135,6 +135,18 @@ and MUST NOT rely on a cap it doesn't list.
 A new kind of cue (a vibration, another tone) is a new cue kind and a cap; a collar never
 plays one a server didn't know it could.
 
+## <a id="welfare-event-kinds"></a>Welfare event kinds
+
+Local today (serial / `cue_take_welfare`); not yet a report record type. Codes reserved so a
+future uplink can reuse them without renumbering. See [`docs/WELFARE-POLICY.md`](../docs/WELFARE-POLICY.md).
+
+| Code | Name | |
+|---|---|---|
+| 1 | `pulse_cutoff` | Outside/pulse budget spent for this crossing; silent until clear inside |
+| 2 | `returned` | Clear inside after a counted crossing (one escape→return cycle) |
+| 3 | `auto_shutoff` | Escape-cycle limit hit; enforcement off for this animal |
+| 4 | `enforcement_resumed` | Shut-off cleared by explicit caretaker re-arm (`cue_clear_shutoff`); never by a new boundary |
+
 ## Ack and slot statuses
 
 | Code | Name | |

@@ -1,5 +1,19 @@
 # Build log
 
+## 2026-11-03
+
+### Auto shut-off: caretaker re-arm only (Cody)
+- Decision: a fence move must not clear auto shut-off. Once shut-off trips, enforcement stays off until a person re-arms that collar; escape-cycle counters are not reset by a boundary change.
+- `cue_rearm` / `cue_rearm_at` = new boundary only. `cue_clear_shutoff` / serial `rearm` = caretaker clear (`enforcement_resumed`). Vectors and `docs/WELFARE-POLICY.md` updated.
+
+## 2026-11-01
+
+### Collar welfare safeguards (audio V0)
+- Informed by public commentary on Nofence's N3 (Alexander Crawley, Nuffield Farming Scholar): bounded stimuli per crossing, suspend until clear inside, auto shut-off after repeated escape→return, welfare events observable, battery savings never overriding those behaviours.
+- Implemented in `firmware/src/cue.c` / `cue.h`: `max_outside_cues` (default 3), pulse cutoff until `GEOFENCE_INSIDE`, `escape_cycle_limit` / `escape_cycle_window_ms` (default 3 / 24 h) → `enforcement_off`. (Provisional clear-on-new-boundary; superseded Nov 3 — caretaker `cue_clear_shutoff` only.) Zero config fields get the safe defaults.
+- Welfare queue (`pulse_cutoff`, `returned`, `auto_shutoff`, `enforcement_resumed`) drained like episodes; `main.c` logs `welfare: …`; `status` reports `enforcement on|off`.
+- Host tests in `test_cue.c`; `docs/WELFARE-POLICY.md` captures rationale and open questions. Protocol: `cue.json` + README / vectors README / registry / CHANGELOG. **Thresholds need animal-welfare expert review before pulse hardware.**
+
 ## 2026-09-25
 
 - All prototype parts delivered.
@@ -350,7 +364,7 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - **Why now:** a builder asked on LinkedIn when the repo would have licences, because they want to port the firmware to Rust. Until today the repo had no licence files, so it was all rights reserved.
 - **Cody asked for** licences as permissive as possible, with protection against someone taking the collar and keeping it closed. Chosen to match:
   - Firmware, scripts and the protocol: **Apache-2.0** (`LICENSE`).
-  - Hardware and CAD in `hardware/` and `mechanical/`: **CERN-OHL-W-2.0** (`LICENSES/`), changed from the CERN-OHL-P planned in `STRATEGY.md`. Anyone can build and sell the boards; a shipped modified version must publish its changes to these files. Hardware starts at W because loosening later is possible and tightening a released version isn't.
+  - Hardware and CAD in `hardware/` (formerly also `mechanical/`): **CERN-OHL-W-2.0** (`LICENSES/`), changed from the CERN-OHL-P planned in `STRATEGY.md`. Anyone can build and sell the boards; a shipped modified version must publish its changes to these files. Hardware starts at W because loosening later is possible and tightening a released version isn't.
   - Docs, photos and renders: **CC BY 4.0**.
   - `NOTICE`: copyright Cody Menefee (openpasture); the names openpasture and OpenCollar and the logo aren't licensed.
   - `CONTRIBUTING.md`: contributions take the licence of the files they touch, and contributors grant openpasture the right to relicense them, so outside improvements can go into openpasture's own collars.

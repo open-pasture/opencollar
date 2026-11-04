@@ -11,7 +11,14 @@ static char reply[512];
 static char line[16384];
 static const char *server_key; /* The vectors' public key */
 
-static const struct cue_config CUE = {2730, 1000, 300, 20000, 30000, 10000};
+static const struct cue_config CUE = {
+	.warn_freq_hz = 2730,
+	.outside_freq_hz = 1000,
+	.beep_ms = 300,
+	.max_active_ms = 20000,
+	.rest_ms = 30000,
+	.outside_max_ms = 10000,
+};
 static const struct geofence_config GCFG = {5.0, 1.0, 10.0};
 
 static void boot(void)
@@ -66,7 +73,7 @@ static void test_valid_payload_is_stored_and_wipes_slots(void)
 
 	CHECK(strcmp(provision("col_1", "herd_01J7GOLDEN", KEY, URL, server_key), "ok col_1") == 0);
 	CHECK(strcmp(say("status"),
-		     "collar col_1 herd herd_01J7GOLDEN fw 0.2.0 config - active - slots -") == 0);
+		     "collar col_1 herd herd_01J7GOLDEN fw 0.2.0 config - active - slots - enforcement on") == 0);
 
 	/* A boundary for this herd applies once the collar has GNSS time past it */
 	fix_at(T0 + 60);
@@ -74,7 +81,7 @@ static void test_valid_payload_is_stored_and_wipes_slots(void)
 	CHECK(strcmp(say(line), "applied 57") == 0);
 	CHECK(a.fence != NULL && a.fence->version == 57);
 	CHECK(strcmp(say("status"),
-		     "collar col_1 herd herd_01J7GOLDEN fw 0.2.0 config - active 57 slots 57") == 0);
+		     "collar col_1 herd herd_01J7GOLDEN fw 0.2.0 config - active 57 slots 57 enforcement on") == 0);
 
 	/* Kept over a reboot */
 	store_ram_reboot();
@@ -86,7 +93,7 @@ static void test_valid_payload_is_stored_and_wipes_slots(void)
 	/* Provisioning again wipes slots, config and pending acks */
 	CHECK(strcmp(provision("col_2", "herd_2", KEY, URL, server_key), "ok col_2") == 0);
 	CHECK(a.fence == NULL && a.slots.n == 0 && a.acks.n == 0);
-	CHECK(strcmp(say("status"), "collar col_2 herd herd_2 fw 0.2.0 config - active - slots -") ==
+	CHECK(strcmp(say("status"), "collar col_2 herd herd_2 fw 0.2.0 config - active - slots - enforcement on") ==
 	      0);
 	store_ram_reboot();
 	boot();
@@ -162,8 +169,11 @@ static void test_each_bad_field(void)
 
 static void test_lines(void)
 {
-	CHECK(strcmp(say("  status  "), "collar col_3 herd herd_3 fw 0.2.0 config - active - slots -") ==
+	CHECK(strcmp(say("  status  "), "collar col_3 herd herd_3 fw 0.2.0 config - active - slots - enforcement on") ==
 	      0);
+	/* Caretaker re-arm (clears shut-off); not a fence move */
+	CHECK(strcmp(say("rearm"), "ok enforcement on") == 0);
+	CHECK(strcmp(say("rearm now"), "error unknown_command") == 0);
 	CHECK(strcmp(say(""), "") == 0);
 	CHECK(strcmp(say("   "), "") == 0);
 	CHECK(strcmp(say("statusx"), "error unknown_command") == 0);
