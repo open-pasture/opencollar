@@ -156,10 +156,12 @@ collar that goes silent after installing, and MUST let the owner turn automatic 
   no new device or server key): notify current owners, offer a **24 h undo**, and do **not**
   require an owner-key signature or a person's confirm. (Cross-farm sale or server change is
   §13, not this bullet.)
-- **Release** of a collar that still holds an active boundary: ask a person before sending
-  the release command ([identity.md §7](identity.md#7-release-and-factory-reset)). A release
-  or type-6 **transfer** that changes ownership on the collar still needs the owner key's
-  signature when one is enrolled; the server can only prepare it.
+- **Release** of a collar that still holds an active boundary: the **releasing user** MUST
+  confirm in-app before the server sends the release (welfare guard — no fence on a live
+  animal; not owner approval; [identity.md §7](identity.md#7-release-and-factory-reset)). A
+  type-6 **transfer** / release on the collar still needs the owner key's signature when one
+  is enrolled; without an enrolled owner key (pilot default), the server key signs
+  ([messages.md §4.4](messages.md#44-who-may-sign-what)).
 
 ## 11. Farm policy: zones and leases
 
@@ -217,11 +219,20 @@ A server that sends boundaries to collars listing the cap `zones` ([messages.md 
   (and clears / replaces boundary state as the product already does). No new key. Notice to
   owners and a **24 h undo**; no owner-key signature and no person confirmation (§10).
 - **Cross-farm (or other server).** Ownership leaves this farm. Options:
-  1. **Owner-generated one-time transfer code:** 16 Crockford characters, **24 h** lifetime,
-     **single use**. Lifecycle: **issue** (owner starts handover / release route) → **hold**
-     until used or expiry → **consume** on successful claim by the buyer → or **expire** /
-     **revoke** (owner cancels) without use. Or
-  2. **Claim with the card** on the buyer's farm (same claim path as §12).
+  1. **One-time transfer code** (issued by the **releasing / old farm**, not the buyer):
+     16 Crockford characters, **24 h** lifetime, **single use**. Lifecycle: **issue** →
+     **hold** until used or expiry → **consume** on successful claim by the buyer → or
+     **expire** / **revoke** without use.
+     - *Proposed, pending owner decision:* who may **issue** the code is the **owner or
+       manager of the farm that currently holds the collar** (the releasing side), plus the
+       **user who is releasing** the collar. A Hand who can edit/release that collar MAY be
+       able to release it in the app; **whether a Hand may also issue a transfer code is
+       undecided** (Cody decides). Until decided, servers SHOULD treat Hand-as-issuer as
+       open, not as required.
+  2. **Claim with the card** on the buyer's farm (same claim path as §12). The **old farm
+     MUST release first**. If it never does, the buyer's card claim fails with a clear
+     **already claimed** error; the buyer then needs the old farm's release or a transfer
+     code.
 - On cross-farm completion: the **old key is revoked** (this farm stops commanding the
   collar); the collar **keeps its device id**. In **v2**, no private key moves: release or
   handover, then a **new bind** on the buyer's server. In **v1**, a new key is minted at

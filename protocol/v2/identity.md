@@ -130,6 +130,8 @@ code.
    MUST NOT claim. The herd is on the claimer's own farm.
 2. The collar is **claim pending**, not claimed, until the collar acks the bind `applied`.
    A bind refused `bad_claim` means the code is wrong: the software says so and forgets it.
+   **v2 vs v1:** v1's server often marks a unit claimed as soon as the claim is accepted;
+   **v2 stays pending until the bind is applied**.
 3. Once claimed (bind `applied`), the software **erases** the plaintext code and keeps the
    record's `claim_check`. Exception: retain plaintext only if reclaim or `code_checked`
    cannot work without it ([server.md §12](server.md#12-claims)); prefer erase.
@@ -274,12 +276,18 @@ key, notice + 24 h undo; [server.md §13](server.md#13-same-farm-moves-and-cross
 
 **Transfer (reason 2): selling a collar / changing ownership on the wire.** Used when
 ownership leaves the current server relationship (cross-farm sale, or an owner-key transfer
-as below). Cross-farm MAY instead use a **one-time transfer code** or a **claim with the
-card** on the buyer's farm ([server.md §13](server.md#13-same-farm-moves-and-cross-farm-handover));
-v2 does not move private keys (release or handover, then a new bind).
+as below). Cross-farm MAY instead use a **one-time transfer code** (issued by the **releasing
+farm**; who may issue is *proposed, pending owner decision* — see
+[server.md §13](server.md#13-same-farm-moves-and-cross-farm-handover)) or a **claim with the
+card** on the buyer's farm after the old farm releases. If the old farm never releases, a
+card claim on the buyer's farm fails **already claimed**; the buyer needs that release or a
+transfer code. v2 does not move private keys (release or handover, then a new bind).
 
 - While an owner key is enrolled, only the owner key may sign a type-6 transfer (`unknown_kid`
-  otherwise). Without one, the server key may.
+  otherwise). Without one, the server key may. The owner key is **optional** and **OFF for
+  the pilot** ([messages.md §4.4](messages.md#44-who-may-sign-what)): with none enrolled, the
+  server key signs, so a Hand can drive release / transfer-code flows in the app. A farmer
+  who enrols an owner key gains protection if a phone (server session) is stolen.
 - On confirm, the collar's owner key becomes the transfer's `new_owner`, or none when it has
   none. The seller's owner key no longer works.
 - The **card** goes with the collar: its claim code is the physical reset credential. A
@@ -302,7 +310,9 @@ server key can be recovered from with the owner key, without visiting the herd.
   herd, membership, zones, config and staged boundaries, draws a new claim nonce and is
   unclaimed again. What survives everything (section 5) stays. Releasing a collar that is on
   an animal leaves that animal without a fence, so the server MUST refuse to send a release
-  to a collar that holds an active boundary unless a person confirms it.
+  to a collar that holds an active boundary unless the **releasing user** confirms it
+  **in-app**. That confirm is a **welfare guard** (no fence on a live animal), **not** an
+  owner-approval step and not a second person's sign-off.
 - **Factory reset** is the owner's hard override for a collar whose software is gone:
   hold a magnet on the collar's reed or hall sensor for 10 s, then within 2 minutes send
   `reset <claim code>` over the USB console or BLE. The collar does what release does.
