@@ -1471,10 +1471,17 @@
    "note": ""
   },
   {
-   "check": "connector sense/ID + hw kill reserved",
+   "check": "connector sense/ID + hw kill reserved (not designs)",
    "ok": true,
-   "measured": "connector+kill",
-   "expected": "reserved features",
+   "measured": "connector+kill reserved",
+   "expected": "reserved features, not designs",
+   "note": ""
+  },
+  {
+   "check": "welfare seal/isolation/vent TBD revision hooks",
+   "ok": true,
+   "measured": "welfare TBD hooks",
+   "expected": "easy to revise",
    "note": ""
   },
   {

@@ -91,13 +91,36 @@
           "compliance_travel_mm": 3.0
         },
         "wire": {
-          "note": "placeholder, not a spec \u2014 \u22658 conductors sized for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; not a final pinout",
+          "note": "placeholder, not a spec \u2014 pod-to-cap harness channel; count/gauge unknown; sized \u22658 conductors for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; NOT a final pinout",
           "conductors_min": 8,
           "channel_d_mm": 8.0,
           "gland_y_mm": -28.0
         },
-        "connector_sense_id": true,
-        "hw_kill": "reserved: reachable hardware kill that cuts driver rail independent of firmware; accessible via service lid without opening cell cavity"
+        "connector_sense_id": {
+          "reserved_not_a_design": true,
+          "has_sense_id": true,
+          "keep_out_LWH": [
+            12.0,
+            10.0,
+            6.0
+          ],
+          "note": "reserved feature, not a design \u2014 connector position with sense/ID so an unfitted bay reads as not-fitted"
+        },
+        "hw_kill": {
+          "reserved_not_a_design": true,
+          "keep_out_LWH": [
+            8.0,
+            6.0,
+            4.0
+          ],
+          "note": "reserved feature, not a design \u2014 reachable hardware kill that cuts the driver rail independent of firmware (switch / jumper / fuse-link); accessible via service lid without opening the cell cavity"
+        },
+        "welfare_tbd": {
+          "seal_rules_tbd": true,
+          "isolation_clearance_tbd_mm": 0.0,
+          "vent_rules_tbd": true,
+          "note": "seal, isolation distance, and venting come later from the welfare reviewer; adjust MODULE_/DRIVER_/WIRE_ margins and BAY_WALL / GASKET_* \u2014 do not hard-code a sealing scheme yet"
+        }
       },
       "print": {
         "orientation": "flat pod-face on bed; concave neck-face UP; light bowl supports",
@@ -209,13 +232,36 @@
           "compliance_travel_mm": 3.0
         },
         "wire": {
-          "note": "placeholder, not a spec \u2014 \u22658 conductors sized for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; not a final pinout",
+          "note": "placeholder, not a spec \u2014 pod-to-cap harness channel; count/gauge unknown; sized \u22658 conductors for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; NOT a final pinout",
           "conductors_min": 8,
           "channel_d_mm": 8.0,
           "gland_y_mm": -28.0
         },
-        "connector_sense_id": true,
-        "hw_kill": "reserved: reachable hardware kill that cuts driver rail independent of firmware; accessible via service lid without opening cell cavity"
+        "connector_sense_id": {
+          "reserved_not_a_design": true,
+          "has_sense_id": true,
+          "keep_out_LWH": [
+            12.0,
+            10.0,
+            6.0
+          ],
+          "note": "reserved feature, not a design \u2014 connector position with sense/ID so an unfitted bay reads as not-fitted"
+        },
+        "hw_kill": {
+          "reserved_not_a_design": true,
+          "keep_out_LWH": [
+            8.0,
+            6.0,
+            4.0
+          ],
+          "note": "reserved feature, not a design \u2014 reachable hardware kill that cuts the driver rail independent of firmware (switch / jumper / fuse-link); accessible via service lid without opening the cell cavity"
+        },
+        "welfare_tbd": {
+          "seal_rules_tbd": true,
+          "isolation_clearance_tbd_mm": 0.0,
+          "vent_rules_tbd": true,
+          "note": "seal, isolation distance, and venting come later from the welfare reviewer; adjust MODULE_/DRIVER_/WIRE_ margins and BAY_WALL / GASKET_* \u2014 do not hard-code a sealing scheme yet"
+        }
       },
       "print": {
         "orientation": "flat pod-face on bed; concave neck-face UP; light bowl supports",

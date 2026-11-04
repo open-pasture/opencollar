@@ -71,9 +71,9 @@ ELECTRODE_COMPLIANCE_TRAVEL = 3.0  # reserved for spring/elastomer when fitted
 
 WIRE_PLACEHOLDER = True            # PLACEHOLDER, not a spec
 WIRE_NOTE = (
-    "placeholder, not a spec — ≥8 conductors sized for ~4–6 signals/pod "
-    "(enable, fault, current sense, module-detect, GND, HV rail) + spare; "
-    "not a final pinout"
+    "placeholder, not a spec — pod-to-cap harness channel; count/gauge unknown; "
+    "sized ≥8 conductors for ~4–6 signals/pod (enable, fault, current sense, "
+    "module-detect, GND, HV rail) + spare; NOT a final pinout"
 )
 WIRE_CONDUCTORS_MIN = 8
 WIRE_CH_D = 8.0                    # sealed channel OD (≥8 conductors + spare)
@@ -82,13 +82,29 @@ WIRE_GLAND_H = 2.5
 WIRE_STRAIN_RELIEF_L = 8.0         # axial strain-relief pocket length
 WIRE_STRAIN_RELIEF_D = 10.0
 
-# Reserved firmware-support features (not designs)
+# Reserved firmware-support features — NOT designs (keep-out pockets only)
 CONNECTOR_KEEP_OUT = (12.0, 10.0, 6.0)   # L×W×H pocket for bay connector
 CONNECTOR_HAS_SENSE_ID = True            # sense/ID line → unfitted reads not-fitted
+CONNECTOR_NOTE = (
+    "reserved feature, not a design — connector position with sense/ID so an "
+    "unfitted bay reads as not-fitted"
+)
 HW_KILL_KEEP_OUT = (8.0, 6.0, 4.0)       # switch/jumper/fuse-link pocket
 HW_KILL_NOTE = (
-    "reserved: reachable hardware kill that cuts driver rail independent of "
-    "firmware; accessible via service lid without opening cell cavity"
+    "reserved feature, not a design — reachable hardware kill that cuts the "
+    "driver rail independent of firmware (switch / jumper / fuse-link); "
+    "accessible via service lid without opening the cell cavity"
+)
+
+# Welfare-reviewer TBD — revision hooks only (not modelled). Change these
+# later without redesigning the bay layout; envelopes stay parametric.
+SEAL_RULES_TBD = True              # gasket/land/compound TBD
+ISOLATION_CLEARANCE_TBD_MM = 0.0   # creepage/clearance TBD → grow margins
+VENT_RULES_TBD = True              # venting TBD → optional cut later
+WELFARE_NOTE = (
+    "seal, isolation distance, and venting come later from the welfare "
+    "reviewer; adjust MODULE_/DRIVER_/WIRE_ margins and BAY_WALL / GASKET_* "
+    "— do not hard-code a sealing scheme yet"
 )
 # ===========================================================================
 
@@ -417,8 +433,23 @@ def saddle_body(side: str = "L"):
                 "channel_d_mm": WIRE_CH_D,
                 "gland_y_mm": wire_y,
             },
-            "connector_sense_id": CONNECTOR_HAS_SENSE_ID,
-            "hw_kill": HW_KILL_NOTE,
+            "connector_sense_id": {
+                "reserved_not_a_design": True,
+                "has_sense_id": CONNECTOR_HAS_SENSE_ID,
+                "keep_out_LWH": list(CONNECTOR_KEEP_OUT),
+                "note": CONNECTOR_NOTE,
+            },
+            "hw_kill": {
+                "reserved_not_a_design": True,
+                "keep_out_LWH": list(HW_KILL_KEEP_OUT),
+                "note": HW_KILL_NOTE,
+            },
+            "welfare_tbd": {
+                "seal_rules_tbd": SEAL_RULES_TBD,
+                "isolation_clearance_tbd_mm": ISOLATION_CLEARANCE_TBD_MM,
+                "vent_rules_tbd": VENT_RULES_TBD,
+                "note": WELFARE_NOTE,
+            },
         },
         "print": {
             "orientation": "flat pod-face on bed; concave neck-face UP; light bowl supports",

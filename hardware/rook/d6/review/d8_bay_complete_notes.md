@@ -21,6 +21,16 @@ No shock module, driver board, or electrode has been chosen. In `pod_saddle.py` 
 
 Signals (not a pinout): enable, fault, current sense, module-detect, ground, HV rail → size for **≥8** conductors.
 
+## op-firmware addendum (point-by-point)
+
+1. **Placeholders kept + labelled.** Module 40×25×8 mm; two Ø6 electrodes 25 mm apart. Every param and the notes say **`placeholder, not a spec`**. Nothing chosen.
+2. **Adjustable envelope + separate driver keep-out.** `MODULE_MARGIN_*` / `DRIVER_MARGIN_*` on all three axes; `_bay_envelope()` / `_driver_envelope()` drive the cuts. Driver has its own bay (+Y toward cap) and shares the sealed wire path (strain relief + pass-through + plug).
+3. **Wires — pod-to-cap channel, ≥8 conductors, placeholder.** Count/gauge unknown. Firmware needs ~4–6 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) — **not a final pinout**. Channel + sealed pass-through sized for **≥8** (`WIRE_CONDUCTORS_MIN`, `WIRE_CH_D`) and flagged PLACEHOLDER.
+4. **Housing support (reserved features, not designs).**
+   - Connector keep-out with **sense/ID** → unfitted bay reads not-fitted (`CONNECTOR_*`).
+   - Reachable **hardware kill** keep-out (switch / jumper / fuse-link) that cuts the driver rail independent of firmware; accessible via service lid **without** opening the cell cavity (`HW_KILL_*`).
+5. **Welfare TBD — easy to revise.** `SEAL_RULES_TBD` / `ISOLATION_CLEARANCE_TBD_MM` / `VENT_RULES_TBD` are hooks only (not modelled). Seal, isolation distance, and venting come later — change margins / `BAY_WALL` / `GASKET_*` when they land; do not hard-code a sealing scheme yet.
+
 ## Unfitted bay (what is actually there)
 
 **Only:**

@@ -720,10 +720,20 @@ chk(
     "spring/elastomer reserve",
 )
 chk(
-    "connector sense/ID + hw kill reserved",
-    "CONNECTOR_HAS_SENSE_ID" in saddle_src and "HW_KILL" in saddle_src,
-    "connector+kill" if "HW_KILL" in saddle_src else "missing",
-    "reserved features",
+    "connector sense/ID + hw kill reserved (not designs)",
+    "CONNECTOR_HAS_SENSE_ID" in saddle_src
+    and "HW_KILL" in saddle_src
+    and "reserved feature, not a design" in saddle_src,
+    "connector+kill reserved" if "HW_KILL" in saddle_src else "missing",
+    "reserved features, not designs",
+)
+chk(
+    "welfare seal/isolation/vent TBD revision hooks",
+    "SEAL_RULES_TBD" in saddle_src
+    and "ISOLATION_CLEARANCE_TBD_MM" in saddle_src
+    and "VENT_RULES_TBD" in saddle_src,
+    "welfare TBD hooks",
+    "easy to revise",
 )
 chk(
     "unfitted bay uses blank lands (no open electrode holes)",
