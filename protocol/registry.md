@@ -52,6 +52,8 @@ What a collar can do, in `device.caps` (v1) or the device record's `caps` (v2).
 | `owner` | 2 | takes an owner key |
 | `imu` | 2 | reports motion (`still_s`, `tilt_deg`) |
 | `zones` | 2 | holds permanent no-go zones, checks boundaries against them and takes staged ones only under a lease ([messages.md §4.7](v2/messages.md#47-zones-and-leases-what-the-collar-enforces-itself)) |
+| `shock_module` | — | **RESERVED (no behaviour):** **device** cap — collar understands the shock/pulse module interface in [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) (side pods). Not a live-use grant (see `pulse_grant`). Listing it never means pulse is live; module stays OFF until a named welfare reviewer and Cody approve |
+| `pulse_grant` | — | **RESERVED (no behaviour); PROPOSED, awaiting Cody:** signed, revocable server permission (includes a country rule), scoped to the collar’s device id; revoked on release, transfer, or factory reset. Under the proposal, required before firmware may arm `GATE_LATCH`. See [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) |
 
 **What a v2.0 collar on an animal must list:** `v2`, `holes`, `slots`, `collar_id`,
 `cue_mode`, `episodes`, `config`, `firmware`, `handover`, `owner`, `zones`. Optional:
@@ -129,11 +131,15 @@ and MUST NOT rely on a cap it doesn't list.
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | `warn` | 1 | | 0 | `audio` | 1 | | 1 | `turned_back` | 1 |
 | 2 | `outside` | 1 | | 1 | `track` | 1 | | 2 | `crossed` | 1 |
-| | | | | | | | | 3 | `rest` | 1 |
+| 3 | `pulse` | — | | | | | | 3 | `rest` | 1 |
 | | | | | | | | | 4 | `boundary_changed` | 1 |
 
-A new kind of cue (a vibration, another tone) is a new cue kind and a cap; a collar never
-plays one a server didn't know it could.
+`pulse` is **RESERVED (no behaviour):** electric pulse / shock cue, distinct from audio
+`warn` / `outside` and from any future vibration kind. See
+[`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) (side pods). No
+welfare reviewer is named yet — module stays OFF until one is named and Cody approves.
+A new kind of cue is a new cue kind and a cap; a collar never plays one a server didn't
+know it could.
 
 ## <a id="welfare-event-kinds"></a>Welfare event kinds
 
@@ -146,6 +152,62 @@ future uplink can reuse them without renumbering. See [`docs/WELFARE-POLICY.md`]
 | 2 | `returned` | Clear inside after a counted crossing (one escape→return cycle) |
 | 3 | `auto_shutoff` | Escape-cycle limit hit; enforcement off for this animal |
 | 4 | `enforcement_resumed` | Shut-off cleared by explicit caretaker re-arm (`cue_clear_shutoff`); never by a new boundary |
+
+## <a id="shock-module"></a>Shock / pulse module (RESERVED — no behaviour)
+
+Names only. Normative reservation:
+[`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) (placement: **side
+pods**). Nothing here drives an output. **No welfare reviewer is named yet** — the module
+stays OFF in all builds until one is named and Cody approves. Owner opt-in, an audit log,
+and a ready module are also required; the server offers no pulse settings otherwise. Dual
+enable / `GATE_LATCH` / `pulse_grant` are **proposed, awaiting Cody**.
+
+Cross-links (also RESERVED / defined elsewhere): `welfare.enforcement` (record L — welfare
+shut-off; caretaker `rearm` clears that, not a module fault); `cue_state` value `pulse_off`
+(record N).
+
+### Module states
+
+Firmware-internal and registry values. On the wire, v1 sends `health.module` **only when a
+module is fitted**; when unfitted the block is omitted. Servers treat an absent block as not
+fitted or unknown, **never** as ok. Do **not** reuse the v2 status `armed` bit for the module.
+
+| Name | |
+|---|---|
+| `not_fitted` | No module (firmware-internal / registry; not emitted as `health.module`) |
+| `fitted_disabled` | Fitted; high voltage held off |
+| `fitted_ready` | Fitted; `pulse_grant` + latch allow enable from the welfare-gated path only |
+| `fault` | Fault latched; off until a person **re-enables** (not welfare `rearm`) |
+| `killed` | Independent kill asserted; high voltage off |
+
+### Module fault names
+
+Any fault forces the module off until a person **re-enables** it (distinct from welfare
+`rearm` / `cue_clear_shutoff`).
+
+| Name | |
+|---|---|
+| `open_electrode` | |
+| `short` | |
+| `over_current` | |
+| `no_contact` | |
+| `over_temp` | |
+| `bad_id` | |
+
+### Report fields (v1 JSON names)
+
+Omit-when-unknown; omit entire `health.module` when not fitted. No v1 `present` field — the
+block’s presence means fitted. Omit `fault` when there is none.
+
+| Path | |
+|---|---|
+| `health.module` | Object only when fitted |
+| `health.module.hw_rev` | from module ID chip |
+| `health.module.state` | one of the module states above except wire use of `not_fitted` |
+| `health.module.fault` | one of the fault names; omit when none |
+
+(v2 may encode an explicit present flag inside a denser structure if useful; that is not a
+v1 JSON field.)
 
 ## Ack and slot statuses
 

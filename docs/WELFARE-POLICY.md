@@ -9,6 +9,21 @@ module. Thresholds below are **conservative defaults that need review by
 someone with animal-welfare expertise** before pulse hardware ships, and
 should be re-checked after field data from the pilot farm.
 
+**Shock / pulse hardware:** interfaces only are reserved in
+[`SHOCK-MODULE-INTERFACE.md`](SHOCK-MODULE-INTERFACE.md) (op-architect
+record O; Cody standing rule 2026-11-04 — one production design, module may
+be unfitted at first). **Placement decided (Cody):** side pods, not the top
+unit; [`BOTTOM-BAY.md`](BOTTOM-BAY.md) pulse text is superseded. Reserving
+connectors, states, and report field names **changes no cue behaviour**. If
+nothing is fitted, no firmware path may drive it; default is OFF. **No
+welfare reviewer is named yet** — the module stays **OFF in all builds**
+until one is named **and** Cody approves. Owner opt-in, an audit log, and a
+ready module are also required; the server offers no pulse settings
+otherwise. Dual enable / `pulse_grant` / `GATE_LATCH` are **proposed,
+awaiting Cody**. Hardware current limit stays TBD. Module faults clear when
+a person **re-enables** the module — not via welfare `rearm`
+(`welfare.enforcement` / record L).
+
 ## Principles
 
 1. **A cue only teaches when the animal can escape it** by moving away from
@@ -69,11 +84,16 @@ Queued like episodes; drained by `cue_take_welfare`, logged as
 - Are **3** outside/pulse cues per crossing and **3** cycles per 24 h the
   right defaults for cattle (and later sheep/goats)? See *Basis for the
   defaults*; they still need sign-off from an animal-welfare expert, and no
-  collar goes on an animal before that review.
-- When the pulse board ships, should warning **audio** share the same count
+  collar goes on an animal before that review. **No welfare reviewer is
+  named yet**; the shock module stays OFF in all builds until one is named
+  and Cody approves — see
+  [`SHOCK-MODULE-INTERFACE.md`](SHOCK-MODULE-INTERFACE.md).
+- When the pulse module ships, should warning **audio** share the same count
   budget as the pulse, or stay on the existing time/rest caps only?
 - Should welfare events be a separate report array, or folded into episodes /
   a `welfare` cap in the protocol registry?
+- Hardware current-limit value for the reserved shock module (see
+  [`SHOCK-MODULE-INTERFACE.md`](SHOCK-MODULE-INTERFACE.md))?
 
 ## Basis for the defaults
 

@@ -1,0 +1,299 @@
+# Shock (pulse) module interface — reserved
+
+**Status:** interface reservation only. Nothing in this document, and nothing
+in the accompanying enum-only header, enables or drives any stimulus output.
+Cue behaviour is unchanged (audio V0). Hardware current-limit values stay
+**TBD until a named welfare reviewer sets them and Cody approves**.
+
+**There is no welfare reviewer yet.** The module stays **OFF in all builds**
+until a welfare reviewer is **named** and **Cody approves** live use. Record H
+alone is not enough. Owner opt-in, an audit log, and a ready module are also
+required before any live path; the server **offers no pulse settings**
+otherwise. This reservation adds none of that behaviour.
+
+**Standing rule (Cody, 2026-11-04):** no separate pilot and production
+designs. The unit we test is the production design even if only some
+components are fitted. The shock module (electrode + driver) may be unfitted
+at first; the production enclosure and connectors must still leave a defined
+place and the same interfaces for the completed version.
+
+**Placement (DECIDED — Cody, 2026-11-04):** the shock module lives in the
+**side pods**, not the top / crest unit. Normative references:
+[`hardware/rook/bom/HARDWARE-FIT.md`](../hardware/rook/bom/HARDWARE-FIT.md),
+[`hardware/rook/cad/assembly/node_v1.py`](../hardware/rook/cad/assembly/node_v1.py).
+Older “pulse in the top unit” text (including retired
+[`BOTTOM-BAY.md`](BOTTOM-BAY.md)) is superseded. Each pod reserves room and a
+connector for the module even when unfitted.
+
+**Electrode geometry:** pod electrode studs and holes are **reserved
+geometry only**. When the module is unfitted they stay **blank or sealed**.
+The **electrodes belong to the module**, not to the empty pod shell.
+
+**Design rule (op-strategy): all high-voltage and pulse driver circuitry lives
+on the module itself** — HV converter, driver stage, and the fixed hardware
+current limit. A collar with the module **unfitted** has **no** pulse
+circuit on the main / crest board: **no HV rail, no converter, no driver**.
+The main board carries only the **connector**, the **sense** line, the
+**I2C pins** that reach the module’s **ID chip footprint** (chip on the
+module), and the **MCU signal pins** (`HV_EN`, `GATE_LATCH`, `KILL_SENSE`,
+and related low-voltage nets). Prefer putting the **gate latch** and
+**kill** path on the module when that is practical; the MCU still **arms**
+the latch over `GATE_LATCH` if that proposed gate is adopted (see §2).
+Rationale: a collar without the module must not be “designed to be capable”
+of a pulse, which matters to regulators in some places (e.g. California).
+
+Related: [`WELFARE-POLICY.md`](WELFARE-POLICY.md),
+[`protocol/registry.md`](../protocol/registry.md)
+(including reserved `welfare.enforcement` from record L and `cue_state` /
+`pulse_off` from record N),
+[`hardware/carrier/SPEC.md`](../hardware/carrier/SPEC.md) (existing pin map).
+op-architect **record O** is the source of this interface reservation.
+
+---
+
+## 1. Presence and identification
+
+| Item | Reservation |
+| --- | --- |
+| **Sense pin** | A dedicated presence / sense line on the module connector shows whether a module is mechanically and electrically fitted. |
+| **ID chip** | A small ID chip **on the module** (footprint reserved; part TBD) holds serial and hardware revision. Main board has only the connector / I2C pins to reach it — not a pulse or HV part. |
+| **Unfitted** | With no module, the collar **reports nothing** about shock/pulse hardware in the uplink, and the main board has **no** pulse/HV circuit. Pod electrode openings stay blank or sealed. Firmware may still hold internal state `not_fitted`. |
+
+Detection method details (pull-up/down resistor value, sense polarity, ID
+address) are **TBD**. Constraints: sense must not share a net with the
+buzzer Qwiic bus enable path in a way that a floating unfitted connector
+can look like a live driver enable; ID traffic must not hang the main
+GNSS/IMU I2C bus (same external-bus isolation pattern as cue ports if the
+module rides off-board).
+
+---
+
+## 2. Dual enable: firmware HV enable + gate latch (**PROPOSED, awaiting Cody**)
+
+The dual-switch design below — firmware `HV_EN`, hardware **`GATE_LATCH`**,
+and a signed **`pulse_grant`** with a country rule — is **proposed, not
+approved**. It awaits Cody. Until approved (and until a named welfare
+reviewer exists), no build may treat this path as live; the module stays
+**OFF**.
+
+High voltage exists only **on the fitted module** (design rule above). Under
+the proposal, it may run only when **both** are asserted:
+
+1. **Firmware enable** (`HV_EN` / logical driver enable) — MCU output into
+   the module; welfare-gated; default inactive at reset, on fault, and
+   whenever the module is not in a ready state.
+2. **Hardware gate latch** (preferably on the **module**). The MCU output
+   **`GATE_LATCH`** **arms** it: firmware **does** fire that pin. The latch
+   is **one-shot**, cleared on any reset, and **not** firmware-independent.
+   Under the proposal, firmware arms it only after checking a valid
+   **`pulse_grant`** (below). “Hardware latch” means the latch *holds* on
+   the module until reset once set — **not** that firmware cannot assert
+   `GATE_LATCH` alone.
+
+**What would protect against firmware alone enabling HV (proposed):** the
+server-signed **`pulse_grant`**, the **fixed hardware current limit on the
+module**, and the **independent kill line** (prefer on the module). Do not
+claim the latch itself is outside firmware’s reach.
+
+Under that AND-gate sit, always (on the **module**, not the main board):
+
+| Layer | Role |
+| --- | --- |
+| **Fixed hardware current limit** | On the module. Value **TBD by a named welfare reviewer** (none yet). Firmware never programs above it; any software limit is strictly lower. |
+| **Independent kill line** | Prefer on the module. Cuts the driver / HV rail **independent of firmware** (kill switch, fuse, or equivalent). Firmware **observes** kill via `KILL_SENSE`; it does not implement the cut on the main board. |
+| **Hardware watchdog** | Prefer on the module. Loss of kick or latch integrity forces HV off. |
+
+**Safe state is always high voltage off:** unfitted, unknown, reset, fault,
+kill asserted, latch cleared, watchdog trip, missing / revoked `pulse_grant`,
+no named reviewer / no Cody approval, welfare enforcement off, or
+`cue_state` of `pulse_off`.
+
+If the proposed gate is adopted, firmware may assert `HV_EN` **only** from
+the existing welfare-gated cue path (same counters as
+[`WELFARE-POLICY.md`](WELFARE-POLICY.md) / `cue.c`), and only while the latch
+is set and grant / welfare / cue-state allow it. This reservation adds
+**no** new cue behaviour and **no** driver code.
+
+### `pulse_grant` (signed server permission) — **PROPOSED, awaiting Cody**
+
+Cap `shock_module` means the **device** understands the interface. It is
+**not** the grant.
+
+| | |
+| --- | --- |
+| Name | `pulse_grant` — **RESERVED (no behaviour)** in [`registry.md`](../protocol/registry.md) |
+| What | Proposed signed, revocable server capability that includes a **country rule** |
+| Scope | Tied to the collar’s **device id** |
+| Revocation | Grant would be revoked on **release**, **transfer**, or **factory reset** (and whenever the server revokes it) |
+| Latch | Under the proposal, collar may arm `GATE_LATCH` only after verifying a current grant; any reset clears the latch |
+
+Wire shape TBD; name reserved so it is not confused with `shock_module`.
+
+### Welfare and cue-state links
+
+- **`welfare.enforcement`** (record L): when enforcement is off (auto
+  shut-off, etc.), no pulse path may run. Distinct from clearing a module
+  fault — caretaker `rearm` / `cue_clear_shutoff` clears welfare shut-off
+  only; it does **not** clear a module fault.
+- **`cue_state` value `pulse_off`** (record N, reserved): cue / stimulus
+  state that keeps pulse off; reserved so audio and pulse are not conflated.
+
+---
+
+## 3. Connector pinout (logical; MCU / shell pins TBD)
+
+Per **side pod** (index `N`: 0 = left / `CUE_L`, 1 = right / `CUE_R`), one
+module connector (or equivalent harness). Logical names; **physical pin
+numbers are TBD** and must not collide with existing carrier wiring in
+[`hardware/carrier/SPEC.md`](../hardware/carrier/SPEC.md). These are
+**low-voltage interface** nets only. The main / crest board must not route
+an HV rail or host the converter / driver / hardware current limit.
+
+| Logical | Direction (collar ↔ module) | Constraint |
+| --- | --- | --- |
+| `SENSE` | in (collar) | Presence. Must not float into an “enable” interpretation when unfitted. |
+| `I2C_SDA` / `I2C_SCL` | bidirectional | To the **module** ID chip (serial, `hw_rev`). Prefer the protected external bus pattern if off-board; **must not** share pins with GNSS UART or GNSS control lines. |
+| `HV_EN` | out (collar) | Logic-level firmware enable into the module’s AND with the (proposed) gate latch. **Pulldown** so unfitted / unpowered / floating never enables. **Must not** share a pin with the buzzer path or GNSS. Not an HV net. |
+| `KILL` | in (collar observes) | Sense of the independent kill / rail-cut (prefer kill hardware on the module). |
+| `FAULT` | in (collar) | Driver / module fault (open-drain preferred). |
+| `GND` | — | Return. |
+| `BAT` / pack rail | power | Pack / system power into the module; must not back-power the Kit VIO rail unsafely. **Not** a generated HV rail on the main board. |
+
+**MCU pins to reserve (TBD numbers, two free GPIOs minimum)** — used if the
+proposed gate is approved:
+
+| Logical MCU net | Use | Constraints vs today’s map |
+| --- | --- | --- |
+| `GATE_LATCH` | **MCU output** that **arms** the one-shot gate latch on the module (only after a verified `pulse_grant`, under the proposal). Cleared on reset. Firmware does fire this pin — see §2. | Not P0.30/P0.31 (I2C/buzzer), not GNSS (P0.22–P0.27, P0.24 PPS/SAFEBOOT), not FLASH SPI (P0.01–P0.04), not `EXT_EN` (P0.07) reused as HV enable. Prefer a spare such as the NC analog bank **only after** a pin audit; mark **TBD** until assigned. Pulldown / safe-off at reset. |
+| `KILL_SENSE` | Observe the independent kill line (prefer kill path on the module) | Same exclusion set. Input with defined idle level so an open connector is not “ok”. |
+
+**On each pod module (not the crest / main board):** HV converter, driver
+stage, hardware current limit, electrodes, ID chip footprint, and preferably
+the gate latch and kill path / watchdog. Logical nets may be indexed
+`_*_N` per pod.
+
+---
+
+## 4. Module states
+
+Firmware-internal and registry-defined state values
+([`protocol/registry.md`](../protocol/registry.md)):
+
+| State | Meaning |
+| --- | --- |
+| `not_fitted` | No module on the sense pin / ID. **Internal + registry only** — not sent as a report block. |
+| `fitted_disabled` | Fitted; HV held off (default; always, until named reviewer + Cody approval and any adopted grant/latch path). |
+| `fitted_ready` | Fitted; proposed grant + latch + firmware path would allow enable when a welfare-gated cue would fire. Still off until that path asserts — and not used while no reviewer is named. |
+| `fault` | A fault code is latched; module forced off until a **person re-enables** it (not caretaker `rearm` / welfare shut-off clear). |
+| `killed` | Independent kill asserted; HV off. |
+
+`not_fitted` and unknown **must** mean no firmware path may drive HV. Default
+is off. **Until a welfare reviewer is named and Cody approves, treat every
+build as permanently unable to leave OFF for live stimulus.**
+
+**v2 status bits:** do **not** reuse the existing `armed` fence status bit for
+the module. Module readiness stays a **separate** state (this reservation /
+future record fields). Fence `armed` keeps its current meaning only.
+
+---
+
+## 5. Fault codes (proposed names; RESERVED)
+
+Any fault turns the module **off until a person re-enables** it. That is
+**not** the welfare `rearm` path (record L / `cue_clear_shutoff`).
+
+| Name | Intent |
+| --- | --- |
+| `open_electrode` | Open load / electrode path |
+| `short` | Shorted electrode or driver output |
+| `over_current` | Over the hardware (or lower software) current limit |
+| `no_contact` | Fitted but no animal contact detected (method TBD) |
+| `over_temp` | Driver or electrode over-temperature |
+| `bad_id` | ID chip missing, unreadable, or revision refused |
+
+Wire codes / CBOR numbers: assign when behaviour lands; names are reserved
+so they are not reused for something else.
+
+---
+
+## 6. Reports and caps (omit-when-unknown / omit-when-unfitted)
+
+### Caps / grants
+
+| Name | Meaning when listed (future) |
+| --- | --- |
+| `shock_module` | **Device cap:** collar hardware/firmware understands the reserved shock-module interface. **RESERVED — no behaviour today.** Not a live-use grant. |
+| `pulse_grant` | **Proposed** signed server permission (country rule, device-id-scoped, revocable). **RESERVED — no behaviour today.** Awaiting Cody. See §2. |
+
+Listing `shock_module` must never be taken as “pulse is live.”
+
+### Cue kind
+
+| Kind | Notes |
+| --- | --- |
+| `pulse` | **RESERVED** in the cue-kind registry. Distinct from `warn` / `outside` audio and from any future vibration kind. **No behaviour** in this PR. |
+
+### v1 report shape
+
+When a module **is** fitted, the position report may include (names reserved).
+Omit unknown fields (no placeholders):
+
+```json
+"health": {
+  "module": {
+    "hw_rev": "<from ID chip>",
+    "state": "fitted_disabled"
+  }
+}
+```
+
+If a fault is latched, include `"fault": "<name>"`; otherwise **omit**
+`fault` entirely.
+
+- Emit `health.module` **only when a module is fitted**.
+- v1 fields: `hw_rev`, `state`, and `fault` only when known / latched.
+  **No `present` field in v1** — the block’s presence already means fitted.
+- When **not** fitted: **omit** the entire `health.module` block (do not send
+  `state: "not_fitted"` on the wire).
+- Servers **must** treat an absent `health.module` as **not fitted or
+  unknown**, and **never** as ok / ready / stimulus-capable.
+- The server **offers no pulse settings** unless the module is ready
+  **and** a named welfare reviewer plus Cody approval exist.
+
+Optional later: serial from the ID chip under the same block; omit when
+unknown.
+
+### v2
+
+Keep module state out of the fence `armed` bit. A future health-map key or
+record field may carry the same semantics; unknown keys stay ignored per
+registry extensibility. If a v2 encoding needs an explicit present flag
+inside a denser structure, that is a v2-only concern — **not** a v1 JSON
+field. No CDDL / vector change in this PR (reservation only).
+
+---
+
+## 7. Hard rules (unchanged welfare gating)
+
+1. Unfitted or unknown → no firmware path may drive the module.
+2. Default is **off** (reset clears any latch; enable inactive).
+3. This reservation **does not** enable any output and **does not** change
+   audio cue behaviour.
+4. **No welfare reviewer is named yet** — the module stays **OFF in all
+   builds** until one is named **and** Cody approves. Owner opt-in and an
+   audit log are also required for live use; the server offers no pulse
+   settings otherwise.
+5. Hardware current limit value remains **TBD** until that reviewer sets it;
+   software limits stay strictly below that hardware limit once set.
+6. One production design: side-pod module bays and connectors even when
+   unfitted; electrode studs/holes blank or sealed until the module (which
+   owns the electrodes) is fitted.
+7. If the proposed gate is adopted: protection against firmware-alone HV is
+   `pulse_grant` + module HW current limit + kill line — not a claim that
+   `GATE_LATCH` is outside firmware. The gate itself remains **proposed,
+   awaiting Cody**.
+8. **No pulse/HV circuitry on the main board** when the module is unfitted
+   (all converter / driver / HW current limit on the module).
+
+Enum / field-name constants only (no drivers): optional
+[`firmware/src/shock_iface.h`](../firmware/src/shock_iface.h).

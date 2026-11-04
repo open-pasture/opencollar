@@ -43,12 +43,12 @@ Three parts, joined by the strap:
 | Part | Contents | Envelope *est* | Mass *est* |
 | --- | --- | --- | --- |
 | **Crest unit** | GNSS patch at one end under a clear window, main board (doubles as the patch's ground plane), LTE antenna, solar panel as the lid (~55–60 cm² of cells ≈ 1 W), buffer cell, harness socket | **~60 mm across the neck × ~130 mm along the spine × ≤ 18 mm tall** | ~170 g |
-| **Ear pods ×2** | One piezo each behind an acoustic membrane; later, one pulse electrode each on the neck face. A thin cable, permanently fitted, to the crest unit, in a TPU sleeve along the strap | ~45 × 35 × 12 mm, on the flat sides ~120 mm of strap from the crest centre | 2 × ~40 g |
+| **Ear pods ×2** | One piezo each behind an acoustic membrane; reserved geometry for the **shock module** (electrode + driver on the module; studs/holes blank or sealed when unfitted). A thin cable, permanently fitted, to the crest unit, in a TPU sleeve along the strap | ~45 × 35 × 12 mm, on the flat sides ~120 mm of strap from the crest centre | 2 × ~40 g |
 | Interconnect | Two short cables and the sleeve | | ~20 g |
 | **Top total** | | | **~270 g** |
 
 - **The panel lives only on the crest unit.** The pods sit on the near-vertical sides, where a panel sees little midday sun, so they stay small and simple. ~1 W on the crest harvests ~1.25 Wh/day in a Tennessee winter (*est*: 2.5 sun-hours × 50 % losses): ~4 × the load.
-- **The pods also carry the pulse electrodes later.** They end up on opposite sides of the neck, ~200 mm apart: inside the 50–300 mm electrode spacing the literature uses. Check Halter's pulse patents before any stimulus design.
+- **The shock module goes in the side pods (Cody, 2026-11-04), not the crest unit.** Electrodes belong to the module; pod studs/holes are reserved geometry only. Opposite sides of the neck, ~200 mm apart: inside the 50–300 mm electrode spacing the literature uses. All HV stays on the module ([`SHOCK-MODULE-INTERFACE.md`](SHOCK-MODULE-INTERFACE.md)). Check Halter's pulse patents before any stimulus design.
 - **Our own look.** Halter's pods-and-bridge top unit is protected by a US design patent (USD1089882S). Ours is a crest unit with the GNSS antenna on top plus two small ear pods: a different form. Before production, get a quick freedom-to-operate check on Halter's utility patents as well.
 
 ## 4. The battery is the counterweight
@@ -90,7 +90,7 @@ With the battery at the bottom, the harness carries the pack itself, not a 5 V b
 
 ## 5. What this does to the boards
 
-- **The integrated board is shaped to the crest unit**, ~55 × 125 mm, with the patch on the board. The pods hold only a piezo (and later an electrode), so they need no boards. The board drives the shell, not the other way round.
+- **The integrated board is shaped to the crest unit**, ~55 × 125 mm, with the patch on the board. Crest board has **no** pulse HV (LV connector / sense / MCU signals only). The shock module’s board and electrodes live in the pods when fitted ([`SHOCK-MODULE-INTERFACE.md`](SHOCK-MODULE-INTERFACE.md)). The crest board drives the shell outline, not the other way round.
 - **V1-alpha goes in a plain test box.** Dev boards can't fit a slim collar: the Connect Kit on sockets alone is ~15 mm tall. Draft 1 of the shell becomes that box. The alpha still proves what matters: GNSS, the left/right cue, the battery at the bottom and the harness on animals.
 - **The carrier board is a rectangle under 100 × 100 mm** (JLCPCB's cheapest tier). It replaces the jumper wires in the alpha collars and gains what the alpha needs to test the new layout: the battery on the harness, and a left and a right cue port (`hardware/carrier/SPEC.md`).
 

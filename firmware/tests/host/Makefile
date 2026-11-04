@@ -10,7 +10,7 @@ CFLAGS += -ffp-contract=off -D_POSIX_C_SOURCE=200809L -I../../third_party/monocy
 SRC = ../../src
 MONO = ../../third_party/monocypher
 FW = protocol shape geofence cue command config slots acks provision app
-TESTS = geofence shape command config slots store cue provision app herd
+TESTS = geofence shape command config slots store cue provision app herd shock_iface
 
 OBJ = $(FW:%=build/fw_%.o) build/monocypher.o build/monocypher-ed25519.o \
       build/store_ram.o build/json.o
@@ -33,6 +33,10 @@ build/store_ram.o: store_ram.c $(HDR) | build
 
 build/json.o: json.c json.h | build
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+# Header-only stability test: no firmware objects (shock_iface.h has no .c).
+build/test_shock_iface: test_shock_iface.c $(SRC)/shock_iface.h test.h | build
+	$(CC) $(CFLAGS) -o $@ test_shock_iface.c
 
 build/test_%: test_%.c $(OBJ) $(HDR)
 	$(CC) $(CFLAGS) -o $@ $< $(OBJ) -lm

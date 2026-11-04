@@ -1,5 +1,15 @@
 # Bottom bay: swappable modules instead of a dead counterweight
 
+> **Superseded (2026-11-04).** Kept for history; do not treat as normative for
+> pulse / shock placement or for the current Node V1 production design.
+> Shock / pulse interface reservation: op-architect **record O** and
+> [`SHOCK-MODULE-INTERFACE.md`](SHOCK-MODULE-INTERFACE.md) (module in the
+> **side pods**; all HV on the module). Crest / battery-bay wiring and mass
+> notes elsewhere may still be useful context, but check
+> [`COLLAR-FIRST-PRINCIPLES.md`](COLLAR-FIRST-PRINCIPLES.md) and
+> [`hardware/rook/bom/HARDWARE-FIT.md`](../hardware/rook/bom/HARDWARE-FIT.md)
+> for the plan of record.
+
 ## Why the bottom needs mass at all
 
 The GNSS antenna only works well pointing at the sky. Without weight at the bottom of the collar, the top unit rolls to the side of the neck as the animal grazes, lies down and scratches, and the antenna ends up facing the ground or the animal. Every commercial collar solves this with a 0.5–1.5 kg counterweight. GNSS is our top priority, so the mass has to stay.
@@ -92,9 +102,14 @@ Budget: in summer, solar surplus of a few Wh/day covers roughly an hour of recor
 - **Power-path circuitry** on the main board that can charge and draw from an external LiFePO4 pack through the strap.
 - **Firmware** that detects the pack and adds it to the energy and telemetry reports.
 
-## Electric pulse: top unit, not the bay
+## Electric pulse: superseded — side pods
 
-The pulse has to reach the animal reliably on every collar, whichever module is in the bay. It goes on an **add-on board inside the top unit**, with electrodes on the underside of the top unit resting on the top of the neck. The top unit shell reserves the space, the electrode openings and the connector from V1, so adding the pulse means fitting a board, not redesigning the collar.
+**Superseded (Cody, 2026-11-04):** earlier drafts put a pulse add-on board in
+the **top unit** with electrodes on its underside. That is **retired**. The
+shock module goes in the **side pods**. Electrode studs/holes in the pods are
+reserved geometry only (blank or sealed when unfitted); electrodes belong to
+the module. See [`SHOCK-MODULE-INTERFACE.md`](SHOCK-MODULE-INTERFACE.md)
+(record O).
 
 ## Camera module: first iteration
 

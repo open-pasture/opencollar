@@ -3,6 +3,40 @@
 Wire-visible changes, newest first. Versions name the protocol, not any firmware or server
 release.
 
+## 2026-11-04
+
+### Shock / pulse module interface reserved (no behaviour)
+
+Not a wire version bump. Docs + registry names only; nothing drives an output.
+Cue behaviour unchanged. Current limit TBD. **Placement decided (Cody): side
+pods** (not top unit; `BOTTOM-BAY.md` pulse text superseded). **No welfare
+reviewer named yet** — module stays OFF in all builds until one is named and
+Cody approves. Dual enable / `GATE_LATCH` / `pulse_grant` are **proposed,
+awaiting Cody**.
+
+- **Device cap** `shock_module` reserved (not a grant).
+- **Grant** `pulse_grant` reserved (proposed): signed, revocable, country rule,
+  scoped to device id; revoked on release, transfer, or factory reset.
+- **Cue kind** `pulse` (code 3) reserved — distinct from audio / future vibration.
+- **Module states** `not_fitted` / `fitted_disabled` / `fitted_ready` / `fault` /
+  `killed` reserved; `not_fitted` is firmware-internal + registry (omit
+  `health.module` on the wire when unfitted; servers must not treat absence as ok).
+- **Fault names** `open_electrode` / `short` / `over_current` / `no_contact` /
+  `over_temp` / `bad_id` reserved; any fault keeps HV off until a person
+  **re-enables** (not welfare `rearm`).
+- **Report** `health.module` with `hw_rev`, `state`, optional `fault` — only when
+  fitted; no v1 `present`. v2 must not reuse the fence `armed` status bit.
+- **Latch (proposed):** `GATE_LATCH` would be an MCU output (one-shot, cleared
+  on reset); not firmware-independent. Protection would be `pulse_grant` +
+  module HW current limit + kill. Prefer latch/kill on the module.
+- **Partition:** all HV converter / driver / HW current limit on the module;
+  main board is LV connector + sense + ID bus + MCU signals only. Electrode
+  studs/holes in pods are reserved geometry (blank/sealed when unfitted);
+  electrodes belong to the module.
+- Cross-links: `welfare.enforcement` (record L), `cue_state` `pulse_off` (record N).
+- Normative text: [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md)
+  (record O; Cody placement + standing rule 2026-11-04).
+
 ## 2026-11-03
 
 ### Auto shut-off: caretaker re-arm only (Cody)
