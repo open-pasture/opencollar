@@ -33,7 +33,8 @@ Electronics stay out of the CW (D5 / contract).
 | --- | --- |
 | Lid / tub M3 (`CW_SCREWS`) | (±22, ±31.5) |
 | CW clamp holes (`CW_CLAMP`) | (±36, ±29.5) |
-| Cap/saddle clamp family | (±20, ±28.5) |
+| Cap/saddle clamp family | (±28.5, ±20) strap-along-Y |
+| CW clamp holes | (±36, ±28.5) — Y matched to bars |
 | LoRa crest ref | (0, 64) |
 | **Clamp→LoRa clearance** | **35.5 mm** (≥15 keep; matches D5) |
 
@@ -87,7 +88,7 @@ All exported in print orientation; watertight-checked (PASS on first build).
 | Steel mass stated (volume, fill, seal) | **PASS** — 771.8 g / 98.3 cm³ / foam + O-ring + M3 |
 | Channel clamps 10×70×8 flange-down | **PASS** |
 | Load along layers; farmer M3 | **PASS** |
-| LoRa clearance 35.5 mm | **PASS** (64 − 28.5) |
+| LoRa clearance | **PASS** (64 − 20 = 44 mm with D6 CAP_CLAMP y) |
 | Floor ribs + real embossed glyphs (table) | **PASS** — DejaVu Bold / stroke symbols |
 | Lid outer-down via 180° X (no `flip_normals`) | **PASS** |
 | STLs print-oriented z=0, watertight | **PASS** |
@@ -96,6 +97,6 @@ All exported in print orientation; watertight-checked (PASS on first build).
 
 ## Match notes for other agents
 
-- Cap agent: clamp XY (±20, ±28.5); saddle width 76; strap 44.45 × 4 U.
+- Cap agent: clamp XY (±28.5, ±20); saddle width 76; strap 44.45; channel along Y.
 - Pod agent: same clamp_bar STL ×2 per pod; fairing run 28 mm brand.
 - CW world pose (assembly): D4 `cw_anchor` at z≈−465.75, rot 180° about X — not baked into these print STLs.

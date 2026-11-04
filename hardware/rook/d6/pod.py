@@ -270,14 +270,17 @@ def pod_base(side="L"):
                           at=(0.0, POD_W / 2 - CABLE_SINK_H / 2, cable_z),
                           axis="Y", segments=32))
 
-    # Cap↔pod M3 joint: 36×4×14 recess + 4× clear holes matching cap.py pad
+    # Cap↔pod M3 joint: 36×4×14 recess + 4× clear holes matching cap.py pad.
+    # Centre on the +Y end face mid-height so it meets the tilted cap pad.
     pw, pt, ph = POD_MOUNT_SIZE
+    mz = POD_BASE_H / 2.0
     recess = oc.box("pmount_rec", (pw + 0.4, pt + 0.3, ph + 0.4),
-                    at=(0.0, POD_W / 2 - pt / 2, POD_FLOOR + 5.0), anchor="center")
+                    at=(0.0, POD_W / 2 - pt / 2, mz), anchor="center")
     oc.cut(b, recess)
     for i, (lx, lz) in enumerate(POD_MOUNT_SCREWS):
+        # lz is 3..10 on the pad face; map onto mid-height ± offsets
         oc.cut(b, oc.cylinder(f"pmount_h{i}", D.CLEAR, POD_WALL + 8,
-                              at=(lx, POD_W / 2 - pt / 2, POD_FLOOR + lz),
+                              at=(lx, POD_W / 2 - pt / 2, mz + (lz - ph / 2)),
                               axis="Y", segments=24))
 
     # Floor glyphs — one table (d5.FLOOR_LABEL_TABLE)
@@ -391,8 +394,9 @@ def _fairing_body(name, run, w0, w1, h):
 
 
 def fairing_cap_pod(side="L"):
-    """Bridge cap end → pod mount. W0=88→W1=66 × run 28 × H 14 (spans 92 mm pod)."""
-    f = prepare(_fairing_body(f"fairing_cap_pod_{side}", FAIRING_RUN,
+    """Bridge cap end → pod mount. W0=88→W1=66 × run 18 × H 14 (D4-ish short run)."""
+    run = getattr(A, "FAIRING_RUN_CAP_POD", 18.0)
+    f = prepare(_fairing_body(f"fairing_cap_pod_{side}", run,
                               FAIRING_W0, FAIRING_W1, FAIRING_H))
     if side == "R":
         mirror_x(f)

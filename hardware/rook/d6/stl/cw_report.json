@@ -10,7 +10,7 @@
     "steel_volume_cm3": 98.32,
     "lid_seal": "2.0 mm O-ring groove in tub rim + registered lip; 4\u00d7 M3 button-head screws through lid into heat-set inserts; foam pad compresses steel pack under lid"
   },
-  "clamp_lora_clear_mm": 35.5,
+  "clamp_lora_clear_mm": 44.0,
   "clamp_note": "Print clamp_bar \u00d71 STL; print 8 physical bars per collar",
   "floor_label_table": {
     "STEEL": [
@@ -57,7 +57,43 @@
     "relief_mm": 0.6,
     "font": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
   },
-  "print_orientation_note": "All STLs bed face at z=0. cw_lid: rotated 180\u00b0 about X on export (recalc normals, never flip_normals).",
+  "print_orientation_note": "All STLs bed face at z=0. cw_lid: mating-face-down (no outer flip; chosen vs outer-down for less support). Never flip_normals().",
+  "cw_clamp": [
+    [
+      -36.0,
+      -28.5
+    ],
+    [
+      -36.0,
+      28.5
+    ],
+    [
+      36.0,
+      -28.5
+    ],
+    [
+      36.0,
+      28.5
+    ]
+  ],
+  "cap_clamp": [
+    [
+      -28.5,
+      -20.0
+    ],
+    [
+      -28.5,
+      20.0
+    ],
+    [
+      28.5,
+      -20.0
+    ],
+    [
+      28.5,
+      20.0
+    ]
+  ],
   "bodies": {
     "cw_tub": {
       "size_mm": [
@@ -69,12 +105,12 @@
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 84990.01326434949
+        "volume_mm3": 84994.41330239648
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 28682
+        "faces": 28684
       },
       "pass": true,
       "stl_path": "stl/cw_tub.stl",
@@ -96,22 +132,22 @@
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 61430.97057112974
+        "volume_mm3": 61416.39378105769
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 3632
+        "faces": 3760
       },
       "pass": true,
       "stl_path": "stl/cw_lid.stl",
-      "export_flipped_outer_down": true,
+      "export_flipped_outer_down": false,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 787.3,
+      "bed_face_area_mm2": 5836.2,
       "support_note": "Flat crown land on bed (~42\u00d736 mm). Strap channel is a pocket on the bed (no bridge). Internal cbore/landing after flip face UP \u2014 no large tree supports expected; optional tiny supports only if land bridges fail.",
-      "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X on export)",
-      "load_path": "lid screws; strap channel pocket on bed",
+      "orientation": "PRINT: MATING face DOWN z=0 (no outer flip; less support)",
+      "load_path": "lid screws; dome up; strap channel on outer",
       "material": "ASA/PETG",
       "farmer_swappable": true
     },
@@ -125,19 +161,19 @@
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 24309.34719151756
+        "volume_mm3": 21057.73995977571
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 2254
+        "faces": 2268
       },
       "pass": true,
       "stl_path": "stl/saddle.stl",
       "export_flipped_outer_down": false,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "orientation": "PRINT: roof on bed z=0; channel opens +Z",
+      "orientation": "PRINT: roof on bed z=0; channel +Z; strap along Y",
       "load_path": "strap\u2192rails\u2192clamp ALONG layers",
       "material": "ASA/PETG or PA-CF*",
       "farmer_swappable": false
@@ -165,13 +201,13 @@
       "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: flange on bed z=0; channel +Z; load ALONG Y WITH layers",
-      "load_path": "strap compression; 35.5 mm from LoRa crest",
+      "load_path": "strap compression; holes y=\u00b128.5",
       "material": "ASA/PETG or PA-CF*",
       "farmer_swappable": true
     },
     "fairing_cw_L": {
       "size_mm": [
-        65.855,
+        87.874,
         28.0,
         14.0
       ],
@@ -179,7 +215,7 @@
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 22719.99526311533
+        "volume_mm3": 30172.081475729916
       },
       "stl": {
         "watertight": true,
@@ -192,13 +228,13 @@
       "normals_outward": true,
       "bed_face_at_z0": true,
       "orientation": "PRINT: long axis on bed; slope=WALL",
-      "load_path": "28 mm CW\u2194strap blend",
+      "load_path": "88\u219266\u00d728\u00d714 CW\u2194strap",
       "material": "ASA/PETG",
       "farmer_swappable": true
     },
     "fairing_cw_R": {
       "size_mm": [
-        65.855,
+        87.874,
         28.0,
         14.0
       ],
@@ -206,7 +242,7 @@
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 22719.99526311533
+        "volume_mm3": 30172.081475729916
       },
       "stl": {
         "watertight": true,

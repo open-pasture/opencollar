@@ -33,7 +33,7 @@ for n in ("pod_L", "pod_R"):
     e = bpy.data.objects.new(n + "_anchor", None); e.empty_display_type = "ARROWS"; e.empty_display_size = 15
     s = -1 if n == "pod_L" else 1
     # D6 outboard anchors (assembly.POD_ANCHOR_Y=124); L=+tilt R=-tilt
-    e.location = (0, s * 124.0, -27.839); e.rotation_euler = (math.radians(-s * 29.1418), 0, 0); d6.objects.link(e)
+    e.location = (0, s * 126.0, -21.9); e.rotation_euler = (math.radians(-s * 29.1418), 0, 0); d6.objects.link(e)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, "d6_assembly.blend"))
 # renders: workbench, D4 ghost as wire overlay
 sc.render.engine = "BLENDER_WORKBENCH"; sc.display.shading.light = "STUDIO"; sc.display.shading.color_type = "MATERIAL"

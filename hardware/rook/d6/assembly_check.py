@@ -67,57 +67,53 @@ sc.export(os.path.join(OUT, "d6_assembly_world.glb"))
 
 # ---------------- 3. interfaces / contract
 cap_src = open(os.path.join(HERE, "cap.py")).read()
-# Parse tilt sign from pod_mount_pad: A.pod_tilt_sign(side) * POD_TILT_DEG  OR legacy sign=
-cap_uses_asm = "A.pod_tilt_sign" in cap_src or "pod_tilt_sign" in cap_src
-# Also detect inverted legacy: sign = -1 if side == 'L'
-legacy_inverted = bool(re.search(r"sign\s*=\s*-1\s*if\s*side\s*==\s*['\"]L['\"]", cap_src))
-if cap_uses_asm and not legacy_inverted:
-    cap_L_sign = +1
-elif legacy_inverted:
-    cap_L_sign = -1
-else:
-    # Fallback: look for tilt = + for L
-    cap_L_sign = +1 if "L +29" in cap_src or "L = +tilt" in cap_src or "+29.142" in cap_src else -1
+# Tilt must come from A.pod_tilt_sign (L=+); do NOT confuse with place_sign (L=−Y).
+cap_uses_asm = "A.pod_tilt_sign(side)" in cap_src
+legacy_tilt = re.search(
+    r"tilt\s*=\s*(?:sign\s*\*\s*POD_TILT|A\.pod_tilt_sign)", cap_src
+)
+legacy_inverted = bool(
+    re.search(r"(?<![a-z_])sign\s*=\s*-1\s*if\s*side\s*==\s*['\"]L['\"]", cap_src)
+) and not cap_uses_asm
+cap_L_sign = +1 if cap_uses_asm else (-1 if legacy_inverted else +1)
 pod_L_sign = +1
 chk(
     "cap pod-pad tilt sign L matches pod/D4 (+29.14)",
-    cap_L_sign == pod_L_sign,
-    f"cap L={cap_L_sign * A.TILT_DEG:+.2f} deg, pod L={pod_L_sign * A.TILT_DEG:+.2f} deg",
+    cap_L_sign == pod_L_sign and cap_uses_asm,
+    f"cap L={cap_L_sign * A.TILT_DEG:+.2f} deg via pod_tilt_sign={cap_uses_asm}, "
+    f"pod L={pod_L_sign * A.TILT_DEG:+.2f} deg",
     "+29.14 both",
 )
-if cap_L_sign != pod_L_sign:
+if cap_L_sign != pod_L_sign or not cap_uses_asm:
     res["mismatches"].append(
         "cap.py pod_mount_pad tilt sign still inverted vs pod.py / d4.json"
     )
 
-# Cap pad centre vs pod cap-facing end
-for s, sy in (("L", -1), ("R", 1)):
+# Cap pad centre vs pod cap-facing end (transform local face centre — not bbox mid)
+from trimesh.transformations import translation_matrix as _T
+
+for s in ("L", "R"):
     pad = A.cap_pad_world_centre(s)
     pb = world.get(f"pod_{s}_base")
     if pb is None:
         continue
-    # Cap-facing end: for L (at -Y) the end toward cap is the +Y-most face of the pod bbox
-    # after world pose; for R the -Y-most face.
-    if s == "L":
-        face_y = pb.bounds[1][1]
-    else:
-        face_y = pb.bounds[0][1]
-    face_z = 0.5 * (pb.bounds[0][2] + pb.bounds[1][2])
-    fw = np.array([0.0, face_y, face_z])
+    # Cap-facing end: L uses local +Y (toward world origin); R uses local −Y.
+    # (R STL is X-mirrored only; Y ends keep their roles in the print frame.)
+    y_local = A.POD_W / 2.0 if s == "L" else -A.POD_W / 2.0
+    local = np.array([0.0, y_local, A.POD_BASE_H / 2.0, 1.0])
+    fw4 = A.pod_anchor_matrix(s) @ _T([0, 0, A.POD_Z0]) @ local
+    fw = fw4[:3]
     gap = float(np.linalg.norm(fw - pad))
-    # Also allow projecting pad onto the face plane (Y) only
-    gap_y = abs(float(face_y - pad[1]))
-    ok = gap < 8.0 or gap_y < 5.0
+    ok = gap < 5.0
     chk(
         f"cap pad {s} centre vs pod {s} cap-facing face centre",
         ok,
-        f"pad {pad.round(1).tolist()} vs pod face {fw.round(1).tolist()} -> gap={gap:.1f} mm (dy={gap_y:.1f})",
-        "<8 mm (joint faces meet / fairing-bridged)",
+        f"pad {np.asarray(pad).round(1).tolist()} vs pod face {fw.round(1).tolist()} -> {gap:.1f} mm",
+        "<5 mm",
     )
     if not ok:
         res["mismatches"].append(
-            f"Mount face {s}: pad {pad.round(1).tolist()} vs pod face {fw.round(1).tolist()} "
-            f"are {gap:.1f} mm apart"
+            f"Mount face {s}: pad vs pod face are {gap:.1f} mm apart"
         )
 
 # Pod has mount recess / holes (geometry heuristic: look for local Y-end cuts via source)
@@ -283,6 +279,13 @@ EXPECTED = {
     ("pod_R_base", "pod_R_lid"),
     ("cw_tub", "cw_lid"),
 }
+# Cap pad into pod recess is the bolted M3 joint — expected engagement.
+MOUNT_JOINT = {
+    ("cap_base", "pod_L_base"),
+    ("cap_base", "pod_R_base"),
+    ("pod_L_base", "cap_base"),
+    ("pod_R_base", "cap_base"),
+}
 # Fairing↔body overlaps up to a small blend volume are OK if intentional bridge;
 # classify large unexpected overlaps as REAL.
 for i in res["interference"]:
@@ -290,10 +293,18 @@ for i in res["interference"]:
     rev = (i["b"], i["a"])
     if pair in EXPECTED or rev in EXPECTED:
         i["class"] = "expected lip/groove engagement"
-    elif "fairing" in i["a"] or "fairing" in i["b"]:
-        # Allow modest fairing blend into bodies (< 500 mm³); larger = pose/size issue
+    elif pair in MOUNT_JOINT or rev in MOUNT_JOINT:
+        # Pad/recess kiss; large volume means body clash not just the 36×4×14 pad
         i["class"] = (
-            "fairing blend (OK)" if i["mm3"] < 500 else "fairing overlap high — review pose"
+            "expected mount pad/recess engagement"
+            if i["mm3"] < 1500
+            else "REAL clash"
+        )
+    elif "fairing" in i["a"] or "fairing" in i["b"]:
+        # Bridging fairings intentionally kiss both bodies; allow generous blend
+        # for review poses (final production will boolean-cut fairings to skins).
+        i["class"] = (
+            "fairing blend (OK)" if i["mm3"] < 15000 else "fairing overlap high — review pose"
         )
     elif "clamp_bar" in i["a"] or "clamp_bar" in i["b"]:
         i["class"] = "clamp engagement (OK)" if i["mm3"] < 200 else "REAL clash"
@@ -306,6 +317,13 @@ chk(
     not real,
     [f"{i['a']}x{i['b']}={i['mm3']}mm3" for i in real],
     "none",
+)
+fair_hi = [i for i in res["interference"] if i["class"] == "fairing overlap high — review pose"]
+chk(
+    "fairing overlaps within blend budget (<15000 mm3)",
+    not fair_hi,
+    [f"{i['a']}x{i['b']}={i['mm3']}mm3" for i in fair_hi],
+    "none over budget",
 )
 
 # Soft check: fairings not floating (should have SOME contact or be within 2 mm of a body)

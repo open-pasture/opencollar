@@ -17,8 +17,8 @@
       116.0
     ],
     "keep_clear": 15.0,
-    "pod_anchor_y": 113.8,
-    "pod_anchor_z": -27.8,
+    "pod_anchor_y": 126.0,
+    "pod_anchor_z": -21.9,
     "pod_tilt_deg": 29.141828721535205
   },
   "match_cw": {
@@ -29,20 +29,20 @@
     ],
     "cap_clamp_xy": [
       [
-        -20.0,
-        -28.5
+        -28.5,
+        -20.0
       ],
       [
-        -20.0,
-        28.5
+        -28.5,
+        20.0
       ],
       [
-        20.0,
-        -28.5
+        28.5,
+        -20.0
       ],
       [
-        20.0,
-        28.5
+        28.5,
+        20.0
       ]
     ],
     "saddle_w": 76.0,
@@ -77,24 +77,24 @@
       "bbox": {
         "min": [
           -38.0,
-          -82.0,
+          -93.456,
           0.0
         ],
         "max": [
           38.0,
-          82.0,
+          93.456,
           20.2
         ],
         "size": [
           76.0,
-          164.0,
+          186.911,
           20.2
         ]
       },
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 49824
+        "faces": 49586
       },
       "print": "cavity UP; bed=underside z=0"
     },
@@ -138,7 +138,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 39538
+        "faces": 39534
       }
     }
   },

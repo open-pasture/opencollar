@@ -1,0 +1,1022 @@
+{
+ "checks": [
+  {
+   "check": "cap_base: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "cap_base: volume>0",
+   "ok": true,
+   "measured": 117102,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "cap_base: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "cap_base: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    76.0,
+    186.91,
+    20.2
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "cap_floor_layout: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "cap_floor_layout: volume>0",
+   "ok": true,
+   "measured": 20256,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "cap_floor_layout: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "cap_floor_layout: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    70.0,
+    134.0,
+    5.0
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "cap_lid: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "cap_lid: volume>0",
+   "ok": true,
+   "measured": 110680,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "cap_lid: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "cap_lid: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    75.0,
+    163.0,
+    12.0
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "clamp_bar: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "clamp_bar: volume>0",
+   "ok": true,
+   "measured": 4083,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "clamp_bar: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "clamp_bar: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    10.0,
+    70.0,
+    8.0
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "cw_floor_layout: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "cw_floor_layout: volume>0",
+   "ok": true,
+   "measured": 10128,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "cw_floor_layout: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "cw_floor_layout: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    79.2,
+    58.0,
+    4.5
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "cw_lid: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "cw_lid: volume>0",
+   "ok": true,
+   "measured": 61416,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "cw_lid: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "cw_lid: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    87.0,
+    73.0,
+    12.7
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "cw_tub: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "cw_tub: volume>0",
+   "ok": true,
+   "measured": 84994,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "cw_tub: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "cw_tub: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    88.0,
+    74.0,
+    31.2
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_L: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_L: volume>0",
+   "ok": true,
+   "measured": 19392,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_L: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_L: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    87.87,
+    18.0,
+    14.0
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_R: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_R: volume>0",
+   "ok": true,
+   "measured": 19392,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_R: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_R: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    87.87,
+    18.0,
+    14.0
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_L: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_L: volume>0",
+   "ok": true,
+   "measured": 30172,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_L: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_L: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    87.87,
+    28.0,
+    14.0
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_R: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_R: volume>0",
+   "ok": true,
+   "measured": 30172,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_R: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_R: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    87.87,
+    28.0,
+    14.0
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_L: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_L: volume>0",
+   "ok": true,
+   "measured": 30172,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_L: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_L: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    87.87,
+    28.0,
+    14.0
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_R: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_R: volume>0",
+   "ok": true,
+   "measured": 30172,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_R: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_R: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    87.87,
+    28.0,
+    14.0
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "pod_L_base: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "pod_L_base: volume>0",
+   "ok": true,
+   "measured": 84760,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "pod_L_base: min z = 0",
+   "ok": true,
+   "measured": -0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "pod_L_base: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    92.0,
+    93.8,
+    23.4
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "pod_L_lid: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "pod_L_lid: volume>0",
+   "ok": true,
+   "measured": 32602,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "pod_L_lid: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "pod_L_lid: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    91.0,
+    91.0,
+    4.35
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "pod_R_base: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "pod_R_base: volume>0",
+   "ok": true,
+   "measured": 84758,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "pod_R_base: min z = 0",
+   "ok": true,
+   "measured": -0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "pod_R_base: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    92.0,
+    93.8,
+    23.4
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "pod_R_lid: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "pod_R_lid: volume>0",
+   "ok": true,
+   "measured": 32602,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "pod_R_lid: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "pod_R_lid: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    91.0,
+    91.0,
+    4.35
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "pod_floor_layout: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "pod_floor_layout: volume>0",
+   "ok": true,
+   "measured": 10290,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "pod_floor_layout: min z = 0",
+   "ok": true,
+   "measured": -0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "pod_floor_layout: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    80.0,
+    58.0,
+    5.0
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "saddle: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "saddle: volume>0",
+   "ok": true,
+   "measured": 21058,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "saddle: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "saddle: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    76.0,
+    96.0,
+    6.5
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "cap pod-pad tilt sign L matches pod/D4 (+29.14)",
+   "ok": true,
+   "measured": "cap L=+29.14 deg via pod_tilt_sign=True, pod L=+29.14 deg",
+   "expected": "+29.14 both",
+   "note": ""
+  },
+  {
+   "check": "cap pad L centre vs pod L cap-facing face centre",
+   "ok": true,
+   "measured": "pad [0.0, -88.3, 7.4] vs pod face [0.0, -89.1, 6.4] -> 1.3 mm",
+   "expected": "<5 mm",
+   "note": ""
+  },
+  {
+   "check": "cap pad R centre vs pod R cap-facing face centre",
+   "ok": true,
+   "measured": "pad [0.0, 88.3, 7.4] vs pod face [0.0, 89.1, 6.4] -> 1.3 mm",
+   "expected": "<5 mm",
+   "note": ""
+  },
+  {
+   "check": "pod has cap-mount recess + 4 clear holes",
+   "ok": true,
+   "measured": "pmount_rec/h in pod.py",
+   "expected": "36x4x14 recess + 4x CLEAR",
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_L widened fairing (~88.0\u00d728.0\u00d714.0)",
+   "ok": true,
+   "measured": [
+    87.9,
+    18.0,
+    14.0
+   ],
+   "expected": "~88.0\u00d728.0\u00d714.0",
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_R widened fairing (~88.0\u00d728.0\u00d714.0)",
+   "ok": true,
+   "measured": [
+    87.9,
+    18.0,
+    14.0
+   ],
+   "expected": "~88.0\u00d728.0\u00d714.0",
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_L widened fairing (~88.0\u00d728.0\u00d714.0)",
+   "ok": true,
+   "measured": [
+    87.9,
+    28.0,
+    14.0
+   ],
+   "expected": "~88.0\u00d728.0\u00d714.0",
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_R widened fairing (~88.0\u00d728.0\u00d714.0)",
+   "ok": true,
+   "measured": [
+    87.9,
+    28.0,
+    14.0
+   ],
+   "expected": "~88.0\u00d728.0\u00d714.0",
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_L widened fairing (~88.0\u00d728.0\u00d714.0)",
+   "ok": true,
+   "measured": [
+    87.9,
+    28.0,
+    14.0
+   ],
+   "expected": "~88.0\u00d728.0\u00d714.0",
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_R widened fairing (~88.0\u00d728.0\u00d714.0)",
+   "ok": true,
+   "measured": [
+    87.9,
+    28.0,
+    14.0
+   ],
+   "expected": "~88.0\u00d728.0\u00d714.0",
+   "note": ""
+  },
+  {
+   "check": "clamp_bar 10x70x8",
+   "ok": true,
+   "measured": [
+    10.0,
+    70.0,
+    8.0
+   ],
+   "expected": [
+    10,
+    70,
+    8
+   ],
+   "note": ""
+  },
+  {
+   "check": "clamp qty 8 (CLAMP_QTY.txt)",
+   "ok": true,
+   "measured": "clamp_bar.stl \u2014 print 8\u00d7 per collar (2 under cap saddle, 2 under each pod, 2 under CW saddle).",
+   "expected": "",
+   "note": ""
+  },
+  {
+   "check": "saddle width 76",
+   "ok": true,
+   "measured": [
+    76.0,
+    96.0,
+    6.5
+   ],
+   "expected": "76 x 96 x ~5\u20136.5",
+   "note": ""
+  },
+  {
+   "check": "saddle channel 46.45 >= strap 44.45 + 2",
+   "ok": true,
+   "measured": 46.45,
+   "expected": "strap+2",
+   "note": ""
+  },
+  {
+   "check": "clamp hole spacing x=+-28.5 spans channel 46.45 (half 23.2) with >=2.5 mm land",
+   "ok": true,
+   "measured": "land 3.57 mm (M3 clear r=1.7)",
+   "expected": ">=2.5",
+   "note": ""
+  },
+  {
+   "check": "CW_CLAMP y (+-28.5) == clamp bar hole y (+-28.5)",
+   "ok": true,
+   "measured": "CW_CLAMP=[(-36.0, -28.5), (-36.0, 28.5), (36.0, -28.5), (36.0, 28.5)]",
+   "expected": "y=+-28.5",
+   "note": ""
+  },
+  {
+   "check": "cap clamp screws clear of strap (strap along Y, |x|>22.2)",
+   "ok": true,
+   "measured": "CAP_CLAMP=[(-28.5, -20.0), (-28.5, 20.0), (28.5, -20.0), (28.5, 20.0)]",
+   "expected": "outside strap",
+   "note": ""
+  },
+  {
+   "check": "panel pocket 66.6x113.6x2.3",
+   "ok": true,
+   "measured": [
+    66.6,
+    113.6,
+    2.3
+   ],
+   "expected": "",
+   "note": ""
+  },
+  {
+   "check": "pod cavity 82x58x19.5",
+   "ok": true,
+   "measured": [
+    82.0,
+    58.0,
+    19.5
+   ],
+   "expected": "",
+   "note": ""
+  },
+  {
+   "check": "Wio pocket 21.8x18.6x8 @ (22,-8) lay-flat",
+   "ok": true,
+   "measured": [
+    [
+     21.8,
+     18.6,
+     8.0
+    ],
+    [
+     22.0,
+     -8.0
+    ],
+    "lay_flat"
+   ],
+   "expected": "",
+   "note": ""
+  },
+  {
+   "check": "antenna keep-clear 15",
+   "ok": true,
+   "measured": 15.0,
+   "expected": "",
+   "note": ""
+  },
+  {
+   "check": "panel land 68x116 inside lid 75x163",
+   "ok": true,
+   "measured": "lid 75.0x163.0; side wall 3.5, end margin 23.5",
+   "expected": "walls>=3, ends>=15",
+   "note": ""
+  },
+  {
+   "check": "Wio pocket +X wall >= 3 mm",
+   "ok": true,
+   "measured": "5.1 mm",
+   "expected": ">=3",
+   "note": ""
+  },
+  {
+   "check": "pod cavity 82 fits pod X (walls >= 4)",
+   "ok": true,
+   "measured": "wall 5.0 (outer X=92.0)",
+   "expected": ">=4",
+   "note": ""
+  },
+  {
+   "check": "cw_lid prints mating-face-down (FLIP_OUTER_DOWN empty of cw_lid)",
+   "ok": true,
+   "measured": "mating-down",
+   "expected": "mating-down (less support than outer-down)",
+   "note": ""
+  },
+  {
+   "check": "no REAL interference between posed bodies",
+   "ok": true,
+   "measured": [],
+   "expected": "none",
+   "note": ""
+  },
+  {
+   "check": "fairing overlaps within blend budget (<15000 mm3)",
+   "ok": true,
+   "measured": [],
+   "expected": "none over budget",
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_L near a body (not floating)",
+   "ok": true,
+   "measured": "nearest cap_base gap/overlap=-13.5",
+   "expected": "<5 mm",
+   "note": ""
+  },
+  {
+   "check": "fairing_cap_pod_R near a body (not floating)",
+   "ok": true,
+   "measured": "nearest cap_base gap/overlap=-13.5",
+   "expected": "<5 mm",
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_L near a body (not floating)",
+   "ok": true,
+   "measured": "nearest pod_L_base gap/overlap=-9.2",
+   "expected": "<5 mm",
+   "note": ""
+  },
+  {
+   "check": "fairing_pod_strap_R near a body (not floating)",
+   "ok": true,
+   "measured": "nearest pod_R_base gap/overlap=-9.8",
+   "expected": "<5 mm",
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_L near a body (not floating)",
+   "ok": true,
+   "measured": "nearest cw_tub gap/overlap=-3.0",
+   "expected": "<5 mm",
+   "note": ""
+  },
+  {
+   "check": "fairing_cw_R near a body (not floating)",
+   "ok": true,
+   "measured": "nearest cw_tub gap/overlap=-3.0",
+   "expected": "<5 mm",
+   "note": ""
+  }
+ ],
+ "mismatches": [],
+ "interference": [
+  {
+   "a": "cap_base",
+   "b": "cap_lid",
+   "mm3": 194.7,
+   "class": "expected lip/groove engagement"
+  },
+  {
+   "a": "cap_base",
+   "b": "pod_L_base",
+   "mm3": 47.1,
+   "class": "expected mount pad/recess engagement"
+  },
+  {
+   "a": "cap_base",
+   "b": "pod_R_base",
+   "mm3": 376.3,
+   "class": "expected mount pad/recess engagement"
+  },
+  {
+   "a": "cap_base",
+   "b": "fairing_cap_pod_L",
+   "mm3": 1132.5,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "cap_base",
+   "b": "fairing_cap_pod_R",
+   "mm3": 1132.5,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "cap_lid",
+   "b": "fairing_cap_pod_L",
+   "mm3": 204.2,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "cap_lid",
+   "b": "fairing_cap_pod_R",
+   "mm3": 204.2,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "pod_L_base",
+   "b": "pod_L_lid",
+   "mm3": 333.1,
+   "class": "expected lip/groove engagement"
+  },
+  {
+   "a": "pod_L_base",
+   "b": "fairing_cap_pod_L",
+   "mm3": 2730.7,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "pod_L_base",
+   "b": "fairing_pod_strap_L",
+   "mm3": 6736.4,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "pod_L_lid",
+   "b": "fairing_cap_pod_L",
+   "mm3": 522.9,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "pod_L_lid",
+   "b": "fairing_pod_strap_L",
+   "mm3": 1251.2,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "pod_R_base",
+   "b": "pod_R_lid",
+   "mm3": 333.1,
+   "class": "expected lip/groove engagement"
+  },
+  {
+   "a": "pod_R_base",
+   "b": "fairing_cap_pod_R",
+   "mm3": 4023.8,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "pod_R_base",
+   "b": "fairing_pod_strap_R",
+   "mm3": 5372.2,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "pod_R_lid",
+   "b": "fairing_cap_pod_R",
+   "mm3": 522.9,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "pod_R_lid",
+   "b": "fairing_pod_strap_R",
+   "mm3": 1251.2,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "cw_tub",
+   "b": "cw_lid",
+   "mm3": 346.8,
+   "class": "expected lip/groove engagement"
+  },
+  {
+   "a": "cw_tub",
+   "b": "fairing_cw_L",
+   "mm3": 1279.1,
+   "class": "fairing blend (OK)"
+  },
+  {
+   "a": "cw_tub",
+   "b": "fairing_cw_R",
+   "mm3": 1279.1,
+   "class": "fairing blend (OK)"
+  }
+ ],
+ "notes": []
+}

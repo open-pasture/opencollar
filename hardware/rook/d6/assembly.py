@@ -28,11 +28,15 @@ TILT = math.radians(TILT_DEG)
 # 82 + 2×5 walls) so the D4 anchors clash with the 76×164 cap. Shift outboard
 # along the strap (~10 mm) for a 2–3 mm fairing-bridged body gap while the
 # bolted pad faces still meet.
-POD_ANCHOR_Y = 124.0
-POD_ANCHOR_Z = -27.839
+# Outboard of D4 ±113.8 so the 92 mm-wide D6 pods clear the 164 mm cap body
+# with a ~2–3 mm fairing-bridged gap; pad/recess still meet (joint engagement).
+POD_ANCHOR_Y = 126.0
+# Raised from D4 −27.839 so the cap-facing end meets the print-safe pad
+# (pad local z = CAP_FLOOR+5; must stay above bed after ±29° tilt).
+POD_ANCHOR_Z = -21.9
 POD_Z0 = -4.3
-POD_BASE_H = 21.0          # floor 1.5 + cavity 19.5 (slim vs D5 22)
-POD_LID_T = 4.0
+POD_BASE_H = 22.2          # as-exported (floor+cavity+reg lip/taper); cavity still 19.5
+POD_LID_T = 4.2            # as-exported lid thickness
 POD_L = 92.0               # min for 82 cavity + 5 mm walls (cannot reach D4's 67)
 POD_W = 92.0               # along strap — between D5 68 and D4 97; leaves cavity 58 + 17/side
 POD_FLOOR = 1.5
@@ -72,23 +76,32 @@ SADDLE_CHANNEL_D = STRAP_T
 SADDLE_ROOF = 1.6
 SADDLE_H = SADDLE_ROOF + SADDLE_CHANNEL_D
 
-# Fairings: widen to span 92 mm pods / 88 mm CW; taper so the join reads intentional
+# Fairings: widen to span 92 mm pods / 88 mm CW; taper so the join reads intentional.
+# Cap–pod run shortened toward D4's ~16.6 mm so they sit in the 2–3 mm body gap
+# without swallowing the pods; strap/CW keep the 28 mm brand run.
 FAIRING_RUN = 28.0
+FAIRING_RUN_CAP_POD = 18.0
 FAIRING_W0 = 88.0            # wide end toward body
 FAIRING_W1 = 66.0            # narrow end toward strap / mate
 FAIRING_H = 14.0
-FAIRING_INTERFERE_TOL = 0.2  # mm³ / contact tolerance for float check
+FAIRING_INTERFERE_TOL = 0.2  # mm contact: must touch a body within this (no float)
 
-# D4 fairing bbox centres (from d4.json world bounds) — start poses; assembly_check
-# may nudge. Cap–pod fairings also carry the ±tilt of the joint.
-D4_FAIRING_CENTRES = {
-    "fairing_cap_pod_L": (0.0, -82.773, -8.986),
-    "fairing_cap_pod_R": (0.0, 82.773, -8.986),
-    "fairing_pod_strap_L": (0.0, -149.838, -47.646),
-    "fairing_pod_strap_R": (0.0, 152.102, -49.700),
-    "fairing_cw_L": (0.0, 44.031, -467.800),
-    "fairing_cw_R": (0.0, -44.031, -467.800),
+# Explicit world centres — in the bridge gaps (not raw D4 centres, which sit
+# inside the larger D6 envelopes). Cap–pod: between cap end (±82) and pod face
+# (~±86). Pod–strap: just outboard of the pod strap-end. CW: beside tub ±Y.
+FAIRING_CENTRES = {
+    # Bridge gap between cap end (±82) and pod face (~±86), at pad height
+    "fairing_cap_pod_L": (0.0, -85.5, 7.4),
+    "fairing_cap_pod_R": (0.0, 85.5, 7.4),
+    # Just outboard of pod strap-end (local −Y for L / +Y for R after raise)
+    "fairing_pod_strap_L": (0.0, -178.0, -38.0),
+    "fairing_pod_strap_R": (0.0, 178.0, -38.0),
+    # Beside CW tub (±Y), kissing the 74 mm-wide envelope
+    "fairing_cw_L": (0.0, 48.0, -467.8),
+    "fairing_cw_R": (0.0, -48.0, -467.8),
 }
+# Back-compat alias
+D4_FAIRING_CENTRES = FAIRING_CENTRES
 
 
 def pod_tilt_sign(side: str) -> float:
@@ -110,10 +123,9 @@ def pod_anchor_matrix(side: str):
 def cap_pad_world_centre(side: str):
     """Approximate cap mount-pad centre in world (for joint checks)."""
     s = -1.0 if side == "L" else 1.0
-    # Pad sits just past the cap end, facing the shifted pod.
-    # Cap end |y|=82; pad outer face aims for the pod end (~|y|≈85 with new anchor).
-    y = s * (CAP_L / 2.0 + 2.5)
-    z = CAP_Z0 + 6.0 + 5.0
+    # Matches cap.py: y = ±POD_MOUNT_FACE_Y, z = CAP_FLOOR+5 (+ CAP_Z0).
+    y = s * 88.3
+    z = CAP_Z0 + 11.0
     return np.array([0.0, y, z], dtype=float)
 
 
@@ -143,8 +155,8 @@ def world_poses():
     # cw_lid now prints mating-down (= assembled pose), same as cap_lid
     poses["cw_lid"] = CWA @ T([0, 0, CW_Z0 + CW_TUB_H])
 
-    # Fairings at D4 centres; cap–pod fairings inherit joint tilt
-    for name, (x, y, z) in D4_FAIRING_CENTRES.items():
+    # Fairings at explicit bridge centres; cap–pod inherit joint tilt
+    for name, (x, y, z) in FAIRING_CENTRES.items():
         P = T([x, y, z])
         if "cap_pod_L" in name:
             P = P @ R(math.radians(+TILT_DEG), X)

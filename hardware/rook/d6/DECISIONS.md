@@ -21,10 +21,11 @@ were a cross-strap leftover: with strap-along-Y those inserts sit inside the
 
 D4 pods are ~67×97×19.4. D5 cavity **82×58×19.5** forces outer X ≥ **92**
 (5 mm walls) — cannot recover D4's 67 mm width without relocating the cells.
-D6 keeps cavity and tilt; uses outer **92×92×21** (floor 1.5) and shifts
-anchors outboard to **y=±124** (from D4 ±113.8) so cap/pod bodies clear with
-a ~2–3 mm fairing-bridged gap. Cap pad tilt matches pod/D4: L **+29.142°**,
-R **−29.142°**. Cap pads and pod ends share a 36×4×14 M3 joint (4× clear).
+D6 keeps cavity and tilt; uses outer **92×92×~23** and shifts anchors to
+**y=±126, z=−21.9** (from D4 ±113.8 / −27.8) so cap/pod bodies clear with a
+fairing-bridged gap while the pad/recess joint still meets. Cap pad tilt
+matches pod/D4: L **+29.142°**, R **−29.142°**. Cap pads and pod ends share
+a 36×4×14 M3 joint (4× clear).
 
 ## Fairings
 

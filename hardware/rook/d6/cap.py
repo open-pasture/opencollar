@@ -80,7 +80,9 @@ POD_ANCHOR_Y = A.POD_ANCHOR_Y
 POD_ANCHOR_Z = A.POD_ANCHOR_Z
 POD_TILT_DEG = A.TILT_DEG
 # Mount pad: 36×4×14 boss protruding past the end to meet the pod face.
-POD_MOUNT_FACE_Y = CAP_L / 2 + 2.5     # pad centre past end (joint at ~|y|=84.5)
+# Y matches pod face at anchor ±124; Z = CAP_FLOOR+5 keeps pad above bed after tilt.
+POD_MOUNT_FACE_Y = 88.3               # |y| of pad centre (anchor Y=126)
+POD_MOUNT_FACE_Z = CAP_FLOOR + 5.0    # 11 — print-safe after ±29° tilt
 POD_MOUNT_SIZE = A.POD_MOUNT_SIZE      # W × thickness × H
 POD_MOUNT_SCREWS = list(A.POD_MOUNT_SCREWS)  # local Y-face (lx, lz)
 
@@ -265,9 +267,9 @@ def pod_mount_pad(side):
                                 at=(lx, 0, lz - ph / 2), axis="Y", segments=24))
     oc.bake(pad)
     pad.data.transform(Matrix.Rotation(math.radians(tilt), 4, "X"))
-    # Place pad centre just past the cap end so the outer face meets the pod.
+    # Place pad centre on the pod cap-facing end (Y and Z matched in assembly).
     y_place = place_sign * POD_MOUNT_FACE_Y
-    z_place = CAP_FLOOR + 5.0
+    z_place = POD_MOUNT_FACE_Z
     oc.move(pad, dy=y_place, dz=z_place)
     return pad
 

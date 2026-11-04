@@ -21,10 +21,10 @@ D4 contoured skin around D5 internals (PR head `6b1f882`). Script: `hardware/roo
 
 | Item | Value |
 | --- | --- |
-| Pod anchor (world) | y = ±113.8, z = -27.8 |
+| Pod anchor (world) | y = ±126.0, z = -21.9 |
 | Tilt about X | ±29.14° (L +, R −) — matches d4.json |
 | Mount pad size | 36.0 × 4.0 × 14.0 |
-| Mount face Y | inset pads; outer envelope stays 164 (tilt-compensated) |
+| Mount face Y | inset pads; outer envelope stays 164.0 (tilt-compensated) |
 | Screws in pad | 4× Ø3.4 clear through pad (local ±10 X, two Z rows) |
 | Cable exits | Ø6 through ±Y ends + ±X walls; countersink Ø8 × 1.2 |
 
@@ -35,7 +35,7 @@ Pod agent builds the mating pod face / fairing to these anchors.
 | Item | Value |
 | --- | --- |
 | Clamp bar | **10 × 70 × 8**, flange down (print ×8) |
-| Cap clamp inserts | (±20, ±28.5) — 4 in cap |
+| Cap clamp inserts | (±28.5, ±20) — 4 in cap (strap-along-Y; see DECISIONS.md) |
 | Saddle W | **76** |
 | Strap channel | **46.45 × 3.4** |
 
@@ -84,10 +84,10 @@ Keys on cap floor: KIT, BQ, WIO, USB, POST, GNSS, LTE, PIN1, SCR1–4.
 | GNSS/LTE from z=0 | D5 | same | YES |
 | Cable countersink | Ø8×1.2 | same (+ ±Y) | YES |
 | Floor glyphs real text | DejaVu table | reused D5 table | YES |
-| Pod anchors | ±113.8, z−27.8, ±29.1° | same | YES |
+| Pod anchors | ±126, z−21.9, L+29.1°/R−29.1° | assembly.py | YES |
 | Print: base cavity up | yes | yes | YES |
 | Print: lid | choose best | **mating_down** | YES |
-| Clamp 10×70×8 / y±28.5 | CW agent | matched | YES |
+| Clamp 10×70×8 / holes±28.5 | CW; CAP_CLAMP (±28.5,±20) | matched | YES |
 
 ### Carried from D5
 
@@ -104,4 +104,4 @@ All internals: kit/bq/wio pockets, U.FL slack, lid posts, gasket+lip, columns/in
 
 ## STLs
 
-`stl/cap_base.stl`, `stl/cap_lid.stl`, `stl/cap_floor_layout.stl` — print orientation, watertight-checked (see `stl/cap_report.json`).
+`stl/cap_base.stl`, `stl/cap_lid.stl`, `stl/cap_floor_layout.stl` — print orientation, watertight-checked (see `stl/report.json`).

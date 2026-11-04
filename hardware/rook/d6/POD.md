@@ -11,8 +11,8 @@ Cody: D4 contoured look, D5 layout/buildability. Pods hang off the cap ends on D
 
 | Side | Location (mm) | Rotation about X |
 | --- | --- | --- |
-| L | `(0, -113.830, -27.839)` | `+29.142°` |
-| R | `(0, +113.830, -27.839)` | `−29.142°` |
+| L | `(0, -126.0, -21.9)` | `+29.142°` |
+| R | `(0, +126.0, -21.9)` | `−29.142°` |
 
 Frame: origin at cap centre; X across strap; Y along spine; Z up. Cap agent must put matching mount faces / fairing lands at these anchors. R is a true mirror of L (`Scale −X` + one `flip_normals` for winding) — not a print-orientation flip.
 
@@ -67,8 +67,8 @@ On `pod_*_base` and `pod_floor_layout`: `BATT`, `PLUS`, `MINUS`, `BUZZ`, `PIN1` 
 
 | Part | Envelope (approx) |
 | --- | --- |
-| `fairing_cap_pod_L/R` | **66 × 28 × 14** (W0=66, W1=50, run=28, H=14) |
-| `fairing_pod_strap_L/R` | **66 × 28 × 14** (same family) |
+| `fairing_cap_pod_L/R` | **88 → 66 × 18 × 14** (widened; short run) |
+| `fairing_pod_strap_L/R` | **88 → 66 × 28 × 14** |
 
 ## Assembly agree — owned by CW agent (pods do not re-export)
 
@@ -86,7 +86,7 @@ On `pod_*_base` and `pod_floor_layout`: `BATT`, `PLUS`, `MINUS`, `BUZZ`, `PIN1` 
 
 | Check | Status |
 | --- | --- |
-| D4 mounts y=±113.8, z=−27.8, ±29.1° about X | PASS (113.830 / −27.839 / 29.142) |
+| D6 mounts y=±126, z=−21.9, ±29.1° about X (shifted from D4 for clearance) | PASS |
 | Two-cell cavity 82×58×19.5 | PASS |
 | Grow envelope from D4 67×97; keep D4 length look | PASS (92×97×22) |
 | Gasket inner land ≥ 2 mm | PASS (2.0) |
