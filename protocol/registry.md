@@ -52,8 +52,8 @@ What a collar can do, in `device.caps` (v1) or the device record's `caps` (v2).
 | `owner` | 2 | takes an owner key |
 | `imu` | 2 | reports motion (`still_s`, `tilt_deg`) |
 | `zones` | 2 | holds permanent no-go zones, checks boundaries against them and takes staged ones only under a lease ([messages.md §4.7](v2/messages.md#47-zones-and-leases-what-the-collar-enforces-itself)) |
-| `shock_module` | — | **RESERVED (no behaviour):** **device** cap — collar understands the shock/pulse module interface in [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md). Not a live-use grant (see `pulse_grant`). Listing it never means pulse is live |
-| `pulse_grant` | — | **RESERVED (no behaviour):** signed, revocable server permission (includes a country rule), scoped to the collar’s device id; revoked on release, transfer, or factory reset. Required before firmware may arm `GATE_LATCH`. See [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) |
+| `shock_module` | — | **RESERVED (no behaviour):** **device** cap — collar understands the shock/pulse module interface in [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) (side pods). Not a live-use grant (see `pulse_grant`). Listing it never means pulse is live; module stays OFF until a named welfare reviewer and Cody approve |
+| `pulse_grant` | — | **RESERVED (no behaviour); PROPOSED, awaiting Cody:** signed, revocable server permission (includes a country rule), scoped to the collar’s device id; revoked on release, transfer, or factory reset. Under the proposal, required before firmware may arm `GATE_LATCH`. See [`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) |
 
 **What a v2.0 collar on an animal must list:** `v2`, `holes`, `slots`, `collar_id`,
 `cue_mode`, `episodes`, `config`, `firmware`, `handover`, `owner`, `zones`. Optional:
@@ -136,10 +136,10 @@ and MUST NOT rely on a cap it doesn't list.
 
 `pulse` is **RESERVED (no behaviour):** electric pulse / shock cue, distinct from audio
 `warn` / `outside` and from any future vibration kind. See
-[`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md). Live use needs a
-named welfare reviewer (not only Record H), owner opt-in, an audit log, and a ready
-module. A new kind of cue is a new cue kind and a cap; a collar never plays one a server
-didn't know it could.
+[`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) (side pods). No
+welfare reviewer is named yet — module stays OFF until one is named and Cody approves.
+A new kind of cue is a new cue kind and a cap; a collar never plays one a server didn't
+know it could.
 
 ## <a id="welfare-event-kinds"></a>Welfare event kinds
 
@@ -156,9 +156,11 @@ future uplink can reuse them without renumbering. See [`docs/WELFARE-POLICY.md`]
 ## <a id="shock-module"></a>Shock / pulse module (RESERVED — no behaviour)
 
 Names only. Normative reservation:
-[`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md). Nothing here drives an
-output. Live use needs a named welfare reviewer (Record H alone is not enough), owner
-opt-in, an audit log, and a ready module; the server offers no pulse settings otherwise.
+[`docs/SHOCK-MODULE-INTERFACE.md`](../docs/SHOCK-MODULE-INTERFACE.md) (placement: **side
+pods**). Nothing here drives an output. **No welfare reviewer is named yet** — the module
+stays OFF in all builds until one is named and Cody approves. Owner opt-in, an audit log,
+and a ready module are also required; the server offers no pulse settings otherwise. Dual
+enable / `GATE_LATCH` / `pulse_grant` are **proposed, awaiting Cody**.
 
 Cross-links (also RESERVED / defined elsewhere): `welfare.enforcement` (record L — welfare
 shut-off; caretaker `rearm` clears that, not a module fault); `cue_state` value `pulse_off`

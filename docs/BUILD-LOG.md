@@ -4,10 +4,10 @@
 
 ### Shock / pulse module interface reserved (docs + enum header only)
 - Cody standing rule (typed 2026-11-04): one production design; module may be unfitted at first; leave room and reserve interfaces. Welfare gating unchanged.
-- op-architect record O + PR review: sense + ID chip; report nothing when unfitted; `health.module` only when fitted (`hw_rev` / `state` / optional `fault`; no v1 `present`); device cap `shock_module` vs grant `pulse_grant` (device-id-scoped; revoked on release/transfer/factory reset); `GATE_LATCH` is MCU output (one-shot, cleared on reset — not firmware-independent; protection = grant + HW limit + kill); fault clear = person **re-enables** (not welfare `rearm`); live use needs named reviewer + owner opt-in + audit log; links to `welfare.enforcement` (L) and `cue_state` `pulse_off` (N).
-- op-strategy: **all HV / pulse driver / HW current limit on the module**; main board is connector + sense + ID bus + MCU signals only (no HV rail). Prefer latch/kill on the module; firmware still arms latch via `GATE_LATCH`. Rationale: unfitted collar must not be “designed to be capable” of a pulse (e.g. California).
-- Placement OPEN: `BOTTOM-BAY.md` (top unit) vs Node V1 pods (electrode studs) — Cody decides. Wording updated in `BOTTOM-BAY.md`; normative reservation in `docs/SHOCK-MODULE-INTERFACE.md`.
-- Protocol: `registry.md` / `README.md` / `CHANGELOG.md` — RESERVED names only, no behaviour.
+- **Placement DECIDED (Cody, typed ~8:34 AM CT 2026-11-04):** shock module in the **side pods**, not the top unit. `BOTTOM-BAY.md` marked superseded (pulse section notes pods). Electrode studs/holes = reserved geometry (blank/sealed when unfitted); electrodes belong to the module.
+- **Gate design PROPOSED, awaiting Cody** (dual switch, `GATE_LATCH`, signed `pulse_grant` + country rule). **No welfare reviewer named yet** — module stays OFF in all builds until one is named and Cody approves.
+- op-architect record O + reviews + op-strategy: sense + ID chip; report nothing when unfitted; `health.module` only when fitted; device cap `shock_module` vs proposed `pulse_grant`; all HV on the module; fault clear = person **re-enables**; links to `welfare.enforcement` (L) and `cue_state` `pulse_off` (N).
+- Normative: `docs/SHOCK-MODULE-INTERFACE.md`. Also aligned `V1-DESIGN.md`, `COLLAR-FIRST-PRINCIPLES.md`, `HARDWARE-FIT.md`, protocol registry/README/CHANGELOG.
 - Optional `firmware/src/shock_iface.h` (enums + string constants only) + host `test_shock_iface`. No driver code; no cue behaviour change; nothing ran on hardware.
 
 ## 2026-11-03
@@ -61,7 +61,7 @@
 - Retrieved FCC internal photos with Firecrawl (auto proxy; fccid.io needed a click-through). **Halter P5 uses a u-blox M10 chip (UBX-M10050-KB) + SX1262 LoRa + STM32WBA65. Vence uses a u-blox ZOE-M8B with an ~18 mm patch. Nofence C2 uses a ~25 mm patch on a big ground plane + u-blox SARA-R412M cellular.** Nobody uses L5.
 - Nofence field study (doi:10.1186/s40317-025-00417-1): real accuracy error 5.4 m open, 7.6 m forest. That's the bar to beat, not the ±1 m marketing claims.
 - Wrote `docs/V1-DESIGN.md`: sealed top unit (MAX-M10S GNSS at the crown, solar either side, nRF9151, LiFePO4 inside), passive counterweight, no wires in the strap. Targets ≤ 2.5 m open / ≤ 4 m canopy, 60+ days without sun, ≤ 1.2 kg.
-- Replaced the fixed counterweight with a **bottom bay** of swappable modules in a fixed mass window: ballast (default), camera (GoPro mount + power bank as the mass), battery later. No electrical connection through the strap; modules talk over BLE if needed. Pulse module goes inside the top unit so every collar can enforce. See `docs/BOTTOM-BAY.md`.
+- Replaced the fixed counterweight with a **bottom bay** of swappable modules in a fixed mass window: ballast (default), camera (GoPro mount + power bank as the mass), battery later. No electrical connection through the strap; modules talk over BLE if needed. *(Pulse-in-top-unit note from this day is superseded 2026-11-04: shock module in side pods — `docs/SHOCK-MODULE-INTERFACE.md`; `BOTTOM-BAY.md` retired for pulse.)* See `docs/BOTTOM-BAY.md` (historical).
 - Product lineup set: base collar = top unit + plain strap + ballast module. Add-ons: **Battery Extension** (LiFePO4 pack ~45 Wh + powered strap, extends no-sun autonomy from ~60 to ~190 days) and **Camera**. V1 top unit gets the sealed extension connector and power path now so the battery is a field upgrade.
 - Changed to a **wired strap on every collar** (one strap, plug-in modules, collar power for the camera). Conditions: collar never depends on it, short-circuit protected port, wires only in the fixed-length strap section, flex-rated wire + IP68 connectors, and V1-alpha straps wired from day one to prove durability.
 - Shopping list rewritten in five stages (bench + GPS, power, V1-alpha shells, camera, field). ~$1,800–2,400 total.
@@ -255,7 +255,7 @@ When the boxes arrive: photograph the parts, check every item against the list, 
 - **65 × 62 mm, 43 % less area.** The limit is the three boards' footprints: the M10S's 8-pin socket can't sit closer to the Kit's right-hand socket, which sets the width.
 - Removed to make room:
   - The bench-only battery and NTC sockets. On the bench, a PH8 pigtail into the harness socket does the same job, and two packs can no longer be connected at once.
-  - The unpopulated expansion header. The stimulus board belongs to the integrated board, and the spare GPIOs are left unconnected.
+  - The unpopulated expansion header. *(Later superseded 2026-11-04: shock/HV lives on the side-pod module, not an expansion board on the crest — `docs/SHOCK-MODULE-INTERFACE.md`.)* Spare GPIOs left unconnected then.
 - The harness socket is now the right-angle S8B-PH-SM4-TB (LCSC C265121), so the cable enters from the edge.
 - The M10S's two far-corner standoffs double as board mounts (M3 male-female standoffs into the box posts). The carrier goes into the box before the plugged boards.
 - Silkscreen: the panel socket, turned sideways at the edge, gets its A+ / GND / B+ marks beside each pad, placed from the real pad positions.

@@ -1,5 +1,6 @@
 """Node V1 option 1, assembled on a neck with a spine ridge: cap on the
-crest, a pod low on each side (inside the strap, electrodes on the skin),
+crest, a pod low on each side (inside the strap; reserved electrode geometry
+for the side-pod shock module — blank/sealed when unfitted),
 the encased counterweight under the throat, cables from the cap to the pods.
 
 Saves assembly/node_v1.blend, renders to renders/node_v1/, and writes

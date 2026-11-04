@@ -75,7 +75,7 @@ The GNSS patch sits at the crown of the top unit with nothing over it. The solar
 
 ### Electric pulse
 
-Every commercial collar escalates from audio to a mild electric pulse, and containment depends on it. V1 ships **audio-first** while we validate position and behaviour at the pilot farm with his existing fence as the backstop. The top unit reserves space, electrode openings on its underside (resting on top of the neck) and a connector for a stimulus board, so adding it is fitting a board, not a redesign. It lives in the top unit, not the bottom bay, so every collar can enforce whichever module is fitted. It goes in once we have the welfare logic and field data to do it responsibly.
+Every commercial collar escalates from audio to a mild electric pulse, and containment depends on it. V1 ships **audio-first** while we validate position and behaviour at the pilot farm with his existing fence as the backstop. **Placement (Cody, 2026-11-04):** the shock module lives in the **side pods** (all HV converter / driver / current limit on the module; crest board has only LV interface pins). Pod electrode studs/holes are reserved geometry (blank or sealed when unfitted); electrodes belong to the module. Interfaces only are reserved in [`SHOCK-MODULE-INTERFACE.md`](SHOCK-MODULE-INTERFACE.md); the module stays OFF until a named welfare reviewer and Cody approve. Older “pulse board in the top unit” wording (including [`BOTTOM-BAY.md`](BOTTOM-BAY.md)) is superseded.
 
 ### Battery safety layers
 

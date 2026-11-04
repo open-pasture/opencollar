@@ -13,11 +13,11 @@
 | Module | Role |
 | --- | --- |
 | Cap | MCU, LTE, GNSS, IMU, bq24074, P124, cables to both pods |
-| Left pod | 1 × Adafruit 1781 + 1 × Qwiic Buzzer + electrodes (unwired) |
-| Right pod | 1 × Adafruit 1781 + 1 × Qwiic Buzzer + electrodes (unwired) |
+| Left pod | 1 × Adafruit 1781 + 1 × Qwiic Buzzer + reserved shock-module geometry (studs/holes blank or sealed when unfitted) |
+| Right pod | 1 × Adafruit 1781 + 1 × Qwiic Buzzer + reserved shock-module geometry (studs/holes blank or sealed when unfitted) |
 | Counterweight | Steel only (no battery) |
 
-Both pods are identical mirrors (92 × 68 × 24.5). Electrode studs stay for later pulse work.
+Both pods are identical mirrors (92 × 68 × 24.5). **Shock module placement (Cody, 2026-11-04): side pods**, not the crest / top unit. Electrode studs/holes are reserved geometry only; electrodes belong to the module. Interface: [`docs/SHOCK-MODULE-INTERFACE.md`](../../../docs/SHOCK-MODULE-INTERFACE.md).
 
 ## Assumed — verify with calipers
 

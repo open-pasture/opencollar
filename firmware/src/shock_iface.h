@@ -2,10 +2,11 @@
  * Shock / pulse module — names and states only.
  *
  * Reservation: docs/SHOCK-MODULE-INTERFACE.md, protocol/registry.md.
- * This header must not grow functions that drive any output. Live use
- * needs a named welfare reviewer (not only Record H), owner opt-in, an
- * audit log, and a ready module. Default is off; not_fitted / unknown
- * means no path may drive HV.
+ * Placement (Cody): side pods. This header must not grow functions that
+ * drive any output. No welfare reviewer is named yet — module stays OFF
+ * in all builds until one is named and Cody approves. Dual enable /
+ * GATE_LATCH / pulse_grant are proposed, awaiting Cody. Default is off;
+ * not_fitted / unknown means no path may drive HV.
  */
 #ifndef OPENCOLLAR_SHOCK_IFACE_H
 #define OPENCOLLAR_SHOCK_IFACE_H
