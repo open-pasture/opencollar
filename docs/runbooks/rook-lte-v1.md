@@ -46,10 +46,10 @@ placeholder name for v1 `version`.
   `1970-01-01T00:00:00Z`. 204 on success.
 - Provisioning `e` = `https://<host>/collar/v1`: the Rook appends `/report`, `/boundary`,
   `/ack` (a trailing `/` is dropped). Port 443 unless given.
-- TLS to the Cloudflare tunnel hostname: SNI and hostname check use the `e` host; the CA in
-  sec tag 42 must be the root that signs **Cloudflare's edge certificate** for that hostname
-  (not the origin, which is plain http on 7878 behind the tunnel). Chunked responses (a proxy
-  may re-chunk) are decoded.
+- TLS: SNI and the certificate hostname check both use the `e` host (`ZSOCK_TLS_HOSTNAME`), with
+  peer verification required. If any TLS socket option fails, the Rook doesn't connect. The CA
+  in sec tag 42 must be the root the server's chain ends at; see "Staging server and its CA".
+  Chunked responses (a proxy may re-chunk them) are decoded.
 
 ## Fence sink and persistence
 - Sink signature (unchanged): `void sink(void *ctx, uint32_t fence_seq, const char *signed_wire,
@@ -98,7 +98,7 @@ nrfutil sdk-manager toolchain launch --ncs-version v3.4.1 -- bash -c \
   - `build-rook/firmware/zephyr/zephyr.signed.hex` (app only, for DFU);
   - `build-rook/firmware/zephyr/zephyr.hex` (unsigned app);
   - `build-rook/mcuboot/zephyr/zephyr.hex`.
-- Sizes: the app takes 144380 B of 417642 B flash (34.6%) and 100952 B of RAM (47.7%); MCUboot
+- Sizes: the app takes 147984 B of 417642 B flash (35.4%) and 105072 B of RAM (49.7%); MCUboot
   takes 31632 B. `python3 scripts/check_image.py build-rook/firmware/zephyr` passes.
 - The `.config` should have `CONFIG_ROOK_LTE=y` and `# CONFIG_ROOK_BATTERY_MAX17260 is not set`.
 - Flash it the same way as `firmware/build.sh flash`:
@@ -127,13 +127,65 @@ checks (bearer 401, collar 403, accuracy_m, battery 0..1, 10-min-ahead 400, ack 
 without caps). `tests/host/run.sh` also runs `test_live`: the firmware encoders against it. Samples: `samples/boundary_v{1,2}.json`, `boundary_tampered.json`.
 A device on LTE needs a public address for the mock (e.g. a tunnel); set it in `rook-mock.conf`.
 
+## Staging server and its CA (2026-11-03)
+- The endpoint is `https://op-server-staging-staging.up.railway.app/collar/v1`: Railway, https
+  on 443, with no port in the URL and no 7878. It replaces the Cloudflare-tunnel assumption.
+  Provision with the server's line, with `"e"` set to that URL:
+  `provision {"v":1,"c":"<collar_id>","h":"<herd_id>","k":"<64 hex>","e":"https://op-server-staging-staging.up.railway.app/collar/v1","s":"<sig>"}`
+  over serial at 115200. Expect `ok <collar_id>`. The `s` signature is made over the whole
+  line by the server, so take the line as the server issues it; don't hand-edit `e`.
+- The CA is **ISRG Root X1** (Let's Encrypt). It expires 2035-06-04, and its SHA-256 is
+  `96:BC:EC:06:26:49:76:F3:74:60:77:9A:CF:28:C5:A7:CF:E8:A3:C0:AA:E1:1A:8F:FC:EE:05:C0:BD:DF:08:C6`.
+  It is committed as `firmware/rook/certs/isrg-root-x1.pem`, from
+  https://letsencrypt.org/certs/isrgrootx1.pem, and is byte-identical to op-software's
+  `/workspace/secrets/op-staging-root-ca.pem`. Check it before you trust it:
+  `openssl x509 -in firmware/rook/certs/isrg-root-x1.pem -noout -subject -enddate -fingerprint -sha256`
+- The chain the host served on 2026-11-03 (`openssl s_client -connect
+  op-server-staging-staging.up.railway.app:443 -servername op-server-staging-staging.up.railway.app -showcerts`):
+  - leaf `*.up.railway.app`, ECDSA P-256, expires 2026-12-26;
+  - intermediate `YE2`, P-384;
+  - `ISRG Root YE`, signed by ISRG Root X2;
+  - `ISRG Root X2`, cross-signed by ISRG Root X1.
+
+  That is 4 certs, about 3.4 KB DER. `openssl verify` passes with X1 alone as the trust anchor.
+  It also passes with X2 alone, but only because the server sends the X2 cross-cert. X1 is enough
+  while Railway keeps sending that cross-cert. If the chain is ever shortened to end at X2,
+  X1 alone stops validating. In that case load X2 as well (`isrg-root-x2.pem`, SHA-256
+  `69:72:9B:8E:15:A8:6E:FC:17:7A:57:AF:B7:17:1D:FC:64:AD:D2:8C:2F:CA:8C:F1:50:7E:34:45:3C:CB:14:70`)
+  in a second sec tag, with both tags in the socket's `SEC_TAG_LIST`. That is not implemented.
+- The clock: `curl -sI https://op-server-staging-staging.up.railway.app/healthz` returned 200
+  with `date: Wed, 04 Nov 2026 05:12:20 GMT`, matching the box's UTC to the second. A host test
+  (`test_ca.c`) parses that header and checks the 9-minute guard against it: a fix at +540 s is
+  sent and one at +541 s is left out.
+
+### Loading the CA into sec tag 42
+- **Automatic (this build):** `rook.conf` sets
+  `CONFIG_ROOK_LTE_CA_PEM="rook/certs/isrg-root-x1.pem"`. The PEM is embedded at build time.
+  Before the first attach after boot, the reporter puts the modem in CFUN=4 and calls
+  `modem_key_mgmt_cmp` on tag 42. If the CA is missing or different, it calls
+  `modem_key_mgmt_write`. Look for `CA in sec tag 42: present` or `written (1939 B) -> 0` in the log.
+  An empty `CONFIG_ROOK_LTE_CA_PEM` turns this off, and the tag is then left as it is.
+- **Manual AT** (any modem firmware; there is no serial `cert` command in the app). Flash
+  NCS's `nrf/samples/cellular/at_client` for `nrf9151_connectkit/nrf9151/ns`, or use Cellular
+  Monitor's certificate manager. Then, on its serial port:
+  ```
+  AT+CFUN=4                       # LTE off; credentials can't be written while online
+  AT%CMNG=3,42,0                  # optional: delete an old CA in tag 42
+  AT%CMNG=0,42,0,"-----BEGIN CERTIFICATE-----
+  MIIFazCCA1Og...                 # the whole PEM, newlines kept, inside one pair of quotes
+  -----END CERTIFICATE-----"
+  AT%CMNG=1,42                    # list: expect %CMNG: 42,0,"<sha256 of the stored CA>"
+  AT%CMNG=2,42,0                  # read it back
+  AT+CFUN=0
+  ```
+  Then reflash the Rook image. Credentials live in the modem and survive an app reflash.
+
 ## Pointing a real Rook at Hologram (once Cody activates the SIM)
 1. Activate the nano SIM in the Hologram dashboard (by ICCID), plan with LTE-M enabled.
 2. Insert SIM, flash the `rook.conf` build, provision with the real farm endpoint
-   (`https://<farm>/collar/v1`) and server key.
-3. Put the server's **CA certificate** in modem sec tag 42 (once, e.g. with the `at_client`
-   sample or `nrfutil`/Cellular Monitor: `AT%CMNG=0,42,0,"<PEM>"`). Without it TLS fails
-   (peer verify is required).
+   (staging: `https://op-server-staging-staging.up.railway.app/collar/v1`) and server key.
+3. The CA in sec tag 42: the build writes ISRG Root X1 itself (see "Loading the CA into sec
+   tag 42"). Without it TLS fails, because peer verify is required.
 4. Watch the log, or check by AT (at_client / Cellular Monitor):
    - `AT+CFUN?` → 1; `AT%XSYSTEMMODE?` → `1,0,1,0` (LTE-M + GPS)
    - `AT+CGDCONT?` → `0,"IP","hologram",...`
@@ -154,12 +206,20 @@ A device on LTE needs a public address for the mock (e.g. a tunnel); set it in `
   The modem's `%XVBAT` is the regulated supply, not the battery: not used.
 
 ## Shortest path to a first report in the app
-1. Activate the SIM (Cody). 2. Put the root CA for the tunnel hostname's Cloudflare edge
-certificate in sec tag 42. 3. Provision over serial 115200 with the server's `provision {...}`
-line. 4. Flash the `rook.conf` build (MAX17260 on only with the carrier). 5. First GNSS fix,
+1. Activate the SIM (Cody). 2. Flash the `rook.conf` build; it writes ISRG Root X1 into sec
+tag 42 on the first attach. 3. Provision over serial 115200 with the server's `provision {...}`
+line (`e` = the staging URL). 4. MAX17260 stays off. 5. First GNSS fix,
 then the next cycle posts it; the server's `Date` arrives on that first response.
 
 ## Unverified (honest list)
+- CA load: `rook_ca_provision` (compare, then write, in CFUN=4) has never run on a modem.
+  Whether `modem_key_mgmt_cmp` fits a 1939 B PEM in its buffer (otherwise `-ENOBUFS`, then
+  exists means keep) is not checked on hardware. The manual `AT%CMNG` steps are not run either.
+- TLS to staging from the modem: not run. Not known: whether the nRF9151 modem accepts the
+  4-cert ECDSA chain (P-384 intermediates, cross-signed X2) anchored at X1, and whether
+  the modem offers the suite the edge picks: with `-tls1_2`, box openssl got
+  ECDHE-ECDSA-AES256-GCM-SHA384 and verified against X1. The chain was
+  checked only with box openssl.
 - Anything on air: attach, APN, PSM grant, TLS handshake with the modem, DNS. Not run.
 - Coexistence: LTE attach while GNSS is tracking (time-shared on the nRF9151; GNSS fixes will
   pause during LTE activity; PSM/eDRX tuning not done).
