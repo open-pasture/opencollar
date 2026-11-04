@@ -207,8 +207,8 @@
     },
     "fairing_cap_pod_L": {
       "size_mm": [
-        87.874,
-        18.0,
+        69.616,
+        17.998,
         14.0
       ],
       "watertight": {
@@ -219,7 +219,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 988
+        "faces": 4236
       },
       "pass": true,
       "stl_path": "stl/fairing_cap_pod_L.stl",
@@ -232,8 +232,8 @@
     },
     "fairing_cap_pod_R": {
       "size_mm": [
-        87.874,
-        18.0,
+        69.616,
+        17.998,
         14.0
       ],
       "watertight": {
@@ -244,7 +244,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 988
+        "faces": 4236
       },
       "pass": true,
       "stl_path": "stl/fairing_cap_pod_R.stl",
@@ -257,8 +257,8 @@
     },
     "fairing_pod_strap_L": {
       "size_mm": [
-        87.874,
-        28.0,
+        69.485,
+        27.995,
         14.0
       ],
       "watertight": {
@@ -269,7 +269,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 988
+        "faces": 4248
       },
       "pass": true,
       "stl_path": "stl/fairing_pod_strap_L.stl",
@@ -282,8 +282,8 @@
     },
     "fairing_pod_strap_R": {
       "size_mm": [
-        87.874,
-        28.0,
+        69.485,
+        27.995,
         14.0
       ],
       "watertight": {
@@ -294,7 +294,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 988
+        "faces": 4248
       },
       "pass": true,
       "stl_path": "stl/fairing_pod_strap_R.stl",

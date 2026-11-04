@@ -696,30 +696,13 @@ def clamp_bar():
     return prepare(flange)
 
 
-def _fairing_body(name, run, w0, w1, h):
-    f = oc.prism_y(name, [
-        (0.0, 0.0),
-        (w0 / 2, 0.0),
-        (w1 / 2, h),
-        (-w1 / 2, h),
-        (-w0 / 2, 0.0),
-    ], run)
-    bound = oc.rounded_rect(f"{name}_bnd", (max(w0, w1) + 2, run + 2, h + 2),
-                            D.FAIRING_R, at=(0, 0, -1), anchor="bottom", segments=10)
-    oc.intersect(f, bound)
-    try:
-        oc.bevel(f, D.FAIRING_EDGE_R, segments=3)
-        oc.apply_modifiers(f)
-    except Exception:
-        pass
-    return f
+import fairing as fairing_lib  # noqa: E402
 
 
 def fairing_cw(side="L"):
-    """CW↔strap fairing at bottom of loop. W0=88→W1=66 × run 28 × H 14."""
-    f = prepare(_fairing_body(f"fairing_cw_{side}", FAIRING_RUN, FAIRING_W0, FAIRING_W1, FAIRING_H))
+    """CW↔saddle continuous wedge (fairing.py) — tangent to lower/longer D7 CW."""
+    f = prepare(fairing_lib.fairing_cw(side))
     if side == "R":
-        # Mirror of L across X (matches pod fairings)
         oc.bake(f)
         f.data.transform(Matrix.Scale(-1.0, 4, (1.0, 0.0, 0.0)))
         import bmesh
@@ -729,7 +712,7 @@ def fairing_cw(side="L"):
         bm.to_mesh(f.data)
         bm.free()
         f.data.update()
-    return f
+    return normalize_z0(f)
 
 
 def cw_floor_layout():

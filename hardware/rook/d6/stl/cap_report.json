@@ -97,7 +97,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 45612
+        "faces": 45610
       },
       "print": "cavity UP; bed=underside z=0"
     },
@@ -141,7 +141,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 39538
+        "faces": 39534
       }
     }
   },

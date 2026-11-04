@@ -441,44 +441,25 @@ def pod_floor_layout(side="L"):
     return normalize_z0(prepare(floor))
 
 
-# ---------------------------------------------------------------- fairings
+# ---------------------------------------------------------------- fairings (D7 continuous loft via fairing.py)
 
-def _fairing_body(name, run, w0, w1, h):
-    f = oc.prism_y(name, [
-        (0.0, 0.0),
-        (w0 / 2, 0.0),
-        (w1 / 2, h),
-        (-w1 / 2, h),
-        (-w0 / 2, 0.0),
-    ], run)
-    bound = oc.rounded_rect(f"{name}_bnd", (max(w0, w1) + 2, run + 2, h + 2),
-                            FAIRING_R, at=(0, 0, -1), anchor="bottom", segments=10)
-    oc.intersect(f, bound)
-    try:
-        oc.bevel(f, FAIRING_EDGE_R, segments=3)
-        oc.apply_modifiers(f)
-    except Exception:
-        pass
-    return f
+import fairing as fairing_lib  # noqa: E402
 
 
 def fairing_cap_pod(side="L"):
-    """Bridge cap end → pod mount. W0=88→W1=66 × run 18 × H 14 (D4-ish short run)."""
-    run = getattr(A, "FAIRING_RUN_CAP_POD", 18.0)
-    f = prepare(_fairing_body(f"fairing_cap_pod_{side}", run,
-                              FAIRING_W0, FAIRING_W1, FAIRING_H))
+    """Cap↔pod: continuous wedge kissing slim tip (~70)."""
+    f = prepare(fairing_lib.fairing_cap_pod(side))
     if side == "R":
         mirror_x(f)
-    return f
+    return normalize_z0(f)
 
 
 def fairing_pod_strap(side="L"):
-    """Blend pod into strap. W0=88→W1=66 × run 28 × H 14."""
-    f = prepare(_fairing_body(f"fairing_pod_strap_{side}", FAIRING_RUN,
-                              FAIRING_W0, FAIRING_W1, FAIRING_H))
+    """Pod↔strap: continuous wedge from slim tip into strap path."""
+    f = prepare(fairing_lib.fairing_pod_strap(side))
     if side == "R":
         mirror_x(f)
-    return f
+    return normalize_z0(f)
 
 
 # ---------------------------------------------------------------- export / render

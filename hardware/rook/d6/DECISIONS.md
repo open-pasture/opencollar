@@ -29,11 +29,13 @@ a 36×4×14 M3 joint (4× clear).
 
 ## Fairings (D7 continuous wedge)
 
-Wide end **88** (spans `POD_L−4` / CW 88), taper to **66** *along the run*
-(not as a vertical trapezoid block), run **28** (cap↔pod **18**), H **14**,
-edge fillet **R ≥ 4**. Loft in `fairing.py`; params `FAIRING_*` in `assembly.py`
-follow pod/cap/CW outline constants so a slim-pod agent can re-loft. Bridges the
-~1.3 mm cap–pod body gap; world poses from bridge centres in `assembly.py`.
+Wide end = slim pod tip **70** (cap↔pod / pod↔strap) or CW outer **89.4**;
+taper to **56** *along the run* (not a vertical trapezoid block). Run **28**
+(cap↔pod **18**, CW **32**), H **14** / CW **12**, edge fillet **R ≥ 4**.
+Loft in `fairing.py`; `FAIRING_*` in `assembly.py` follow pod/cap/CW outline
+constants. `FAIRING_BEVEL_OVERSIZE` compensates edge-bevel plan shrink so the
+finished outer still kisses the mate (seam ≤ 0.5 mm). Bridges the ~1.3 mm
+cap–pod body gap; world poses from bridge centres in `assembly.py`.
 
 ## CW lid print orientation
 

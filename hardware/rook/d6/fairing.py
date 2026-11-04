@@ -126,6 +126,10 @@ def fairing_body(name: str,
     top_crown = float(
         top_crown if top_crown is not None else getattr(A, "FAIRING_TOP_CROWN", 1.2)
     )
+    # Bevel shrinks plan width; grow loft so finished outer ≈ design W0/W1.
+    over = float(getattr(A, "FAIRING_BEVEL_OVERSIZE", 0.0))
+    w0 = w0 + over
+    w1 = w1 + over
 
     outline = _plan_outline(run, w0, w1, plan_r0, plan_r1)
     f = oc.prism_z(name, outline, 0.0, h)
@@ -152,7 +156,7 @@ def fairing_body(name: str,
 
 
 def fairing_cap_pod(side: str = "L"):
-    """Cap↔pod bridge: short run, follows pod/cap outline params."""
+    """Cap↔pod bridge: short run, wide end kisses slim pod tip (~70)."""
     run = float(getattr(A, "FAIRING_RUN_CAP_POD", 18.0))
     return fairing_body(
         f"fairing_cap_pod_{side}",
@@ -163,7 +167,7 @@ def fairing_cap_pod(side: str = "L"):
 
 
 def fairing_pod_strap(side: str = "L"):
-    """Pod↔strap bridge: brand 28 mm run."""
+    """Pod↔strap bridge: brand 28 mm run; wide end = slim tip."""
     return fairing_body(
         f"fairing_pod_strap_{side}",
         run=A.FAIRING_RUN, w0=A.FAIRING_W0, w1=A.FAIRING_W1, h=A.FAIRING_H,
@@ -173,10 +177,14 @@ def fairing_pod_strap(side: str = "L"):
 
 
 def fairing_cw(side: str = "L"):
-    """CW↔strap fairing at bottom of loop."""
+    """CW↔saddle continuous wedge — tangent to lower/longer D7 CW, no step."""
+    run = float(getattr(A, "FAIRING_RUN_CW", A.FAIRING_RUN))
+    w0 = float(getattr(A, "FAIRING_W0_CW", A.FAIRING_W0))
+    w1 = float(getattr(A, "FAIRING_W1_CW", A.FAIRING_W1))
+    h = float(getattr(A, "FAIRING_H_CW", A.FAIRING_H))
     return fairing_body(
         f"fairing_cw_{side}",
-        run=A.FAIRING_RUN, w0=A.FAIRING_W0, w1=A.FAIRING_W1, h=A.FAIRING_H,
-        plan_r0=A.FAIRING_PLAN_R0,
+        run=run, w0=w0, w1=w1, h=h,
+        plan_r0=max(A.FAIRING_PLAN_R0, 8.0),
         plan_r1=min(A.FAIRING_PLAN_R1, A.STRAP_HALF * 0.9),
     )

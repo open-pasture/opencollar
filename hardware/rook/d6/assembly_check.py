@@ -143,13 +143,18 @@ for n in [k for k in mesh if k.startswith("fairing")]:
         abs(dims_sorted[2] - A.FAIRING_W0) < 3.0
         and abs(dims_sorted[1] - A.FAIRING_RUN) < 3.0
     )
-    # Widened fairings: max extent ≈ W0 (88), mid ≈ run or W1
-    ok = max(e) > 80 and min(e) > 10
+    # D7: tip-kissing fairings (~68) or CW-wide (~87); continuous loft, not blocks
+    if n.startswith("fairing_cw"):
+        ok = abs(max(e) - A.FAIRING_W0_CW) < 4.0 and min(e) > 8.0
+        expect = f"~{A.FAIRING_W0_CW}×{A.FAIRING_RUN_CW}×{A.FAIRING_H_CW}"
+    else:
+        ok = abs(max(e) - A.FAIRING_W0) < 4.0 and min(e) > 8.0
+        expect = f"~{A.FAIRING_W0}×run×{A.FAIRING_H}"
     chk(
-        f"{n} widened fairing (~{A.FAIRING_W0}×{A.FAIRING_RUN}×{A.FAIRING_H})",
+        f"{n} continuous fairing ({expect})",
         ok,
         [round(float(v), 1) for v in e],
-        f"~{A.FAIRING_W0}×{A.FAIRING_RUN}×{A.FAIRING_H}",
+        expect,
     )
 
 # D7 fairing / nose contract (continuous loft, R>=4, parametric outline)
@@ -160,10 +165,10 @@ chk(
     ">=4",
 )
 chk(
-    "FAIRING_W0 follows pod outer (POD_L - 4)",
-    abs(A.FAIRING_W0 - (A.POD_L - 4.0)) < 1e-6,
+    "FAIRING_W0 equals slim tip (POD_X_END)",
+    abs(A.FAIRING_W0 - A.POD_X_END) < 1e-6,
     A.FAIRING_W0,
-    A.POD_L - 4.0,
+    A.POD_X_END,
 )
 fairing_src = open(os.path.join(HERE, "fairing.py")).read() if os.path.isfile(os.path.join(HERE, "fairing.py")) else ""
 chk(
@@ -344,6 +349,37 @@ chk(
     "mating-down (less support than outer-down)",
 )
 
+# D7: CW lower + smaller volume than a pod; continuous fairings (no prism blocks)
+cw_h = float(mesh["cw_tub"].extents[2])
+pod_h = float(mesh["pod_L_base"].extents[2])
+chk(
+    "CW tub height lower than pod base",
+    cw_h < pod_h - 0.5,
+    f"cw_tub H={cw_h:.1f} vs pod_L_base H={pod_h:.1f}",
+    "CW < pod",
+)
+cw_vol = float(mesh["cw_tub"].volume)
+pod_vol = float(mesh["pod_L_base"].volume)
+chk(
+    "CW tub volume smaller than pod base",
+    cw_vol < pod_vol,
+    f"cw_tub V={cw_vol:.0f} vs pod_L_base V={pod_vol:.0f} mm3",
+    "CW < pod",
+)
+chk(
+    "fairings use fairing.py continuous loft (not prism blocks)",
+    "import fairing" in pod_src and "import fairing" in cw_src
+    and "fairing_lib" in pod_src and "fairing_lib" in cw_src,
+    "pod+cw import fairing_lib",
+    "fairing.py",
+)
+chk(
+    "assembly FAIRING_W0 follows slim tip (~70)",
+    abs(A.FAIRING_W0 - A.POD_X_END) < 0.1,
+    f"FAIRING_W0={A.FAIRING_W0}, POD_X_END={A.POD_X_END}",
+    "POD_X_END",
+)
+
 # ---------------- 4. interference (world)
 names = list(world)
 for a, b in itertools.combinations(names, 2):
@@ -437,6 +473,52 @@ for n, m in world.items():
         nearest[1] < 5.0,
         f"nearest {nearest[0]} gap/overlap={nearest[1]:.1f}",
         "<5 mm",
+    )
+
+# Seam step (print-frame): wide-end width and height must match the mating
+# body outline within 0.5 mm so the continuous wedge has no plan/height step.
+SEAM_MAX = float(getattr(A, "FAIRING_SEAM_STEP_MAX", 0.5))
+# Cap–pod / pod–strap: tip width + pad height
+tip_w = float(A.POD_X_END)
+pad_h = float(A.POD_MOUNT_SIZE[2])
+for n in ("fairing_cap_pod_L", "fairing_cap_pod_R",
+          "fairing_pod_strap_L", "fairing_pod_strap_R"):
+    if n not in mesh:
+        continue
+    e = mesh[n].extents
+    w_step = abs(float(max(e[0], e[1])) - tip_w)
+    h_step = abs(float(e[2]) - pad_h)
+    chk(
+        f"seam step {n} width vs pod tip ≤ {SEAM_MAX} mm",
+        w_step <= SEAM_MAX + 1e-3,
+        f"Δw={w_step:.2f} (fairing {max(e[0],e[1]):.1f} vs tip {tip_w:.1f})",
+        f"≤{SEAM_MAX}",
+    )
+    chk(
+        f"seam step {n} height vs pad ≤ {SEAM_MAX} mm",
+        h_step <= SEAM_MAX + 1e-3,
+        f"Δh={h_step:.2f} (fairing {e[2]:.1f} vs pad {pad_h:.1f})",
+        f"≤{SEAM_MAX}",
+    )
+# CW fairings: width = CW_L, height = FAIRING_H_CW (designed mate band)
+cw_w = float(A.CW_L)
+for n in ("fairing_cw_L", "fairing_cw_R"):
+    if n not in mesh:
+        continue
+    e = mesh[n].extents
+    w_step = abs(float(max(e[0], e[1])) - cw_w)
+    h_step = abs(float(e[2]) - float(A.FAIRING_H_CW))
+    chk(
+        f"seam step {n} width vs CW ≤ {SEAM_MAX} mm",
+        w_step <= SEAM_MAX + 1e-3,
+        f"Δw={w_step:.2f} (fairing {max(e[0],e[1]):.1f} vs CW {cw_w:.1f})",
+        f"≤{SEAM_MAX}",
+    )
+    chk(
+        f"seam step {n} height match ≤ {SEAM_MAX} mm",
+        h_step <= SEAM_MAX + 1e-3,
+        f"Δh={h_step:.2f} (fairing {e[2]:.1f} vs H_CW {A.FAIRING_H_CW:.1f})",
+        f"≤{SEAM_MAX}",
     )
 
 json.dump(res, open(os.path.join(OUT, "assembly_check.json"), "w"), indent=1, default=str)

@@ -211,20 +211,20 @@
     },
     "fairing_cw_L": {
       "size_mm": [
-        87.874,
-        28.0,
-        14.0
+        88.778,
+        31.992,
+        12.0
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 30172.081475729916
+        "volume_mm3": 26518.947885389083
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 988
+        "faces": 4244
       },
       "pass": true,
       "stl_path": "stl/fairing_cw_L.stl",
@@ -238,20 +238,20 @@
     },
     "fairing_cw_R": {
       "size_mm": [
-        87.874,
-        28.0,
-        14.0
+        88.778,
+        31.992,
+        12.0
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 30172.081475729916
+        "volume_mm3": 26518.947885389083
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 988
+        "faces": 4244
       },
       "pass": true,
       "stl_path": "stl/fairing_cw_R.stl",
@@ -292,6 +292,5 @@
     }
   },
   "pass": true,
-  "review_blend": "review/cw_review.blend",
-  "fairing_note": "D7 continuous loft via fairing.py; R>=4"
+  "review_blend": "review/cw_review.blend"
 }

@@ -48,8 +48,11 @@ import build_d5 as d5  # noqa: E402
 import assembly as A  # noqa: E402
 
 CHARCOAL = (0x26 / 255, 0x28 / 255, 0x2B / 255, 1.0)
+# D7 review palette — calm light-gray ASA (matches cw.py / build_assembly_blend)
+BODY_ASA = (0.78, 0.79, 0.80, 1.0)
 PANEL_NAVY = (0.10, 0.14, 0.22, 1.0)
 OAT = (0xEF / 255, 0xE8 / 255, 0xD8 / 255, 1.0)
+WORLD = (0.94, 0.93, 0.90)
 
 # ---------------------------------------------------------------- D6 outer envelope (contract)
 CAP_W = 76.0
@@ -600,20 +603,38 @@ def export_stl(obj, path, weld=1e-4):
                                 global_scale=1.0, use_mesh_modifiers=True, ascii=False)
 
 
+def _setup_cap_render(res=(1400, 1050)):
+    """Workbench + light world — charcoal on default world reads as black."""
+    s = bpy.context.scene
+    s.render.engine = "BLENDER_WORKBENCH"
+    s.render.resolution_x, s.render.resolution_y = res
+    s.render.resolution_percentage = 100
+    s.render.film_transparent = False
+    sh = s.display.shading
+    sh.light, sh.color_type = "STUDIO", "MATERIAL"
+    sh.show_cavity, sh.cavity_type = True, "BOTH"
+    sh.show_object_outline = True
+    sh.show_specular_highlight = False
+    w = bpy.data.worlds.new("cap_world")
+    w.color = WORLD
+    s.world = w
+    s.view_settings.view_transform = "Standard"
+
+
 def render_set(base, lid, panel, out_dir):
     os.makedirs(out_dir, exist_ok=True)
-    oc._setup_render(res=(1400, 1050))
     # Assembly pose for iso/top/side
     oc.reset()
+    _setup_cap_render()
     b = cap_base()
     l = cap_lid()
     # Apply chosen print orient already mating-at-z0; for assembly lift lid
     p = panel_p124()
     oc.move(l, dz=CAP_BASE_H)
     oc.move(p, dz=CAP_BASE_H + LID_H - D.PANEL_POCKET[2])
-    for o, rgba in ((b, CHARCOAL), (l, CHARCOAL), (p, PANEL_NAVY)):
+    for o, rgba in ((b, BODY_ASA), (l, BODY_ASA), (p, PANEL_NAVY)):
         o.data.materials.clear()
-        o.data.materials.append(oc._material(o.name, rgba))
+        o.data.materials.append(oc._material(o.name + "_mat", rgba))
     objs = [b, l, p]
     lo = [min(oc.bounds(o)[0][i] for o in objs) for i in range(3)]
     hi = [max(oc.bounds(o)[1][i] for o in objs) for i in range(3)]
@@ -630,6 +651,7 @@ def render_set(base, lid, panel, out_dir):
         bpy.ops.render.render(write_still=True)
         bpy.data.objects.remove(cam)
         paths[name] = path
+        print(f"  wrote {path} ({os.path.getsize(path)} B)")
 
     # Section through panel land (cut along X=0, look from +X)
     mid = 0.0
@@ -648,11 +670,15 @@ def render_set(base, lid, panel, out_dir):
         bpy.data.objects.remove(keeper)
         halves.append(dup)
         o.hide_render = True
+    for h in halves:
+        h.data.materials.clear()
+        h.data.materials.append(oc._material(h.name + "_sec", BODY_ASA))
     cam = oc._camera(lo, hi, (1, 0, 0.2))
     path = os.path.join(out_dir, "cap_section_panel.png")
     bpy.context.scene.render.filepath = path
     bpy.ops.render.render(write_still=True)
     bpy.data.objects.remove(cam)
+    print(f"  wrote {path} ({os.path.getsize(path)} B)")
     for h in halves:
         bpy.data.objects.remove(h)
     paths["cap_section_panel"] = path

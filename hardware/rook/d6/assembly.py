@@ -38,8 +38,10 @@ POD_Z0 = -4.3
 POD_BASE_H = 22.2          # as-exported mating plane (tip roof drops below); cavity still 19.5
 POD_LID_T = 4.2            # as-exported lid thickness (~4.0 modeled + ribs)
 POD_L = 92.0               # max X = cell swell (tips taper to ~70 toward D4's 67)
+POD_X_END = 70.0           # tip width from pod.py (R≥8 → reads ~66–68)
 POD_W = 92.0               # along strap — LOCKED for mount face at ±POD_W/2 (D4 was 97)
 POD_FLOOR = 1.5
+POD_PLAN_R = 8.0           # outer tip plan R (pod.py PLAN_R)
 
 CAP_Z0 = -3.6              # D4 cap_base world min z
 CAP_BASE_H = 19.0
@@ -77,45 +79,47 @@ SADDLE_CHANNEL_D = STRAP_T
 SADDLE_ROOF = 1.6
 SADDLE_H = SADDLE_ROOF + SADDLE_CHANNEL_D
 
-# Fairings (D7 continuous wedge) — parametric on pod/cap/CW outlines so a later
-# slim-pod agent can re-loft by changing POD_L / PLAN_R / CAP_W without rewriting
-# the solid. Width eases along the bridge run (not a vertical trapezoid block).
-# Cap–pod run shortened toward D4's ~16.6 mm so they sit in the 1.3–3 mm body gap
-# without swallowing the pods; strap/CW keep the 28 mm brand run.
-FAIRING_POD_OUTER_X = POD_L          # 92 — across-strap outer (follow pod.py)
-FAIRING_POD_OUTER_Y = POD_W          # 92 — along-strap outer
-FAIRING_POD_PLAN_R = 7.0             # pod plan R (D.PLAN_R); bump when pod outline lands
-FAIRING_CAP_W = CAP_W                # 76
+# Fairings (D7 continuous wedge) — re-loft from slim pod tip + D7 CW.
+# Cap–pod / pod–strap kiss the ~70 mm tip (not the 92 mm swell). CW fairings
+# kiss CW_L≈89.4 and run into the saddle with no step.
+FAIRING_POD_OUTER_X = POD_L              # 92 swell (reference)
+FAIRING_POD_TIP_X = POD_X_END            # 70 — actual join width at ±Y ends
+FAIRING_POD_OUTER_Y = POD_W
+FAIRING_POD_PLAN_R = POD_PLAN_R          # 8
+FAIRING_CAP_W = CAP_W                    # 76
 FAIRING_CAP_PLAN_R = 7.0
-FAIRING_CW_OUTER = CW_L              # 88
+FAIRING_CW_OUTER = CW_L                  # 89.4
 FAIRING_RUN = 28.0
 FAIRING_RUN_CAP_POD = 18.0
-# Wide end spans pod/CW outer with a small inset so the loft kisses the skin;
-# narrow end sits inside the cap width / strap path (66 blends toward neighbours).
-FAIRING_W0 = FAIRING_POD_OUTER_X - 4.0   # 88 — wide end toward body
-FAIRING_W1 = 66.0                        # narrow end toward strap / mate
-FAIRING_H = 14.0
-FAIRING_EDGE_R = 4.0                     # D7: filleted edges R >= 4 mm (was 2.5)
-FAIRING_PLAN_R0 = max(FAIRING_POD_PLAN_R, 8.0)  # soft wide-end plan (matches pod)
-FAIRING_PLAN_R1 = max(FAIRING_CAP_PLAN_R, 6.0)  # soft narrow-end plan
-FAIRING_TOP_CROWN = 1.2                  # shallow top shoulder (not a flat slab)
-FAIRING_INTERFERE_TOL = 0.2              # mm contact: must touch a body within this (no float)
-# 1.3 mm design gap between cap body end (~±82) and pod face (~±86) — fairings bridge it.
+FAIRING_RUN_CW = 32.0                    # longer blend saddle ↔ lower CW
+# Default W0/W1 follow the slim tip; fairing_cw() overrides W0 to CW outer.
+FAIRING_W0 = FAIRING_POD_TIP_X           # 70 — wide end = slim tip (no plan step)
+FAIRING_W1 = 56.0                        # narrow end toward strap / mate
+FAIRING_W0_CW = FAIRING_CW_OUTER         # 89.4 — wide end = CW outer (no plan step)
+FAIRING_W1_CW = FAIRING_W1               # 56
+FAIRING_H = 14.0                         # match mount-pad height (36×4×14)
+FAIRING_H_CW = 12.0                      # lower D7 CW face band
+FAIRING_EDGE_R = 4.0
+# Edge bevel pulls the plan silhouette in ~0.5–0.7 mm; oversize the loft so the
+# finished outer width still kisses POD_X_END / CW_L (seam ≤ FAIRING_SEAM_STEP_MAX).
+FAIRING_BEVEL_OVERSIZE = 0.75
+FAIRING_PLAN_R0 = max(FAIRING_POD_PLAN_R, 8.0)
+FAIRING_PLAN_R1 = max(FAIRING_CAP_PLAN_R, 6.0)
+FAIRING_TOP_CROWN = 1.2
+FAIRING_INTERFERE_TOL = 0.2
+FAIRING_SEAM_STEP_MAX = 0.5              # mm — no visible step at fairing joins
 FAIRING_CAP_POD_GAP = 1.3
 
-# Explicit world centres — in the bridge gaps (not raw D4 centres, which sit
-# inside the larger D6 envelopes). Cap–pod: between cap end (±82) and pod face
-# (~±86). Pod–strap: just outboard of the pod strap-end. CW: beside tub ±Y.
+# Explicit world centres — bridge the 1.3 mm joint; CW beside longer tub.
 FAIRING_CENTRES = {
-    # Bridge gap between cap end (±82) and pod face (~±86), at pad height
     "fairing_cap_pod_L": (0.0, -85.5, 7.4),
     "fairing_cap_pod_R": (0.0, 85.5, 7.4),
-    # Just outboard of pod strap-end (local −Y for L / +Y for R after raise)
-    "fairing_pod_strap_L": (0.0, -178.0, -38.0),
-    "fairing_pod_strap_R": (0.0, 178.0, -38.0),
-    # Beside CW tub (±Y), kissing the D7 ~116 mm-along-strap envelope
-    "fairing_cw_L": (0.0, 72.0, -470.5),
-    "fairing_cw_R": (0.0, -72.0, -470.5),
+    "fairing_pod_strap_L": (0.0, -178.0, -36.0),
+    "fairing_pod_strap_R": (0.0, 178.0, -36.0),
+    # CW half-length ≈57.9; place just outboard so the wedge kisses tub + saddle
+    # CW tub world top after pose ≈ -462.6; centre fairing mid-height there
+    "fairing_cw_L": (0.0, 70.0, -468.5),
+    "fairing_cw_R": (0.0, -70.0, -468.5),
 }
 # Back-compat alias
 D4_FAIRING_CENTRES = FAIRING_CENTRES
@@ -172,13 +176,17 @@ def world_poses():
     # cw_lid now prints mating-down (= assembled pose), same as cap_lid
     poses["cw_lid"] = CWA @ T([0, 0, CW_Z0 + CW_TUB_H])
 
-    # Fairings at explicit bridge centres; cap–pod inherit joint tilt
+    # Fairings at explicit bridge centres. Print STL has bed at z=0..H; place so
+    # the mid-height sits at the centre, then tilt about that centre (not origin).
     for name, (x, y, z) in FAIRING_CENTRES.items():
-        P = T([x, y, z])
+        h = FAIRING_H_CW if "fairing_cw" in name else FAIRING_H
+        # T_center @ R @ T_to_local_origin : rotate about mid-height, then place
+        P = T([x, y, z]) @ T([0, 0, h / 2.0])
         if "cap_pod_L" in name:
             P = P @ R(math.radians(+TILT_DEG), X)
         elif "cap_pod_R" in name:
             P = P @ R(math.radians(-TILT_DEG), X)
+        P = P @ T([0, 0, -h / 2.0])
         poses[name] = P
 
     # Clamp bars ×8

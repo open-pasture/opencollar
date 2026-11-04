@@ -27,7 +27,7 @@ Electronics stay out of the CW (D5 / contract).
 | `cw_lid` | ~88.4 × 114.8 × **6.35** (target 7.5) | Low dome; as-exported height after soft channel trim; crown land 36 × 48 |
 | `saddle` | 76 × 96 × 5.0 (+pins → ~6.5) | **Unchanged strap path** from d6-integrate; soft plan R |
 | `clamp_bar` | **10 × 70 × 8** | Flange 10×70×3; walls to depth 8; **print 8×** |
-| `fairing_cw_L/R` | ~66 × 28 × 14 | 28 mm run (brand 25–30); body colour in review |
+| `fairing_cw_L/R` | ~89.5 × 32 × 12 | continuous wedge; wide end = CW outer; body colour in review |
 | `cw_floor_layout` | ~82 × 109 × 2 (+ribs/glyphs) | PLA coupon for 2×2 pack |
 
 ### Screws / clamps
