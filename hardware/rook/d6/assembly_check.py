@@ -99,7 +99,11 @@ for s in ("L", "R"):
         continue
     # Cap-facing end: L uses local +Y (toward world origin); R uses local −Y.
     # (R STL is X-mirrored only; Y ends keep their roles in the print frame.)
-    y_local = A.POD_W / 2.0 if s == "L" else -A.POD_W / 2.0
+    y_local = (
+        float(getattr(A, "POD_MOUNT_FACE_Y", A.POD_W / 2.0))
+        if s == "L"
+        else -float(getattr(A, "POD_MOUNT_FACE_Y", A.POD_W / 2.0))
+    )
     local = np.array([0.0, y_local, A.POD_BASE_H / 2.0, 1.0])
     fw4 = A.pod_anchor_matrix(s) @ _T([0, 0, A.POD_Z0]) @ local
     fw = fw4[:3]
@@ -165,10 +169,10 @@ chk(
     ">=4",
 )
 chk(
-    "FAIRING_W0 equals slim tip (POD_X_END)",
-    abs(A.FAIRING_W0 - A.POD_X_END) < 1e-6,
+    "FAIRING_W0 equals pod outer (POD_L)",
+    abs(A.FAIRING_W0 - A.POD_L) < 1e-6,
     A.FAIRING_W0,
-    A.POD_X_END,
+    A.POD_L,
 )
 fairing_src = open(os.path.join(HERE, "fairing.py")).read() if os.path.isfile(os.path.join(HERE, "fairing.py")) else ""
 chk(
@@ -276,14 +280,27 @@ chk(
 )
 chk("Wio pocket +X wall >= 3 mm", 38.0 - (22 + 10.9) >= 3, f"{38.0-(22+10.9):.1f} mm", ">=3")
 pod_x = mesh["pod_L_base"].extents[0]
+pod_y = mesh["pod_L_base"].extents[1]
+# D7r2: cavity oriented 58 across X / 82 along Y
 chk(
-    "pod cavity 82 fits pod X (walls >= 4)",
-    (pod_x - 82) / 2 >= 4,
-    f"wall {(pod_x-82)/2:.1f} (outer X={pod_x:.1f})",
-    ">=4",
+    "pod cavity 58 fits pod X (walls >= 3.5)",
+    (pod_x - 58.0) / 2 >= 3.5 - 1e-3,
+    f"wall {(pod_x-58.0)/2:.1f} (outer X={pod_x:.1f})",
+    ">=3.5",
+)
+chk(
+    "pod cavity 82 along Y (oriented)",
+    pod_y >= 82.0 + 2 * 3.5 - 1.0,
+    f"pod Y={pod_y:.1f} (need ≥{82+7:.0f} for 82 cav + walls)",
+    "82 along Y",
+)
+chk(
+    "pod.py cavity rotated (CAV_X/CAV_Y)",
+    "CAV_X" in pod_src and "CAV_Y" in pod_src and "axis=\"Y\"" in pod_src,
+    "CAV_X/CAV_Y + cell axis Y" if "CAV_X" in pod_src else "missing",
+    "58 across / 82 along",
 )
 
-# D7 outline: swell over cells (~92), tips taper toward D4 (~67), length locked for mount
 def _pod_width_at_y(m, y, band=1.2):
     v = m.vertices
     mask = (v[:, 1] > y - band) & (v[:, 1] < y + band)
@@ -298,21 +315,26 @@ swell_w = _pod_width_at_y(pod_L, 0.0)
 tip_w = _pod_width_at_y(pod_L, 40.0)
 tip_w2 = _pod_width_at_y(pod_L, -40.0)
 chk(
-    "pod D7 swell width ~92 over cells (x at y=0)",
-    swell_w is not None and swell_w >= 90.0,
+    "pod D7r2 swell width ≤70 (x at y=0)",
+    swell_w is not None and 64.0 <= swell_w <= 70.0,
     round(swell_w, 1) if swell_w is not None else None,
-    ">=90 (cell wall 3.5–5 on 82 cavity)",
+    "64–70 (58 cav + ≥3.5 walls)",
 )
 chk(
-    "pod D7 tip width toward D4 67 (x at |y|=40)",
+    "pod width < cap width (76)",
+    swell_w is not None and swell_w < float(A.CAP_W) - 0.5,
+    f"pod {None if swell_w is None else round(swell_w,1)} vs cap {A.CAP_W}",
+    "pod < cap",
+)
+chk(
+    "pod tip width ~66 (x at |y|=40)",
     tip_w is not None
     and tip_w2 is not None
-    and 60.0 <= tip_w <= 75.0
-    and 60.0 <= tip_w2 <= 75.0
-    and tip_w < (swell_w or 99) - 10.0,
+    and 62.0 <= tip_w <= 70.0
+    and 62.0 <= tip_w2 <= 70.0,
     f"+Y {None if tip_w is None else round(tip_w,1)} / -Y "
-    f"{None if tip_w2 is None else round(tip_w2,1)} (swell {None if swell_w is None else round(swell_w,1)})",
-    "60–75 and ≥10 narrower than swell",
+    f"{None if tip_w2 is None else round(tip_w2,1)}",
+    "62–70",
 )
 chk(
     "pod.py contoured taper (POD_X_END + contoured_slab)",
@@ -327,12 +349,24 @@ chk(
     "PLAN_R set >=8 in pod.py",
     ">=8",
 )
-# Mount face plane / length unchanged vs d6-integrate
 chk(
-    "pod length POD_W locked at 92 (mount face plane)",
-    abs(A.POD_W - 92.0) < 1e-6 and abs(pod_L.extents[1] - 93.8) < 2.0,
+    "pod lid smooth crown (no X-facet)",
+    "smooth_lid_crown" in pod_src,
+    "smooth_lid_crown" if "smooth_lid_crown" in pod_src else "missing",
+    "G1 barrel/sphere crown",
+)
+# Mount face Y locked; length ~97 (strap-end grew)
+chk(
+    "pod mount face Y locked at 46",
+    abs(float(getattr(A, "POD_MOUNT_FACE_Y", 0)) - 46.0) < 1e-6,
+    getattr(A, "POD_MOUNT_FACE_Y", None),
+    46.0,
+)
+chk(
+    "pod length ~97 (D4-ish, mount face fixed)",
+    abs(A.POD_W - 97.0) < 1e-6 and 95.0 <= pod_L.extents[1] <= 100.0,
     f"A.POD_W={A.POD_W}, STL Y={pod_L.extents[1]:.1f}",
-    "92 / ~93.8 as-exported",
+    "97 / ~97 as-exported",
 )
 
 # cw_lid orientation: mating-down means NOT in FLIP_OUTER_DOWN
@@ -360,11 +394,22 @@ chk(
 )
 cw_vol = float(mesh["cw_tub"].volume)
 pod_vol = float(mesh["pod_L_base"].volume)
+# D7r2 slim pod shell is smaller than the CW tub that still holds 771.8 g steel;
+# volume ordering flips. Keep height + steel-mass contracts.
+steel_ok = False
+steel_m = None
+cw_rep = os.path.join(STL, "cw_report.json")
+if os.path.exists(cw_rep):
+    try:
+        steel_m = json.load(open(cw_rep)).get("choice", {}).get("steel_mass_g")
+        steel_ok = steel_m is not None and abs(float(steel_m) - 771.8) < 0.2
+    except Exception:
+        steel_ok = False
 chk(
-    "CW tub volume smaller than pod base",
-    cw_vol < pod_vol,
-    f"cw_tub V={cw_vol:.0f} vs pod_L_base V={pod_vol:.0f} mm3",
-    "CW < pod",
+    "CW steel pack mass 771.8 g retained",
+    steel_ok,
+    steel_m if steel_m is not None else f"cw_tub V={cw_vol:.0f} / pod V={pod_vol:.0f}",
+    771.8,
 )
 chk(
     "fairings use fairing.py continuous loft (not prism blocks)",
@@ -374,10 +419,10 @@ chk(
     "fairing.py",
 )
 chk(
-    "assembly FAIRING_W0 follows slim tip (~70)",
-    abs(A.FAIRING_W0 - A.POD_X_END) < 0.1,
-    f"FAIRING_W0={A.FAIRING_W0}, POD_X_END={A.POD_X_END}",
-    "POD_X_END",
+    "assembly FAIRING_W0 follows pod outer (~68)",
+    abs(A.FAIRING_W0 - A.POD_L) < 0.1,
+    f"FAIRING_W0={A.FAIRING_W0}, POD_L={A.POD_L}",
+    "POD_L",
 )
 
 # ---------------- 4. interference (world)
@@ -478,28 +523,57 @@ for n, m in world.items():
 # Seam step (print-frame): wide-end width and height must match the mating
 # body outline within 0.5 mm so the continuous wedge has no plan/height step.
 SEAM_MAX = float(getattr(A, "FAIRING_SEAM_STEP_MAX", 0.5))
-# Cap–pod / pod–strap: tip width + pad height
-tip_w = float(A.POD_X_END)
-pad_h = float(A.POD_MOUNT_SIZE[2])
+LID_SEAM = float(getattr(A, "FAIRING_LID_SEAM_MAX", 0.3))
+# Cap–pod / pod–strap: outer width + fairing height reaches lid band
+pod_outer_w = float(A.POD_L)
+fairing_h = float(A.FAIRING_H)
 for n in ("fairing_cap_pod_L", "fairing_cap_pod_R",
           "fairing_pod_strap_L", "fairing_pod_strap_R"):
     if n not in mesh:
         continue
     e = mesh[n].extents
-    w_step = abs(float(max(e[0], e[1])) - tip_w)
-    h_step = abs(float(e[2]) - pad_h)
+    w_step = abs(float(max(e[0], e[1])) - pod_outer_w)
+    h_step = abs(float(e[2]) - fairing_h)
     chk(
-        f"seam step {n} width vs pod tip ≤ {SEAM_MAX} mm",
+        f"seam step {n} width vs pod outer ≤ {SEAM_MAX} mm",
         w_step <= SEAM_MAX + 1e-3,
-        f"Δw={w_step:.2f} (fairing {max(e[0],e[1]):.1f} vs tip {tip_w:.1f})",
+        f"Δw={w_step:.2f} (fairing {max(e[0],e[1]):.1f} vs pod {pod_outer_w:.1f})",
         f"≤{SEAM_MAX}",
     )
     chk(
-        f"seam step {n} height vs pad ≤ {SEAM_MAX} mm",
+        f"seam step {n} height vs FAIRING_H ≤ {SEAM_MAX} mm",
         h_step <= SEAM_MAX + 1e-3,
-        f"Δh={h_step:.2f} (fairing {e[2]:.1f} vs pad {pad_h:.1f})",
+        f"Δh={h_step:.2f} (fairing {e[2]:.1f} vs H {fairing_h:.1f})",
         f"≤{SEAM_MAX}",
     )
+# Fairing top vs pod lid roof at the seam: sample both meshes in a shared
+# XY window near the fairing centroid (not global bbox max, which tilt skews).
+for side, fname in (("L", "fairing_cap_pod_L"), ("R", "fairing_cap_pod_R")):
+    if fname not in world or f"pod_{side}_lid" not in world:
+        continue
+    fmesh = world[fname]
+    lmesh = world[f"pod_{side}_lid"]
+    fc = fmesh.centroid
+    fv, lv = fmesh.vertices, lmesh.vertices
+    fband = (np.abs(fv[:, 1] - fc[1]) < 12.0) & (np.abs(fv[:, 0]) < 30.0)
+    lband = (np.abs(lv[:, 1] - fc[1]) < 20.0) & (np.abs(lv[:, 0]) < 30.0)
+    if np.any(fband) and np.any(lband):
+        fz_top = float(fv[fband, 2].max())
+        lz_top = float(lv[lband, 2].max())
+        dz = abs(fz_top - lz_top)
+        chk(
+            f"fairing {fname} top vs pod_{side}_lid roof ≤ {LID_SEAM} mm",
+            dz <= LID_SEAM + 0.15,
+            f"Δz={dz:.2f} (fairing z={fz_top:.1f} lid z={lz_top:.1f})",
+            f"≤{LID_SEAM}",
+        )
+    else:
+        chk(
+            f"fairing {fname} top vs pod_{side}_lid roof ≤ {LID_SEAM} mm",
+            False,
+            "no verts near fairing seam",
+            f"≤{LID_SEAM}",
+        )
 # CW fairings: width = CW_L, height = FAIRING_H_CW (designed mate band)
 cw_w = float(A.CW_L)
 for n in ("fairing_cw_L", "fairing_cw_R"):

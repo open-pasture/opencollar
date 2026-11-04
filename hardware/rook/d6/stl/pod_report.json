@@ -23,22 +23,29 @@
   },
   "envelope": {
     "outer_base_mm": [
-      92.0,
-      92.0,
+      68.0,
+      97.0,
       22.2
     ],
-    "outer_tip_width_mm": 70.0,
-    "swell_half_y_mm": 31.0,
-    "shoulder_run_mm": 7.0,
+    "outer_tip_width_mm": 66.0,
+    "mount_face_y": 46.0,
+    "swell_half_y_mm": 38.0,
+    "shoulder_run_mm": 8.0,
     "plan_r_mm": 8.0,
     "outer_lid_mm": [
-      91.0,
-      91.0,
+      67.0,
+      96.0,
       4.0
     ],
+    "lid_crown_sagitta_mm": 1.4,
     "cavity_mm": [
       82.0,
       58.0,
+      19.5
+    ],
+    "cavity_oriented_xyz": [
+      58.0,
+      82.0,
       19.5
     ],
     "stack_mm": 26.2,
@@ -52,12 +59,12 @@
       68.0,
       22.0
     ],
-    "d6_ref_base": [
+    "d7r1_ref_base": [
       92.0,
       92.0,
       22.2
     ],
-    "note": "D7: 92 mm swell only over cells; tips taper to ~68 (D4=67) with R\u22658 and chamfered shoulder; POD_W=92 keeps mount face; tip roof drop 5.5 over 22.0; cavity 82\u00d758\u00d719.5 locked"
+    "note": "D7r2: cavity rotated \u2014 58 across X / 82 along Y; outer ~68\u00d797; mount face Y=46.0 locked; smooth lid crown sagitta 1.4; cavity size 82\u00d758\u00d719.5 locked"
   },
   "gasket": {
     "groove_w": 2.0,
@@ -100,15 +107,20 @@
     "axis": "+Y cap-facing"
   },
   "buzzer_at": [
-    18.0,
-    15.0
+    0.0,
+    28.0
   ],
+  "cell_at": [
+    0.0,
+    -2.0
+  ],
+  "cell_axis": "Y",
   "print_orientation": "bases cavity UP; lids rotated 180\u00b0 about X on export (recalc normals, no flip_normals); R = Scale(-X) + flip_normals once for winding",
   "bodies": {
     "pod_L_base": {
       "size_mm": [
-        92.0,
-        93.8,
+        68.0,
+        98.8,
         23.4
       ],
       "watertight": {
@@ -119,7 +131,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 639952
+        "faces": 384378
       },
       "pass": true,
       "stl_path": "stl/pod_L_base.stl",
@@ -132,8 +144,8 @@
     },
     "pod_L_lid": {
       "size_mm": [
-        91.0,
-        91.0,
+        67.0,
+        96.0,
         4.15
       ],
       "watertight": {
@@ -144,21 +156,21 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4448
+        "faces": 4348
       },
       "pass": true,
       "stl_path": "stl/pod_L_lid.stl",
       "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 5984.0,
+      "bed_face_area_mm2": 5743.5,
       "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X on export)",
       "load_path": "lid screws; ribs"
     },
     "pod_R_base": {
       "size_mm": [
-        92.0,
-        93.8,
+        68.0,
+        98.8,
         23.4
       ],
       "watertight": {
@@ -169,7 +181,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 639954
+        "faces": 384418
       },
       "pass": true,
       "stl_path": "stl/pod_R_base.stl",
@@ -182,8 +194,8 @@
     },
     "pod_R_lid": {
       "size_mm": [
-        91.0,
-        91.0,
+        67.0,
+        96.0,
         4.15
       ],
       "watertight": {
@@ -194,22 +206,22 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4448
+        "faces": 4348
       },
       "pass": true,
       "stl_path": "stl/pod_R_lid.stl",
       "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 5984.0,
+      "bed_face_area_mm2": 5743.5,
       "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X on export)",
       "load_path": "true mirror of L"
     },
     "fairing_cap_pod_L": {
       "size_mm": [
-        69.616,
-        17.998,
-        14.0
+        68.357,
+        17.997,
+        18.0
       ],
       "watertight": {
         "watertight": true,
@@ -232,9 +244,9 @@
     },
     "fairing_cap_pod_R": {
       "size_mm": [
-        69.616,
-        17.998,
-        14.0
+        68.357,
+        17.997,
+        18.0
       ],
       "watertight": {
         "watertight": true,
@@ -257,9 +269,9 @@
     },
     "fairing_pod_strap_L": {
       "size_mm": [
-        69.485,
-        27.995,
-        14.0
+        68.204,
+        27.994,
+        18.0
       ],
       "watertight": {
         "watertight": true,
@@ -282,9 +294,9 @@
     },
     "fairing_pod_strap_R": {
       "size_mm": [
-        69.485,
-        27.995,
-        14.0
+        68.204,
+        27.994,
+        18.0
       ],
       "watertight": {
         "watertight": true,
@@ -307,8 +319,8 @@
     },
     "pod_floor_layout": {
       "size_mm": [
+        56.0,
         80.0,
-        58.0,
         5.0
       ],
       "watertight": {
@@ -319,7 +331,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 219914
+        "faces": 211982
       },
       "pass": true,
       "stl_path": "stl/pod_floor_layout.stl",
@@ -334,12 +346,12 @@
   "pass": true,
   "lid_print": {
     "pod_L_lid": {
-      "bed_face_area_mm2": 5984.0,
+      "bed_face_area_mm2": 5743.5,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
       "note": "Outer-down; soft tip taper only \u2014 not a deep crown"
     },
     "pod_R_lid": {
-      "bed_face_area_mm2": 5984.0,
+      "bed_face_area_mm2": 5743.5,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
       "note": "Outer-down; soft tip taper only \u2014 not a deep crown"
     }

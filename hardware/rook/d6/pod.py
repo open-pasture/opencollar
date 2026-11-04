@@ -1,4 +1,4 @@
-"""D7 pod CAD — D4 contoured tapered outline around D5 two-cell internals.
+"""D7r2 pod CAD — cavity rotated for D4-narrow outline.
 
 Scope: pod_L/R base+lid, fairings (cap↔pod, pod↔strap), pod_floor_layout.
 Frame: origin at cap centre; X across strap, Y along spine, Z up (mm).
@@ -6,13 +6,13 @@ Frame: origin at cap centre; X across strap, Y along spine, Z up (mm).
 Mount (locked from d6-integrate / assembly.py — do not move):
   L: loc (0, -126.0, -21.9), rot_x +29.142°
   R: loc (0, +126.0, -21.9), rot_x -29.142°
-  Face plane at local ±POD_W/2; 36×4×14 recess + 4× M3 clear (unchanged).
+  Face at local Y = +POD_MOUNT_FACE_Y (=46); 36×4×14 recess + 4× M3 clear.
 
-Envelope (D7 aesthetics vs D6 flat 92 slab):
-  Swell X=92 only over the cell bay; tips taper to ~68 (D4 was 67) with
-  R≥8 plan corners + chamfered shoulder. Length POD_W kept at 92 so the
-  mount face plane stays put. Base stack kept for 19.5 cavity; tip roof
-  drops harder so the silhouette reads closer to D4's 67×97×19.4 ratio.
+Envelope (D7r2 — cavity 90° vs D7r1):
+  Cavity 82×58×19.5 kept; 82 runs along Y (long), 58 across X.
+  Outer ~68 wide × ~97 long (D4 ≈67×97); narrower than cap 76.
+  Mount face Y locked at 46 (strap-end grows to make length 97).
+  Wall ≥3.5 at cells (here 5.0 → 68 outer). Smooth G1 lid crown.
 
 Print orientation (bed = z=0):
   bases cavity UP; lids OUTER face DOWN via 180° about X + recalc normals
@@ -57,39 +57,46 @@ ORANGE = (0xFF / 255, 0x6A / 255, 0x2B / 255, 1.0)
 OAT = (0xEF / 255, 0xE8 / 255, 0xD8 / 255, 1.0)
 WORLD = (0.94, 0.93, 0.90)
 
-# ---------------------------------------------------------------- D7 pod envelope (tapered D4 look + D5 cavity)
+# ---------------------------------------------------------------- D7r2 pod envelope (cavity rotated)
 
-# D5 cavity locked; 92 mm only where cells need wall (swell). Tips → ~D4 67.
-POD_CAVITY = D.POD_CAVITY                    # (82, 58, 19.5) — locked
-POD_WALL = D.POD_WALL                        # 5.0 at cell swell (3.5–5 allowed)
-POD_WALL_TIP = 2.6                           # thinner outer skin outside cell bay
-POD_X_MAX = A.POD_L                          # 92 — swell across cells (82 + 2×5)
-POD_X_END = 70.0                             # tip width; R=8 → reads ~66–68 (~D4 67)
-POD_L = POD_X_MAX                            # max X extent (bbox / assembly)
-POD_W = A.POD_W                              # 92 — KEEP: mount face at ±POD_W/2
-POD_FLOOR = A.POD_FLOOR                      # 1.5 (slim vs D5 2.5)
-# Keep mid-height for mount recess alignment with cap pad (d6-integrate).
-POD_BASE_H = A.POD_BASE_H                    # 22.2 mating plane; tip roof drops below
-POD_LID_T = 4.0                              # locked durability (not A as-exported 4.2)
+# Locked cavity size (82×58×19.5); ORIENTED in pod frame as X=58, Y=82, Z=19.5.
+POD_CAVITY = D.POD_CAVITY                    # (82, 58, 19.5) — size locked
+CAV_X = POD_CAVITY[1]                        # 58 — across strap
+CAV_Y = POD_CAVITY[0]                        # 82 — along spine
+CAV_Z = POD_CAVITY[2]                        # 19.5
+POD_WALL = 5.0                               # ≥3.5 at cells → outer X = 68
+POD_X_MAX = CAV_X + 2 * POD_WALL             # 68 — swell (narrower than cap 76)
+POD_X_END = 66.0                             # slight tip taper (≤70)
+POD_L = POD_X_MAX                            # max X extent
+POD_LEN = A.POD_W                            # 97 — total Y length
+POD_MOUNT_FACE_Y = A.POD_MOUNT_FACE_Y        # 46 — LOCKED recess face
+POD_Y0 = POD_MOUNT_FACE_Y - POD_LEN / 2.0    # -2.5 — body centre (asymmetric)
+POD_W = POD_LEN                              # alias: length along Y
+POD_FLOOR = A.POD_FLOOR                      # 1.5
+POD_BASE_H = A.POD_BASE_H                    # 22.2 mating plane
+POD_LID_T = 4.0                              # locked durability
 POD_STACK_H = POD_BASE_H + POD_LID_T         # ~26.2
-# Plan radii: outer tips R≥8 (D6 was 7 flat slab)
-PLAN_R = 8.0                                 # outer vertical corners (min allowed)
-PLAN_R_SWELL = 10.0                          # softer on the cell swell flanks
-# Swell just past cavity (|y|≤29); short shoulder so tip has a visible ~70 mm nose
-POD_Y_SWELL = 31.0                           # half-length of full-width cell swell
-POD_SHOULDER_RUN = 7.0                       # Y-run of chamfered shoulder 92→70
-# Groove / lip sit on cavity+wall rectangle (inside the swell, not the tips)
-POD_GROOVE_L = POD_CAVITY[0] + 2 * POD_WALL  # 92
-POD_GROOVE_W = POD_CAVITY[1] + 2 * POD_WALL  # 68
-# Screw bosses stay inside cavity envelope (same as D5 relative to cavity)
-POD_COLS = list(D.POD_COLS)                  # (±37, ±27)
-# Side-elevation tip taper (D4 hard taper ≈4→19 over ~20 mm) — stronger than D6
-POD_TAPER_LEN = 22.0
-POD_TAPER_DROP = 5.5                         # outer tip roof drop (cavity stays full)
+POD_LID_CROWN = 1.4                          # spherical sagitta on lid outer
+PLAN_R = 8.0
+PLAN_R_SWELL = 10.0
+# Full-width band covers most of the long cavity; soft tip taper only
+POD_Y_SWELL = 38.0                           # half-length of full-width band
+POD_SHOULDER_RUN = 8.0                       # 68→66 shoulder run
+# Groove / lip follow oriented cavity + wall
+POD_GROOVE_X = CAV_X + 2 * POD_WALL          # 68
+POD_GROOVE_Y = CAV_Y + 2 * POD_WALL          # 92
+# Screw bosses inset from oriented cavity corners
+POD_COLS = [(sx * 22.0, sy * 36.0) for sx in (-1, 1) for sy in (-1, 1)]
+POD_TAPER_LEN = 18.0
+POD_TAPER_DROP = 4.0                         # softer tip roof (narrow pod)
 
-# Cap↔pod M3 joint (matches cap.py pad)
-POD_MOUNT_SIZE = A.POD_MOUNT_SIZE            # 36×4×14 recess on +Y end
+# Cap↔pod M3 joint (matches cap.py pad) — recess on +Y mount face
+POD_MOUNT_SIZE = A.POD_MOUNT_SIZE            # 36×4×14
 POD_MOUNT_SCREWS = list(A.POD_MOUNT_SCREWS)
+
+# Cell bay / buzzer re-placed for Y-long cavity (cell axis along Y)
+CELL_AT = (0.0, -2.0)                        # cradle centre
+BUZZ_AT = (0.0, 28.0)                         # toward +Y mount, clear cells
 
 # D6 mount — D4 tilt; anchors shifted outboard (see assembly.py / DECISIONS.md)
 MOUNT_Y = A.POD_ANCHOR_Y                     # ±124 (was D4 113.8)
@@ -183,40 +190,40 @@ def slab(name, w, l, h, r=PLAN_R):
 
 
 def contoured_slab(name, x_max, x_end, length, height, y_swell, r_end=PLAN_R,
-                   r_swell=PLAN_R_SWELL, shoulder_run=POD_SHOULDER_RUN):
-    """Tapered plan: full width only over cell swell; tips ~D4-narrow with R≥8.
+                   r_swell=PLAN_R_SWELL, shoulder_run=POD_SHOULDER_RUN,
+                   y0=0.0):
+    """Tapered plan: ~68 wide × length long; soft tip taper; optional Y shift.
 
-    Boolean: narrow full-length spine ∪ wide central swell, then chamfer the
-    92→end shoulder so it reads as one continuous object (not a bolted slab).
+    y0 is the body centre so the +Y face sits on POD_MOUNT_FACE_Y while length
+    grows toward the strap end (asymmetric about local origin). Mesh is built
+    in-place (no obj.location offset) so later cavity cuts stay aligned.
     """
     body = oc.rounded_rect(name, (x_end, length, height), r_end,
-                           anchor="bottom", segments=12)
-    # Swell slightly longer than 2*y_swell so the union covers the shoulder start
+                           at=(0.0, y0, 0.0), anchor="bottom", segments=12)
     swell_len = min(length - 2.0, 2.0 * y_swell + shoulder_run)
     swell = oc.rounded_rect(f"{name}_swell", (x_max, swell_len, height), r_swell,
-                            anchor="bottom", segments=12)
+                            at=(0.0, y0, 0.0), anchor="bottom", segments=12)
     oc.union(body, swell)
     chamfer_plan_shoulder(body, x_max, x_end, y_swell, length / 2.0, height,
-                          shoulder_run)
+                          shoulder_run, y0=y0)
     return body
 
 
-def chamfer_plan_shoulder(body, x_max, x_end, y_swell, y_half, h, run):
+def chamfer_plan_shoulder(body, x_max, x_end, y_swell, y_half, h, run, y0=0.0):
     """Low chamfered shoulder: cut the step from swell width down to tip width."""
     run = min(run, max(2.0, y_half - y_swell - 1.0))
     for sx in (-1.0, 1.0):
         for sy in (-1.0, 1.0):
-            y0 = sy * y_swell
-            y1 = sy * (y_swell + run)
+            ya = y0 + sy * y_swell
+            yb = y0 + sy * (y_swell + run)
             xs = sx * (x_max / 2.0)
             xe = sx * (x_end / 2.0)
-            # Region outside the diagonal (swell corner → tip flank)
             outline = [
-                (sx * (x_max / 2.0 + 4.0), y0 - sy * 1.0),
-                (sx * (x_max / 2.0 + 4.0), sy * (y_half + 4.0)),
-                (sx * (x_end / 2.0 - 1.0), sy * (y_half + 4.0)),
-                (xe, y1),
-                (xs, y0),
+                (sx * (x_max / 2.0 + 4.0), ya - sy * 1.0),
+                (sx * (x_max / 2.0 + 4.0), y0 + sy * (y_half + 4.0)),
+                (sx * (x_end / 2.0 - 1.0), y0 + sy * (y_half + 4.0)),
+                (xe, yb),
+                (xs, ya),
             ]
             oc.cut(body, oc.prism_z(f"sh_{int(sx)}_{int(sy)}", outline, -1.0, h + 3.0))
     return body
@@ -228,11 +235,10 @@ def cut_cav(body, w, l, floor, h, r=5.0):
     return body
 
 
-def end_taper_skin(body, w, l, h, taper_len, drop):
+def end_taper_skin(body, w, l, h, taper_len, drop, y0=0.0):
     """D4-look outer tip chamfer on ±Y. Keeps central cavity full (cut above floor+cav)."""
-    # Only shave the outer roof near tips — prism from top face down `drop` over `taper_len`.
     for sy in (-1, 1):
-        tip = sy * (l / 2)
+        tip = y0 + sy * (l / 2)
         oc.cut(body, oc.prism_x(f"taper{sy}", [
             (tip + sy * 0.5, h + 0.5),
             (tip - sy * taper_len, h + 0.5),
@@ -242,11 +248,33 @@ def end_taper_skin(body, w, l, h, taper_len, drop):
 
 
 def soft_crown_edges(body, w, l, h, edge_r=2.0):
-    """Skipped: bevel after boolean stack leaves non-manifold edges on bases.
-
-    D4 crown cue is carried by end_taper_skin + plan shoulder instead.
-    """
+    """Skipped on bases — boolean stack + bevel leaves non-manifold edges."""
     return body
+
+
+def smooth_lid_crown(lid, w, l, h, sagitta=POD_LID_CROWN, y0=0.0):
+    """Single-curvature barrel crown along Y — G1, keeps ≥4.0 mm lid thickness.
+
+    Adds a shallow cylindrical vault ON TOP of the flat lid (peak = h + sagitta
+    locally before normalize), then the export flip puts that outer on the bed.
+    No cross-facet pyramid: longitudinal ribs only on the mating face.
+    """
+    sagitta = min(float(sagitta), 1.6)
+    a = w * 0.38
+    if sagitta < 0.25 or a < 4.0:
+        return lid
+    R = (a * a + sagitta * sagitta) / (2.0 * sagitta)
+    # Cylinder peaks at z = h + sagitta; axis below
+    zc = (h + sagitta) - R
+    cyl = oc.cylinder("crown_cyl", R, l - 8.0,
+                      at=(0.0, y0, zc), axis="Y", segments=64)
+    # Only keep the segment above the flat lid top
+    blank = oc.box("crown_blank", (w - 4.0, l - 10.0, sagitta + 0.6),
+                   at=(0.0, y0, h + sagitta / 2.0), anchor="center")
+    oc.intersect(blank, cyl)
+    if oc.volume_mm3(blank) > 50.0:
+        oc.union(lid, blank)
+    return lid
 
 
 def mirror_x(obj):
@@ -254,6 +282,19 @@ def mirror_x(obj):
     oc.bake(obj)
     obj.data.transform(Matrix.Scale(-1, 4, (1, 0, 0)))
     obj.data.flip_normals()
+    return prepare(obj)
+
+
+def mirror_for_R(obj):
+    """R pod: mirror X, then flip Y so the mount face (−Y) points at the cap.
+
+    L keeps mount at +Y (toward world origin). R at +126 needs mount at local −Y;
+    without the Y flip the long strap-end would dig into the cap.
+    Two mirrors = proper rotation (winding preserved) — do not flip_normals.
+    """
+    oc.bake(obj)
+    obj.data.transform(Matrix.Scale(-1, 4, (1, 0, 0)))
+    obj.data.transform(Matrix.Scale(-1, 4, (0, 1, 0)))
     return prepare(obj)
 
 
@@ -281,108 +322,99 @@ def bed_face_area_xy(obj):
 # ---------------------------------------------------------------- parts — POD BASE / LID
 
 def pod_base(side="L"):
-    """Print: cavity UP. Two-cell D5 internals in D7 tapered D4-look envelope.
+    """Print: cavity UP. Oriented cavity (58 across X, 82 along Y) in ~68×97 shell.
 
-    Cell swap: M3 driver only. Buzzer at (18,15). Cable + D8×1.2 countersink
-    on cap-facing +Y end. Floor glyphs from D5 FLOOR_LABEL_TABLE.
-    Mount face / recess / hole pattern locked to d6-integrate.
+    Mount face / recess / hole pattern locked at Y=+POD_MOUNT_FACE_Y.
+    Cell bay axis along Y; buzzer toward +Y; cable + countersink on mount end.
     """
-    b = contoured_slab(f"pod_{side}_base", POD_X_MAX, POD_X_END, POD_W, POD_BASE_H,
+    b = contoured_slab(f"pod_{side}_base", POD_X_MAX, POD_X_END, POD_LEN, POD_BASE_H,
                        POD_Y_SWELL, r_end=PLAN_R, r_swell=PLAN_R_SWELL,
-                       shoulder_run=POD_SHOULDER_RUN)
-    cut_cav(b, POD_CAVITY[0], POD_CAVITY[1], POD_FLOOR, POD_CAVITY[2] + 1, r=5.0)
+                       shoulder_run=POD_SHOULDER_RUN, y0=POD_Y0)
+    # Oriented cavity centred on origin (Y from -41..+41); body +Y face at +46
+    cut_cav(b, CAV_X, CAV_Y, POD_FLOOR, CAV_Z + 1, r=5.0)
     d5.columns(b, POD_COLS, POD_FLOOR, POD_BASE_H)
-    # Groove/lip on cavity+wall rect (inside swell) — not on the tapered tip bbox
-    d5.groove(b, POD_GROOVE_L, POD_GROOVE_W, PLAN_R, POD_BASE_H, POD_WALL)
-    d5.reg_lip(b, POD_GROOVE_L, POD_GROOVE_W, PLAN_R, POD_BASE_H, POD_WALL)
+    d5.groove(b, POD_GROOVE_X, POD_GROOVE_Y, PLAN_R, POD_BASE_H, POD_WALL)
+    d5.reg_lip(b, POD_GROOVE_X, POD_GROOVE_Y, PLAN_R, POD_BASE_H, POD_WALL)
 
-    # Floor ribs under cell cradle (assembly / stiffness)
-    for sy in (-1, 1):
-        oc.union(b, oc.box(f"frib{sy}", (POD_CAVITY[0] - 12, 1.6, 1.8),
-                           at=(0.0, D.CELL_AT[1] + sy * 12.0, POD_FLOOR),
+    # Floor ribs along cell axis (Y)
+    for sx in (-1, 1):
+        oc.union(b, oc.box(f"frib{sx}", (1.6, CAV_Y - 16.0, 1.8),
+                           at=(sx * 12.0, CELL_AT[1], POD_FLOOR),
                            anchor="bottom"))
 
-    # 18650 bay (D5)
+    # 18650 bay — long axis along Y (rotated with cavity)
     cell_d = D.CELL_POCKET_D + D.CELL_BAY_ADJUST
     cell_l = D.CELL_BAY_L
-    cx, cy = D.CELL_AT
+    cx, cy = CELL_AT
     oc.cut(b, oc.cylinder("cell", cell_d, cell_l,
-                          at=(cx, cy, POD_FLOOR + cell_d / 2), axis="X"))
+                          at=(cx, cy, POD_FLOOR + cell_d / 2), axis="Y"))
 
-    # Buzzer pocket + sound port (+Y wall of cavity → toward +Y outer)
-    buzz_at = D.BUZZ_AT  # (18, 15)
-    d5.pocket_box(b, "buzz", D.BUZZ_POCKET, buzz_at, POD_FLOOR)
-    # Port through +Y outer wall at buzzer X
-    port_y = POD_W / 2
+    # Buzzer toward +Y mount end; sound port through +Y outer wall
+    d5.pocket_box(b, "buzz", D.BUZZ_POCKET, BUZZ_AT, POD_FLOOR)
+    port_y = POD_MOUNT_FACE_Y
     oc.union(b, oc.cylinder("sboss", D.BUZZ_PORT_D + 4.0, 1.8,
-                            at=(buzz_at[0], port_y + 0.9, 11.0), axis="Y"))
+                            at=(BUZZ_AT[0], port_y + 0.9, 11.0), axis="Y"))
     oc.cut(b, oc.cylinder("sport", D.BUZZ_PORT_D, POD_WALL + 8,
-                          at=(buzz_at[0], port_y, 11.0), axis="Y"))
+                          at=(BUZZ_AT[0], port_y, 11.0), axis="Y"))
     oc.cut(b, oc.cylinder("meshseat", D.BUZZ_PORT_D + 1.6, 0.8,
-                          at=(buzz_at[0], port_y + 1.2, 11.0), axis="Y"))
+                          at=(BUZZ_AT[0], port_y + 1.2, 11.0), axis="Y"))
 
-    # Cap-facing cable (+Y local): through-hole + D8×1.2 countersink (D5 durable sub)
-    cable_y = POD_W / 2 - POD_WALL / 2
+    # Cap-facing cable (+Y mount face)
+    cable_y = POD_MOUNT_FACE_Y - POD_WALL / 2
     cable_z = POD_FLOOR + 6.0
     oc.cut(b, oc.cylinder("pcable", CABLE_D, POD_WALL + 6,
                           at=(0.0, cable_y, cable_z), axis="Y", segments=32))
     oc.cut(b, oc.cylinder("pcablesink", CABLE_SINK_D, CABLE_SINK_H,
-                          at=(0.0, POD_W / 2 - CABLE_SINK_H / 2, cable_z),
+                          at=(0.0, POD_MOUNT_FACE_Y - CABLE_SINK_H / 2, cable_z),
                           axis="Y", segments=32))
 
-    # Cap↔pod M3 joint: 36×4×14 recess + 4× clear holes matching cap.py pad.
-    # Centre on the +Y end face mid-height so it meets the tilted cap pad.
+    # Cap↔pod M3 joint on locked mount face
     pw, pt, ph = POD_MOUNT_SIZE
     mz = POD_BASE_H / 2.0
+    # Side wall beside recess: (POD_X_MAX - pw) / 2 ≥ 3 mm
     recess = oc.box("pmount_rec", (pw + 0.4, pt + 0.3, ph + 0.4),
-                    at=(0.0, POD_W / 2 - pt / 2, mz), anchor="center")
+                    at=(0.0, POD_MOUNT_FACE_Y - pt / 2, mz), anchor="center")
     oc.cut(b, recess)
     for i, (lx, lz) in enumerate(POD_MOUNT_SCREWS):
-        # lz is 3..10 on the pad face; map onto mid-height ± offsets
         oc.cut(b, oc.cylinder(f"pmount_h{i}", D.CLEAR, POD_WALL + 8,
-                              at=(lx, POD_W / 2 - pt / 2, mz + (lz - ph / 2)),
+                              at=(lx, POD_MOUNT_FACE_Y - pt / 2, mz + (lz - ph / 2)),
                               axis="Y", segments=24))
 
-    # Floor glyphs — one table (d5.FLOOR_LABEL_TABLE)
-    # (D4 tip taper applied AFTER glyphs — see end of function — so emboss stays
-    # on a flat floor; taper only shaves outer roof near ±Y tips.)
-
     fz = POD_FLOOR
-    d5.emboss_label(b, "BATT", (0.0, D.CELL_AT[1] - 18.0, fz))
-    d5.emboss_label(b, "PLUS", (-28.0, 14.0, fz))
-    d5.emboss_label(b, "MINUS", (28.0, 14.0, fz))
-    d5.emboss_label(b, "BUZZ", (D.BUZZ_AT[0], D.BUZZ_AT[1] - 16.0, fz))
-    d5.emboss_label(b, "PIN1", (0.0, POD_W / 2 - 16.0, fz), rot_z=0.0)  # arrow → +Y cable/cap
-    # Screw order near bosses (inset toward centre so glyphs clear inserts)
-    order = [("SCR1", POD_COLS[0]), ("SCR2", POD_COLS[1]),
-             ("SCR3", POD_COLS[2]), ("SCR4", POD_COLS[3])]
-    for key, (sx, sy) in order:
-        d5.emboss_label(b, key, (sx * 0.72, sy * 0.72, fz))
+    d5.emboss_label(b, "BATT", (0.0, CELL_AT[1] - 22.0, fz))
+    d5.emboss_label(b, "PLUS", (-18.0, CELL_AT[1] + 22.0, fz))
+    d5.emboss_label(b, "MINUS", (18.0, CELL_AT[1] + 22.0, fz))
+    d5.emboss_label(b, "BUZZ", (0.0, BUZZ_AT[1] - 14.0, fz))
+    d5.emboss_label(b, "PIN1", (0.0, POD_MOUNT_FACE_Y - 14.0, fz), rot_z=0.0)
+    for key, (sx, sy) in (("SCR1", POD_COLS[0]), ("SCR2", POD_COLS[1]),
+                          ("SCR3", POD_COLS[2]), ("SCR4", POD_COLS[3])):
+        d5.emboss_label(b, key, (sx * 0.70, sy * 0.70, fz))
 
-    # D4-look outer tip taper last (cavity already full; roof-only shave)
-    end_taper_skin(b, POD_L, POD_W, POD_BASE_H, POD_TAPER_LEN, POD_TAPER_DROP)
+    end_taper_skin(b, POD_L, POD_LEN, POD_BASE_H, POD_TAPER_LEN, POD_TAPER_DROP,
+                   y0=POD_Y0)
 
     if side == "R":
-        mirror_x(b)
+        mirror_for_R(b)
     return prepare(b, merge=0.01)
 
 
 def pod_lid(side="L"):
-    """Print: OUTER face DOWN (flip on export). ≥4.0 mm; ribs clear of cell; landing ring."""
+    """Print: OUTER face DOWN. ≥4.0 mm; smooth spherical crown (no X-facet)."""
     reveal = D.REVEAL
     lx_max = POD_X_MAX - 2 * reveal
     lx_end = POD_X_END - 2 * reveal
-    ll = POD_W - 2 * reveal
+    ll = POD_LEN - 2 * reveal
     y_swell = max(8.0, POD_Y_SWELL - reveal)
     lid = contoured_slab(f"pod_{side}_lid", lx_max, lx_end, ll, POD_LID_T, y_swell,
                          r_end=max(PLAN_R - 0.5, 8.0), r_swell=max(PLAN_R_SWELL - 0.5, 8.0),
-                         shoulder_run=max(POD_SHOULDER_RUN - 1.0, 6.0))
+                         shoulder_run=max(POD_SHOULDER_RUN - 1.0, 6.0),
+                         y0=POD_Y0)
     d5.lid_fasteners(lid, POD_COLS, POD_LID_T)
 
-    # Landing ring follows groove envelope (cavity+wall), not the tip bbox
+    # Landing ring on oriented groove envelope
     ring_w = 1.5
-    ring_out_w = POD_GROOVE_L - 2 * reveal - 5.0
-    ring_out_l = POD_GROOVE_W - 2 * reveal - 5.0
+    ring_out_w = POD_GROOVE_X - 2 * reveal - 5.0
+    ring_out_l = POD_GROOVE_Y - 2 * reveal - 5.0
     r_o = 3.5
     r_i = r_o - ring_w
     groove_depth = min(1.3, POD_LID_T - 2.5)
@@ -393,51 +425,47 @@ def pod_lid(side="L"):
                             r_i, at=(0, 0, -0.2), anchor="bottom")
     oc.cut(lid, oc.cut(outer, inner))
 
-    # Cross-ribs on mating face; clear cell Y envelope; span swell not tips
-    cell_y = D.CELL_AT[1]
-    cell_r = (D.CELL_POCKET_D + D.CELL_BAY_ADJUST) / 2 + 1.0
-    rib_span = min(lx_max - 16.0, POD_GROOVE_L - 20.0)
-    for i, dy in enumerate((-1.0, 1.0)):
-        ry = cell_y + dy * (cell_r + 3.0)
-        if abs(ry) > POD_GROOVE_W / 2 - 8:
-            continue
-        rib = oc.box(f"prib{i}", (rib_span, 2.0, 1.5), at=(0, ry, 0.6))
+    # Longitudinal ribs on mating face (along Y — no X-cross that facets the outer)
+    rib_len = min(CAV_Y - 20.0, ll - 24.0)
+    for i, sx in enumerate((-1.0, 1.0)):
+        rib = oc.box(f"prib{i}", (2.0, rib_len, 1.5), at=(sx * 10.0, CELL_AT[1], 0.6))
         oc.union(lid, rib)
 
-    # Lid posts (short standoffs on mating face near centre — clear cell)
-    for i, (px, py) in enumerate([(0.0, 22.0), (0.0, -22.0)]):
-        post = oc.cylinder(f"lpost{i}", 6.0, 1.8, at=(px, py, 0.0), anchor="bottom", segments=16)
+    for i, (px, py) in enumerate([(0.0, 28.0), (0.0, -28.0)]):
+        post = oc.cylinder(f"lpost{i}", 6.0, 1.8, at=(px, py, 0.0),
+                           anchor="bottom", segments=16)
         oc.union(lid, post)
 
-    # Soft outer tip taper matching base silhouette (outer face = +Z before flip)
-    end_taper_skin(lid, lx_max, ll, POD_LID_T, POD_TAPER_LEN * 0.7, 1.2)
+    # Smooth single-curvature outer crown (G1) — no X-facet pyramid
+    smooth_lid_crown(lid, lx_max, ll, POD_LID_T, sagitta=POD_LID_CROWN, y0=POD_Y0)
+    end_taper_skin(lid, lx_max, ll, POD_LID_T, POD_TAPER_LEN * 0.6, 0.8, y0=POD_Y0)
 
     if side == "R":
-        mirror_x(lid)
+        mirror_for_R(lid)
     return prepare(lid)
 
 
 def pod_floor_layout(side="L"):
-    """PLA coupon: cell rails, buzz fence, polarity + screw glyphs. Bed underside."""
-    w, l = POD_CAVITY[0] - 2, POD_CAVITY[1]
+    """PLA coupon: oriented cavity (58×82), cell rails along Y, glyphs readable."""
+    w, l = CAV_X - 2, CAV_Y - 2
     floor = oc.rounded_rect(f"pod_{side}_floor", (w, l, 2.0), 3.0, anchor="bottom", segments=6)
     fz = 2.0
-    for sy in (-1, 1):
-        oc.union(floor, oc.box(f"cellrail{sy}", (50.0, 1.4, d5.FLOOR_RIB_H),
-                               at=(0.0, sy * 11.0, fz), anchor="bottom"))
-    for sx, key in ((-1, "PLUS"), (1, "MINUS")):
-        oc.union(floor, oc.box(f"cellend{sx}", (1.6, 18.0, d5.FLOOR_RIB_H),
-                               at=(sx * 28.0, 0.0, fz), anchor="bottom"))
-        d5.emboss_label(floor, key, (sx * 22.0, 18.0, fz))
-    d5.emboss_label(floor, "BATT", (0.0, -20.0, fz))
-    d5.locate_rib_rect(floor, "buzz", (20.0, 20.0), (22.0, 12.0), fz, wall=1.2)
-    d5.emboss_label(floor, "BUZZ", (-18.0, 18.0, fz))
-    d5.emboss_label(floor, "PIN1", (30.0, -18.0, fz), rot_z=-90.0)
+    for sx in (-1, 1):
+        oc.union(floor, oc.box(f"cellrail{sx}", (1.4, 50.0, d5.FLOOR_RIB_H),
+                               at=(sx * 11.0, 0.0, fz), anchor="bottom"))
+    for sy, key in ((-1, "PLUS"), (1, "MINUS")):
+        oc.union(floor, oc.box(f"cellend{sy}", (18.0, 1.6, d5.FLOOR_RIB_H),
+                               at=(0.0, sy * 28.0, fz), anchor="bottom"))
+        d5.emboss_label(floor, key, (18.0, sy * 22.0, fz))
+    d5.emboss_label(floor, "BATT", (0.0, -8.0, fz))
+    d5.locate_rib_rect(floor, "buzz", (20.0, 20.0), (0.0, 28.0), fz, wall=1.2)
+    d5.emboss_label(floor, "BUZZ", (0.0, 18.0, fz))
+    d5.emboss_label(floor, "PIN1", (0.0, 34.0, fz), rot_z=0.0)
     for key, (sx, sy) in (("SCR1", (-1, -1)), ("SCR2", (1, -1)),
                           ("SCR3", (-1, 1)), ("SCR4", (1, 1))):
-        d5.emboss_label(floor, key, (sx * 32.0, sy * 22.0, fz))
+        d5.emboss_label(floor, key, (sx * 20.0, sy * 32.0, fz))
     if side == "R":
-        mirror_x(floor)
+        mirror_for_R(floor)
     return normalize_z0(prepare(floor))
 
 
@@ -447,7 +475,7 @@ import fairing as fairing_lib  # noqa: E402
 
 
 def fairing_cap_pod(side="L"):
-    """Cap↔pod: continuous wedge kissing slim tip (~70)."""
+    """Cap↔pod: continuous wedge kissing pod outer (~68)."""
     f = prepare(fairing_lib.fairing_cap_pod(side))
     if side == "R":
         mirror_x(f)
@@ -455,7 +483,7 @@ def fairing_cap_pod(side="L"):
 
 
 def fairing_pod_strap(side="L"):
-    """Pod↔strap: continuous wedge from slim tip into strap path."""
+    """Pod↔strap: continuous wedge from pod outer into strap path."""
     f = prepare(fairing_lib.fairing_pod_strap(side))
     if side == "R":
         mirror_x(f)
@@ -661,21 +689,24 @@ def main():
         "d6_integrate_head": "96f3b30",
         "mount": {"L": MOUNT_L, "R": MOUNT_R, "source": "assembly.py d6-integrate locked"},
         "envelope": {
-            "outer_base_mm": [POD_X_MAX, POD_W, POD_BASE_H],
+            "outer_base_mm": [POD_X_MAX, POD_LEN, POD_BASE_H],
             "outer_tip_width_mm": POD_X_END,
+            "mount_face_y": POD_MOUNT_FACE_Y,
             "swell_half_y_mm": POD_Y_SWELL,
             "shoulder_run_mm": POD_SHOULDER_RUN,
             "plan_r_mm": PLAN_R,
-            "outer_lid_mm": [POD_X_MAX - 2 * D.REVEAL, POD_W - 2 * D.REVEAL, POD_LID_T],
+            "outer_lid_mm": [POD_X_MAX - 2 * D.REVEAL, POD_LEN - 2 * D.REVEAL, POD_LID_T],
+            "lid_crown_sagitta_mm": POD_LID_CROWN,
             "cavity_mm": list(POD_CAVITY),
+            "cavity_oriented_xyz": [CAV_X, CAV_Y, CAV_Z],
             "stack_mm": POD_STACK_H,
             "d4_ref_base": [67.02, 96.99, 19.38],
             "d5_ref_base": [D.POD_L, D.POD_W, D.POD_BASE_H],
-            "d6_ref_base": [92.0, 92.0, 22.2],
+            "d7r1_ref_base": [92.0, 92.0, 22.2],
             "note": (
-                "D7: 92 mm swell only over cells; tips taper to ~68 (D4=67) with R≥8 "
-                "and chamfered shoulder; POD_W=92 keeps mount face; tip roof drop "
-                f"{POD_TAPER_DROP} over {POD_TAPER_LEN}; cavity 82×58×19.5 locked"
+                "D7r2: cavity rotated — 58 across X / 82 along Y; outer ~68×97; "
+                f"mount face Y={POD_MOUNT_FACE_Y} locked; smooth lid crown "
+                f"sagitta {POD_LID_CROWN}; cavity size 82×58×19.5 locked"
             ),
         },
         "gasket": {
@@ -693,7 +724,9 @@ def main():
         },
         "cable": {"through_d": CABLE_D, "countersink": [CABLE_SINK_D, CABLE_SINK_H],
                   "axis": "+Y cap-facing"},
-        "buzzer_at": list(D.BUZZ_AT),
+        "buzzer_at": list(BUZZ_AT),
+        "cell_at": list(CELL_AT),
+        "cell_axis": "Y",
         "print_orientation": (
             "bases cavity UP; lids rotated 180° about X on export (recalc normals, "
             "no flip_normals); R = Scale(-X) + flip_normals once for winding"

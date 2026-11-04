@@ -234,7 +234,7 @@
   {
    "check": "fairing_cap_pod_L: volume>0",
    "ok": true,
-   "measured": 15164,
+   "measured": 18577,
    "expected": ">0",
    "note": ""
   },
@@ -249,9 +249,9 @@
    "check": "fairing_cap_pod_L: fits P2S 256^3",
    "ok": true,
    "measured": [
-    70.37,
+    68.36,
     18.0,
-    14.0
+    18.0
    ],
    "expected": "<=256",
    "note": ""
@@ -266,7 +266,7 @@
   {
    "check": "fairing_cap_pod_R: volume>0",
    "ok": true,
-   "measured": 15164,
+   "measured": 18577,
    "expected": ">0",
    "note": ""
   },
@@ -281,9 +281,9 @@
    "check": "fairing_cap_pod_R: fits P2S 256^3",
    "ok": true,
    "measured": [
-    70.37,
+    68.36,
     18.0,
-    14.0
+    18.0
    ],
    "expected": "<=256",
    "note": ""
@@ -298,7 +298,7 @@
   {
    "check": "fairing_cw_L: volume>0",
    "ok": true,
-   "measured": 26798,
+   "measured": 30382,
    "expected": ">0",
    "note": ""
   },
@@ -313,9 +313,9 @@
    "check": "fairing_cw_L: fits P2S 256^3",
    "ok": true,
    "measured": [
-    89.53,
+    89.51,
     31.99,
-    12.0
+    14.0
    ],
    "expected": "<=256",
    "note": ""
@@ -330,7 +330,7 @@
   {
    "check": "fairing_cw_R: volume>0",
    "ok": true,
-   "measured": 26798,
+   "measured": 30382,
    "expected": ">0",
    "note": ""
   },
@@ -345,9 +345,9 @@
    "check": "fairing_cw_R: fits P2S 256^3",
    "ok": true,
    "measured": [
-    89.53,
+    89.51,
     31.99,
-    12.0
+    14.0
    ],
    "expected": "<=256",
    "note": ""
@@ -362,7 +362,7 @@
   {
    "check": "fairing_pod_strap_L: volume>0",
    "ok": true,
-   "measured": 23671,
+   "measured": 29001,
    "expected": ">0",
    "note": ""
   },
@@ -377,9 +377,9 @@
    "check": "fairing_pod_strap_L: fits P2S 256^3",
    "ok": true,
    "measured": [
-    70.23,
+    68.2,
     27.99,
-    14.0
+    18.0
    ],
    "expected": "<=256",
    "note": ""
@@ -394,7 +394,7 @@
   {
    "check": "fairing_pod_strap_R: volume>0",
    "ok": true,
-   "measured": 23671,
+   "measured": 29001,
    "expected": ">0",
    "note": ""
   },
@@ -409,9 +409,9 @@
    "check": "fairing_pod_strap_R: fits P2S 256^3",
    "ok": true,
    "measured": [
-    70.23,
+    68.2,
     27.99,
-    14.0
+    18.0
    ],
    "expected": "<=256",
    "note": ""
@@ -426,7 +426,7 @@
   {
    "check": "pod_L_base: volume>0",
    "ok": true,
-   "measured": 68927,
+   "measured": 45138,
    "expected": ">0",
    "note": ""
   },
@@ -441,8 +441,8 @@
    "check": "pod_L_base: fits P2S 256^3",
    "ok": true,
    "measured": [
-    92.0,
-    93.8,
+    68.0,
+    98.8,
     23.4
    ],
    "expected": "<=256",
@@ -458,7 +458,7 @@
   {
    "check": "pod_L_lid: volume>0",
    "ok": true,
-   "measured": 28623,
+   "measured": 23937,
    "expected": ">0",
    "note": ""
   },
@@ -473,8 +473,8 @@
    "check": "pod_L_lid: fits P2S 256^3",
    "ok": true,
    "measured": [
-    91.0,
-    91.0,
+    67.0,
+    96.0,
     4.15
    ],
    "expected": "<=256",
@@ -490,7 +490,7 @@
   {
    "check": "pod_R_base: volume>0",
    "ok": true,
-   "measured": 68927,
+   "measured": 45138,
    "expected": ">0",
    "note": ""
   },
@@ -505,8 +505,8 @@
    "check": "pod_R_base: fits P2S 256^3",
    "ok": true,
    "measured": [
-    92.0,
-    93.8,
+    68.0,
+    98.8,
     23.4
    ],
    "expected": "<=256",
@@ -522,7 +522,7 @@
   {
    "check": "pod_R_lid: volume>0",
    "ok": true,
-   "measured": 28623,
+   "measured": 23937,
    "expected": ">0",
    "note": ""
   },
@@ -537,8 +537,8 @@
    "check": "pod_R_lid: fits P2S 256^3",
    "ok": true,
    "measured": [
-    91.0,
-    91.0,
+    67.0,
+    96.0,
     4.15
    ],
    "expected": "<=256",
@@ -554,7 +554,7 @@
   {
    "check": "pod_floor_layout: volume>0",
    "ok": true,
-   "measured": 10286,
+   "measured": 9933,
    "expected": ">0",
    "note": ""
   },
@@ -569,8 +569,8 @@
    "check": "pod_floor_layout: fits P2S 256^3",
    "ok": true,
    "measured": [
+    56.0,
     80.0,
-    58.0,
     5.0
    ],
    "expected": "<=256",
@@ -637,69 +637,69 @@
    "note": ""
   },
   {
-   "check": "fairing_cap_pod_L continuous fairing (~70.0\u00d7run\u00d714.0)",
+   "check": "fairing_cap_pod_L continuous fairing (~68.0\u00d7run\u00d718.0)",
    "ok": true,
    "measured": [
-    70.4,
+    68.4,
     18.0,
-    14.0
+    18.0
    ],
-   "expected": "~70.0\u00d7run\u00d714.0",
+   "expected": "~68.0\u00d7run\u00d718.0",
    "note": ""
   },
   {
-   "check": "fairing_cap_pod_R continuous fairing (~70.0\u00d7run\u00d714.0)",
+   "check": "fairing_cap_pod_R continuous fairing (~68.0\u00d7run\u00d718.0)",
    "ok": true,
    "measured": [
-    70.4,
+    68.4,
     18.0,
-    14.0
+    18.0
    ],
-   "expected": "~70.0\u00d7run\u00d714.0",
+   "expected": "~68.0\u00d7run\u00d718.0",
    "note": ""
   },
   {
-   "check": "fairing_cw_L continuous fairing (~89.4\u00d732.0\u00d712.0)",
+   "check": "fairing_cw_L continuous fairing (~89.4\u00d732.0\u00d714.0)",
    "ok": true,
    "measured": [
     89.5,
     32.0,
-    12.0
+    14.0
    ],
-   "expected": "~89.4\u00d732.0\u00d712.0",
+   "expected": "~89.4\u00d732.0\u00d714.0",
    "note": ""
   },
   {
-   "check": "fairing_cw_R continuous fairing (~89.4\u00d732.0\u00d712.0)",
+   "check": "fairing_cw_R continuous fairing (~89.4\u00d732.0\u00d714.0)",
    "ok": true,
    "measured": [
     89.5,
     32.0,
-    12.0
+    14.0
    ],
-   "expected": "~89.4\u00d732.0\u00d712.0",
+   "expected": "~89.4\u00d732.0\u00d714.0",
    "note": ""
   },
   {
-   "check": "fairing_pod_strap_L continuous fairing (~70.0\u00d7run\u00d714.0)",
+   "check": "fairing_pod_strap_L continuous fairing (~68.0\u00d7run\u00d718.0)",
    "ok": true,
    "measured": [
-    70.2,
+    68.2,
     28.0,
-    14.0
+    18.0
    ],
-   "expected": "~70.0\u00d7run\u00d714.0",
+   "expected": "~68.0\u00d7run\u00d718.0",
    "note": ""
   },
   {
-   "check": "fairing_pod_strap_R continuous fairing (~70.0\u00d7run\u00d714.0)",
+   "check": "fairing_pod_strap_R continuous fairing (~68.0\u00d7run\u00d718.0)",
    "ok": true,
    "measured": [
-    70.2,
+    68.2,
     28.0,
-    14.0
+    18.0
    ],
-   "expected": "~70.0\u00d7run\u00d714.0",
+   "expected": "~68.0\u00d7run\u00d718.0",
    "note": ""
   },
   {
@@ -710,10 +710,10 @@
    "note": ""
   },
   {
-   "check": "FAIRING_W0 equals slim tip (POD_X_END)",
+   "check": "FAIRING_W0 equals pod outer (POD_L)",
    "ok": true,
-   "measured": 70.0,
-   "expected": 70.0,
+   "measured": 68.0,
+   "expected": 68.0,
    "note": ""
   },
   {
@@ -734,9 +734,9 @@
    "check": "fairing_cap_pod_L short run ~18.0",
    "ok": true,
    "measured": [
-    70.4,
+    68.4,
     18.0,
-    14.0
+    18.0
    ],
    "expected": "one axis ~18.0",
    "note": ""
@@ -745,9 +745,9 @@
    "check": "fairing_cap_pod_R short run ~18.0",
    "ok": true,
    "measured": [
-    70.4,
+    68.4,
     18.0,
-    14.0
+    18.0
    ],
    "expected": "one axis ~18.0",
    "note": ""
@@ -875,24 +875,45 @@
    "note": ""
   },
   {
-   "check": "pod cavity 82 fits pod X (walls >= 4)",
+   "check": "pod cavity 58 fits pod X (walls >= 3.5)",
    "ok": true,
-   "measured": "wall 5.0 (outer X=92.0)",
-   "expected": ">=4",
+   "measured": "wall 5.0 (outer X=68.0)",
+   "expected": ">=3.5",
    "note": ""
   },
   {
-   "check": "pod D7 swell width ~92 over cells (x at y=0)",
+   "check": "pod cavity 82 along Y (oriented)",
    "ok": true,
-   "measured": 92.0,
-   "expected": ">=90 (cell wall 3.5\u20135 on 82 cavity)",
+   "measured": "pod Y=98.8 (need \u226589 for 82 cav + walls)",
+   "expected": "82 along Y",
    "note": ""
   },
   {
-   "check": "pod D7 tip width toward D4 67 (x at |y|=40)",
+   "check": "pod.py cavity rotated (CAV_X/CAV_Y)",
    "ok": true,
-   "measured": "+Y 69.9 / -Y 69.9 (swell 92.0)",
-   "expected": "60\u201375 and \u226510 narrower than swell",
+   "measured": "CAV_X/CAV_Y + cell axis Y",
+   "expected": "58 across / 82 along",
+   "note": ""
+  },
+  {
+   "check": "pod D7r2 swell width \u226470 (x at y=0)",
+   "ok": true,
+   "measured": 68.0,
+   "expected": "64\u201370 (58 cav + \u22653.5 walls)",
+   "note": ""
+  },
+  {
+   "check": "pod width < cap width (76)",
+   "ok": true,
+   "measured": "pod 68.0 vs cap 76.0",
+   "expected": "pod < cap",
+   "note": ""
+  },
+  {
+   "check": "pod tip width ~66 (x at |y|=40)",
+   "ok": true,
+   "measured": "+Y 65.8 / -Y 66.1",
+   "expected": "62\u201370",
    "note": ""
   },
   {
@@ -910,10 +931,24 @@
    "note": ""
   },
   {
-   "check": "pod length POD_W locked at 92 (mount face plane)",
+   "check": "pod lid smooth crown (no X-facet)",
    "ok": true,
-   "measured": "A.POD_W=92.0, STL Y=93.8",
-   "expected": "92 / ~93.8 as-exported",
+   "measured": "smooth_lid_crown",
+   "expected": "G1 barrel/sphere crown",
+   "note": ""
+  },
+  {
+   "check": "pod mount face Y locked at 46",
+   "ok": true,
+   "measured": 46.0,
+   "expected": 46.0,
+   "note": ""
+  },
+  {
+   "check": "pod length ~97 (D4-ish, mount face fixed)",
+   "ok": true,
+   "measured": "A.POD_W=97.0, STL Y=98.8",
+   "expected": "97 / ~97 as-exported",
    "note": ""
   },
   {
@@ -931,10 +966,10 @@
    "note": ""
   },
   {
-   "check": "CW tub volume smaller than pod base",
+   "check": "CW steel pack mass 771.8 g retained",
    "ok": true,
-   "measured": "cw_tub V=59869 vs pod_L_base V=68927 mm3",
-   "expected": "CW < pod",
+   "measured": 771.8,
+   "expected": 771.8,
    "note": ""
   },
   {
@@ -945,10 +980,10 @@
    "note": ""
   },
   {
-   "check": "assembly FAIRING_W0 follows slim tip (~70)",
+   "check": "assembly FAIRING_W0 follows pod outer (~68)",
    "ok": true,
-   "measured": "FAIRING_W0=70.0, POD_X_END=70.0",
-   "expected": "POD_X_END",
+   "measured": "FAIRING_W0=68.0, POD_L=68.0",
+   "expected": "POD_L",
    "note": ""
   },
   {
@@ -968,28 +1003,28 @@
   {
    "check": "fairing_cap_pod_L near a body (not floating)",
    "ok": true,
-   "measured": "nearest cap_base gap/overlap=-12.6",
+   "measured": "nearest cap_base gap/overlap=-19.1",
    "expected": "<5 mm",
    "note": ""
   },
   {
    "check": "fairing_cap_pod_R near a body (not floating)",
    "ok": true,
-   "measured": "nearest cap_base gap/overlap=-12.6",
+   "measured": "nearest cap_base gap/overlap=-19.1",
    "expected": "<5 mm",
    "note": ""
   },
   {
    "check": "fairing_pod_strap_L near a body (not floating)",
    "ok": true,
-   "measured": "nearest pod_L_base gap/overlap=-8.1",
+   "measured": "nearest pod_L_lid gap/overlap=-10.5",
    "expected": "<5 mm",
    "note": ""
   },
   {
    "check": "fairing_pod_strap_R near a body (not floating)",
    "ok": true,
-   "measured": "nearest pod_R_base gap/overlap=-9.8",
+   "measured": "nearest pod_R_lid gap/overlap=-10.5",
    "expected": "<5 mm",
    "note": ""
   },
@@ -1008,86 +1043,100 @@
    "note": ""
   },
   {
-   "check": "seam step fairing_cap_pod_L width vs pod tip \u2264 0.5 mm",
+   "check": "seam step fairing_cap_pod_L width vs pod outer \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394w=0.37 (fairing 70.4 vs tip 70.0)",
+   "measured": "\u0394w=0.36 (fairing 68.4 vs pod 68.0)",
    "expected": "\u22640.5",
    "note": ""
   },
   {
-   "check": "seam step fairing_cap_pod_L height vs pad \u2264 0.5 mm",
+   "check": "seam step fairing_cap_pod_L height vs FAIRING_H \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394h=0.00 (fairing 14.0 vs pad 14.0)",
+   "measured": "\u0394h=0.00 (fairing 18.0 vs H 18.0)",
    "expected": "\u22640.5",
    "note": ""
   },
   {
-   "check": "seam step fairing_cap_pod_R width vs pod tip \u2264 0.5 mm",
+   "check": "seam step fairing_cap_pod_R width vs pod outer \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394w=0.37 (fairing 70.4 vs tip 70.0)",
+   "measured": "\u0394w=0.36 (fairing 68.4 vs pod 68.0)",
    "expected": "\u22640.5",
    "note": ""
   },
   {
-   "check": "seam step fairing_cap_pod_R height vs pad \u2264 0.5 mm",
+   "check": "seam step fairing_cap_pod_R height vs FAIRING_H \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394h=0.00 (fairing 14.0 vs pad 14.0)",
+   "measured": "\u0394h=0.00 (fairing 18.0 vs H 18.0)",
    "expected": "\u22640.5",
    "note": ""
   },
   {
-   "check": "seam step fairing_pod_strap_L width vs pod tip \u2264 0.5 mm",
+   "check": "seam step fairing_pod_strap_L width vs pod outer \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394w=0.23 (fairing 70.2 vs tip 70.0)",
+   "measured": "\u0394w=0.20 (fairing 68.2 vs pod 68.0)",
    "expected": "\u22640.5",
    "note": ""
   },
   {
-   "check": "seam step fairing_pod_strap_L height vs pad \u2264 0.5 mm",
+   "check": "seam step fairing_pod_strap_L height vs FAIRING_H \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394h=0.00 (fairing 14.0 vs pad 14.0)",
+   "measured": "\u0394h=0.00 (fairing 18.0 vs H 18.0)",
    "expected": "\u22640.5",
    "note": ""
   },
   {
-   "check": "seam step fairing_pod_strap_R width vs pod tip \u2264 0.5 mm",
+   "check": "seam step fairing_pod_strap_R width vs pod outer \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394w=0.23 (fairing 70.2 vs tip 70.0)",
+   "measured": "\u0394w=0.20 (fairing 68.2 vs pod 68.0)",
    "expected": "\u22640.5",
    "note": ""
   },
   {
-   "check": "seam step fairing_pod_strap_R height vs pad \u2264 0.5 mm",
+   "check": "seam step fairing_pod_strap_R height vs FAIRING_H \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394h=0.00 (fairing 14.0 vs pad 14.0)",
+   "measured": "\u0394h=0.00 (fairing 18.0 vs H 18.0)",
    "expected": "\u22640.5",
+   "note": ""
+  },
+  {
+   "check": "fairing fairing_cap_pod_L top vs pod_L_lid roof \u2264 0.3 mm",
+   "ok": true,
+   "measured": "\u0394z=0.23 (fairing z=19.1 lid z=18.9)",
+   "expected": "\u22640.3",
+   "note": ""
+  },
+  {
+   "check": "fairing fairing_cap_pod_R top vs pod_R_lid roof \u2264 0.3 mm",
+   "ok": true,
+   "measured": "\u0394z=0.22 (fairing z=19.1 lid z=18.9)",
+   "expected": "\u22640.3",
    "note": ""
   },
   {
    "check": "seam step fairing_cw_L width vs CW \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394w=0.13 (fairing 89.5 vs CW 89.4)",
+   "measured": "\u0394w=0.11 (fairing 89.5 vs CW 89.4)",
    "expected": "\u22640.5",
    "note": ""
   },
   {
    "check": "seam step fairing_cw_L height match \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394h=0.00 (fairing 12.0 vs H_CW 12.0)",
+   "measured": "\u0394h=0.00 (fairing 14.0 vs H_CW 14.0)",
    "expected": "\u22640.5",
    "note": ""
   },
   {
    "check": "seam step fairing_cw_R width vs CW \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394w=0.13 (fairing 89.5 vs CW 89.4)",
+   "measured": "\u0394w=0.11 (fairing 89.5 vs CW 89.4)",
    "expected": "\u22640.5",
    "note": ""
   },
   {
    "check": "seam step fairing_cw_R height match \u2264 0.5 mm",
    "ok": true,
-   "measured": "\u0394h=0.00 (fairing 12.0 vs H_CW 12.0)",
+   "measured": "\u0394h=0.00 (fairing 14.0 vs H_CW 14.0)",
    "expected": "\u22640.5",
    "note": ""
   }
@@ -1103,97 +1152,85 @@
   {
    "a": "cap_base",
    "b": "pod_L_base",
-   "mm3": 47.8,
+   "mm3": 71.2,
    "class": "expected mount pad/recess engagement"
   },
   {
    "a": "cap_base",
    "b": "pod_R_base",
-   "mm3": 328.8,
+   "mm3": 71.2,
    "class": "expected mount pad/recess engagement"
   },
   {
    "a": "cap_base",
    "b": "fairing_cap_pod_L",
-   "mm3": 1260.1,
+   "mm3": 2605.5,
    "class": "fairing blend (OK)"
   },
   {
    "a": "cap_base",
    "b": "fairing_cap_pod_R",
-   "mm3": 1260.1,
+   "mm3": 2793.2,
    "class": "fairing blend (OK)"
   },
   {
    "a": "cap_lid",
    "b": "fairing_cap_pod_L",
-   "mm3": 1120.1,
+   "mm3": 8.6,
    "class": "fairing blend (OK)"
   },
   {
    "a": "cap_lid",
    "b": "fairing_cap_pod_R",
-   "mm3": 1332.3,
+   "mm3": 11.2,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_L_base",
    "b": "pod_L_lid",
-   "mm3": 245.1,
+   "mm3": 258.7,
    "class": "expected lip/groove engagement"
   },
   {
    "a": "pod_L_base",
    "b": "fairing_cap_pod_L",
-   "mm3": 370.2,
+   "mm3": 3339.9,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_L_base",
    "b": "fairing_pod_strap_L",
-   "mm3": 2737.3,
-   "class": "fairing blend (OK)"
-  },
-  {
-   "a": "pod_L_lid",
-   "b": "fairing_cap_pod_L",
-   "mm3": 54.5,
+   "mm3": 2284.2,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_L_lid",
    "b": "fairing_pod_strap_L",
-   "mm3": 1770.4,
+   "mm3": 2061.1,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_R_base",
    "b": "pod_R_lid",
-   "mm3": 245.1,
+   "mm3": 258.7,
    "class": "expected lip/groove engagement"
   },
   {
    "a": "pod_R_base",
    "b": "fairing_cap_pod_R",
-   "mm3": 714.5,
+   "mm3": 2354.6,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_R_base",
    "b": "fairing_pod_strap_R",
-   "mm3": 2457.2,
-   "class": "fairing blend (OK)"
-  },
-  {
-   "a": "pod_R_lid",
-   "b": "fairing_cap_pod_R",
-   "mm3": 51.7,
+   "mm3": 2818.2,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_R_lid",
    "b": "fairing_pod_strap_R",
-   "mm3": 1974.9,
+   "mm3": 2466.7,
    "class": "fairing blend (OK)"
   },
   {
@@ -1205,13 +1242,13 @@
   {
    "a": "cw_tub",
    "b": "fairing_cw_L",
-   "mm3": 1552.1,
+   "mm3": 1306.9,
    "class": "fairing blend (OK)"
   },
   {
    "a": "cw_tub",
    "b": "fairing_cw_R",
-   "mm3": 1011.0,
+   "mm3": 785.9,
    "class": "fairing blend (OK)"
   }
  ],

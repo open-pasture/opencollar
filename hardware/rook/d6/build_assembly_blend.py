@@ -44,14 +44,15 @@ sc = bpy.context.scene
 sc.unit_settings.scale_length = 0.001
 sc.unit_settings.length_unit = "MILLIMETERS"
 
-# ---- palette (D7) ---------------------------------------------------------
-BODY = (0.78, 0.79, 0.80)          # calm light-gray ASA
+# ---- palette (D7r2) -------------------------------------------------------
+# Mid light-gray ASA (~0.58 linear, #C9CBCC) — was washing out at 0.78
+BODY = (0xC9 / 255, 0xCB / 255, 0xCC / 255)
 ORANGE = (1.0, 0x6A / 255, 0x2B / 255)  # #FF6A2B accents only
 PANEL_GLASS = (0.05, 0.08, 0.14)   # dark blue-black solar glass
 STRAP = (0.18, 0.18, 0.17)
 GHOST = (0.10, 0.45, 0.95)
-RIB = (0.70, 0.71, 0.72)
-GLYPH_PANEL = (0.72, 0.73, 0.74)
+RIB = (0.62, 0.63, 0.64)
+GLYPH_PANEL = (0.64, 0.65, 0.66)
 
 # Body colour for all structural families (incl. clamp + fairing)
 BODY_KEYS = ("cap", "pod", "cw", "fairing", "saddle", "clamp")
@@ -163,8 +164,7 @@ for f in sorted(glob.glob(os.path.join(WORLD, "*.stl"))):
     o.data.materials.append(body_mat)
     # Tiny orange end caps on clamp bars (not the whole bar)
     if o.name.startswith("clamp_bar"):
-        # Bar is 10×70×8; end caps at ±Y local after world transform — approximate
-        # with small spheres at the mesh bbox Y ends
+        # ~12×10 mm orange end caps so the accent reads in iso
         bb = [o.matrix_world @ Vector(c) for c in o.bound_box]
         ys = sorted(v.y for v in bb)
         xs = sorted(v.x for v in bb)
@@ -172,17 +172,13 @@ for f in sorted(glob.glob(os.path.join(WORLD, "*.stl"))):
         mid_x = 0.5 * (xs[0] + xs[-1])
         mid_z = 0.5 * (zs[0] + zs[-1])
         for i, y in enumerate((ys[0], ys[-1])):
-            cap = _add_cyl(
+            _add_box(
                 details,
                 f"{o.name}_endcap_{i}",
-                radius=1.6,
-                depth=2.2,
-                loc=(mid_x, y, mid_z),
-                rgb=ORANGE,
-                rot=(math.radians(90), 0, 0),
+                (10.0, 3.0, 12.0),
+                (mid_x, y, mid_z),
+                ORANGE,
             )
-            # Keep caps small / reading as tip accents only
-            cap.scale = (1, 1, 1)
 
 # D4 ghost — bounding boxes only (no real D4 mesh in repo). Skip mirror.
 gm = mat("d4_ghost", GHOST, 0.25)
@@ -274,22 +270,9 @@ if strap_c is not None and strap_sz is not None:
     details.objects.link(loop)
     loop.data.materials.append(mat("strap", STRAP))
 
-for part_name, stl_name in (("buckle", "buckle.stl"), ("keeper", "keeper.stl")):
-    c = _wbbox_centre(part_name)
-    path = _find_detail(stl_name)
-    if c is None:
-        continue
-    if path:
-        o = imp_stl(path, details, name=part_name)
-        oc0 = _bbox_centre(o)
-        o.location = c - oc0
-        # Match D4 rot ~90° Z for buckle/keeper
-        o.rotation_euler = (0, 0, math.radians(90))
-        o.data.materials.clear()
-        o.data.materials.append(body_mat)
-    else:
-        sz = _wbbox_size(part_name) or Vector((40, 20, 6))
-        _add_box(details, part_name, (sz.x, sz.y, sz.z), c, BODY)
+# Buckle / keeper: D4 wbbox places them floating well below the body in side
+# view. Hide until a strap-path pose is authored (do not import).
+# (Intentionally skipped — see INTEGRATION.md rough edges.)
 
 # Orange screw heads on cap orange columns + CW lid screws (approx world)
 # Cap orange screws from d5_dims-style positions at lid top
