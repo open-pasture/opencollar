@@ -10,17 +10,100 @@ messages themselves are [messages.md](messages.md); this file only carries them.
 ## 1. Topology
 
 ```
-   server ── LTE ── active anchor ─┐
-                    standby anchor  │  LoRa, one hop, GNSS-timed slots
-                    standby anchor  │
-           node node node node node ┘
+   server ── LTE ── active anchor (Rook) ─┐
+                    standby anchor         │  LoRa, GNSS-timed slots
+                    standby anchor         │  fence: star by default;
+           node node node (Starlings) ─────┘  optional multi-hop if enabled
 ```
 
-- **Star, one hop.** Every collar talks to the active anchor directly. Nodes never relay:
-  relaying means listening, and listening costs more than talking.
-- **Anchors** (role 2) are collars with LTE as well as LoRa. One at a time is **active**: it
-  beacons, carries the herd's frames up and its messages down. The others are **standby**
-  and behave as nodes on the LoRa link until it is their turn.
+This section replaces the earlier **“nodes never relay”** rule for **fence updates**.
+(Telemetry and other herd traffic remain as elsewhere in this binding.)
+
+- **Star by default, one hop from any Rook (active anchor).** A Starling MAY relay
+  **fence updates and freshness summaries** to other Starlings when relay is enabled
+  (config flag `starling_serve`; intended hop limit 2 at first — see hop note below).
+  Relaying costs listen energy; that is why the default is OFF until measured.
+- **What may be relayed.** A node relays only **versioned fence updates** whose
+  authenticity comes from a **signature on the fence payload** (or, later, a
+  server-sealed manifest). It does **not** treat unsigned transport hints as proof
+  of authenticity. Each collar keeps a freshness record (farm/fence id, version,
+  content hash, when received, who served it). A collar accepts an update only if
+  verification succeeds and the version is **newer** than its stored high-water
+  mark, and keeps the last good fence if none arrives.
+
+### Authenticity (pilot vs sealed)
+
+The signature that matters for the fence bytes is the **v1 Ed25519 signature on
+the fence payload** (e.g. signed JSON command). In **pilot opaque** mode the
+transfer envelope is `MANIFEST_LOCAL` (type + body): **unsigned**. Config
+`accept_local_air` defaults **OFF**; when ON, every receiver MUST still run
+`payload_verify` on the reassembled payload — the envelope is a **transport
+hint**, not an authenticity guarantee. Relays re-serve the same wire bytes
+unchanged. The **later** path is a **server-sealed** manifest (`MANIFEST` =
+type + Ed25519 sig + body over domain `oc/fh/manifest/1 \|\| body`); receivers
+verify that envelope signature with the farm key.
+
+### `starling_serve` (config; Cody has not frozen the default)
+
+| Option | Meaning |
+|---|---|
+| **(A) OFF** (code default today: `OC_FH_STARLING_SERVE_DEFAULT`) | One-hop star: only Rooks serve fence bytes. Prefer until listen/idle energy is measured on hardware. |
+| **(B) ON** | Multi-hop gossip: any node holding a verified fence may re-serve it. |
+
+Both are valid configurations. **Nov 7–8 on-air test builds set it ON.** The
+library default may change by Cody’s decision.
+
+Beacon resends use **Trickle** (RFC 6206–inspired: interval doubling, redundancy
+`k`) so identical freshness adverts do not flood the channel.
+
+**Hop limit.** The intended first limit is **2 hops**. In `firmware/lora` today the
+beacon field `hop_reserved` is **reserved and always sent as 0**; it is **not
+enforced**. Do not claim hop-limit enforcement until the field is used.
+
+### What the host simulator proves and does not
+
+**Proves (host `firmware/sim` + `firmware/lora` tests):** 2-node sealed handoff at
+30 % per-link loss (1000 seeds); 3- and 5-node chain catch-up with
+`starling_serve` ON; late joiner (empty/older mid-chain); newer supersede while
+catching up; mid node pushing a newer fence toward the Rook; rollback rejection;
+forged sealed-manifest rejection; forged-beacon NEED bounding; persistence /
+reboot with atomic HWM+active A/B+CRC (higher seq wins if both copies valid).
+
+**Does not prove:** real RF capture/interference, listen/idle energy on hardware,
+real airtime or FCC duty-cycle behaviour, or hardware radio timing/CAD.
+
+### Frame fields vs architecture record A
+
+Placeholder wire types live in `fence_ids.h` (`0xA0`–`0xA5`). Honest gap list:
+
+**(a) Freshness summary** (wanted: fence id, signed version/timestamp, signer, hash)
+
+| Wanted | In `oc_fh_*` today? |
+|---|---|
+| Farm / fence id | **Yes** — `farm_id` on beacon, NEED, HAVE, manifest, fragment; RAM freshness has `farm_id` |
+| Version | **Yes** — `fence_seq` (monotonic; `0` = none; refuse `> OC_FH_SEQ_MAX`) |
+| Content hash | **Partial** — full Blake2b-256 `poly_hash` in manifest + RAM freshness; beacon/HAVE carry **8-byte short hash** only |
+| Signer id | **Missing** on the gossip wire — pilot authenticity is payload Ed25519; sealed path uses farm key verify, no signer-id field |
+| Issued / signed timestamp | **Partial** — `issued_at` in manifest body; not on beacon |
+| Multi-fence freshness-summary frame (list per fence) | **Missing** — one active fence per node; beacon advertises that one seq+short hash |
+| Hop count | **Reserved only** — `hop_reserved` unused / not enforced |
+
+**(b) Peer push-pull exchange**
+
+| Piece | In `oc_fh_*` today? |
+|---|---|
+| Freshness advert | **Yes** — `BEACON` (`fence_seq` + short hash); Trickle-limited |
+| Selective request | **Yes** — `NEED` (seq + missing-fragment bitmap) |
+| Manifest | **Yes** — sealed `MANIFEST` or pilot `MANIFEST_LOCAL` |
+| Payload pieces | **Yes** — `FRAGMENT` (idx/count/data) |
+| Peer holds whole fence | **Yes (soft)** — `HAVE` (seq + short hash); also inferred from matching beacons / Trickle `c` |
+| Explicit ACK frame | **No dedicated ACK** — completion is local after hash/`payload_verify`; peers learn via HAVE/beacon |
+| Multi-frame manifests over LoRa MTU 255 | **Gap** — sealed wire can be up to 1140 B; sim raises MTU for tests; production multi-frame manifest transfer is future work |
+
+- **Anchors** (role 2) are collars with LTE as well as LoRa (Rooks on the fence path).
+  One at a time is **active**: it beacons the minute schedule, carries the herd's frames
+  up and its messages down, and is the usual origin of fence inject. The others are
+  **standby** and behave as nodes on the LoRa link until it is their turn.
 - **Stations** (role 3) are anchors on a post or a building, with no animal and no fence.
   Optional. When a herd has one, servers SHOULD rank it first.
 - **Every collar keeps its own GNSS and runs its own fence.** Nothing on this link is needed
