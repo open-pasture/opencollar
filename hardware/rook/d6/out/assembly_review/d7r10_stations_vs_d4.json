@@ -1,0 +1,211 @@
+{
+  "profile_path": "/agent/repos/opencollar/hardware/rook/d6/review/d4_profile.json",
+  "d4_r_outer": 235.56,
+  "d6_r_outer": 228.5,
+  "d6_angle_span_deg": [
+    -58.47,
+    58.47
+  ],
+  "cap_roof_need_mm": 54.0,
+  "d4_cap_max_mm": 27.6,
+  "cap_roof_note": "D6 internals force the loft roof well above D4's 27.6 mm: panel land z=41.4 \u2192 cap roof ~54 mm above strap outer; pods clear ~56\u201365 mm (D4 pods were 15\u201317.5). D4 width / end-drop / bottom-wrap / relative roofline shape are preserved; heights are scaled to the D6 envelope.",
+  "n_stations_loft": 56,
+  "hidden": [
+    "cap_base",
+    "fairing_cap_pod_L",
+    "fairing_cap_pod_R",
+    "fairing_cw_L",
+    "fairing_cw_R",
+    "fairing_pod_strap_L",
+    "fairing_pod_strap_R",
+    "pod_L_base",
+    "pod_R_base",
+    "saddle"
+  ],
+  "stations_vs_d4": [
+    {
+      "angle_d4_deg": -40.52,
+      "angle_d6_deg": -51.76,
+      "d4_width_mm": 77.7,
+      "d6_width_mm": 77.7,
+      "d4_roof_mm": 17.3,
+      "d6_roof_mm": 60.08,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 42.78
+    },
+    {
+      "angle_d4_deg": -34.62,
+      "angle_d6_deg": -44.36,
+      "d4_width_mm": 79.3,
+      "d6_width_mm": 79.3,
+      "d4_roof_mm": 17.5,
+      "d6_roof_mm": 64.22,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 46.72
+    },
+    {
+      "angle_d4_deg": -28.73,
+      "angle_d6_deg": -36.97,
+      "d4_width_mm": 67.0,
+      "d6_width_mm": 70.0,
+      "d4_roof_mm": 15.6,
+      "d6_roof_mm": 57.87,
+      "d4_bottom_rel_mm": -4.6,
+      "d6_bottom_rel_mm": -4.6,
+      "roof_delta_mm": 42.27
+    },
+    {
+      "angle_d4_deg": -22.84,
+      "angle_d6_deg": -29.58,
+      "d4_width_mm": 77.0,
+      "d6_width_mm": 77.0,
+      "d4_roof_mm": 17.5,
+      "d6_roof_mm": 56.07,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 38.57
+    },
+    {
+      "angle_d4_deg": -16.94,
+      "angle_d6_deg": -22.18,
+      "d4_width_mm": 69.3,
+      "d6_width_mm": 70.0,
+      "d4_roof_mm": 26.5,
+      "d6_roof_mm": 56.87,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 30.37
+    },
+    {
+      "angle_d4_deg": -11.05,
+      "angle_d6_deg": -14.79,
+      "d4_width_mm": 69.3,
+      "d6_width_mm": 72.08,
+      "d4_roof_mm": 27.6,
+      "d6_roof_mm": 56.18,
+      "d4_bottom_rel_mm": -1.4,
+      "d6_bottom_rel_mm": -1.4,
+      "roof_delta_mm": 28.58
+    },
+    {
+      "angle_d4_deg": -5.15,
+      "angle_d6_deg": -7.39,
+      "d4_width_mm": 70.0,
+      "d6_width_mm": 75.04,
+      "d4_roof_mm": 25.3,
+      "d6_roof_mm": 52.95,
+      "d4_bottom_rel_mm": -3.6,
+      "d6_bottom_rel_mm": -3.6,
+      "roof_delta_mm": 27.65
+    },
+    {
+      "angle_d4_deg": 0.74,
+      "angle_d6_deg": 0.0,
+      "d4_width_mm": 70.0,
+      "d6_width_mm": 78.0,
+      "d4_roof_mm": 23.9,
+      "d6_roof_mm": 55.43,
+      "d4_bottom_rel_mm": -3.8,
+      "d6_bottom_rel_mm": -3.8,
+      "roof_delta_mm": 31.53
+    },
+    {
+      "angle_d4_deg": 6.64,
+      "angle_d6_deg": 7.4,
+      "d4_width_mm": 70.0,
+      "d6_width_mm": 75.04,
+      "d4_roof_mm": 27.5,
+      "d6_roof_mm": 53.3,
+      "d4_bottom_rel_mm": -3.3,
+      "d6_bottom_rel_mm": -3.3,
+      "roof_delta_mm": 25.8
+    },
+    {
+      "angle_d4_deg": 12.53,
+      "angle_d6_deg": 14.79,
+      "d4_width_mm": 69.3,
+      "d6_width_mm": 72.08,
+      "d4_roof_mm": 27.6,
+      "d6_roof_mm": 56.27,
+      "d4_bottom_rel_mm": -0.5,
+      "d6_bottom_rel_mm": -0.5,
+      "roof_delta_mm": 28.67
+    },
+    {
+      "angle_d4_deg": 18.42,
+      "angle_d6_deg": 22.18,
+      "d4_width_mm": 76.7,
+      "d6_width_mm": 76.7,
+      "d4_roof_mm": 25.6,
+      "d6_roof_mm": 56.58,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 30.98
+    },
+    {
+      "angle_d4_deg": 24.32,
+      "angle_d6_deg": 29.58,
+      "d4_width_mm": 77.0,
+      "d6_width_mm": 77.0,
+      "d4_roof_mm": 17.5,
+      "d6_roof_mm": 55.88,
+      "d4_bottom_rel_mm": -4.7,
+      "d6_bottom_rel_mm": -4.7,
+      "roof_delta_mm": 38.38
+    },
+    {
+      "angle_d4_deg": 30.21,
+      "angle_d6_deg": 36.97,
+      "d4_width_mm": 67.0,
+      "d6_width_mm": 70.0,
+      "d4_roof_mm": 15.8,
+      "d6_roof_mm": 57.9,
+      "d4_bottom_rel_mm": -4.6,
+      "d6_bottom_rel_mm": -4.6,
+      "roof_delta_mm": 42.1
+    },
+    {
+      "angle_d4_deg": 36.11,
+      "angle_d6_deg": 44.38,
+      "d4_width_mm": 79.4,
+      "d6_width_mm": 79.4,
+      "d4_roof_mm": 17.5,
+      "d6_roof_mm": 64.43,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 46.93
+    },
+    {
+      "angle_d4_deg": 42.0,
+      "angle_d6_deg": 51.76,
+      "d4_width_mm": 72.2,
+      "d6_width_mm": 72.2,
+      "d4_roof_mm": 17.3,
+      "d6_roof_mm": 58.73,
+      "d4_bottom_rel_mm": -4.9,
+      "d6_bottom_rel_mm": -4.9,
+      "roof_delta_mm": 41.43
+    }
+  ],
+  "end_shoulder_d4": {
+    "method": "arc distance from the last roofline bin at pod plateau height (~17 mm) to the housing end (top ~1.5 mm above strap). Roofline bins are 4.5 mm wide, so +/-4.5 mm.",
+    "L": {
+      "plateau_arc_mm": -167.3,
+      "plateau_top_mm": 17.1,
+      "end_arc_mm": -176.4,
+      "end_top_mm": 1.7,
+      "drop_arc_mm": 9.1
+    },
+    "R": {
+      "plateau_arc_mm": 164.3,
+      "plateau_top_mm": 17.3,
+      "end_arc_mm": 182.5,
+      "end_top_mm": 1.4,
+      "drop_arc_mm": 18.2,
+      "note": "R falls 17.3 -> 8.2 -> 5.3 -> 3.0 -> 1.4: a softer, longer tail than L"
+    },
+    "cap_to_pod_step": "roof steps from ~17.5 (pod) to ~22.4-27.6 (cap) at arc about +/-79 mm; pod tops dip to ~15.2 mm in the middle of the pod (arc about +/-120 mm)"
+  }
+}

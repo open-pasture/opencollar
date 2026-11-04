@@ -1,0 +1,571 @@
+{
+ "units": "mm",
+ "angle_convention": "deg about strap centre in Y-Z plane, 0 = top (+Z), positive toward +Y (pod_R)",
+ "strap": {
+  "centre_yz": [
+   0.0,
+   -232.0
+  ],
+  "r_inner": 231.98,
+  "r_outer": 235.56,
+  "thickness": 3.58,
+  "width_x": 44.0
+ },
+ "housing_objects": [
+  "saddle",
+  "cap_base",
+  "cap_lid",
+  "cap_plug_struct_n68n",
+  "cap_plug_struct_n42n",
+  "cap_plug_struct_n42p",
+  "cap_plug_service_orange_n68p",
+  "cap_plug_service_orange_p68n",
+  "cap_plug_struct_p42n",
+  "cap_plug_struct_p42p",
+  "cap_plug_service_orange_p68p",
+  "cap_panel_p124",
+  "latch",
+  "pod_L_base",
+  "pod_L_lid",
+  "pod_R_base",
+  "pod_R_lid",
+  "fairing_cap_pod_L",
+  "fairing_pod_L_strap",
+  "fairing_cap_pod_R",
+  "fairing_pod_R_strap"
+ ],
+ "housing_angle_range_deg": [
+  -43.47,
+  44.95
+ ],
+ "housing_arc_length_mm_at_r_outer": 363.5,
+ "max_top_above_strap_outer_mm": 27.6,
+ "stations": [
+  {
+   "angle_deg": -40.52,
+   "arc_mm": -166.6,
+   "width_mm": 77.7,
+   "top_above_strap_outer_mm": 17.3,
+   "bottom_rel_strap_outer_mm": -4.9
+  },
+  {
+   "angle_deg": -34.62,
+   "arc_mm": -142.3,
+   "width_mm": 79.3,
+   "top_above_strap_outer_mm": 17.5,
+   "bottom_rel_strap_outer_mm": -4.9
+  },
+  {
+   "angle_deg": -28.73,
+   "arc_mm": -118.1,
+   "width_mm": 67.0,
+   "top_above_strap_outer_mm": 15.6,
+   "bottom_rel_strap_outer_mm": -4.6
+  },
+  {
+   "angle_deg": -22.84,
+   "arc_mm": -93.9,
+   "width_mm": 77.0,
+   "top_above_strap_outer_mm": 17.5,
+   "bottom_rel_strap_outer_mm": -4.9
+  },
+  {
+   "angle_deg": -16.94,
+   "arc_mm": -69.7,
+   "width_mm": 69.3,
+   "top_above_strap_outer_mm": 26.5,
+   "bottom_rel_strap_outer_mm": -4.9
+  },
+  {
+   "angle_deg": -11.05,
+   "arc_mm": -45.4,
+   "width_mm": 69.3,
+   "top_above_strap_outer_mm": 27.6,
+   "bottom_rel_strap_outer_mm": -1.4
+  },
+  {
+   "angle_deg": -5.15,
+   "arc_mm": -21.2,
+   "width_mm": 70.0,
+   "top_above_strap_outer_mm": 25.3,
+   "bottom_rel_strap_outer_mm": -3.6
+  },
+  {
+   "angle_deg": 0.74,
+   "arc_mm": 3.0,
+   "width_mm": 70.0,
+   "top_above_strap_outer_mm": 23.9,
+   "bottom_rel_strap_outer_mm": -3.8
+  },
+  {
+   "angle_deg": 6.64,
+   "arc_mm": 27.3,
+   "width_mm": 70.0,
+   "top_above_strap_outer_mm": 27.5,
+   "bottom_rel_strap_outer_mm": -3.3
+  },
+  {
+   "angle_deg": 12.53,
+   "arc_mm": 51.5,
+   "width_mm": 69.3,
+   "top_above_strap_outer_mm": 27.6,
+   "bottom_rel_strap_outer_mm": -0.5
+  },
+  {
+   "angle_deg": 18.42,
+   "arc_mm": 75.7,
+   "width_mm": 76.7,
+   "top_above_strap_outer_mm": 25.6,
+   "bottom_rel_strap_outer_mm": -4.9
+  },
+  {
+   "angle_deg": 24.32,
+   "arc_mm": 100.0,
+   "width_mm": 77.0,
+   "top_above_strap_outer_mm": 17.5,
+   "bottom_rel_strap_outer_mm": -4.7
+  },
+  {
+   "angle_deg": 30.21,
+   "arc_mm": 124.2,
+   "width_mm": 67.0,
+   "top_above_strap_outer_mm": 15.8,
+   "bottom_rel_strap_outer_mm": -4.6
+  },
+  {
+   "angle_deg": 36.11,
+   "arc_mm": 148.4,
+   "width_mm": 79.4,
+   "top_above_strap_outer_mm": 17.5,
+   "bottom_rel_strap_outer_mm": -4.9
+  },
+  {
+   "angle_deg": 42.0,
+   "arc_mm": 172.7,
+   "width_mm": 72.2,
+   "top_above_strap_outer_mm": 17.3,
+   "bottom_rel_strap_outer_mm": -4.9
+  }
+ ],
+ "roofline": [
+  {
+   "angle_deg": -42.91,
+   "arc_mm": -176.4,
+   "top_mm": 1.7
+  },
+  {
+   "angle_deg": -41.81,
+   "arc_mm": -171.9,
+   "top_mm": 3.9
+  },
+  {
+   "angle_deg": -40.7,
+   "arc_mm": -167.3,
+   "top_mm": 17.1
+  },
+  {
+   "angle_deg": -39.6,
+   "arc_mm": -162.8,
+   "top_mm": 17.3
+  },
+  {
+   "angle_deg": -38.49,
+   "arc_mm": -158.3,
+   "top_mm": 17.3
+  },
+  {
+   "angle_deg": -37.39,
+   "arc_mm": -153.7,
+   "top_mm": 17.5
+  },
+  {
+   "angle_deg": -36.28,
+   "arc_mm": -149.2,
+   "top_mm": 17.4
+  },
+  {
+   "angle_deg": -35.18,
+   "arc_mm": -144.6,
+   "top_mm": 16.8
+  },
+  {
+   "angle_deg": -34.07,
+   "arc_mm": -140.1,
+   "top_mm": 16.3
+  },
+  {
+   "angle_deg": -32.97,
+   "arc_mm": -135.5,
+   "top_mm": 15.9
+  },
+  {
+   "angle_deg": -31.86,
+   "arc_mm": -131.0,
+   "top_mm": 15.6
+  },
+  {
+   "angle_deg": -30.76,
+   "arc_mm": -126.4,
+   "top_mm": 15.4
+  },
+  {
+   "angle_deg": -29.65,
+   "arc_mm": -121.9,
+   "top_mm": 15.2
+  },
+  {
+   "angle_deg": -28.55,
+   "arc_mm": -117.4,
+   "top_mm": 15.2
+  },
+  {
+   "angle_deg": -27.44,
+   "arc_mm": -112.8,
+   "top_mm": 15.4
+  },
+  {
+   "angle_deg": -26.34,
+   "arc_mm": -108.3,
+   "top_mm": 15.6
+  },
+  {
+   "angle_deg": -25.23,
+   "arc_mm": -103.7,
+   "top_mm": 15.9
+  },
+  {
+   "angle_deg": -24.13,
+   "arc_mm": -99.2,
+   "top_mm": 16.4
+  },
+  {
+   "angle_deg": -23.02,
+   "arc_mm": -94.6,
+   "top_mm": 16.9
+  },
+  {
+   "angle_deg": -21.91,
+   "arc_mm": -90.1,
+   "top_mm": 17.5
+  },
+  {
+   "angle_deg": -20.81,
+   "arc_mm": -85.6,
+   "top_mm": 17.5
+  },
+  {
+   "angle_deg": -19.7,
+   "arc_mm": -81.0,
+   "top_mm": 17.3
+  },
+  {
+   "angle_deg": -18.6,
+   "arc_mm": -76.5,
+   "top_mm": 22.4
+  },
+  {
+   "angle_deg": -17.49,
+   "arc_mm": -71.9,
+   "top_mm": 23.7
+  },
+  {
+   "angle_deg": -16.39,
+   "arc_mm": -67.4,
+   "top_mm": 24.7
+  },
+  {
+   "angle_deg": -15.28,
+   "arc_mm": -62.8,
+   "top_mm": 25.7
+  },
+  {
+   "angle_deg": -14.18,
+   "arc_mm": -58.3,
+   "top_mm": 27.0
+  },
+  {
+   "angle_deg": -13.07,
+   "arc_mm": -53.7,
+   "top_mm": 27.2
+  },
+  {
+   "angle_deg": -11.97,
+   "arc_mm": -49.2,
+   "top_mm": 27.6
+  },
+  {
+   "angle_deg": -10.86,
+   "arc_mm": -44.7,
+   "top_mm": 27.1
+  },
+  {
+   "angle_deg": -9.76,
+   "arc_mm": -40.1,
+   "top_mm": 27.4
+  },
+  {
+   "angle_deg": -8.65,
+   "arc_mm": -35.6,
+   "top_mm": 27.5
+  },
+  {
+   "angle_deg": -7.55,
+   "arc_mm": -31.0,
+   "top_mm": 25.3
+  },
+  {
+   "angle_deg": -6.44,
+   "arc_mm": -26.5,
+   "top_mm": 24.8
+  },
+  {
+   "angle_deg": -5.34,
+   "arc_mm": -21.9,
+   "top_mm": 24.2
+  },
+  {
+   "angle_deg": -4.23,
+   "arc_mm": -17.4,
+   "top_mm": 23.8
+  },
+  {
+   "angle_deg": -3.13,
+   "arc_mm": -12.9,
+   "top_mm": 23.5
+  },
+  {
+   "angle_deg": -2.02,
+   "arc_mm": -8.3,
+   "top_mm": 23.3
+  },
+  {
+   "angle_deg": -0.92,
+   "arc_mm": -3.8,
+   "top_mm": 23.2
+  },
+  {
+   "angle_deg": 0.19,
+   "arc_mm": 0.8,
+   "top_mm": 23.2
+  },
+  {
+   "angle_deg": 1.29,
+   "arc_mm": 5.3,
+   "top_mm": 23.4
+  },
+  {
+   "angle_deg": 2.4,
+   "arc_mm": 9.9,
+   "top_mm": 23.6
+  },
+  {
+   "angle_deg": 3.5,
+   "arc_mm": 14.4,
+   "top_mm": 24.0
+  },
+  {
+   "angle_deg": 4.61,
+   "arc_mm": 18.9,
+   "top_mm": 24.5
+  },
+  {
+   "angle_deg": 5.71,
+   "arc_mm": 23.5,
+   "top_mm": 25.0
+  },
+  {
+   "angle_deg": 6.82,
+   "arc_mm": 28.0,
+   "top_mm": 25.7
+  },
+  {
+   "angle_deg": 7.92,
+   "arc_mm": 32.6,
+   "top_mm": 26.4
+  },
+  {
+   "angle_deg": 9.03,
+   "arc_mm": 37.1,
+   "top_mm": 27.5
+  },
+  {
+   "angle_deg": 10.13,
+   "arc_mm": 41.7,
+   "top_mm": 27.3
+  },
+  {
+   "angle_deg": 11.24,
+   "arc_mm": 46.2,
+   "top_mm": 26.9
+  },
+  {
+   "angle_deg": 12.35,
+   "arc_mm": 50.8,
+   "top_mm": 27.6
+  },
+  {
+   "angle_deg": 13.45,
+   "arc_mm": 55.3,
+   "top_mm": 27.2
+  },
+  {
+   "angle_deg": 14.56,
+   "arc_mm": 59.8,
+   "top_mm": 26.3
+  },
+  {
+   "angle_deg": 15.66,
+   "arc_mm": 64.4,
+   "top_mm": 25.6
+  },
+  {
+   "angle_deg": 16.77,
+   "arc_mm": 68.9,
+   "top_mm": 25.4
+  },
+  {
+   "angle_deg": 17.87,
+   "arc_mm": 73.5,
+   "top_mm": 23.3
+  },
+  {
+   "angle_deg": 18.98,
+   "arc_mm": 78.0,
+   "top_mm": 22.8
+  },
+  {
+   "angle_deg": 20.08,
+   "arc_mm": 82.6,
+   "top_mm": 17.3
+  },
+  {
+   "angle_deg": 21.19,
+   "arc_mm": 87.1,
+   "top_mm": 17.5
+  },
+  {
+   "angle_deg": 22.29,
+   "arc_mm": 91.6,
+   "top_mm": 17.2
+  },
+  {
+   "angle_deg": 23.4,
+   "arc_mm": 96.2,
+   "top_mm": 16.7
+  },
+  {
+   "angle_deg": 24.5,
+   "arc_mm": 100.7,
+   "top_mm": 16.2
+  },
+  {
+   "angle_deg": 25.61,
+   "arc_mm": 105.3,
+   "top_mm": 15.8
+  },
+  {
+   "angle_deg": 26.71,
+   "arc_mm": 109.8,
+   "top_mm": 15.5
+  },
+  {
+   "angle_deg": 27.82,
+   "arc_mm": 114.4,
+   "top_mm": 15.3
+  },
+  {
+   "angle_deg": 28.92,
+   "arc_mm": 118.9,
+   "top_mm": 15.2
+  },
+  {
+   "angle_deg": 30.03,
+   "arc_mm": 123.5,
+   "top_mm": 15.3
+  },
+  {
+   "angle_deg": 31.13,
+   "arc_mm": 128.0,
+   "top_mm": 15.4
+  },
+  {
+   "angle_deg": 32.24,
+   "arc_mm": 132.5,
+   "top_mm": 15.7
+  },
+  {
+   "angle_deg": 33.34,
+   "arc_mm": 137.1,
+   "top_mm": 16.0
+  },
+  {
+   "angle_deg": 34.45,
+   "arc_mm": 141.6,
+   "top_mm": 16.5
+  },
+  {
+   "angle_deg": 35.55,
+   "arc_mm": 146.2,
+   "top_mm": 17.0
+  },
+  {
+   "angle_deg": 36.66,
+   "arc_mm": 150.7,
+   "top_mm": 17.5
+  },
+  {
+   "angle_deg": 37.76,
+   "arc_mm": 155.3,
+   "top_mm": 17.4
+  },
+  {
+   "angle_deg": 38.87,
+   "arc_mm": 159.8,
+   "top_mm": 17.3
+  },
+  {
+   "angle_deg": 39.97,
+   "arc_mm": 164.3,
+   "top_mm": 17.3
+  },
+  {
+   "angle_deg": 41.08,
+   "arc_mm": 168.9,
+   "top_mm": 8.2
+  },
+  {
+   "angle_deg": 42.18,
+   "arc_mm": 173.4,
+   "top_mm": 5.3
+  },
+  {
+   "angle_deg": 43.29,
+   "arc_mm": 178.0,
+   "top_mm": 3.0
+  },
+  {
+   "angle_deg": 44.39,
+   "arc_mm": 182.5,
+   "top_mm": 1.4
+  }
+ ],
+ "end_shoulder": {
+  "method": "arc distance from the last roofline bin at pod plateau height (~17 mm) to the housing end (top ~1.5 mm above strap). Roofline bins are 4.5 mm wide, so +/-4.5 mm.",
+  "L": {
+   "plateau_arc_mm": -167.3,
+   "plateau_top_mm": 17.1,
+   "end_arc_mm": -176.4,
+   "end_top_mm": 1.7,
+   "drop_arc_mm": 9.1
+  },
+  "R": {
+   "plateau_arc_mm": 164.3,
+   "plateau_top_mm": 17.3,
+   "end_arc_mm": 182.5,
+   "end_top_mm": 1.4,
+   "drop_arc_mm": 18.2,
+   "note": "R falls 17.3 -> 8.2 -> 5.3 -> 3.0 -> 1.4: a softer, longer tail than L"
+  },
+  "cap_to_pod_step": "roof steps from ~17.5 (pod) to ~22.4-27.6 (cap) at arc about +/-79 mm; pod tops dip to ~15.2 mm in the middle of the pod (arc about +/-120 mm)"
+ }
+}
