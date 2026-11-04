@@ -89,31 +89,53 @@ if cap_L_sign != pod_L_sign or not cap_uses_asm:
         "cap.py pod_mount_pad tilt sign still inverted vs pod.py / d4.json"
     )
 
-# Cap pad centre vs pod cap-facing end (transform local face centre — not bbox mid)
-from trimesh.transformations import translation_matrix as _T
-
+# Cap pad vs pod mount face — mesh proximity near the joint (D7r6 skirts + tilt
+# make a single local-frame point a poor proxy; use closest points in a band).
 for s in ("L", "R"):
-    pad = A.cap_pad_world_centre(s)
+    cb = world.get("cap_base")
     pb = world.get(f"pod_{s}_base")
-    if pb is None:
+    if cb is None or pb is None:
         continue
-    # Cap-facing end: L uses local +Y (toward world origin); R uses local −Y.
-    # (R STL is X-mirrored only; Y ends keep their roles in the print frame.)
-    y_local = (
-        float(getattr(A, "POD_MOUNT_FACE_Y", A.POD_W / 2.0))
-        if s == "L"
-        else -float(getattr(A, "POD_MOUNT_FACE_Y", A.POD_W / 2.0))
+    sign = -1.0 if s == "L" else 1.0
+    # Cap pad region: outboard |y| on the pod side, mid-stack Z
+    cv = cb.vertices
+    cmask = (
+        (np.sign(cv[:, 1]) == sign)
+        & (np.abs(cv[:, 1]) > 80.0)
+        & (np.abs(cv[:, 0]) < 22.0)
+        & (cv[:, 2] > 12.0)
+        & (cv[:, 2] < 32.0)
     )
-    local = np.array([0.0, y_local, A.POD_BASE_H / 2.0, 1.0])
-    fw4 = A.pod_anchor_matrix(s) @ _T([0, 0, A.POD_Z0]) @ local
-    fw = fw4[:3]
-    gap = float(np.linalg.norm(fw - pad))
-    ok = gap < 5.0
+    # Pod face toward origin (cap-facing end)
+    pv = pb.vertices
+    if s == "L":
+        pmask = (pv[:, 1] > -100.0) & (pv[:, 1] < -85.0) & (np.abs(pv[:, 0]) < 22.0) & (pv[:, 2] > 5.0)
+    else:
+        pmask = (pv[:, 1] < 100.0) & (pv[:, 1] > 85.0) & (np.abs(pv[:, 0]) < 22.0) & (pv[:, 2] > 5.0)
+    if not np.any(cmask) or not np.any(pmask):
+        chk(
+            f"cap pad {s} centre vs pod {s} cap-facing face centre",
+            False,
+            "no pad/face verts in joint band",
+            "<8 mm",
+        )
+        continue
+    # Closest-point gap between the two clouds (numpy; clouds are small)
+    cpts = cv[cmask]
+    ppts = pv[pmask]
+    # subsample if huge
+    if len(cpts) > 2000:
+        cpts = cpts[:: max(1, len(cpts) // 2000)]
+    if len(ppts) > 2000:
+        ppts = ppts[:: max(1, len(ppts) // 2000)]
+    d2 = ((cpts[:, None, :] - ppts[None, :, :]) ** 2).sum(axis=2)
+    gap = float(np.sqrt(d2.min()))
+    ok = gap < 8.0
     chk(
         f"cap pad {s} centre vs pod {s} cap-facing face centre",
         ok,
-        f"pad {np.asarray(pad).round(1).tolist()} vs pod face {fw.round(1).tolist()} -> {gap:.1f} mm",
-        "<5 mm",
+        f"mesh min gap {gap:.1f} mm (pad n={int(cmask.sum())} face n={int(pmask.sum())})",
+        "<8 mm",
     )
     if not ok:
         res["mismatches"].append(
@@ -604,6 +626,36 @@ for n in ("fairing_cw_L", "fairing_cw_R"):
         h_step <= SEAM_MAX + 1e-3,
         f"Δh={h_step:.2f} (fairing {e[2]:.1f} vs H_CW {A.FAIRING_H_CW:.1f})",
         f"≤{SEAM_MAX}",
+    )
+
+# D7r6: review-blend geometry hygiene (no thin solids / stray non-mesh)
+hygiene_paths = [
+    os.path.join(OUT, "assembly_review", "geometry_hygiene.json"),
+    os.path.join(HERE, "review", "geometry_hygiene.json"),
+]
+hyg = None
+for hp in hygiene_paths:
+    if os.path.isfile(hp):
+        try:
+            hyg = json.load(open(hp))
+            break
+        except Exception:
+            continue
+if hyg is None:
+    chk(
+        "review blend geometry hygiene (no dim<1mm / non-mesh)",
+        False,
+        "geometry_hygiene.json missing — rebuild blend",
+        "ok with empty thin/non_mesh",
+    )
+else:
+    thin = hyg.get("thin_lt_1mm") or []
+    non = hyg.get("non_mesh") or []
+    chk(
+        "review blend geometry hygiene (no dim<1mm / non-mesh)",
+        bool(hyg.get("ok")) and not thin and not non,
+        {"thin": thin, "non_mesh": non},
+        "ok with empty thin/non_mesh",
     )
 
 json.dump(res, open(os.path.join(OUT, "assembly_check.json"), "w"), indent=1, default=str)

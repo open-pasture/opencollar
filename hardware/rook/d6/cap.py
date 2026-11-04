@@ -442,17 +442,15 @@ def cap_base():
                           ("SCR3", (1, -1)), ("SCR4", (-1, -1))):
         emboss_label(b, key, (sx * 28.0, sy * 62.0, fz))
 
-    # D7r5: deep flared skirts under ±Y ends — recess clamp bars, R12 shoulder.
-    # Underside wider than clamp length so bars stay hidden from iso/hero/front.
+    # D7r6: deep skirts under ±Y ends — width ≤ cap outline, R12 tangent down.
     ch_w, ch_d = D.SADDLE_CHANNEL_W, D.SADDLE_CHANNEL_D
     bar_w, bar_l, bar_h = D.CLAMP_FLANGE_W, D.CLAMP_L, D.CLAMP_DEPTH  # 10×70×8
-    skirt_h, flare, plan_r = 14.0, 12.0, 12.0
+    skirt_h, plan_r = 14.0, 12.0
     shoulder = 12.0
     pocket_h = bar_h + 0.2
     for sy in (-1.0, 1.0):
-        # Centre so the ±20 clamp station sits inside the skirt footprint
         cy = sy * 38.0
-        sk_w = max(CAP_W - 2.0, bar_l + 4.0, ch_w + 2.0 * flare)
+        sk_w = min(CAP_W - 2.0, max(bar_l, ch_w + 4.0))  # ≤ cap width
         sk_l = 58.0
         sk = oc.rounded_rect(
             f"cap_skirt{int(sy + 2)}",
@@ -461,19 +459,18 @@ def cap_base():
             at=(0.0, cy, -skirt_h),
             anchor="bottom", segments=16,
         )
-        # Top shoulder flare (bed stays wide to hide bars)
         body_half = CAP_W / 2.0 - 1.0
         for sx in (-1.0, 1.0):
             oc.cut(sk, oc.prism_y(f"cap_skirt_shx{int(sy + 2)}_{int(sx + 2)}", [
-                (sx * (sk_w / 2.0 + 1.0), -shoulder),
-                (sx * (sk_w / 2.0 + 1.0), 0.6),
-                (sx * (body_half + 0.2), 0.6),
-                (sx * (sk_w / 2.0 - 0.2), -shoulder),
+                (sx * (body_half + 1.0), -skirt_h - 0.5),
+                (sx * (body_half + 1.0), 0.6),
+                (sx * (body_half - 1.0), 0.6),
+                (sx * (sk_w / 2.0 - 0.4), -skirt_h + shoulder),
+                (sx * (sk_w / 2.0 + 1.0), -skirt_h - 0.5),
             ], sk_l + 8.0))
-        # Clamp pocket at the ±20 station that lives under this end skirt
         oc.cut(sk, oc.box(
             f"cap_cpocket{int(sy + 2)}",
-            (bar_l + 2.0, bar_w + 1.6, pocket_h + 0.4),
+            (min(bar_l + 1.0, sk_w - 1.0), bar_w + 1.6, pocket_h + 0.4),
             at=(0.0, sy * 20.0, -skirt_h), anchor="bottom",
         ))
         oc.cut(sk, oc.box(
@@ -533,15 +530,16 @@ def cap_lid():
     oc.cut(lid, oc.rounded_rect("lte", (D.LTE_FLEX[0] + 0.8, D.LTE_FLEX[1] + 0.8, 1.4),
                                 D.POCKET_CORNER_R, at=(lx, ly, -0.1), anchor="bottom"))
 
+    # D7r6: light-pipe / button wells open from mating face only (not through
+    # the outer crown) so the top no longer reads as an "oo" mark in review.
     for i, (lpx, lpy) in enumerate(D.LIGHTPIPE_AT):
-        oc.cut(lid, oc.cylinder(f"lplid{i}", D.LIGHTPIPE_D + 0.2, LID_H + 2,
-                                at=(lpx, lpy, -1), anchor="bottom"))
+        oc.cut(lid, oc.cylinder(f"lplid{i}", D.LIGHTPIPE_D + 0.2, LID_H - 1.2,
+                                at=(lpx, lpy, -0.1), anchor="bottom"))
     for i, (bx, by) in enumerate(D.BTN_AT):
-        oc.cut(lid, oc.cylinder(f"btnw{i}", 5.0, LID_H + 2,
-                                at=(bx, by, -1), anchor="bottom"))
+        oc.cut(lid, oc.cylinder(f"btnw{i}", 5.0, LID_H - 1.2,
+                                at=(bx, by, -0.1), anchor="bottom"))
 
-    oc.cut(lid, oc.rounded_rect("label", (D.LABEL[0], D.LABEL[1], D.LABEL[2] + 0.05), 1.0,
-                                at=(0, -(ll / 2 - 8.0), LID_H - D.LABEL[2]), anchor="bottom"))
+    # No outer label pocket — was reading as a stray plate/mark next to the panel.
 
     # Perimeter wrap step (z≥0) — low-seam read without hanging skirt
     add_wrap_step(lid, lw, ll, LID_WRAP_STEP, LID_H, r=PLAN_R - 1.0)

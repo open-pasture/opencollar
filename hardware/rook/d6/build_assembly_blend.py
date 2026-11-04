@@ -302,35 +302,30 @@ def _strap_point(angle_deg, major_r=227.0, zc=-233.85):
 
 
 def _add_buckle_keeper(collection):
-    """D4 buckle: open rect frame flat ON the strap + thin keeper loop around band.
+    """D4 buckle: open rect frame flat ON the strap + solid keeper loop.
 
-    Frame ≈24×30×3 mm, central opening, tongue across; ≤3 mm proud of band.
-    Placed just below the cap/pod on the −Y side of the collar (D4 side view).
+    Frame ≈24×30×3 mm, central opening, tongue across (≥2 mm solid).
+    Keeper = torus with ≥2 mm tube — never a thin wire/curve.
     """
-    # D4 anchors sit near the lower-right of the upper arc — map to our ring.
-    # Use polar angles on the fitted strap (~35–55° from top toward −Y).
-    b_pos, b_eul = _strap_point(-48.0)  # toward −Y from top
+    b_pos, b_eul = _strap_point(-48.0)
     k_pos, k_eul = _strap_point(-38.0)
 
-    # Raise slightly onto the outer strap surface (thickness/2 + 1.5 mm frame)
     major_r = 227.0
     zc = -233.85
+
     def _on_surface(pos, proud=1.6):
-        # Outward from centre (0,0,zc)
         v = Vector((pos.x, pos.y, pos.z - zc))
         if v.length < 1e-6:
             return pos
         return Vector((0.0, 0.0, zc)) + v.normalized() * (major_r + proud)
 
     b_pos = _on_surface(b_pos, proud=1.7)
-    k_pos = _on_surface(k_pos, proud=1.2)
+    k_pos = _on_surface(k_pos, proud=2.2)
 
-    # Open rectangular frame 24 (across strap/X) × 30 (along strap) × 3 thick
     outer = _add_box(
         collection, "buckle_frame", (24.0, 30.0, 3.0), b_pos, HARDWARE,
         rot=b_eul, rough=0.55,
     )
-    # Boolean cut the opening (leave ~3 mm rail)
     bpy.ops.mesh.primitive_cube_add(size=1.0, location=b_pos)
     hole = bpy.context.active_object
     hole.name = "buckle_opening"
@@ -340,7 +335,6 @@ def _add_buckle_keeper(collection):
     for cc in list(hole.users_collection):
         cc.objects.unlink(hole)
     collection.objects.link(hole)
-    # Boolean
     bpy.ops.object.select_all(action="DESELECT")
     outer.select_set(True)
     bpy.context.view_layer.objects.active = outer
@@ -350,33 +344,118 @@ def _add_buckle_keeper(collection):
     bpy.ops.object.modifier_apply(modifier=mod.name)
     bpy.data.objects.remove(hole, do_unlink=True)
 
-    # Tongue across the opening (along X)
+    # Solid tongue (≥2 mm) — not a diagonal wire
     _add_box(
-        collection, "buckle_tongue", (20.0, 2.5, 2.0), b_pos, HARDWARE,
+        collection, "buckle_tongue", (20.0, 3.0, 2.5), b_pos, HARDWARE,
         rot=b_eul, rough=0.55,
     )
 
-    # Thin keeper loop wrapped around the band — torus-ish scaled flat
-    # Cross-section thin; major ≈ half strap width so it hugs the band
+    # Solid keeper loop — minor radius ≥2 mm so it never reads as a wire
     bpy.ops.mesh.primitive_torus_add(
-        major_radius=STRAP_W / 2.0 + 1.5,
-        minor_radius=1.2,
-        major_segments=32,
-        minor_segments=10,
+        major_radius=STRAP_W / 2.0 + 2.5,
+        minor_radius=2.2,
+        major_segments=40,
+        minor_segments=12,
         location=k_pos,
     )
     keeper = bpy.context.active_object
     keeper.name = "keeper"
-    # Orient so the loop circles the strap cross-section (around local X of strap)
     keeper.rotation_euler = (k_eul[0] + math.radians(90), 0.0, math.radians(90))
     bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
-    # Flatten slightly along strap tangent so it doesn't stand >3 mm proud
-    keeper.scale = (1.0, 1.0, 0.7)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     for cc in list(keeper.users_collection):
         cc.objects.unlink(keeper)
     collection.objects.link(keeper)
     keeper.data.materials.append(mat("m_keeper", HARDWARE, rough=0.55))
+
+
+def _purge_curves_and_wires():
+    """Delete leftover curves and force mesh display — no wireframe artifacts."""
+    for o in list(bpy.data.objects):
+        if o.type == "CURVE":
+            bpy.data.objects.remove(o, do_unlink=True)
+    for c in list(bpy.data.curves):
+        if c.users == 0:
+            bpy.data.curves.remove(c)
+    for o in bpy.data.objects:
+        if o.type == "MESH":
+            o.display_type = "TEXTURED"
+            o.show_in_front = False
+
+
+def _delete_ghost_wires(ghost_col):
+    """D4 ghost wbbox wires cause thin frames in the review blend — remove them."""
+    for o in list(ghost_col.objects):
+        bpy.data.objects.remove(o, do_unlink=True)
+
+
+def _add_continuous_roof_skins(d6_col, details_col, body_rgb):
+    """Review-only: one continuous band per side (cap nose + fairing + pod lid).
+
+    Boolean-unions duplicates so the hero silhouette is a single surface; printable
+    STLs stay separate. Original fairing_cap_pod_* are hidden.
+    """
+    for side in ("L", "R"):
+        names = [f"fairing_cap_pod_{side}", f"pod_{side}_lid", "cap_lid"]
+        srcs = [bpy.data.objects.get(n) for n in names]
+        if any(s is None for s in srcs):
+            print(f"  roof skin {side}: missing source, skip")
+            continue
+        copies = []
+        for s in srcs:
+            c = s.copy()
+            c.data = s.data.copy()
+            c.name = f"review_roof_{side}__{s.name}"
+            details_col.objects.link(c)
+            copies.append(c)
+        base = copies[0]
+        bpy.ops.object.select_all(action="DESELECT")
+        for c in copies:
+            c.select_set(True)
+        bpy.context.view_layer.objects.active = base
+        for other in copies[1:]:
+            mod = base.modifiers.new(f"u_{other.name[-8:]}", "BOOLEAN")
+            mod.operation = "UNION"
+            mod.object = other
+            try:
+                bpy.ops.object.modifier_apply(modifier=mod.name)
+            except Exception as exc:
+                print(f"  roof union warn {side}: {exc}")
+        for other in copies[1:]:
+            bpy.data.objects.remove(other, do_unlink=True)
+        base.name = f"review_roof_band_{side}"
+        base.data.materials.clear()
+        base.data.materials.append(mat(f"m_roof_{side}", body_rgb, rough=0.6))
+        # Hide the bridging fairing so only the continuous band shows the join
+        fair = bpy.data.objects.get(f"fairing_cap_pod_{side}")
+        if fair is not None:
+            fair.hide_render = True
+            fair.hide_viewport = True
+        print(f"  roof skin {side}: OK")
+
+
+def _geometry_hygiene_report(path):
+    """List non-mesh / sub-1 mm objects (excluding known empties). Write JSON."""
+    allow_empty = {"NOTE_d4_ghost", "pod_L_anchor", "pod_R_anchor"}
+    thin = []
+    non_mesh = []
+    for o in bpy.data.objects:
+        if o.type != "MESH":
+            if o.name not in allow_empty:
+                non_mesh.append({"name": o.name, "type": o.type})
+            continue
+        dims = [float(d) for d in o.dimensions]
+        if any(d < 1.0 - 1e-6 for d in dims):
+            thin.append({"name": o.name, "dims": [round(d, 3) for d in dims]})
+    report = {
+        "thin_lt_1mm": thin,
+        "non_mesh": non_mesh,
+        "ok": not thin and not non_mesh,
+        "n_mesh": sum(1 for o in bpy.data.objects if o.type == "MESH"),
+    }
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    json.dump(report, open(path, "w"), indent=1)
+    print("geometry hygiene:", "PASS" if report["ok"] else "FAIL", report)
+    return report
 
 
 # ---- collections ----------------------------------------------------------
@@ -392,10 +471,10 @@ for f in sorted(glob.glob(os.path.join(WORLD, "*.stl"))):
     o.data.materials.clear()
     o.data.materials.append(body_mat)
 
-# D4 ghost — bounding boxes only
-gm = mat("d4_ghost", GHOST, 0.25, rough=0.8)
+# D4 ghost STLs are imported only for optional wbbox notes, then DELETED —
+# WIRE display leftovers were reading as thin frames around lids/cap ends.
 ghost_note = (
-    f"palette={_palette}; D4 ghost = wbbox placeholders; "
+    f"palette={_palette}; D4 ghost deleted from review blend (D7r6); "
     f"body={tuple(round(c, 3) for c in BODY)}"
     + (f"; d4_mat={_D4_MAT_SRC}" if _D4_MAT_SRC else "; d4_mat=fallback#3A3C3E")
 )
@@ -404,9 +483,7 @@ for f in sorted(glob.glob(os.path.join(D4, "*.stl"))):
         continue
     o = imp_stl(f, ghost)
     o.name = "D4_" + o.name
-    o.data.materials.append(gm)
-    o.display_type = "WIRE"
-    o.show_in_front = True
+_delete_ghost_wires(ghost)
 
 for n in ("pod_L", "pod_R"):
     e = bpy.data.objects.new(n + "_anchor", None)
@@ -419,16 +496,18 @@ for n in ("pod_L", "pod_R"):
 
 # ---- review-only details --------------------------------------------------
 # Solar panel — clean flat dark rectangle with a crisp edge (no mottling)
-panel_c = _wbbox_centre("cap_panel_p124") or Vector((0.0, 0.0, 18.5))
+# Z raised with CAP_MATING_Z (skirt-aware lid)
+panel_c = _wbbox_centre("cap_panel_p124") or Vector((0.0, 0.0, 32.5))
+if panel_c.z < 25.0:
+    panel_c = Vector((panel_c.x, panel_c.y, panel_c.z + 14.0))
 sz = _wbbox_size("cap_panel_p124") or Vector((66.6, 113.6, 2.3))
 _add_box(
     details, "cap_panel_p124",
-    (sz.x, sz.y, max(sz.z, 1.2)),
+    (sz.x, sz.y, max(float(sz.z), 2.0)),
     (panel_c.x, panel_c.y, panel_c.z),
     PANEL_GLASS, rough=0.12,
 )
 
-# Latch — tiny orange (D4-scale, not oversized)
 latch_path = _find_detail("latch.stl")
 latch_c = _wbbox_centre("latch")
 if latch_path and latch_c is not None:
@@ -440,35 +519,36 @@ if latch_path and latch_c is not None:
 elif latch_c is not None:
     _add_box(details, "latch", (6.0, 11.0, 8.0), latch_c, ORANGE)
 
-# One small orange service plug only (D4 had a few; keep a single collar tab accent)
 plug_c = _wbbox_centre("cap_plug_service_orange_p68p")
 if plug_c is not None:
-    _add_cyl(details, "collar_orange_tab", radius=3.0, depth=1.2, loc=plug_c, rgb=ORANGE)
+    # ≥2 mm thick solid — no thin plate artifact
+    _add_cyl(details, "collar_orange_tab", radius=3.0, depth=2.2, loc=plug_c, rgb=ORANGE)
 
-# Strap + buckle + keeper
 _add_strap_loop(details)
 _add_buckle_keeper(details)
+_purge_curves_and_wires()
 
-# Tiny orange screw heads — four corners on cap only (no CW lid clutter in hero)
-cap_z = 19.0
+# Cap corner screw accents ON the lid surface (≥2 mm) — skirt-aware Z
+cap_z = 33.0 + 0.6
 _POD_TILT = math.radians(29.1418)
 for i, (x, y) in enumerate([(29.5, 68.0), (-29.5, 68.0), (29.5, -68.0), (-29.5, -68.0)]):
-    _add_cyl(details, f"screw_cap_orange_{i}", radius=2.2, depth=1.2,
-             loc=(x, y, cap_z + 0.4), rgb=ORANGE)
+    _add_cyl(details, f"screw_cap_orange_{i}", radius=2.2, depth=2.0,
+             loc=(x, y, cap_z), rgb=ORANGE)
 
-# One small orange dot on each pod lid (no cue tabs, no orange saddles)
+# Orange dot ON each pod lid outer (not inside the cavity)
 for side, sy in (("L", -1.0), ("R", 1.0)):
     _add_cyl(
         details,
         f"pod_{side}_dot_orange",
         radius=3.0,
-        depth=1.4,
-        loc=(0.0, sy * 110.0, 15.5),
+        depth=2.0,
+        loc=(0.0, sy * 110.0, 28.0),
         rgb=ORANGE,
         rot=(_POD_TILT * (-sy), 0.0, 0.0),
     )
 
-# No rib/glyph clutter on lid faces in review (D7r5)
+# Review-only continuous cap↔fairing↔pod roof bands
+_add_continuous_roof_skins(d6, details, BODY)
 
 note = bpy.data.objects.new("NOTE_d4_ghost", None)
 note.empty_display_type = "PLAIN_AXES"
@@ -476,6 +556,14 @@ note.empty_display_size = 1
 note["ghost_note"] = ghost_note
 note["palette"] = _palette
 details.objects.link(note)
+
+hygiene_path = os.path.join(OUT, "geometry_hygiene.json")
+hygiene = _geometry_hygiene_report(hygiene_path)
+# Also copy into review/ for the assembly_check reader
+review_hygiene = os.path.join(_HERE, "review", "geometry_hygiene.json")
+shutil.copy2(hygiene_path, review_hygiene)
+if not hygiene["ok"]:
+    raise SystemExit(f"geometry hygiene FAIL: {hygiene}")
 
 blend_path = os.path.join(OUT, "d6_assembly.blend")
 review_blend = os.path.join(_HERE, "review", "d6_assembly.blend")
@@ -491,11 +579,6 @@ sc.render.film_transparent = False
 w = bpy.data.worlds.new("w")
 sc.world = w
 w.color = WORLD_BG
-
-# Hide D4 ghost for committed renders (wire loops read as false lid edge artifacts)
-for o in ghost.objects:
-    o.hide_render = True
-    o.hide_viewport = True
 
 objs = [o for o in list(d6.objects) + list(details.objects) if o.type == "MESH"]
 lo = Vector([min((o.matrix_world @ Vector(c))[i] for o in objs for c in o.bound_box) for i in range(3)])

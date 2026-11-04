@@ -90,16 +90,15 @@ POD_GROOVE_Y = CAV_Y + 2 * POD_WALL          # 92
 POD_COLS = [(sx * 22.0, sy * 36.0) for sx in (-1, 1) for sy in (-1, 1)]
 POD_TAPER_LEN = 20.0                         # D7r3: slightly longer tip run
 POD_TAPER_DROP = 6.0                         # D7r3: roof tip drop ~6 mm to fairing
-# D7r5: deep flared skirt recesses clamp bars; R12 shoulder into strap
+# D7r6: deep skirt recesses clamps; width ≤ pod outline (no side overhang).
 # Stack: channel 3.4 + clamp 8 + ≤1 mm proud + roof 1.6 ≈ 14
-# Underside must span full clamp length (70) so bars stay inside the skirt.
 POD_SKIRT_H = 14.0
-POD_SKIRT_FLARE = 12.0                       # outward flare past body → covers bars
-POD_SKIRT_PLAN_R = 12.0                      # large rounded shoulder (D4)
-POD_SKIRT_SHOULDER_R = 12.0                  # tangent flare radius at body→skirt
+POD_SKIRT_FLARE = 0.0                        # no outward flange past pod width
+POD_SKIRT_PLAN_R = 12.0                      # large rounded ends (D4)
+POD_SKIRT_SHOULDER_R = 12.0                  # tangent flare body → strap (down)
 POD_PUBLIC_ID = "001"                        # recessed mono on lid outer
-POD_ID_H = 10.0                              # capital height mm
-POD_ID_DEPTH = 0.6                           # recess depth mm
+POD_ID_H = 12.0                              # capital height mm (iso-readable)
+POD_ID_DEPTH = 0.8                           # recess depth mm
 
 # Cap↔pod M3 joint (matches cap.py pad) — recess on +Y mount face
 POD_MOUNT_SIZE = A.POD_MOUNT_SIZE            # 36×4×14
@@ -281,52 +280,45 @@ def top_perimeter_chamfer(body, w, l, h, r=POD_TOP_EDGE_R, y0=0.0):
 
 
 def strap_flare_skirt(body, w, l, y0=0.0, h=POD_SKIRT_H, flare=POD_SKIRT_FLARE):
-    """Deep flared skirt: R12 shoulder into strap, clamp bars recessed flush.
+    """Deep skirt: R12 tangent into strap, width ≤ pod outline, clamps recessed.
 
-    Extends below z=0 by `h` (~14 mm = channel + clamp + roof). Underside is
-    WIDER than the body so 70 mm clamp bars stay inside the skirt footprint
-    (hidden from iso/hero/front). R12 plan + R12 top shoulder; rounded ends
-    (no pointed tabs). Strap channel 46.45×3.4 kept; screw access from above.
+    Extends below z=0 by `h`. Plan width never exceeds the pod body (`w`) so
+    top/side views show no flange overhang. Outer face eases from the shoulder
+    down toward the strap (not out past the outline). Channel 46.45×3.4 kept.
     """
+    del flare  # D7r6: no outward overhang; kept in signature for call-site compat
     ch_w = float(A.SADDLE_CHANNEL_W)
     ch_d = float(A.SADDLE_CHANNEL_D)
     bar_w, bar_l, bar_h = A.CLAMP_BAR  # 10×70×8 — after 90°Z, long axis = X
-    # Bed must cover full bar length (+ margin); flare outward from body.
-    skirt_w = max(w + 2.0 * flare, bar_l + 4.0, ch_w + 2.0 * flare)
+    # ≤ pod width; clamp length 70 ≈ pod swell 68–70 so bars stay in footprint
+    skirt_w = min(w, max(bar_l, ch_w + 4.0))
     skirt_l = min(l * 0.82, 82.0)
     plan_r = min(POD_SKIRT_PLAN_R, skirt_w / 2.0 - 1.0, skirt_l / 2.0 - 1.0)
     sk = oc.rounded_rect(
         "strap_skirt", (skirt_w, skirt_l, h), plan_r,
-        at=(0.0, y0, -h), anchor="bottom", segments=16,
+        at=(0.0, y0, -h), anchor="bottom", segments=12,
     )
-    # R12-ish shoulder at the TOP of the skirt (body join) — bed stays wide.
-    # Prism approximates a concave flare: outer face curves in toward body.
-    shoulder = min(POD_SKIRT_SHOULDER_R, h * 0.85, (skirt_w - w) / 2.0 + 2.0)
-    body_half = w / 2.0
+    # Soft lower chamfer (tangent into strap) — keep manifold (simple 3-pt prism)
+    shoulder = min(6.0, h * 0.40)
     for sx in (-1.0, 1.0):
-        # Cut the upper-outer corner so the silhouette eases body → wide bed
         oc.cut(sk, oc.prism_y(f"skirt_sh_x{int(sx + 2)}", [
-            (sx * (skirt_w / 2.0 + 1.0), -shoulder),
-            (sx * (skirt_w / 2.0 + 1.0), 0.6),
-            (sx * (body_half + 0.2), 0.6),
-            (sx * (skirt_w / 2.0 - 0.2), -shoulder),
-        ], skirt_l + 8.0))
+            (sx * (skirt_w / 2.0 + 1.0), -h - 0.5),
+            (sx * (skirt_w / 2.0 + 1.0), -h + shoulder),
+            (sx * (skirt_w / 2.0 - shoulder), -h - 0.5),
+        ], skirt_l + 6.0))
     for sy in (-1.0, 1.0):
         tip = y0 + sy * (skirt_l / 2.0)
         oc.cut(sk, oc.prism_x(f"skirt_sh_y{int(sy + 2)}", [
-            (tip + sy * 1.0, -shoulder),
-            (tip + sy * 1.0, 0.6),
-            (tip - sy * shoulder * 0.85, 0.6),
-            (tip - sy * 0.2, -shoulder),
-        ], skirt_w + 8.0))
+            (tip + sy * 1.0, -h - 0.5),
+            (tip + sy * 1.0, -h + shoulder),
+            (tip - sy * shoulder, -h - 0.5),
+        ], skirt_w + 6.0))
 
-    # Underside stack (z=-h bed → up): clamp pocket → strap channel → roof
-    # Pocket deep enough that a flush bar (proud≈0) is fully swallowed.
     pocket_h = bar_h + 0.2
     for i, dy in enumerate((-25.0, 25.0)):
         oc.cut(sk, oc.box(
             f"clamp_pocket{i}",
-            (bar_l + 2.0, bar_w + 1.6, pocket_h + 0.4),
+            (min(bar_l + 1.0, skirt_w - 1.0), bar_w + 1.6, pocket_h + 0.4),
             at=(0.0, y0 + dy, -h), anchor="bottom",
         ))
     oc.cut(sk, oc.box(
@@ -343,28 +335,32 @@ def soft_crown_edges(body, w, l, h, edge_r=2.0):
 
 
 def smooth_lid_crown(lid, w, l, h, sagitta=POD_LID_CROWN, y0=0.0):
-    """Closed convex dome — rises `sagitta` (1.5–2 mm) toward centre, no dish.
+    """Closed convex dome across the full outline — no dish, no X-facet.
 
-    Spherical cap unioned onto the flat lid outer (+Z). No barrel, no dual bowls.
+    D7r6: low ellipsoid union (not a clipped UV-sphere) so studio lighting
+    does not read an arrow/X. Flat rim (~6 mm) left for corner screws on top.
     """
-    sagitta = max(1.5, min(float(sagitta), 2.0))
-    a = min(w, l) * 0.40
-    if a < 4.0:
-        return lid
-    R = (a * a + sagitta * sagitta) / (2.0 * sagitta)
-    zc = h + sagitta - R
-    # UV sphere via bpy (oc has no sphere helper). oc.intersect may consume sph.
+    sagitta = max(1.5, min(float(sagitta), 2.2))
+    rim = 6.0
+    cw = max(w - 2.0 * rim, 20.0)
+    cl = max(l - 2.0 * rim, 24.0)
+    # UV sphere scaled into a wide shallow ellipsoid covering the inner field
     bpy.ops.mesh.primitive_uv_sphere_add(
-        radius=R, location=(0.0, y0, zc), segments=48, ring_count=24)
+        radius=1.0, location=(0.0, y0, h), segments=48, ring_count=24)
     sph = bpy.context.active_object
-    sph.name = "crown_sph"
-    blank = oc.box("crown_blank", (w - 3.0, l - 6.0, sagitta + 0.8),
-                   at=(0.0, y0, h + sagitta / 2.0), anchor="center")
+    sph.name = "crown_ellip"
+    sph.scale = (cw / 2.0, cl / 2.0, sagitta)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    # Keep only the upper half above the lid deck
+    blank = oc.box(
+        "crown_keep", (cw + 2.0, cl + 2.0, sagitta + 0.4),
+        at=(0.0, y0, h + sagitta / 2.0), anchor="center",
+    )
     oc.intersect(blank, sph)
     try:
         bpy.data.objects.remove(sph, do_unlink=True)
     except ReferenceError:
-        pass  # boolean already consumed the sphere
+        pass
     if oc.volume_mm3(blank) > 40.0:
         oc.union(lid, blank)
     return lid
@@ -485,9 +481,11 @@ def pod_base(side="L"):
 
     end_taper_skin(b, POD_L, POD_LEN, POD_BASE_H, POD_TAPER_LEN, POD_TAPER_DROP,
                    y0=POD_Y0)
-    # No top_perimeter_chamfer on bases — boolean stack leaves non-manifold
-    # corners (same reason soft_crown_edges is a no-op). R6 lives on the lid.
-    # D7r4: flared strap skirt under the shell (body colour, channel kept).
+    # Heal the boolean-heavy shell BEFORE attaching the skirt so the union
+    # doesn't inherit open edges that collapse under remesh.
+    prepare(b, merge=0.012)
+    heal(b, merge=0.03)
+    # D7r6: skirt ≤ pod width, tangent into strap, clamp pockets
     strap_flare_skirt(b, POD_L, POD_LEN, y0=POD_Y0)
 
     if side == "R":
@@ -496,8 +494,9 @@ def pod_base(side="L"):
 
 
 def pod_lid(side="L"):
-    """Print: OUTER face DOWN. ≥4.0 mm; smooth spherical crown (no X-facet)."""
+    """Print: OUTER face DOWN. Closed convex dome; screws on flat rim; ID 001."""
     reveal = D.REVEAL
+    # D7r6: nearly full outline so end-on view is a closed lid, not an open box
     lx_max = POD_X_MAX - 2 * reveal
     lx_end = POD_X_END - 2 * reveal
     ll = POD_LEN - 2 * reveal
@@ -508,7 +507,7 @@ def pod_lid(side="L"):
                          y0=POD_Y0)
     d5.lid_fasteners(lid, POD_COLS, POD_LID_T)
 
-    # Landing ring on oriented groove envelope
+    # Landing ring on mating face only (z≈0) — outer stays closed
     ring_w = 1.5
     ring_out_w = POD_GROOVE_X - 2 * reveal - 5.0
     ring_out_l = POD_GROOVE_Y - 2 * reveal - 5.0
@@ -522,7 +521,6 @@ def pod_lid(side="L"):
                             r_i, at=(0, 0, -0.2), anchor="bottom")
     oc.cut(lid, oc.cut(outer, inner))
 
-    # Longitudinal ribs on mating face (along Y — no X-cross that facets the outer)
     rib_len = min(CAV_Y - 20.0, ll - 24.0)
     for i, sx in enumerate((-1.0, 1.0)):
         rib = oc.box(f"prib{i}", (2.0, rib_len, 1.5), at=(sx * 10.0, CELL_AT[1], 0.6))
@@ -533,25 +531,34 @@ def pod_lid(side="L"):
                            anchor="bottom", segments=16)
         oc.union(lid, post)
 
-    # Closed convex dome (1.5–2 mm rise); tip drop + R6 perimeter for D4 shoulder
+    # Closed convex dome across full outline; light tip ease only (no open end)
     smooth_lid_crown(lid, lx_max, ll, POD_LID_T, sagitta=POD_LID_CROWN, y0=POD_Y0)
     end_taper_skin(lid, lx_max, ll, POD_LID_T + POD_LID_CROWN,
-                   POD_TAPER_LEN * 0.85, min(POD_TAPER_DROP * 0.55, 3.5), y0=POD_Y0)
-    # Soft perimeter only — heavy chamfer was reading as a dark edge loop in hero
+                   POD_TAPER_LEN * 0.55, min(POD_TAPER_DROP * 0.25, 1.5), y0=POD_Y0)
     top_perimeter_chamfer(lid, lx_max, ll, POD_LID_T + POD_LID_CROWN,
-                          r=min(3.0, POD_TOP_EDGE_R * 0.5), y0=POD_Y0)
+                          r=min(2.0, POD_TOP_EDGE_R * 0.35), y0=POD_Y0)
 
-    # D7r5: clean recessed "001" only — 10 mm tall, 0.6 mm deep; no other marks
+    # Screw heads ON the flat rim (proud of outer deck) — D4 closed-lid read
+    z_rim = POD_LID_T
+    for i, (sx, sy) in enumerate(POD_COLS):
+        head = oc.cylinder(
+            f"pscrew_head{i}", 5.2, 1.2,
+            at=(sx, sy, z_rim), anchor="bottom", segments=20,
+        )
+        oc.union(lid, head)
+
+    # D7r6: clean recessed "001" only — 12 mm tall, 0.8 mm deep, near strap end
     try:
         z_outer = POD_LID_T + POD_LID_CROWN
-        # Blender font size ≈ 2× capital height for DejaVu (GLYPH_SIZE 10 → 5 mm)
         font_size = POD_ID_H * 2.0
         glyph = d5._text_mesh(POD_PUBLIC_ID, font_size, POD_ID_DEPTH + 0.2)
         lo, hi = oc.bounds(glyph)
+        # Place near the strap-end (−Y for L before mirror); clear of crown centre
+        id_y = POD_Y0 - (ll * 0.28)
         oc.move(
             glyph,
             dx=0.0 - (lo[0] + hi[0]) / 2.0,
-            dy=POD_Y0 - (lo[1] + hi[1]) / 2.0,
+            dy=id_y - (lo[1] + hi[1]) / 2.0,
             dz=(z_outer - POD_ID_DEPTH) - lo[2],
         )
         oc.cut(lid, glyph)

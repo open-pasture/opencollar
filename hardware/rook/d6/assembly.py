@@ -31,7 +31,10 @@ POD_ANCHOR_Y = 126.0
 # (pad local z = CAP_FLOOR+5; must stay above bed after ±29° tilt).
 POD_ANCHOR_Z = -21.9
 POD_Z0 = -4.3
-POD_BASE_H = 22.2          # as-exported mating plane (tip roof drops below); cavity still 19.5
+POD_BASE_H = 22.2          # cavity stack to mating (pre-skirt); cavity still 19.5
+POD_SKIRT_H = 14.0         # D7r5/r6 deep strap skirt below z=0 before normalize
+# Print-STL mating Z after skirt normalize (underside z=0 → mating at skirt+base)
+POD_MATING_Z = POD_BASE_H + POD_SKIRT_H  # 36.2
 POD_LID_T = 4.2            # as-exported lid thickness (~4.0 modeled + ribs)
 # D7r2: cavity rotated — 58 across X / 82 along Y → outer ~68 wide × ~97 long
 # (was 92 wide with 82 across X). Mount face local Y locked at old ±46.
@@ -44,6 +47,8 @@ POD_PLAN_R = 8.0           # outer tip plan R (pod.py PLAN_R)
 
 CAP_Z0 = -3.6              # D4 cap_base world min z
 CAP_BASE_H = 19.0
+CAP_SKIRT_H = 14.0         # D7r5/r6 end skirts below z=0 before normalize
+CAP_MATING_Z = CAP_BASE_H + CAP_SKIRT_H  # 33.0 — print-STL mating Z
 CAP_W = 76.0
 CAP_L = 164.0
 
@@ -120,11 +125,11 @@ FAIRING_CAP_POD_GAP = 1.3
 
 # Explicit world centres — bridge the 1.3 mm joint; top aligns with lid roof.
 # Cap–pod: centre so run outboard ≈ tilted pod tip (~±94.5), not past it.
-# Z nudged so H_CAP_POD=16 top meets tip-dropped lid (~16.8 world).
+# D7r6: lids sit on POD/CAP_MATING_Z (skirt-aware); Z raised so roof meets lids.
 FAIRING_CENTRES = {
     # Nudged inboard so tilted outboard end ≈ pod tip roof (~±94.5), not past it.
-    "fairing_cap_pod_L": (0.0, -84.0, -2.1),
-    "fairing_cap_pod_R": (0.0, 84.0, -2.1),
+    "fairing_cap_pod_L": (0.0, -84.0, 7.9),
+    "fairing_cap_pod_R": (0.0, 84.0, 7.9),
     "fairing_pod_strap_L": (0.0, -184.0, -38.0),
     "fairing_pod_strap_R": (0.0, 184.0, -38.0),
     # CW half-length ≈57.9; place just outboard so the wedge kisses tub + saddle
@@ -154,9 +159,9 @@ def pod_anchor_matrix(side: str):
 def cap_pad_world_centre(side: str):
     """Approximate cap mount-pad centre in world (for joint checks)."""
     s = -1.0 if side == "L" else 1.0
-    # Matches cap.py: y = ±POD_MOUNT_FACE_Y, z = CAP_FLOOR+5 (+ CAP_Z0).
+    # Matches cap.py: y = ±POD_MOUNT_FACE_Y, z = CAP_FLOOR+5, then +skirt after normalize.
     y = s * 88.3
-    z = CAP_Z0 + 11.0
+    z = CAP_Z0 + CAP_SKIRT_H + 11.0
     return np.array([0.0, y, z], dtype=float)
 
 
@@ -169,7 +174,7 @@ def world_poses():
     Zax = [0, 0, 1]
     poses = {
         "cap_base": T([0, 0, CAP_Z0]),
-        "cap_lid": T([0, 0, CAP_Z0 + CAP_BASE_H]),
+        "cap_lid": T([0, 0, CAP_Z0 + CAP_MATING_Z]),
         # Saddle STL: channel along Y (width X); roof was bed → flip 180 X so roof
         # sits under the cap, no extra Z rot needed for strap-along-Y.
         "saddle": T([0, 0, CAP_Z0]) @ R(math.pi, X),
@@ -178,7 +183,7 @@ def world_poses():
         A = pod_anchor_matrix(side)
         poses[f"pod_{side}_base"] = A @ T([0, 0, POD_Z0])
         poses[f"pod_{side}_lid"] = (
-            A @ T([0, 0, POD_Z0 + POD_BASE_H]) @ R(math.pi, X) @ T([0, 0, -POD_LID_T])
+            A @ T([0, 0, POD_Z0 + POD_MATING_Z]) @ R(math.pi, X) @ T([0, 0, -POD_LID_T])
         )
 
     CWA = T([0, 0, CW_ANCH_Z]) @ R(math.pi, X)
