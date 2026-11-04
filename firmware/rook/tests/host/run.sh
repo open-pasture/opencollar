@@ -12,7 +12,7 @@ SRCS=()
 for m in protocol shape geofence cue command config slots acks provision app; do SRCS+=("$F/src/$m.c"); done
 for m in rook_queue rook_backoff rook_report rook_http rook_fence rook_state rook_battery_math; do SRCS+=("../../src/$m.c"); done
 SRCS+=("$F/third_party/monocypher/monocypher.c" "$F/third_party/monocypher/monocypher-ed25519.c" "$F/tests/host/store_ram.c")
-for t in queue backoff report http fence battery state; do
+for t in queue backoff report http fence battery state acks; do
   ${CC:-cc} "${CFLAGS_EXTRA[@]+"${CFLAGS_EXTRA[@]}"}" "${CF[@]}" -o "build/test_$t" "test_$t.c" "${SRCS[@]}" -lm
   "./build/test_$t"
 done

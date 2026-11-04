@@ -43,5 +43,18 @@ int main(void)
 	CHECK(rook_backoff_delay(&b, 429, 99999) == ROOK_RETRY_AFTER_MAX_S);
 	CHECK(rook_backoff_delay(&b, 401, -1) == ROOK_UNAUTH_RETRY_S);
 	CHECK(rook_backoff_delay(&b, 200, -1) == 0 && b.next_s == ROOK_BACKOFF_MIN_S);
+	/* 413: halve what was sent, down to one; a single fix that is too big goes */
+	{
+		bool drop;
+
+		CHECK(rook_batch_next(413, 32, 32, 32, &drop) == 16 && !drop);
+		CHECK(rook_batch_next(413, 16, 10, 32, &drop) == 5 && !drop);
+		CHECK(rook_batch_next(413, 3, 3, 32, &drop) == 1 && !drop);
+		CHECK(rook_batch_next(413, 1, 1, 32, &drop) == 1 && drop);
+		CHECK(rook_batch_next(413, 1, 0, 32, &drop) == 1 && !drop);
+		CHECK(rook_batch_next(503, 4, 4, 32, &drop) == 4 && !drop);
+		CHECK(rook_batch_next(204, 4, 4, 32, &drop) == 32 && !drop);
+		CHECK(rook_batch_next(200, 1, 1, 32, &drop) == 32 && !drop);
+	}
 	return test_done("rook backoff");
 }

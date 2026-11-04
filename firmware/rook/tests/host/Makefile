@@ -13,7 +13,7 @@ CFLAGS += -DSAMPLES=\"../mock_server/samples\"
 
 FW = protocol shape geofence cue command config slots acks provision app
 ROOKS = rook_queue rook_backoff rook_report rook_http rook_fence rook_state rook_battery_math
-TESTS = queue backoff report http fence battery state
+TESTS = queue backoff report http fence battery state acks
 
 OBJ = $(FW:%=build/fw_%.o) $(ROOKS:%=build/%.o) build/monocypher.o build/monocypher-ed25519.o build/store_ram.o
 HDR = $(wildcard $(SRC)/*.h) $(wildcard $(ROOK)/*.h) test.h
