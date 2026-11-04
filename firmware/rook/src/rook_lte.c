@@ -31,7 +31,7 @@ static struct k_poll_signal sig = K_POLL_SIGNAL_INITIALIZER(sig);
 static K_SEM_DEFINE(fence_done, 0, 1);
 
 /* Hand-offs to the main thread (it owns struct app); the reporter waits */
-enum job { JOB_NONE, JOB_BOUNDARY, JOB_REPORTED };
+enum job { JOB_NONE, JOB_BOUNDARY, JOB_REPORTED, JOB_ACKED };
 static char rx[RX_CAP];
 static volatile enum job job;
 static const char *job_wire; /* JOB_BOUNDARY: the command; JOB_REPORTED: config or NULL */
@@ -39,6 +39,9 @@ static size_t job_len;
 static bool job_ok, job_reject_sent;
 static struct rook_fence_result fence_res;
 static enum reject_code config_res;
+static struct slot_ack job_ack; /* JOB_ACKED: the ack posted, and its status */
+static int job_status;
+static uint16_t batch = CONFIG_ROOK_LTE_MAX_FIXES; /* reporter only; 413 halves it */
 static struct rook_dev_state dev;   /* under lock, refreshed on the main thread */
 static struct rook_dev_state mine;  /* the reporter's copy for one cycle */
 
@@ -109,6 +112,9 @@ void rook_lte_service(struct app *a)
 	switch (job) {
 	case JOB_BOUNDARY:
 		fence_res = rook_fence_download(a, job_wire, job_len, now_ms);
+		break;
+	case JOB_ACKED:
+		rook_acks_settle(a, &job_ack, job_status);
 		break;
 	case JOB_REPORTED: {
 		int64_t now = 0;
@@ -251,7 +257,7 @@ static int do_report(void)
 	k_mutex_lock(&lock, K_FOREVER);
 	info.boundary_version = boundary_version;
 	info.dropped = queue.overwritten + bad_time;
-	len = rook_report_encode(&info, &queue, CONFIG_ROOK_LTE_MAX_FIXES, body, sizeof(body), &n,
+	len = rook_report_encode(&info, &queue, batch, body, sizeof(body), &n,
 				 &skipped);
 	k_mutex_unlock(&lock);
 	if (len < 0) {
@@ -262,6 +268,21 @@ static int do_report(void)
 	err = exchange("POST", "/report", body, len, &r);
 	st = status_of(err, &r);
 	LOG_INF("report: %u fixes (%u bad time), %d bytes -> %d", n - skipped, skipped, len, st);
+	{
+		bool drop_one;
+		uint16_t next = rook_batch_next(st, batch, n, CONFIG_ROOK_LTE_MAX_FIXES, &drop_one);
+
+		if (st == 413) {
+			LOG_WRN("413: batch %u -> %u%s", batch, next, drop_one ? ", dropping one" : "");
+			if (drop_one) {
+				k_mutex_lock(&lock, K_FOREVER);
+				rook_queue_drop(&queue, n);
+				bad_time++; /* counted as dropped */
+				k_mutex_unlock(&lock);
+			}
+		}
+		batch = next;
+	}
 	switch (rook_http_action(st, 0)) {
 	case ROOK_ACT_DONE:
 	case ROOK_ACT_DROP:
@@ -271,7 +292,7 @@ static int do_report(void)
 		k_mutex_unlock(&lock);
 		break;
 	default:
-		break; /* SPLIT: the next cycle sends fewer (MAX_FIXES / body cap) */
+		break; /* SPLIT: the caller resends at once with the halved batch */
 	}
 	if (st >= 200 && st < 300) {
 		size_t off, vl;
@@ -332,10 +353,34 @@ static int do_boundary(void)
 	run_job(JOB_BOUNDARY, r.body, r.body_len);
 	LOG_INF("boundary: code %s, seq %u%s", reject_str(fence_res.code),
 		(unsigned)fence_res.ack.version, fence_res.handed_on ? ", to LoRa" : "");
-	if (fence_res.has_ack) {
-		LOG_INF("ack -> %d", post_ack(&fence_res.ack));
+	return st; /* its ack is in the core's queue; drain_acks posts it */
+}
+
+/* POST the core's waiting acks (they survive reboots in NVS), oldest first */
+static void drain_acks(void)
+{
+	for (int i = 0; i < 2 * ACKS_MAX; i++) {
+		struct slot_ack ack;
+		bool has;
+		int st;
+
+		k_mutex_lock(&lock, K_FOREVER);
+		has = dev.has_ack;
+		ack = dev.ack;
+		k_mutex_unlock(&lock);
+		if (!has) {
+			return;
+		}
+		st = post_ack(&ack);
+		LOG_INF("ack %s v%u -> %d", ack_status_str((enum ack_status)ack.status),
+			(unsigned)ack.version, st);
+		job_ack = ack;
+		job_status = st;
+		run_job(JOB_ACKED, NULL, 0);
+		if (rook_ack_fate(st) == ROOK_ACK_KEEP) {
+			return;
+		}
 	}
-	return st;
 }
 
 static int lte_up(void)
@@ -398,8 +443,13 @@ static void thread_fn(void *p1, void *p2, void *p3)
 			}
 		}
 		st = do_report();
+		for (int k = 0; st == 413 && k < 8; k++) {
+			st = do_report(); /* halved each time, down to one fix */
+		}
 		if (rook_http_action(st, 0) == ROOK_ACT_DONE) {
+			drain_acks(); /* also after a reboot or reconnect */
 			st = do_boundary();
+			drain_acks(); /* the ack for what just came down */
 		}
 		if (st >= 200 && st < 300) {
 			rook_backoff_reset(&backoff);

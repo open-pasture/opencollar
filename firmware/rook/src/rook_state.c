@@ -33,6 +33,38 @@ void rook_state_take(const struct app *a, struct rook_dev_state *o)
 
 		strncpy(o->endpoint, ep, sizeof(o->endpoint) - 1);
 	}
+	if (acks_peek(&a->acks)) {
+		o->has_ack = true;
+		o->ack = *acks_peek(&a->acks);
+		o->acks_waiting = a->acks.n;
+	}
 	has_now = app_now(a, a->now_ms, &now);
 	config_cadence(&a->cfg, has_now, now, &o->report_s, &poll_s);
+}
+
+enum rook_ack_fate rook_ack_fate(int status)
+{
+	if (status >= 200 && status < 300) {
+		return ROOK_ACK_DONE;
+	}
+	if (status >= 400 && status < 500 && status != 401 && status != 408 && status != 429) {
+		return ROOK_ACK_DROP;
+	}
+	return ROOK_ACK_KEEP;
+}
+
+static bool same_ack(const struct slot_ack *x, const struct slot_ack *y)
+{
+	return x->version == y->version && x->status == y->status &&
+	       strcmp(x->command_id.s, y->command_id.s) == 0;
+}
+
+bool rook_acks_settle(struct app *a, const struct slot_ack *sent, int status)
+{
+	const struct slot_ack *head = acks_peek(&a->acks);
+
+	if (rook_ack_fate(status) == ROOK_ACK_KEEP || !head || !same_ack(head, sent)) {
+		return false;
+	}
+	return acks_pop(&a->acks) == 0;
 }

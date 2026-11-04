@@ -72,3 +72,19 @@ int rook_boundary_status(int status)
 {
 	return status == 409 ? 204 : status;
 }
+
+uint16_t rook_batch_next(int status, uint16_t cur, uint16_t sent, uint16_t max, bool *drop_one)
+{
+	*drop_one = false;
+	if (status >= 200 && status < 300) {
+		return max;
+	}
+	if (status != 413) {
+		return cur;
+	}
+	if (sent <= 1) {
+		*drop_one = sent == 1;
+		return 1;
+	}
+	return sent / 2;
+}

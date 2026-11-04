@@ -8,6 +8,7 @@
 #ifndef ROOK_BACKOFF_H
 #define ROOK_BACKOFF_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define ROOK_BACKOFF_MIN_S 30
@@ -30,6 +31,14 @@ enum rook_http_action rook_http_action(int status, int is_ack);
 /* GET /boundary: 409 is the server's safety gate refusing to send the boundary
  * (not a fault, nothing to retry sooner): it reads as 204, nothing new. */
 int rook_boundary_status(int status);
+
+/*
+ * The report batch cap after a POST that sent `sent` fixes with cap `cur`:
+ * 413 halves it (from what was sent, at least 1); a 2xx restores `max`;
+ * anything else keeps `cur`. *drop_one: a 413 for a single fix (it can't be
+ * split; drop it rather than stall the queue).
+ */
+uint16_t rook_batch_next(int status, uint16_t cur, uint16_t sent, uint16_t max, bool *drop_one);
 
 struct rook_backoff {
 	uint32_t next_s; /* The next plain backoff delay, before jitter */
