@@ -49,6 +49,8 @@ struct fix {
 	double lat;
 	double lon;
 	float accuracy;
+	float hdop; /* nRF PVT hdop; meaningful with a valid fix */
+	bool has_hdop;
 	uint8_t sats_tracked;
 	uint8_t sats_in_fix;
 	int64_t utc;
@@ -94,6 +96,9 @@ static void gnss_event_handler(int event)
 		f.utc = proto_time_civil(pvt.datetime.year, pvt.datetime.month, pvt.datetime.day,
 					 pvt.datetime.hour, pvt.datetime.minute,
 					 pvt.datetime.seconds);
+		/* hdop as the modem reports; accuracy_m stays the metres estimate */
+		f.has_hdop = true;
+		f.hdop = pvt.hdop;
 	}
 
 	/* Drop the fix if the main loop is behind; the next one is a second away */
@@ -195,8 +200,9 @@ static void handle_fix(const struct fix *f)
 	}
 
 	if (!out.fenced) {
-		LOG_INF("fix %.6f,%.6f acc=%.1fm sats=%u (no boundary) at=%s", f->lat, f->lon,
-			(double)f->accuracy, f->sats_in_fix, at);
+		LOG_INF("fix %.6f,%.6f acc=%.1fm hdop=%.1f sats=%u (no boundary) at=%s", f->lat,
+			f->lon, (double)f->accuracy, f->has_hdop ? (double)f->hdop : -1.0,
+			f->sats_in_fix, at);
 		return;
 	}
 
@@ -204,11 +210,11 @@ static void handle_fix(const struct fix *f)
 		buzzer_play(out.cmd.freq_hz, out.cmd.volume, out.cmd.duration_ms);
 	}
 
-	LOG_INF("fix %.6f,%.6f acc=%.1fm sats=%u v%u state=%s margin=%.1fm ring=%d%s%s cue=%s vol=%u "
-		"at=%s",
-		f->lat, f->lon, (double)f->accuracy, f->sats_in_fix, out.version,
-		geofence_state_str(out.r.state), out.r.margin_m, out.r.nearest_ring,
-		out.r.degraded ? " (degraded)" : "",
+	LOG_INF("fix %.6f,%.6f acc=%.1fm hdop=%.1f sats=%u v%u state=%s margin=%.1fm ring=%d%s%s "
+		"cue=%s vol=%u at=%s",
+		f->lat, f->lon, (double)f->accuracy, f->has_hdop ? (double)f->hdop : -1.0,
+		f->sats_in_fix, out.version, geofence_state_str(out.r.state), out.r.margin_m,
+		out.r.nearest_ring, out.r.degraded ? " (degraded)" : "",
 		app.cue.mode == CUE_MODE_TRACK
 			? " (track)"
 			: (app.cue.enforcement_off ? " (enforcement off)"

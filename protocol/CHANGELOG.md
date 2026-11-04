@@ -5,6 +5,27 @@ release.
 
 ## 2026-11-04
 
+### Report telemetry for the farmer app (read-only)
+
+Not a wire version bump; optional report fields only. Host-tested; **nothing was
+run on hardware.** Does not change welfare or cue behaviour. Does not edit
+Rook LTE (PR #12).
+
+Exact field names (also in firmware `wire_fields.h` for easy rename):
+
+- **`health.last_cue_at`** (RFC3339 Z): time of the most recent cue the collar
+  delivered (warn / outside / future pulse-equivalent). Omitted if none since
+  boot or GNSS time untrusted. **Not persisted across reboot.**
+- **`fixes[].hdop`** (float): as the GNSS source reports (nRF PVT `hdop`);
+  omitted when unavailable. `accuracy_m` remains required and unchanged.
+- **`health.rsrp_dbm`** (integer dBm): LTE RSRP when set via
+  `report_set_signal_dbm()` (Rook LTE wires the modem reading). Omitted until
+  set. `health.rssi_dbm` is not used.
+- **`battery`**: still omitted when unknown; never reported as `0` to mean
+  unknown (host test covers this).
+
+Vectors: [`vectors/report.json`](vectors/report.json).
+
 ### Signed remote rearm + persisted shut-off (Cody)
 
 Not a full wire version bump; new optional cap and report fields. Host-tested only;

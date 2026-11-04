@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "report.h"
+
 static void sync_welfare_from_cue(struct app *a)
 {
 	bool dirty = false;
@@ -147,6 +149,17 @@ struct app_fix_out app_fix(struct app *a, const struct app_fix_in *f, int64_t no
 
 	out.r = geofence_update(a->fence, p, f->accuracy_m);
 	out.cmd = cue_update(&a->cue, &out.r, a->fence->cfg.warn_m, now_ms);
+
+	/* Report telemetry only: stamp last_cue_at when a cue was delivered
+	 * and GNSS time is trusted. Does not change cue / welfare behaviour.
+	 * Not persisted across reboot. */
+	if (out.cmd.active && a->has_clock) {
+		int64_t utc;
+
+		if (app_now(a, now_ms, &utc)) {
+			report_note_cue_at(utc);
+		}
+	}
 
 	/* Stamp shutoff_at from GNSS once shut-off is on. */
 	if (a->cue.enforcement_off && !a->cue.has_shutoff_at && a->has_clock) {

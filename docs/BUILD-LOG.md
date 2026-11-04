@@ -2,6 +2,11 @@
 
 ## 2026-11-04
 
+### Report telemetry fields for farmer app (read-only)
+- Based on `cursor/persist-rearm-shutoff-550e` (draft PR #25). Reporting only: **no welfare / cue behaviour change**; **did not edit** Rook LTE (PR #12 / `rook-lte-v1`).
+- Fields: `health.last_cue_at` (RFC3339 Z, RAM-only — not across reboot), `fixes[].hdop` (nRF PVT `hdop`, `accuracy_m` unchanged), `health.rsrp_dbm` (setter hook `report_set_signal_dbm()` for Rook to wire). Battery still omitted when unknown (host test: never `0` for unknown).
+- Names in `wire_fields.h`. Host tests + `protocol/vectors/report.json`. Docs: README, registry, CHANGELOG. **Nothing run on hardware.**
+
 ### Persist shut-off + signed remote rearm (Cody / protocol record L)
 - NVS id 5: shut-off, `shutoff_at`, escape-cycle counters, lifetime `rearm_seq` (never lowered). Boot restores shut-off.
 - Signed `rearm` command (cap `rearm`): `shutoff_at` must match exactly; `reason_code` token (no free-text on collar); no trusted time → accept; else `expired`. Serial `rearm` remains physical clear (`by:serial`).

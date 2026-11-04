@@ -148,6 +148,20 @@ future uplink can reuse them without renumbering. See [`docs/WELFARE-POLICY.md`]
 | 3 | `auto_shutoff` | Escape-cycle limit hit; enforcement off for this animal |
 | 4 | `enforcement_resumed` | Shut-off cleared by serial caretaker `rearm` or a signed server rearm; never by a new boundary. Carries `by` (`serial`\|`server`) and, for server, `rearm_seq` |
 
+## <a id="v1-report-telemetry"></a>v1 report telemetry (JSON names)
+
+Optional keys on the v1 position report. Firmware keeps the string tokens in
+`wire_fields.h` so an op-ingest / op-protocol rename is one edit. See
+[`README.md` Position report](README.md#position-report-up) and
+[`vectors/report.json`](vectors/report.json).
+
+| Name | Where | Type | Notes |
+|---|---|---|---|
+| `last_cue_at` | `health` | RFC3339 Z | Most recent delivered cue; omit if none / time untrusted; **not persisted across reboot** |
+| `hdop` | each `fixes[]` element | float | As GNSS reports; omit when unavailable; `accuracy_m` still required |
+| `rsrp_dbm` | `health` | int (dBm) | LTE RSRP via `report_set_signal_dbm`; omit until set; no `rssi_dbm` |
+| `battery` | report root | float 0–1 | Omit when unknown; never send `0` for unknown |
+
 ## Ack and slot statuses
 
 | Code | Name | |

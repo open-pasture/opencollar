@@ -1,8 +1,9 @@
 /*
- * Wire field names and tokens for rearm / welfare (v1 JSON).
+ * Wire field names and tokens for rearm / welfare / report telemetry (v1 JSON).
  *
- * Keep every rearm and welfare key here so a protocol-record rename is one
- * edit. v2 will carry the same fields as signed CBOR (COSE); names stay stable.
+ * Keep every rearm, welfare and report-telemetry key here so a protocol-record
+ * rename (op-ingest / op-protocol) is one edit. v2 will carry the same fields
+ * as signed CBOR (COSE) where applicable; names stay stable.
  */
 #ifndef OPENCOLLAR_WIRE_FIELDS_H
 #define OPENCOLLAR_WIRE_FIELDS_H
@@ -31,6 +32,18 @@
 #define OC_FIELD_AT "at"
 #define OC_FIELD_BY "by"
 #define OC_FIELD_OUTSIDE_CUES "outside_cues"
+
+/* Report telemetry (read-only; farmer app). Rename here if the server record differs. */
+#define OC_FIELD_BATTERY "battery"
+#define OC_FIELD_HEALTH "health"
+#define OC_FIELD_LAST_CUE_AT "last_cue_at"
+#define OC_FIELD_RSRP_DBM "rsrp_dbm"
+#define OC_FIELD_FIXES "fixes"
+#define OC_FIELD_POINT "point"
+#define OC_FIELD_ACCURACY_M "accuracy_m"
+#define OC_FIELD_SATS "sats"
+#define OC_FIELD_CN0 "cn0"
+#define OC_FIELD_HDOP "hdop"
 
 /* Cap advertised in device.caps */
 #define OC_CAP_REARM "rearm"
