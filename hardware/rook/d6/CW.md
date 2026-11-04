@@ -70,7 +70,7 @@ Floor ribs: rectangular steel-pack fence + cross ribs.
 - `cw_tub.stl`, `cw_lid.stl`, `saddle.stl`, `fairing_cw_L.stl`, `fairing_cw_R.stl`
 - `clamp_bar.stl` — **print 8** (see `CLAMP_QTY.txt`)
 - `cw_floor_layout.stl`
-- `report.json` — watertight / dims / mass
+- `cw_report.json` — watertight / dims / mass
 
 All exported in print orientation; watertight-checked (PASS on first build).
 

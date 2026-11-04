@@ -895,7 +895,7 @@ def main():
     bpy.ops.wm.save_as_mainfile(filepath=blend_path)
     report["review_blend"] = os.path.relpath(blend_path, _HERE)
 
-    with open(os.path.join(STL_DIR, "report.json"), "w") as f:
+    with open(os.path.join(STL_DIR, "cw_report.json"), "w") as f:
         json.dump(report, f, indent=2)
 
     # NOTE file for clamp qty
