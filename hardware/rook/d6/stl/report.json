@@ -1,0 +1,158 @@
+{
+  "revision": "D6_cap_v1_contour_skin",
+  "contract": {
+    "cap_w": 76.0,
+    "cap_l": 164.0,
+    "stack_h": 31.0,
+    "seam_z": 9.0,
+    "crown": 2.7,
+    "end_taper": 20.0,
+    "panel_pocket": [
+      66.6,
+      113.6,
+      2.3
+    ],
+    "panel_land": [
+      68.0,
+      116.0
+    ],
+    "keep_clear": 15.0,
+    "pod_anchor_y": 113.8,
+    "pod_anchor_z": -27.8,
+    "pod_tilt_deg": 29.141828721535205
+  },
+  "match_cw": {
+    "clamp": [
+      10.0,
+      70.0,
+      8.0
+    ],
+    "cap_clamp_xy": [
+      [
+        -20.0,
+        -28.5
+      ],
+      [
+        -20.0,
+        28.5
+      ],
+      [
+        20.0,
+        -28.5
+      ],
+      [
+        20.0,
+        28.5
+      ]
+    ],
+    "saddle_w": 76.0,
+    "channel": [
+      46.45,
+      3.4
+    ]
+  },
+  "floor_label_table": {
+    "KIT": "KIT",
+    "BQ": "BQ",
+    "WIO": "WIO",
+    "USB": "USB",
+    "BATT": "BATT",
+    "BUZZ": "BUZZ",
+    "GNSS": "GNSS",
+    "LTE": "LTE",
+    "POST": "P",
+    "SCR1": "1",
+    "SCR2": "2",
+    "SCR3": "3",
+    "SCR4": "4",
+    "PLUS": "+",
+    "MINUS": "-",
+    "PIN1": "ARROW",
+    "STEEL": "STEEL",
+    "ONLY": "ONLY"
+  },
+  "bodies": {
+    "cap_base": {
+      "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/cap_base.stl",
+      "bbox": {
+        "min": [
+          -38.0,
+          -82.0,
+          0.0
+        ],
+        "max": [
+          38.0,
+          82.0,
+          20.2
+        ],
+        "size": [
+          76.0,
+          164.0,
+          20.2
+        ]
+      },
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 49824
+      },
+      "print": "cavity UP; bed=underside z=0"
+    },
+    "cap_lid": {
+      "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/cap_lid.stl",
+      "bbox": {
+        "min": [
+          -37.5,
+          -81.5,
+          0.0
+        ],
+        "max": [
+          37.5,
+          81.5,
+          12.0
+        ],
+        "size": [
+          75.0,
+          163.0,
+          12.0
+        ]
+      },
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 7228
+      },
+      "print": "mating_down",
+      "bed_face_mm2": 10210.3,
+      "support_ceiling_mm2": 1857.6
+    },
+    "cap_floor_layout": {
+      "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/cap_floor_layout.stl",
+      "bbox": {
+        "size": [
+          70.0,
+          134.0,
+          5.0
+        ]
+      },
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 39538
+      }
+    }
+  },
+  "orient": {
+    "mating_down": {
+      "bed_face_mm2": 10210.3,
+      "support_ceiling_mm2": 1857.6
+    },
+    "outer_down": {
+      "bed_face_mm2": 1201.2,
+      "support_ceiling_mm2": 11065.1
+    },
+    "picked": "mating_down",
+    "note": "Mating-down: panel pocket +Z, GNSS/LTE are bed recesses (small trees OK). Outer-down: flat panel land on bed; mating bosses become ceilings. Crown is shallow (2.7 mm) outside the land."
+  },
+  "pass": true
+}
