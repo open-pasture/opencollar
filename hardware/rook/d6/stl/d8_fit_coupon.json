@@ -44,7 +44,9 @@
     "est_hours_pla": 11.65,
     "est_note": "rough volume heuristic \u2014 re-slice before any real plate"
   },
-  "saddle_print_note": "Full curved saddle (not this coupon): flat pod-face on bed, concave R220 UP, light bowl supports. Curve never on the bed. Side-print rejected as default \u2014 seal face would be vertical layers.",
-  "electrode_note": "Shock-electrode bay + compliant/floating contact still required; rigid R220 alone is not skin contact. Ellipse 25\u00d742 cm is a model \u2014 check against real neck measurements; do not invent them.",
-  "note": "Fit-check only. Owner must approve before any print."
+  "saddle_print_note": "PICK: flat pod-face on bed, concave R220 UP, light bowl supports. Why: mating/seal face = bed accuracy; curve never on bed. REJECT upside-down-with-lid (curve on bed violates bed rule). REJECT side-print as default (seal face = vertical layers). See review/d8_fit_coupon_notes.md.",
+  "electrode_note": "Shock-electrode bay + compliant/floating contact STILL REQUIRED. Rigid R220 matches one ideal shape only; 25\u00d742 cm ellipse is a model, not measured cattle \u2014 do not rely on the rigid saddle alone for skin contact. Reserve spring/elastomer travel in the bay (unpopulated).",
+  "note": "Fit-check only. Owner must approve before any print. Draft \u2014 no merge.",
+  "ellipse_measurement_ask": "Check the 25\u00d742 cm ellipse and R 208/218/221 mm against any real neck measurements on hand. Do not invent measurements.",
+  "notes_md": "review/d8_fit_coupon_notes.md"
 }

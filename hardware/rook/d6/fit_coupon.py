@@ -290,16 +290,24 @@ def main():
             "est_note": "rough volume heuristic — re-slice before any real plate",
         },
         "saddle_print_note": (
-            "Full curved saddle (not this coupon): flat pod-face on bed, "
-            "concave R220 UP, light bowl supports. Curve never on the bed. "
-            "Side-print rejected as default — seal face would be vertical layers."
+            "PICK: flat pod-face on bed, concave R220 UP, light bowl supports. "
+            "Why: mating/seal face = bed accuracy; curve never on bed. "
+            "REJECT upside-down-with-lid (curve on bed violates bed rule). "
+            "REJECT side-print as default (seal face = vertical layers). "
+            "See review/d8_fit_coupon_notes.md."
         ),
         "electrode_note": (
-            "Shock-electrode bay + compliant/floating contact still required; "
-            "rigid R220 alone is not skin contact. Ellipse 25×42 cm is a model — "
-            "check against real neck measurements; do not invent them."
+            "Shock-electrode bay + compliant/floating contact STILL REQUIRED. "
+            "Rigid R220 matches one ideal shape only; 25×42 cm ellipse is a model, "
+            "not measured cattle — do not rely on the rigid saddle alone for skin "
+            "contact. Reserve spring/elastomer travel in the bay (unpopulated)."
         ),
-        "note": "Fit-check only. Owner must approve before any print.",
+        "ellipse_measurement_ask": (
+            "Check the 25×42 cm ellipse and R 208/218/221 mm against any real "
+            "neck measurements on hand. Do not invent measurements."
+        ),
+        "notes_md": "review/d8_fit_coupon_notes.md",
+        "note": "Fit-check only. Owner must approve before any print. Draft — no merge.",
     }
     json.dump(meta, open(os.path.join(OUT, "d8_fit_coupon.json"), "w"), indent=2)
     plate = {
@@ -312,6 +320,11 @@ def main():
         ],
         "arrange": "centre; features UP; no brim required; leave 4 mm margin",
         "contains": meta["also"],
+        "op_strategy": {
+            "saddle_print": meta["saddle_print_note"],
+            "electrode": meta["electrode_note"],
+            "ellipse_ask": meta["ellipse_measurement_ask"],
+        },
     }
     json.dump(plate, open(os.path.join(OUT, "d8_fit_coupon_plate.json"), "w"), indent=2)
     with open(os.path.join(OUT, "d8_fit_coupon_plate.txt"), "w") as f:
@@ -321,7 +334,14 @@ def main():
             f"est ≈ {est_h:.1f} h PLA\n"
             "Contents: feature block (groove/flare/lip/001) + R208/218/221/350\n"
             "gauges + flat & saddle 97 mm footprints.\n"
-            "Owner must approve before any print.\n"
+            "\n"
+            "SADDLE PRINT (full part, not coupon): PICK flat-on-bed + bowl supports;\n"
+            "REJECT upside-down-with-lid; REJECT side-print as default.\n"
+            "ELECTRODES: bay + compliant/floating contact still required;\n"
+            "rigid R220 alone is not skin contact (ellipse is a model).\n"
+            "ASK: check 25×42 cm ellipse / R208–221 vs real neck data — do not invent.\n"
+            "Details: review/d8_fit_coupon_notes.md\n"
+            "Owner must approve before any print. Draft — no merge.\n"
         )
     print("OK", path, [round(d, 1) for d in dims], f"fit256={fit} est_h={est_h:.2f}")
 
