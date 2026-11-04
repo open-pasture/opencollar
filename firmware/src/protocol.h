@@ -44,6 +44,8 @@ enum reject_code {
 	REJECT_BAD_MARGINS,
 	REJECT_SLOTS_FULL,
 	REJECT_BAD_CONFIG,
+	REJECT_BAD_CBOR, /* 21: v2; kept so numeric codes match registry.md */
+	REJECT_EXPIRED,  /* 22: expires_at reached (rearm, handover, …) */
 	REJECT_COUNT,
 };
 

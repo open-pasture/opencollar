@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include "wire_fields.h"
+
 /* Conservative defaults when a caller leaves welfare fields at 0.
  * REVIEW: animal-welfare expertise before shipping pulse hardware. */
 #define WELFARE_DEFAULT_MAX_OUTSIDE_CUES 3
@@ -40,12 +42,13 @@ static void push_done(struct cue *c, const struct episode *ep)
 
 static void push_welfare(struct cue *c, enum welfare_event_kind kind, int64_t now_ms)
 {
-	struct welfare_event ev = {
-		.kind = kind,
-		.at_ms = now_ms,
-		.outside_cues = c->outside_cues,
-		.escape_cycles = c->escape_cycles,
-	};
+	struct welfare_event ev;
+
+	memset(&ev, 0, sizeof(ev));
+	ev.kind = kind;
+	ev.at_ms = now_ms;
+	ev.outside_cues = c->outside_cues;
+	ev.escape_cycles = c->escape_cycles;
 
 	if (c->welfare_n == CUE_WELFARE_MAX) {
 		c->welfare_head = (uint8_t)((c->welfare_head + 1) % CUE_WELFARE_MAX);
@@ -144,21 +147,68 @@ void cue_rearm(struct cue *c)
 	cue_rearm_at(c, c->last_ms);
 }
 
-void cue_clear_shutoff_at(struct cue *c, int64_t now_ms)
+static void clear_shutoff(struct cue *c, int64_t now_ms, const char *by, uint32_t rearm_seq)
 {
-	/* Caretaker only — never call from a fence / boundary update. */
+	/* Caretaker / server only — never call from a fence / boundary update. */
 	clear_escape_state(c);
 	c->escape_cycles = 0;
 	c->escape_window_start_ms = 0;
+	c->has_shutoff_at = false;
+	c->shutoff_at_s = 0;
 	if (c->enforcement_off) {
+		struct welfare_event ev;
+
 		c->enforcement_off = false;
-		push_welfare(c, WELFARE_ENFORCEMENT_RESUMED, now_ms);
+		memset(&ev, 0, sizeof(ev));
+		ev.kind = WELFARE_ENFORCEMENT_RESUMED;
+		ev.at_ms = now_ms;
+		ev.outside_cues = c->outside_cues;
+		ev.escape_cycles = c->escape_cycles;
+		ev.has_by = true;
+		strncpy(ev.by, by, sizeof(ev.by) - 1);
+		ev.rearm_seq = rearm_seq;
+		if (c->welfare_n == CUE_WELFARE_MAX) {
+			c->welfare_head = (uint8_t)((c->welfare_head + 1) % CUE_WELFARE_MAX);
+			c->welfare_n--;
+		}
+		c->welfare[(c->welfare_head + c->welfare_n) % CUE_WELFARE_MAX] = ev;
+		c->welfare_n++;
 	}
+}
+
+void cue_clear_shutoff_at(struct cue *c, int64_t now_ms)
+{
+	clear_shutoff(c, now_ms, OC_BY_SERIAL, 0);
 }
 
 void cue_clear_shutoff(struct cue *c)
 {
 	cue_clear_shutoff_at(c, c->last_ms);
+}
+
+void cue_clear_shutoff_server(struct cue *c, int64_t now_ms, uint32_t rearm_seq)
+{
+	clear_shutoff(c, now_ms, OC_BY_SERVER, rearm_seq);
+}
+
+void cue_note_shutoff_at(struct cue *c, int64_t utc_s)
+{
+	if (c->enforcement_off && !c->has_shutoff_at) {
+		c->has_shutoff_at = true;
+		c->shutoff_at_s = utc_s;
+	}
+}
+
+void cue_restore_shutoff(struct cue *c, bool enforcement_off, uint8_t escape_cycles,
+			 bool has_shutoff_at, int64_t shutoff_at_s)
+{
+	c->enforcement_off = enforcement_off;
+	c->escape_cycles = escape_cycles;
+	c->has_shutoff_at = has_shutoff_at;
+	c->shutoff_at_s = has_shutoff_at ? shutoff_at_s : 0;
+	if (enforcement_off) {
+		c->armed = false;
+	}
 }
 
 void cue_set_mode(struct cue *c, enum cue_mode mode)

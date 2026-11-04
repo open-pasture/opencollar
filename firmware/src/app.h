@@ -1,25 +1,28 @@
 /*
  * The collar's core, without Zephyr: provisioning, config, slots, pending
- * acks, the fence and the cue policy, wired together. main.c feeds it GNSS
- * fixes and console lines and plays what it returns; host tests drive it the
- * same way.
+ * acks, welfare/rearm persistence, the fence and the cue policy, wired
+ * together. main.c feeds it GNSS fixes and console lines and plays what it
+ * returns; host tests drive it the same way.
  *
  * Clocks: now_ms is uptime (monotonic, for cue timing). GNSS UTC from fixes
- * is the only clock for boundary activation and for ack times; between fixes
- * it is carried forward on the uptime counter. Nothing unsigned from a
- * server sets it.
+ * is the only clock for boundary activation, ack times and rearm expiry;
+ * between fixes it is carried forward on the uptime counter. Nothing unsigned
+ * from a server sets it.
  *
  * Boot: provisioning from NVS id 1 (none: GNSS only), config from id 3,
- * slots from 0x100 + i with the latest active boundary enforced at once,
- * pending acks from id 2. No stored boundary means no fence and no cues;
- * the collar never invents one (a bench boundary only with
- * CONFIG_OPENCOLLAR_BENCH_BOUNDARY, as version 0, RAM only).
+ * welfare/rearm from id 5 (shut-off restored so a reboot does not resume
+ * enforcement; rearm_seq never lowered), slots from 0x100 + i with the latest
+ * active boundary enforced at once, pending acks from id 2. No stored
+ * boundary means no fence and no cues; the collar never invents one (a bench
+ * boundary only with CONFIG_OPENCOLLAR_BENCH_BOUNDARY, as version 0, RAM only).
  *
  * Console lines (§3.9):
  *   provision <payload>  -> ok <collar id> | error <code>
  *   status               -> collar id, herd id, fw, config version, slots
  *   boundary <command>   -> the same path as a download: applied/received/rejected
  *   config <command>     -> the same path as a report response: ok <version> | error <code>
+ *   rearm                -> caretaker clear of shut-off (persisted; by:serial)
+ *   rearm <command>      -> signed server rearm (same path as a report response)
  */
 #ifndef OPENCOLLAR_APP_H
 #define OPENCOLLAR_APP_H
@@ -34,7 +37,9 @@
 #include "cue.h"
 #include "geofence.h"
 #include "provision.h"
+#include "rearm.h"
 #include "slots.h"
+#include "welfare_store.h"
 
 #define APP_FW_VERSION "0.2.0"
 
@@ -60,6 +65,7 @@ struct app {
 	struct config cfg;
 	struct slots slots;
 	struct acks acks;
+	struct welfare_store welfare;
 	struct geofence_config defaults;
 	struct geofence fences[2]; /* The active one and a scratch one to build into */
 	struct geofence *fence;    /* NULL: no boundary, no cues */
@@ -70,6 +76,7 @@ struct app {
 	int64_t now_ms; /* Uptime of the call in progress */
 	int32_t e7[SHAPE_BUF_VERTICES][2];
 	struct boundary_cmd cmd;
+	struct rearm_cmd rearm_cmd;
 };
 
 void app_init(struct app *a, const struct cue_config *cue_cfg,
@@ -89,6 +96,13 @@ enum reject_code app_boundary(struct app *a, const char *wire, size_t len, int64
 
 /* A config command from a report response */
 enum reject_code app_config(struct app *a, const char *wire, size_t len, int64_t now_ms);
+
+/*
+ * A signed rearm command (report response or serial). On success clears
+ * shut-off, persists rearm_seq, acks applied with version=rearm_seq.
+ */
+enum reject_code app_rearm(struct app *a, const char *wire, size_t len, int64_t now_ms,
+			   struct slot_ack *ack, bool *has_ack);
 
 /* One console line (without the line ending). The reply is NUL-terminated;
  * empty when there is nothing to say. */

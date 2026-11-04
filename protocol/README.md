@@ -63,9 +63,11 @@ warning zone) to outside under the boundary it holds.
   the warning zone is silent; that clear-inside fix arms the fence again.
 - **Auto shut-off:** after **3** escape→return cycles within a fixed **24 hours**
   window (starts at the first escape; resets after 24 h), enforcement turns
-  off for that animal (fence still evaluates; no warn or outside cue). Only an
-  explicit caretaker re-arm (`cue_clear_shutoff` / serial `rearm`) clears it;
-  a new boundary does not. Thresholds are conservative defaults and need
+  off for that animal (fence still evaluates; no warn or outside cue). Shut-off
+  is persisted in NVS and restored on boot: a hard reboot does **not** resume
+  enforcement. Only an explicit caretaker re-arm clears it — serial `rearm`
+  (physical access) or a signed server `rearm` command (cap `rearm`); a new
+  boundary does not. Thresholds are conservative defaults and need
   animal-welfare review
   ([`docs/WELFARE-POLICY.md`](../docs/WELFARE-POLICY.md)).
 - Warning-zone cues are otherwise unchanged: louder toward the edge, at most
@@ -233,10 +235,12 @@ server accepted.
   suspended until clear inside; escape→return cycles in a fixed
   `escape_cycle_window_ms` (default 24 h, starts at the first escape and
   resets after that window) hit `escape_cycle_limit` (default 3) and
-  auto-shut off enforcement until an explicit caretaker re-arm (a new
-  boundary does not clear it). Events
+  auto-shut off enforcement until an explicit caretaker re-arm (serial or
+  signed server `rearm`; a new boundary does not clear it). Shut-off and
+  `rearm_seq` are persisted. Events
   `pulse_cutoff` / `returned` / `auto_shutoff` / `enforcement_resumed` are
-  queued like episodes and logged on serial today; report uplink is TBD
+  queued like episodes, logged on serial, and may appear in
+  `welfare_events[]` on the report when the encoder includes them
   ([`registry.md`](registry.md#welfare-event-kinds)).
 
 ## Slots
@@ -277,11 +281,12 @@ staged version is **dead** when a higher version activates at or before it.
 ### Persistence
 
 Zephyr NVS on a 64 KB `storage` partition, by id: 1 provisioning, 2 pending
-acks, 3 config, 0x100 + i slot i (one id more than the slot count, so a new
-record is always written before the records it replaces are deleted). An
-entry counts once it is completely written, so a power cut leaves the old
-record or the new one, and boot tidies up whatever a cut left behind. The
-store is behind `store.h`, so a NOR backend can replace NVS.
+acks, 3 config, 5 welfare / `rearm_seq` (shut-off state), 0x100 + i slot i
+(one id more than the slot count, so a new record is always written before
+the records it replaces are deleted). Id 4 is reserved on the Rook LTE
+branch. An entry counts once it is completely written, so a power cut leaves
+the old record or the new one, and boot tidies up whatever a cut left behind.
+The store is behind `store.h`, so a NOR backend can replace NVS.
 
 Slot record: a 192-byte header, then the vertices, outer ring first.
 
@@ -329,6 +334,53 @@ HTTP + JSON, `Authorization: Bearer <collar key>`.
   lower or absent and the collar has the `config` cap. There is no unsigned
   server time or herd id: herd changes arrive only through the signed config,
   and nothing unsigned sets the collar's clock.
+
+## Rearm command (down, inside the report response)
+
+Clears auto shut-off remotely. Cap: `rearm`. Same Ed25519 / canonical-JSON
+signing as boundary and config ([Signing](#signing)). In v2 this becomes a
+signed CBOR (COSE) command with the same fields.
+
+```json
+{
+  "type": "rearm",
+  "command_id": "rrm_01J9...",
+  "collar_id": "col_01J9...",
+  "herd_id": "herd_01J7...",
+  "rearm_seq": 3,
+  "issued_at": "2026-09-27T12:00:00Z",
+  "expires_at": "2026-09-28T12:00:00Z",
+  "shutoff_at": "2026-09-27T11:00:00Z",
+  "reason_code": "caretaker_checked",
+  "sig": "base64..."
+}
+```
+
+- `type` must be `rearm`. `collar_id` is required and must match.
+- `rearm_seq`: uint, monotonic **per collar for the life of the device**. The
+  collar never resets or lowers its held `rearm_seq` (not on provision,
+  serial `rearm`, boot, or a server database restore that goes backwards). It
+  refuses any `rearm_seq` at or below the held one (`stale`).
+- `shutoff_at`: the collar's persisted shut-off time (from the report). Apply
+  only when it equals that time exactly; otherwise `stale` (also when
+  enforcement is on).
+- `expires_at`: if the collar has trusted GNSS time and `expires_at` is
+  earlier, reject `expired`. **If the collar has no trusted time, accept** an
+  otherwise valid command (documented exception to `not_now` in
+  [`registry.md`](registry.md#reject-codes)): a v1 rearm arrives only inside a
+  live report response, the server never sends one past `expires_at`, and
+  `rearm_seq` blocks replay. Servers should still set `expires_at` about 24 h
+  after issue so undelivered commands die on the server side.
+- `reason_code`: short enum token (e.g. `caretaker_checked`); free-text reason
+  stays on the server and is not signed or stored on the collar.
+- On success: clear shut-off (same path as serial), persist the new
+  `rearm_seq`, emit `enforcement_resumed` with `by:"server"` and `rearm_seq`,
+  ack `applied` with `version` = `rearm_seq`.
+- Serial `rearm` (no JSON) remains the physical caretaker clear
+  (`by:"serial"`); it clears persisted shut-off but does **not** change
+  `rearm_seq`.
+
+Vectors: [`vectors/rearm.json`](vectors/rearm.json).
 
 ## Config command (down, inside the report response)
 
@@ -378,13 +430,15 @@ optional.
 ```json
 {
   "boundary_version": 57,
-  "device": {"fw": "0.2.0", "caps": ["holes","slots","collar_id","cue_mode","episodes","config"],
+  "device": {"fw": "0.2.0", "caps": ["holes","slots","collar_id","cue_mode","episodes","config","rearm"],
              "limits": {"outer":128,"holes":16,"hole_vertices":32,"total":384,"slots":16,"slot_bytes":24576},
              "config_version": 3},
   "slots": [{"version":57,"status":"applied"},{"version":58,"status":"received","effective_at":"2026-09-27T12:00:00Z"}],
   "fixes": [{"at":"…","point":[-92.405,38.124],"accuracy_m":1.8,"sats":9,"cn0":41.0,"hdop":0.9}],
   "cues": [{"at":"…","kind":"warn","level":2,"dur_ms":300,"margin_m":1.4,"ring":2,"boundary_version":57}],
   "episodes": [{"start":"…","end":"…","boundary_version":57,"ring":2,"cues":4,"max_level":3,"min_margin_m":0.8,"outcome":"turned_back"}],
+  "welfare": {"enforcement":"off","shutoff_at":"2026-09-27T11:00:00Z","escape_cycles":3,"rearm_seq":2},
+  "welfare_events": [{"kind":"auto_shutoff","at":"…","outside_cues":3,"escape_cycles":3}],
   "battery": 0.81,
   "health": {"fix_attempts":120,"fix_ok":118,
              "cell": {"rsrp_dbm":-104,"rsrq_db":-11,"snr_db":6,"mode":"ltem","band":12,"cell_id":"1A2B3C","tac":1234,"at":"…"},
@@ -397,6 +451,10 @@ optional.
   boundary applied offline can split one batch).
 - `slots` present is the complete list the collar holds (the server replaces
   its record of them); absent means unknown (LEGACY).
+- `welfare` (cap `rearm`): `enforcement` `on`|`off`, `shutoff_at` when off
+  (RFC3339 Z), `escape_cycles`, `rearm_seq`. `welfare_events[]` carries kinds
+  1–4 when the encoder includes them (`by` / `rearm_seq` on
+  `enforcement_resumed`).
 - `cell` only when measured (never on GNSS-only boards). `still_s` and
   `tilt_deg` only with an IMU.
 - Training mode has no collar flag: only `warn_m` changes.
@@ -420,17 +478,19 @@ ownership: provisioning is allowed at any time.
 | `status` | `collar <id> herd <id> fw 0.2.0 config <version or -> active <version or -> slots <versions or ->` (`unprovisioned fw 0.2.0` before provisioning) |
 | `boundary <command>` | `applied <version>`, `received <version>`, `rejected <version> <code>`, or `error <code>`: the same path as a download |
 | `config <command>` | `ok <version>`, or `error <code>`: the same path as a report response |
+| `rearm` | `ok enforcement on\|off`: physical caretaker clear of shut-off (persisted; does not change `rearm_seq`) |
+| `rearm <command>` | signed rearm JSON: `applied <rearm_seq>`, `rejected <rearm_seq> <code>`, or `error <code>` |
 
 Provisioning checks the payload in this order, each failure being its code:
 `bad_json` (not a flat JSON object), `bad_version` (`v` is not 1),
 `bad_collar_id` / `bad_herd_id` (not a string of 1–64 bytes), `bad_key` (`k`
 not 16–128 printable ASCII characters), `bad_endpoint` (`e` not `https://…`
 or over 256 bytes), `bad_server_key` (`s` not base64 of 32 bytes). Unknown
-keys are ignored. A valid payload wipes slots, config and pending acks first
-(no boundary, so no cues), then is stored as sent in NVS id 1
-(`error store_failed` if the flash write fails) and checked again at every
-boot. Other replies: `error unprovisioned`, `error too_long`, `error
-unknown_command`.
+keys are ignored. A valid payload wipes slots, config, pending acks and
+shut-off first (no boundary, so no cues) but **keeps** `rearm_seq`, then is
+stored as sent in NVS id 1 (`error store_failed` if the flash write fails)
+and checked again at every boot. Other replies: `error unprovisioned`,
+`error too_long`, `error unknown_command`.
 
 ## Test vectors
 
@@ -449,6 +509,7 @@ every case. Signing key: Ed25519 seed bytes `00 01 02 … 1f`.
 | `geofence.json` | margins (1 mm), inside, nearest ring, around and inside holes |
 | `slots.json` | supersede, dead prune, duplicate re-ack, stale, slots_full by count and by bytes, boot without clock, wrong collar, herd change (step `{"op": "set_herd", "herd_id": …}`, the signed config's herd taking effect) |
 | `cue.json` | the cue rule: only a crossing, warning levels, the 20 s cap and rest, outside tone + pulse cutoff, auto shut-off, boundary rearm vs caretaker clear_shutoff, track mode, holes, episodes |
+| `rearm.json` | signed rearm: valid, wrong_collar, bad_sig, stale seq / shutoff_at / not shut off, expired, no trusted time accepts |
 
 ## Transport
 

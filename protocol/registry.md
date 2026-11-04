@@ -44,6 +44,7 @@ What a collar can do, in `device.caps` (v1) or the device record's `caps` (v2).
 | `cue_mode` | 1 | takes `cue_mode` (track mode) |
 | `episodes` | 1 | reports episodes |
 | `config` | 1 | takes signed config commands |
+| `rearm` | 1 | takes signed rearm commands and reports a `welfare` block (`enforcement`, `shutoff_at`, `escape_cycles`, `rearm_seq`) |
 | `sim` | 1 | **is simulated**, not a collar on an animal. A server shows everything from it as simulated and keeps it out of anything that describes real animals. A simulated collar MUST list it |
 | `v2` | 2 | speaks v2 messages (a v1 collar that has been updated) |
 | `fixes` | 2 | sends fix history blocks (`track_s`) |
@@ -145,7 +146,7 @@ future uplink can reuse them without renumbering. See [`docs/WELFARE-POLICY.md`]
 | 1 | `pulse_cutoff` | Outside/pulse budget spent for this crossing; silent until clear inside |
 | 2 | `returned` | Clear inside after a counted crossing (one escape→return cycle) |
 | 3 | `auto_shutoff` | Escape-cycle limit hit; enforcement off for this animal |
-| 4 | `enforcement_resumed` | Shut-off cleared by explicit caretaker re-arm (`cue_clear_shutoff`); never by a new boundary |
+| 4 | `enforcement_resumed` | Shut-off cleared by serial caretaker `rearm` or a signed server rearm; never by a new boundary. Carries `by` (`serial`\|`server`) and, for server, `rearm_seq` |
 
 ## Ack and slot statuses
 
@@ -176,7 +177,7 @@ Permanent unless marked: the server doesn't offer that version to that collar ag
 | 3 | `wrong_collar` | 1 | another collar's |
 | 4 | `bad_json` | 1 | not a valid v1 command |
 | 5 | `too_large` | 1 | over 12 288 bytes |
-| 6 | `stale` | 1 | a version at or below one held |
+| 6 | `stale` | 1 | a version / `rearm_seq` at or below one held; also a rearm whose `shutoff_at` does not equal the collar's persisted shut-off time (including when enforcement is on) |
 | 7 | `out_of_range` | 1 | a coordinate past ±180 / ±90 |
 | 8 | `too_few_vertices` | 1 | |
 | 9 | `too_many_vertices` | 1 | per ring or in total |
@@ -192,13 +193,13 @@ Permanent unless marked: the server doesn't offer that version to that collar ag
 | 19 | `slots_full` | 1 | **temporary**: no room now |
 | 20 | `bad_config` | 1 | a config or membership out of range |
 | 21 | `bad_cbor` | 2 | not deterministic CBOR, or not the message it claims to be |
-| 22 | `expired` | 2 | `expires_at` reached; a handover whose deadline passed |
+| 22 | `expired` | 1 | `expires_at` earlier than the collar's trusted time (v1 rearm; also v2 handover / commands whose deadline passed) |
 | 23 | `unknown_kid` | 2 | signed by a key the collar doesn't trust for that command |
 | 24 | `unsupported` | 2 | a command type the collar doesn't implement |
 | 25 | `claimed` | 2 | a bind for a claimed collar |
 | 26 | `bad_claim` | 2 | a bind with the wrong nonce or proof |
 | 27 | `rate_limited` | 2 | **temporary**: too many bad claims this hour |
-| 28 | `not_now` | 2 | **temporary**: valid, waiting for a safe moment (firmware), or for GNSS time (a command with `expires_at`) |
+| 28 | `not_now` | 2 | **temporary**: valid, waiting for a safe moment (firmware), or for GNSS time (a command with `expires_at`). **Exception (v1 rearm):** if the collar has no trusted time, it **accepts** an otherwise valid rearm instead of returning `not_now` / deferring. Reasons: a v1 rearm arrives only inside a live report response; the server never sends one past `expires_at`; and `rearm_seq` blocks replay |
 | 29 | `bad_image` | 2 | a firmware image with the wrong digest, size or signature |
 | 30 | `incompatible` | 2 | firmware for other hardware |
 | 31 | `downgrade` | 2 | firmware older than the running image's security counter |

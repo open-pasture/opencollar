@@ -15,9 +15,12 @@ target_sources(app PRIVATE
   src/geofence.c
   src/protocol.c
   src/provision.c
+  src/rearm.c
+  src/report.c
   src/shape.c
   src/slots.c
   src/store_nvs.c
+  src/welfare_store.c
   third_party/monocypher/monocypher.c
   third_party/monocypher/monocypher-ed25519.c
 )
