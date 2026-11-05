@@ -81,6 +81,12 @@ int starling_app_set_fence(struct starling_app *a, const struct starling_fence_b
 
 struct starling_tick_out starling_app_tick(struct starling_app *a, int64_t now_ms);
 
+/*
+ * Serial-only caretaker re-arm (clears shut-off). Pilot default: no LoRa /
+ * signed remote re-arm. Fence/gossip paths must call cue_rearm only.
+ */
+void starling_app_caretaker_rearm(struct starling_app *a, int64_t now_ms);
+
 #ifdef __cplusplus
 }
 #endif

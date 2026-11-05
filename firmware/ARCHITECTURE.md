@@ -31,7 +31,7 @@ radio; nothing depends on an app. Change someone else's directory only by PR the
 ## Where today's files go
 | Today (`firmware/src/`) | Moves to | Note |
 |---|---|---|
-| geofence.c/h, shape.c/h, cue.c/h, boundary.h | core/ | cue gets the welfare-cap hook (PR #2 numbers still placeholders) |
+| geofence.c/h, shape.c/h, cue.c/h, boundary.h | core/ | cue welfare caps: `WELFARE_DEFAULT_*` in cue.h (PR #2 approved) |
 | command.c/h (parse + Ed25519 verify), protocol.c/h | core/ | |
 | slots.c/h, acks.c/h, config.c/h, provision.c/h, app.c/h, store.h | core/ | store.h is the interface; app.c has a couple of Zephyr-free time helpers, check on move |
 | main.c, console.c/h, buzzer.c/h, store_nvs.c | rook/ | starling/ gets its own main and copies buzzer/store glue at first |

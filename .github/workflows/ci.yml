@@ -21,6 +21,17 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - run: make -C firmware/tests/host
 
+  starling:
+    name: Starling host tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - name: Fetch PR #6 tip for gossip deps
+        run: git fetch origin proto-fence-gossip
+      - run: make -C firmware/starling/tests/host
+
   vectors:
     name: Protocol vectors
     runs-on: ubuntu-24.04

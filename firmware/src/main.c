@@ -37,10 +37,10 @@ static const struct cue_config cue_cfg = {
 	.max_active_ms = 20000,
 	.rest_ms = 30000,
 	.outside_max_ms = 10000,
-	/* Welfare: REVIEW with animal-welfare expertise (docs/WELFARE-POLICY.md) */
-	.max_outside_cues = 3,
-	.escape_cycle_limit = 3,
-	.escape_cycle_window_ms = 24u * 60u * 60u * 1000u,
+	/* Welfare: PR #2 approved caps (cue.h WELFARE_DEFAULT_*). */
+	.max_outside_cues = WELFARE_DEFAULT_MAX_OUTSIDE_CUES,
+	.escape_cycle_limit = WELFARE_DEFAULT_ESCAPE_CYCLE_LIMIT,
+	.escape_cycle_window_ms = WELFARE_DEFAULT_ESCAPE_WINDOW_MS,
 };
 
 struct fix {

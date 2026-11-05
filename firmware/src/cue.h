@@ -50,15 +50,26 @@ struct cue_config {
 	uint32_t outside_max_ms; /* How long to cue after leaving the polygon */
 
 	/*
-	 * Welfare thresholds. REVIEW: pick final values with animal-welfare
-	 * expertise. Zero at cue_init() is replaced by the safe defaults
-	 * (3 outside cues, 3 cycles / 24 h). Use 255 / UINT32_MAX only in
-	 * tests that deliberately disable a limit.
+	 * Welfare thresholds (PR #2 approved caps). Zero at cue_init() is
+	 * replaced by WELFARE_DEFAULT_* below. Use 255 / UINT32_MAX only in
+	 * tests that deliberately disable a limit. V0 is audio-only; these
+	 * counters also gate a future pulse module but do not enable pulse.
 	 */
-	uint8_t max_outside_cues;        /* Outside/pulse cues per crossing; default 3 */
+	uint8_t max_outside_cues;        /* Outside cues per crossing; default 3 */
 	uint8_t escape_cycle_limit;      /* Escape→return cycles before shut-off; default 3 */
 	uint32_t escape_cycle_window_ms; /* Fixed window (from first escape); default 24 h */
 };
+
+/* PR #2 approved defaults (also applied when cue_init sees zeros). */
+#ifndef WELFARE_DEFAULT_MAX_OUTSIDE_CUES
+#define WELFARE_DEFAULT_MAX_OUTSIDE_CUES 3
+#endif
+#ifndef WELFARE_DEFAULT_ESCAPE_CYCLE_LIMIT
+#define WELFARE_DEFAULT_ESCAPE_CYCLE_LIMIT 3
+#endif
+#ifndef WELFARE_DEFAULT_ESCAPE_WINDOW_MS
+#define WELFARE_DEFAULT_ESCAPE_WINDOW_MS (24u * 60u * 60u * 1000u) /* 24 hours */
+#endif
 
 enum cue_kind {
 	CUE_NONE = 0,
