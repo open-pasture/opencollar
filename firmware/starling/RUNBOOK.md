@@ -20,8 +20,8 @@ Do **not** merge this PR; keep draft until op-firmware says go.
 | `firmware/lora/` | PR #6 — `oc_radio_*`, `oc_fh_node_*`, `INTEGRATION.md` |
 | `firmware/starling/pending_opencollar/` | **TEMPORARY** freshness-only shim — **delete when #6 merges** |
 | `firmware/starling/src/oc_fh_store_nvs.*` | NVS `oc_fh_store_t` (A/B+CRC HWM+active) per INTEGRATION |
-| `firmware/core/welfare.h` | Cue gate hooks; honors shut-off (no numeric caps; PR #2) |
-| `firmware/src/{geofence,cue,…}` | Shared portable core (do not move here) |
+| `firmware/core/welfare.h` | Cue gate hooks; shut-off honor + `welfare_config_apply_approved_caps` |
+| `firmware/src/{geofence,cue,…}` | Shared portable core (PR #2 caps in `cue.h` `WELFARE_DEFAULT_*`) |
 
 ## INTEGRATION.md conformity (PR #6)
 
@@ -47,9 +47,9 @@ make -C firmware/starling/tests/host
 # pin tip: PROTO_REF=origin/proto-fence-gossip make -C firmware/starling/tests/host clean deps test
 ```
 
-Suites: `geofence_fake`, `fence_store`, `ubx_nmea`, `demo`, `gossip_hwm`
-(restore + inject_opaque + reject-stale), `gossip_opaque` (payload_verify /
-field widths).
+Suites: `geofence_fake`, `fence_store`, `ubx_nmea`, `demo`, `welfare_shutoff`,
+`welfare_caps`, `gossip_hwm` (restore + inject_opaque + reject-stale),
+`gossip_opaque` (payload_verify / field widths).
 
 `PROTO_REF` defaults to `origin/proto-fence-gossip` (PR #6 tip). Archive lands
 in `tests/host/.deps/` (gitignored).
@@ -90,26 +90,29 @@ When `firmware/lora` is present (after #6), CMake links `oc_fh_*` +
 Boot: `starling_gossip_restore` → load HWM + active **before** radio traffic.
 Fence move calls `cue_rearm` only — never `cue_clear_shutoff` (PR #22).
 
-## Welfare / shut-off (PR #22 merged, #25 draft)
+## Welfare / shut-off (PR #2 + #22 merged; #25 draft not wired)
 
+- **#2 caps (approved on main):** `WELFARE_DEFAULT_MAX_OUTSIDE_CUES=3`,
+  `WELFARE_DEFAULT_ESCAPE_CYCLE_LIMIT=3`,
+  `WELFARE_DEFAULT_ESCAPE_WINDOW_MS=24h` in `firmware/src/cue.h` (applied by
+  `welfare_config_apply_approved_caps` / `cue_init`). Audio/cue gate only;
+  pulse stays off.
 - **#22:** auto shut-off stays until caretaker `cue_clear_shutoff`; fence
   `cue_rearm` must not resume. Starling wires `welfare_hooks_init_shutoff`
   so the welfare gate suppresses cues while `cue.enforcement_off`.
-- **#25 (draft):** persist shut-off + signed remote re-arm (`welfare_store`,
-  `rearm_seq`). **Not wired in Starling yet** — needs Cody decision (see
-  below). No numeric welfare caps here (PR #2).
+- **Re-arm:** serial-only via `starling_app_caretaker_rearm` (pilot default).
+  No LoRa / signed remote re-arm on Starling.
+- **#25 (draft):** persist shut-off + signed remote re-arm — **not wired**.
 
 ### TODO(cody)
 
 1. Should Starling boot-restore shut-off from `STORE_ID_WELFARE` (#25) the
    same way the main collar app does?
-2. Remote re-arm over LoRa vs serial-only on Starling?
-3. PR #2 numeric welfare caps (escape_cycle_limit / max_outside_cues).
 
 ## Open / blocked
 
 - Blocked on **PR #6** merge for `firmware/lora` on `main` (then delete
   `pending_opencollar/`).
 - op-fw-radio: SX1262 backend for `oc_radio_t`.
-- Draft PR #25: persist shut-off + signed rearm (Starling hook only so far).
+- Draft PR #25: persist shut-off + signed rearm (optional; serial-only for now).
 - Real MAX-M10S UART when module arrives.

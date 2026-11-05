@@ -27,7 +27,7 @@ PENDING_INC = $(STARLING)/pending_opencollar
 BASE_INC = -I$(STARLING)/src -I$(CORE) -I$(SRC) -I$(MONO) -I$(HOST_RAM)
 CFLAGS += $(BASE_INC) -I$(PENDING_INC)
 
-TESTS = geofence_fake fence_store ubx_nmea demo welfare_shutoff
+TESTS = geofence_fake fence_store ubx_nmea demo welfare_shutoff welfare_caps
 
 OBJ = \
 	build/protocol.o build/shape.o build/geofence.o build/cue.o \

@@ -24,5 +24,4 @@ CORE_PORTABLE_HDRS = \
 	$(SRC_ROOT)/config.h \
 	$(SRC_ROOT)/provision.h \
 	$(SRC_ROOT)/store.h \
-	$(STARLING_ROOT)/welfare.h \
-	$(STARLING_ROOT)/fence_freshness.h
+	$(STARLING_ROOT)/../core/welfare.h

@@ -23,9 +23,11 @@ void starling_app_init(struct starling_app *a, bool starling_serve)
 	a->cue_cfg.max_active_ms = 20000;
 	a->cue_cfg.rest_ms = 30000;
 	a->cue_cfg.outside_max_ms = 10000;
+	/* PR #2 caps from cue.h WELFARE_DEFAULT_* (via welfare hook helper). */
+	welfare_config_apply_approved_caps(&a->cue_cfg);
 	cue_init(&a->cue, &a->cue_cfg);
 
-	/* PR #22: honor shut-off until caretaker clear (hook plumbing only). */
+	/* PR #22: honor shut-off until serial caretaker clear (no LoRa re-arm). */
 	welfare_hooks_init_shutoff(&a->welfare, &a->cue);
 
 	fence_store_init(&a->store);
@@ -140,4 +142,10 @@ struct starling_tick_out starling_app_tick(struct starling_app *a, int64_t now_m
 		out.fence_seq = a->store.active.freshness.fence_seq;
 	}
 	return out;
+}
+
+void starling_app_caretaker_rearm(struct starling_app *a, int64_t now_ms)
+{
+	/* Pilot: serial-only caretaker path. Never called from gossip/LoRa. */
+	cue_clear_shutoff_at(&a->cue, now_ms);
 }

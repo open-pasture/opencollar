@@ -13,7 +13,7 @@ The repo already designs this, under other names: **Rook = anchor** (role 2, LTE
 - To relay fences to Starlings it needs **a LoRa radio. The nRF9151 has none.** Nordic lists only LTE-M/NB-IoT, DECT NR+ and GNSS on it: no BLE, no sub-GHz LoRa (verified on the product page, not the full datasheet). The current board (`hardware/bom.md`: Makerdiary nRF9151 Connect Kit) has **no LoRa part. This is the main BOM risk.** Fix: add an SX1262 over SPI. Off-the-shelf options are RAK4630 (nRF52840 + SX1262, which the protocol already targets) or a bare SX1262 module. Then the Rook runs the anchor role: beacon, downlink window, uplink slots, batch to server. That requires protocol v2 framing (`lora.md`). v1 can't do LoRa (decision records, option 3).
 
 ## 2. Starling firmware (LoRa only)
-LoRa receive of signed herd broadcasts, reassembly, signature check, and atomic switch to the new boundary. Plus own GNSS, geofence, buzzer, welfare caps (PR #2, placeholder numbers that need Cody's sign-off), and records kept in flash. No cellular, no BLE.
+LoRa receive of signed herd broadcasts, reassembly, signature check, and atomic switch to the new boundary. Plus own GNSS, geofence, buzzer, welfare caps (PR #2 approved: 3 outside cues / 3 escape cycles / 24 h in `cue.h` `WELFARE_DEFAULT_*`), and records kept in flash. No cellular, no BLE.
 - Chip: the repo implies **nRF52840 + SX1262 (RAK4630)**, via the boot profile `nrf52840-mcuboot-1` "node and anchor boards" in `protocol/v2/firmware.md`, the RAK4630 FCC grant in `lora.md §2`, and the SX1262 energy figures in `v2/README.md`. Inferred, because no Starling BOM exists. `hardware/rook/cad/lib/node_v1.py` covers only the shell.
 - Options: (a) **RAK4630**, which matches the repo, is FCC-certified and runs Zephyr. Its BLE goes unused. Recommended. (b) STM32WL (MCU and LoRa in one chip): cheapest at volume, but a new SDK and the C fence code has to be ported. (c) nRF54L15 + SX1262: newer and lower power, but a new board. (d) nRF9151 + SX1262 without a SIM: same code as the Rook, but it pays for a modem it doesn't use, which defeats the cost reason for Starling.
 - Reusable from Rook (assumed portable; it's plain C): `boundary`, `geofence`, `shape`, `cue`, `command` (Ed25519 verify), `slots`, `config`. Needs rewriting: modem/LTE and the nRF91 GNSS driver. The nRF52840 has no GNSS, so a Starling needs a separate GNSS chip. `docs/V1-REQUIREMENTS.md` already recommends a dedicated multi-constellation receiver.
@@ -49,7 +49,7 @@ LoRa receive of signed herd broadcasts, reassembly, signature check, and atomic 
 3. Starling MCU and GNSS aren't specified. RAK4630 + external GNSS is assumed.
 4. v1 can't carry LoRa. Starlings need v2 firmware and server `/collar/v2/batch`. Don't freeze v2 names before counsel.
 5. FCC: the 500 kHz bandwidth and the RAK4630 grant aren't checked. Whether pilot loaner units are allowed is a question for a specialist.
-6. Welfare cap numbers in PR #2 are placeholders.
+6. Welfare cap numbers: PR #2 approved defaults in `firmware/src/cue.h` (`WELFARE_DEFAULT_*`).
 7. Node energy figures come from the datasheet, not measurements (v2 README open question 6).
 
 ## 7. Added: DECT NR+ vs LoRa for the Starling radio, and the no-Bluetooth check

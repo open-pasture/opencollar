@@ -40,7 +40,7 @@ Legend: DEF = defined in repo docs; HAVE = alpha part on hand per BUILD-LOG/orde
 | Battery reading | MISSING | no ADC/fuel-gauge code |
 | LoRa SX1262 driver | MISSING | no LoRa in src/prj.conf |
 | Fence-fragment handoff (beacon/fragment/need, v2 lora.md) | MISSING (spec only) | lora.md frame 22, 13-byte header |
-| Welfare caps | NOT IN MAIN | PR #2 open; values are placeholders needing Cody sign-off |
+| Welfare caps | IN MAIN (PR #2) | `WELFARE_DEFAULT_*` in `cue.h` (3 / 3 / 24 h); Starling wires via welfare hooks |
 | PSM / eDRX power mgmt | MISSING | grep: no PSM/eDRX config |
 | OTA firmware over LTE-M (FOTA) | MISSING | needs MCUboot + slot1 + download client |
 | Watchdog | MISSING | no WDT in src |
@@ -56,7 +56,7 @@ Legend: DEF = defined in repo docs; HAVE = alpha part on hand per BUILD-LOG/orde
 | Zephyr build in CI | op-firmware | Wed Nov 4 |
 | Watchdog + reset-reason/fault log | op-firmware | Wed Nov 4 |
 | Battery reading (interim ADC / %XVBAT; MAX17260 later) | op-firmware | Thu Nov 5 (host); bench Fri Nov 6 |
-| Welfare caps on by default (PR #2 rebased) | op-firmware; numbers = Cody | Cody call by Wed Nov 4; merged-ready Thu Nov 5 |
+| Welfare caps on by default (PR #2 merged) | op-firmware | Done on main; Starling stacked PR wires hooks |
 | v1 HTTPS reporting + boundary download | op-fw-rook-lte | host/mock server Thu Nov 5; live needs SIM |
 | Activate Hologram SIM, insert, confirm attach | Cody | Tue Nov 3 (blocks all live LTE tests) |
 | PSM/eDRX | op-fw-rook-lte | Fri Nov 6 (PPK2 not owned: power numbers unverified) |
@@ -76,4 +76,4 @@ Legend: DEF = defined in repo docs; HAVE = alpha part on hand per BUILD-LOG/orde
 2. No cellular uplink: no HTTPS reporting, no boundary download, SIM not activated.
 3. No bootloader on hardware yet, so no FOTA; MCUboot is uncommitted, dev-key only.
 4. No battery reading, PSM/eDRX, or watchdog; no fuel gauge on the alpha.
-5. Welfare caps not in main; placeholder numbers need Cody's sign-off.
+5. Welfare caps are in main (PR #2); Starling app must keep `WELFARE_DEFAULT_*`.

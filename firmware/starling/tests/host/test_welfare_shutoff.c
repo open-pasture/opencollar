@@ -3,7 +3,7 @@
  *
  * Welfare hook honors shut-off-until-caretaker-re-arm (PR #22).
  * Fence cue_rearm must not clear shut-off; cue_clear_shutoff does.
- * No numeric caps here.
+ * Numeric caps: see test_welfare_caps.c (PR #2 WELFARE_DEFAULT_*).
  */
 #include "test.h"
 
