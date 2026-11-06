@@ -59,61 +59,94 @@ def _export(obj, name):
 
 
 def jig_m3_heatset_stop():
-    """Depth-stop collar for M3×4 / M3×5 brass inserts — flush to −0.15 mm."""
-    # Block 28×20×8 with Ø5.2 through for tip, shoulder at 4.85 (M3×5 −0.15)
-    body = oc.rounded_rect("jig_m3_heatset_stop", (28.0, 20.0, 8.0), 2.0,
+    """Depth-stop collar for M3×4 / M3×5 brass inserts — flush to −0.15 mm.
+
+    Critical: tip Ø5.2 bore must NOT swallow the Ø4.05 insert shelf.
+    Shelf sits at z = 8.0 - 4.85 = 3.15 (solid annular land).
+    """
+    H = 8.0
+    INSERT_DEPTH = 4.85          # M3×5 − 0.15
+    SHELF_Z = H - INSERT_DEPTH   # 3.15
+    body = oc.rounded_rect("jig_m3_heatset_stop", (28.0, 20.0, H), 2.0,
                            at=(0, 0, 0), anchor="bottom", segments=8)
-    # Tip clearance bore
-    oc.cut(body, oc.cylinder("tip", 5.2, 10.0, at=(0, 0, -1), anchor="bottom", segments=24))
-    # Insert stop shelf — annular land
-    oc.cut(body, oc.cylinder("ins", 4.05, 4.85, at=(0, 0, 8.0 - 4.85), anchor="bottom", segments=24))
+    # Tip bore from BOTTOM only up to the shelf (leaves solid land at SHELF_Z)
+    oc.cut(body, oc.cylinder(
+        "tip", 5.2, SHELF_Z + 0.05,
+        at=(0, 0, -0.02), anchor="bottom", segments=32,
+    ))
+    # Insert bore from TOP down to the shelf
+    oc.cut(body, oc.cylinder(
+        "ins", 4.05, INSERT_DEPTH + 0.05,
+        at=(0, 0, SHELF_Z), anchor="bottom", segments=32,
+    ))
     try:
-        d5.emboss_glyph(body, "M3 STOP", (0.0, -7.5, 8.0), size=4.5, depth=0.7)
+        d5.emboss_glyph(body, "M3 STOP", (0.0, -7.5, H), size=4.5, depth=0.7)
     except Exception:
-        d5.emboss_label(body, "SCR1", (0.0, -7.5, 8.0))
+        d5.emboss_label(body, "SCR1", (0.0, -7.5, H))
     oc.bake(body)
     return body
 
 
 def jig_wire_gauge():
-    """≤190 mm long, ≤5 mm thick wire + M3 length gauge."""
+    """≤190 mm long, ≤5 mm thick wire + M3 length gauge.
+
+    Channel stops short of the M3 zone so the 10 mm slot at mid-X stays distinct.
+    Strip notches sit at exactly 5.0 / 8.0 mm from the −Y reference end.
+    """
     L, W, T = 180.0, 28.0, 4.5
     body = oc.rounded_rect("jig_wire_gauge", (W, L, T), 2.0,
                            at=(0, 0, 0), anchor="bottom", segments=8)
-    # Measurement channel (cap-to-pod / solar / batt) — 2 mm deep groove along Y
-    oc.cut(body, oc.box("ch", (6.0, L - 12.0, 2.2), at=(0, 0, T - 2.0), anchor="bottom"))
-    # Strip notches at 5 mm and 8 mm from one end
+    # Wire channel — shortened so it does NOT reach the M3 slot band near +Y
+    # M3 slots occupy y ≳ +L/2 − 40; keep channel ending ~12 mm before that.
+    ch_l = L - 55.0
+    ch_cy = -8.0
+    oc.cut(body, oc.box("ch", (6.0, ch_l, 2.2),
+                        at=(0, ch_cy, T - 2.0), anchor="bottom"))
+    # Strip notches at 5 mm and 8 mm from −Y end (y = −L/2 + d)
     for i, d in enumerate((5.0, 8.0)):
-        y = -0.5 * L + 10.0 + d
+        y = -0.5 * L + d
         oc.cut(body, oc.box(f"strip{i}", (W + 2, 1.2, 2.0),
                             at=(0, y, T - 1.5), anchor="bottom"))
-    # M3 screw length slots: 6/8/10/12/16
+    # M3 screw length slots: 6/8/10/12/16 — all five distinct, clear of channel
     for i, sl in enumerate((6.0, 8.0, 10.0, 12.0, 16.0)):
         x = -10.0 + i * 5.0
         oc.cut(body, oc.box(f"m3_{int(sl)}", (2.0, sl + 0.4, 2.5),
-                            at=(x, 0.5 * L - 20.0 - 0.5 * sl, T - 2.2), anchor="bottom"))
+                            at=(x, 0.5 * L - 20.0 - 0.5 * sl, T - 2.2),
+                            anchor="bottom"))
     try:
-        d5.emboss_glyph(body, "WIRE + M3", (0.0, -0.5 * L + 6.0, T), size=4.0, depth=0.6)
+        d5.emboss_glyph(body, "WIRE + M3", (0.0, -0.5 * L + 12.0, T), size=4.0, depth=0.6)
     except Exception:
         pass
     oc.bake(body)
     return body
 
 
+# Blank shock plug: stem Ø7.60 → receiving bore Ø8.05 (0.225 mm/side)
+BLANK_SHOCK_STEM_D = 7.60
+BLANK_SHOCK_BORE_D = 8.05
+BLANK_SHOCK_STEM_H = 6.00
+BLANK_SHOCK_FLANGE_D = 12.0
+BLANK_SHOCK_FLANGE_H = 1.80
+
+
 def jig_blank_shock_plug(side: str = "L"):
-    """Blank shock-bay plug — seals reserved bay; zero exposed electrode holes."""
-    # Stem into bay + flange; sized for opt-A saddle / opt-B bay opening
-    stem = oc.cylinder(f"jig_blank_shock_plug_{side}", 7.6, 6.0,
-                       at=(0, 0, 0), anchor="bottom", segments=24)
-    flange = oc.cylinder("flange", 12.0, 1.8, at=(0, 0, 5.5), anchor="bottom", segments=24)
+    """Blank shock-bay plug — seals reserved bay; zero exposed electrode holes.
+
+    Stem Ø7.60 × 6.0 mates Ø8.05 receiving bore (0.225 mm/side) in optB bay.
+    Flange Ø12.0 × 1.8 seats flush on the bore land.
+    """
+    stem = oc.cylinder(
+        f"jig_blank_shock_plug_{side}", BLANK_SHOCK_STEM_D, BLANK_SHOCK_STEM_H,
+        at=(0, 0, 0), anchor="bottom", segments=32,
+    )
+    flange = oc.cylinder(
+        "flange", BLANK_SHOCK_FLANGE_D, BLANK_SHOCK_FLANGE_H,
+        at=(0, 0, BLANK_SHOCK_STEM_H - 0.5), anchor="bottom", segments=32,
+    )
     oc.union(stem, flange)
-    # Flat sealed face — no electrode holes
-    try:
-        d5.emboss_glyph(stem, "NO SHOCK", (0.0, 0.0, 7.3), size=3.2, depth=0.55)
-        d5.emboss_glyph(stem, side, (0.0, -4.5, 7.3), size=4.0, depth=0.55)
-    except Exception:
-        pass
+    # No proud top glyphs — keep Z envelope = stem+flange for seated clearance
     oc.bake(stem)
+    oc.move(stem, dz=-oc.bounds(stem)[0][2])
     return stem
 
 

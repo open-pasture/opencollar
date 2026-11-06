@@ -8,20 +8,23 @@
       "experiment_path": "/agent/repos/opencollar/hardware/rook/d6/experiments/opt_b_integral_underside/stl/pod_L_base_optB_curveUP.stl",
       "size_mm": [
         76.0,
-        98.79,
-        36.16
+        98.8,
+        38.2
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 261158
+        "faces": 720210
       },
-      "first_layer_area_mm2": 871.5,
+      "first_layer_area_mm2": 308.1,
       "sagitta_mm": 5.41,
       "bay": {
         "bay_w": 31.0,
         "bay_l": 46.0,
-        "bay_h": 9.41260521642937
+        "bay_h": 9.41260521642937,
+        "shock_bore_d": 8.05,
+        "shock_boss_d": 14.0,
+        "cover_land_z": 5.41260521642937
       },
       "print": "curve UP / cavity DOWN; brim recommended"
     },
@@ -30,12 +33,12 @@
       "size_mm": [
         28.0,
         42.0,
-        2.9
+        2.5
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4034
+        "faces": 1340
       }
     },
     "pod_R_base_optB_curveUP": {
@@ -43,20 +46,23 @@
       "experiment_path": "/agent/repos/opencollar/hardware/rook/d6/experiments/opt_b_integral_underside/stl/pod_R_base_optB_curveUP.stl",
       "size_mm": [
         76.0,
-        98.79,
-        36.16
+        98.8,
+        38.2
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 261932
+        "faces": 720986
       },
-      "first_layer_area_mm2": 872.0,
+      "first_layer_area_mm2": 308.0,
       "sagitta_mm": 5.41,
       "bay": {
         "bay_w": 31.0,
         "bay_l": 46.0,
-        "bay_h": 9.41260521642937
+        "bay_h": 9.41260521642937,
+        "shock_bore_d": 8.05,
+        "shock_boss_d": 14.0,
+        "cover_land_z": 5.41260521642937
       },
       "print": "curve UP / cavity DOWN; brim recommended"
     },
@@ -65,12 +71,12 @@
       "size_mm": [
         28.0,
         42.0,
-        2.9
+        2.5
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4218
+        "faces": 1340
       }
     }
   },
@@ -78,21 +84,21 @@
   "symmetry": {
     "L_extents_mm": [
       76.0,
-      98.79,
-      36.16
+      98.8,
+      38.2
     ],
     "R_extents_mm": [
       76.0,
-      98.79,
-      36.16
+      98.8,
+      38.2
     ],
-    "L_volume_cm3": 69.27,
-    "R_volume_cm3": 69.28,
+    "L_volume_cm3": 68.75,
+    "R_volume_cm3": 68.76,
     "extent_delta_mm": [
       0.0,
       0.0,
       -0.0
     ],
-    "volume_delta_cm3": 0.005
+    "volume_delta_cm3": 0.006
   }
 }

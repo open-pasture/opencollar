@@ -479,11 +479,9 @@ for a, b in itertools.combinations(names, 2):
     if v > 1.0:
         res["interference"].append(dict(a=a, b=b, mm3=round(v, 1)))
 
+# Lid pairs must have 0.00 mm³ overlap after a189978 / Friday mating fix.
+# Any leftover volume is a REAL clash (no longer "expected lip/groove").
 EXPECTED = {
-    ("cap_base", "cap_lid"),
-    ("pod_L_base", "pod_L_lid"),
-    ("pod_R_base", "pod_R_lid"),
-    ("cw_tub", "cw_lid"),
     # D8 neck saddle mates flat-to-flat on pod skirt bed; service lid + wire plug
     ("pod_L_base", "pod_L_saddle"),
     ("pod_R_base", "pod_R_saddle"),
@@ -491,6 +489,13 @@ EXPECTED = {
     ("pod_R_saddle", "pod_R_bay_cover"),
     ("pod_L_saddle", "pod_L_wire_plug"),
     ("pod_R_saddle", "pod_R_wire_plug"),
+}
+# Flush-mating lid pairs — must be absent from interference (0.00 mm³)
+FLUSH_LID_PAIRS = {
+    ("cap_base", "cap_lid"),
+    ("pod_L_base", "pod_L_lid"),
+    ("pod_R_base", "pod_R_lid"),
+    ("cw_tub", "cw_lid"),
 }
 # Cap pad into pod recess is the bolted M3 joint — expected engagement.
 MOUNT_JOINT = {
@@ -865,9 +870,9 @@ chk(
 )
 # Key lug miss distance for wrong mating (≥2 mm → hard interference when forced)
 _key_l = (18.0, 28.0)
-_key_r = (-18.0, 28.0)  # after mirror_for_R
+_key_r = (-18.0, -28.0)  # after mirror_for_R (X and Y mirrors)
 _key_l_180 = (-18.0, -28.0)
-_key_r_180 = (18.0, -28.0)
+_key_r_180 = (18.0, 28.0)
 
 def _key_err(lug, recess):
     return math.hypot(lug[0] - recess[0], lug[1] - recess[1])
@@ -928,6 +933,72 @@ if os.path.isfile(optb_l) and os.path.isfile(optb_r):
         [round(v, 2) for v in d_ext],
         "<1 mm",
     )
+
+# Friday plates: flush lid pairs must have 0.00 mm³ Boolean overlap
+for a, b in FLUSH_LID_PAIRS:
+    hit = next(
+        (i for i in res["interference"] if {i["a"], i["b"]} == {a, b}),
+        None,
+    )
+    mm3 = 0.0 if hit is None else float(hit["mm3"])
+    chk(
+        f"Friday mating: {a} ∩ {b} == 0 mm³",
+        mm3 < 0.05,
+        mm3,
+        "0.00 mm³",
+    )
+
+# Heatset stop shelf + wire gauge (mesh probes)
+_hs = os.path.join(STL, "jig_m3_heatset_stop.stl")
+_wg = os.path.join(STL, "jig_wire_gauge.stl")
+if os.path.isfile(_hs):
+    hs = trimesh.load(_hs, force="mesh")
+    def _void_r(mesh, z):
+        rs = np.linspace(0, 5, 200)
+        inside = mesh.contains(np.column_stack([rs, np.zeros(200), np.full(200, z)]))
+        if inside[0]:
+            return None
+        idx = np.where(inside)[0]
+        return float(rs[idx[0]]) if len(idx) else None
+    r2, r5 = _void_r(hs, 2.0), _void_r(hs, 5.0)
+    chk(
+        "Friday: heatset stop shelf (tip Ø5.2 below / insert Ø4.05 above)",
+        r2 is not None and r5 is not None and r2 > 2.4 and r5 < 2.2 and (r2 - r5) > 0.3,
+        {"r@2": r2, "r@5": r5},
+        "step present",
+    )
+if os.path.isfile(_wg):
+    wg = trimesh.load(_wg, force="mesh")
+    strip_ok = all(
+        not bool(wg.contains([[0.0, -90.0 + d, 3.5]])[0]) for d in (5.0, 8.0)
+    )
+    chk("Friday: wire-gauge strip notches at 5/8 mm", strip_ok, "y=-85/-82 empty", True)
+    ys = np.linspace(65.0 - 6, 65.0 + 6, 200)
+    void = ~wg.contains(np.column_stack([np.zeros(200), ys, np.full(200, 3.0)]))
+    spans, start = [], None
+    for i, v in enumerate(void):
+        if v and start is None:
+            start = ys[i]
+        if (not v) and start is not None:
+            spans.append(ys[i - 1] - start)
+            start = None
+    if start is not None:
+        spans.append(ys[-1] - start)
+    chk(
+        "Friday: wire-gauge distinct 10 mm M3 slot",
+        any(9.5 < s < 11.5 for s in spans),
+        [round(float(s), 2) for s in spans],
+        "10±0.5 mm void",
+    )
+
+# assembly_poses.json present after Friday verifier / export
+_poses = os.path.join(OUT, "assembly_poses.json")
+chk(
+    "assembly_poses.json present",
+    os.path.isfile(_poses),
+    _poses if os.path.isfile(_poses) else "missing — run review/verify_friday_plates_mating.py",
+    "out/assembly_poses.json",
+)
 
 # D7r7: review-blend geometry hygiene (no dim<2mm / floating / stray non-mesh)
 hygiene_paths = [

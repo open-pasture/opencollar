@@ -188,9 +188,8 @@ def world_poses():
     for side in ("L", "R"):
         A = pod_anchor_matrix(side)
         poses[f"pod_{side}_base"] = A @ T([0, 0, POD_Z0])
-        poses[f"pod_{side}_lid"] = (
-            A @ T([0, 0, POD_Z0 + POD_MATING_Z]) @ R(math.pi, X) @ T([0, 0, -POD_LID_T])
-        )
+        # Lid prints mating-down (z=0 = parting) — same as cap_lid; no Rx flip.
+        poses[f"pod_{side}_lid"] = A @ T([0, 0, POD_Z0 + POD_MATING_Z])
         # Neck saddle: flat mates pod skirt bed (z=0); Rx(π) points concave to neck.
         poses[f"pod_{side}_saddle"] = (
             A @ T([0, 0, POD_Z0]) @ R(math.pi, X)
@@ -251,3 +250,35 @@ def world_poses():
     for i, B in enumerate(bars):
         poses[f"clamp_bar_{i + 1}"] = B
     return poses
+
+
+def optb_world_poses():
+    """Option B + blank-shock-plug poses (mutually exclusive with Option A saddle).
+
+    Kept separate from world_poses() so assembly_check does not treat optB covers /
+    blank plugs as simultaneous with standard pod_base / saddle.
+    """
+    from trimesh.transformations import rotation_matrix as R
+    from trimesh.transformations import translation_matrix as T
+
+    X = [1, 0, 0]
+    poses = {}
+    for side in ("L", "R"):
+        Am = pod_anchor_matrix(side)
+        poses[f"pod_{side}_base_optB_curveUP"] = (
+            Am @ T([0, 0, POD_Z0]) @ R(math.pi, X)
+        )
+        poses[f"optb_bay_cover_{side}"] = (
+            Am @ T([0, 0, POD_Z0]) @ R(math.pi, X) @ T([0, 0, -2.5])
+        )
+        poses[f"jig_blank_shock_plug_{side}"] = (
+            Am @ T([0, 0, POD_Z0]) @ R(math.pi, X) @ T([0, 0, -7.3])
+        )
+    return poses
+
+
+def all_assembly_poses():
+    """Union of standard + Option B poses for assembly_poses.json export."""
+    p = world_poses()
+    p.update(optb_world_poses())
+    return p

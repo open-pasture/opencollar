@@ -87,6 +87,14 @@ def cut_integral_r220(body, R=SADDLE_R, length=POD_LEN, width=CUT_W):
     return sag
 
 
+# Blank shock plug seat: stem Ø7.60 → bore Ø8.05 (0.225 mm/side radial)
+SHOCK_STEM_D = 7.60
+SHOCK_BORE_D = 8.05
+SHOCK_BORE_H = 7.00
+SHOCK_BOSS_D = 14.0
+SHOCK_FLANGE_SEAT_D = 12.40  # flange Ø12.0 + 0.20/side
+
+
 def cut_bay_keepout(body, sag):
     bw, bl, bh = 31.0, 46.0, min(10.0, sag + 4.0)
     oc.cut(
@@ -103,13 +111,45 @@ def cut_bay_keepout(body, sag):
         "optb_gask_i", (gw - 4.0, gl - 4.0, 1.6), 2.0, at=(0, 0, g_z - 0.1), anchor="bottom"
     )
     oc.cut(body, oc.cut(ring_o, ring_i))
-    return {"bay_w": bw, "bay_l": bl, "bay_h": bh}
+    # Locating tongue on bay land for cover groove (0.28 XY / 0.40 Z)
+    import mating_rabbet as MR
+    land_z = g_z + 1.2
+    MR.add_base_tongue(
+        body, 26.0, 40.0, 1.8, land_z, prefix="optb_bay_tongue",
+    )
+    # Central blank-plug boss + Ø8.05 receiving bore (snug 0.225 mm/side)
+    oc.union(
+        body,
+        oc.cylinder(
+            "shock_boss", SHOCK_BOSS_D, SHOCK_BORE_H,
+            at=(0.0, 0.0, 0.0), anchor="bottom", segments=32,
+        ),
+    )
+    oc.cut(
+        body,
+        oc.cylinder(
+            "shock_bore", SHOCK_BORE_D, SHOCK_BORE_H + 1.0,
+            at=(0.0, 0.0, -0.5), anchor="bottom", segments=32,
+        ),
+    )
+    return {
+        "bay_w": bw, "bay_l": bl, "bay_h": bh,
+        "shock_bore_d": SHOCK_BORE_D, "shock_boss_d": SHOCK_BOSS_D,
+        "cover_land_z": land_z,
+    }
 
 
 def service_lid(side: str):
+    """Bay cover — mating face at z=0; central blank-plug through-bore + flange seat."""
+    cover_h = 2.5
     cover = oc.rounded_rect(
-        f"optb_bay_cover_{side}", (28.0, 42.0, 2.5), 2.0,
-        at=(0, 0, 0), anchor="bottom", segments=8,
+        f"optb_bay_cover_{side}", (28.0, 42.0, cover_h), 2.0,
+        at=(0, 0, 0), anchor="bottom", segments=16,
+    )
+    # Locating groove on mating face (mates bay gasket land with 0.28 XY clear)
+    import mating_rabbet as MR
+    MR.cut_lid_groove(
+        cover, 26.0, 40.0, 1.8, prefix=f"optb_cov_groove_{side}",
     )
     for i, (sx, sy) in enumerate(((-1, -1), (1, -1), (-1, 1), (1, 1))):
         oc.cut(
@@ -117,11 +157,21 @@ def service_lid(side: str):
             oc.cylinder(f"h{i}", 3.4, 4.0, at=(sx * 10.0, sy * 16.0, -0.5),
                         anchor="bottom", segments=12),
         )
-    try:
-        d5.emboss_glyph(cover, "NO SHOCK", (0.0, 4.0, 2.5), size=3.5, depth=0.55)
-        d5.emboss_glyph(cover, side, (0.0, -5.0, 2.5), size=5.0, depth=0.55)
-    except Exception:
-        pass
+    # Blank shock plug through-bore + flange countersink on outer (+Z) face
+    oc.cut(
+        cover,
+        oc.cylinder(
+            "plug_bore", SHOCK_BORE_D, cover_h + 2.0,
+            at=(0.0, 0.0, -0.5), anchor="bottom", segments=32,
+        ),
+    )
+    oc.cut(
+        cover,
+        oc.cylinder(
+            "plug_flange_seat", SHOCK_FLANGE_SEAT_D, 0.55,
+            at=(0.0, 0.0, cover_h - 0.50), anchor="bottom", segments=32,
+        ),
+    )
     oc.bake(cover)
     oc.move(cover, dz=-oc.bounds(cover)[0][2])
     return cover

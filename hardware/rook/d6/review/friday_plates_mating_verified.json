@@ -1,0 +1,168 @@
+{
+  "gates": [
+    {
+      "name": "cap_frozen_cap_base.stl",
+      "ok": true,
+      "detail": "sha12=68c3370aaa90 expect=68c3370aaa90"
+    },
+    {
+      "name": "cap_frozen_cap_lid.stl",
+      "ok": true,
+      "detail": "sha12=00c1723b0f07 expect=00c1723b0f07"
+    },
+    {
+      "name": "cap_frozen_cap_usbc_plug.stl",
+      "ok": true,
+      "detail": "sha12=2ef02d0c2b95 expect=2ef02d0c2b95"
+    },
+    {
+      "name": "world_stls_exported",
+      "ok": true,
+      "detail": "n=35"
+    },
+    {
+      "name": "pod_L_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000"
+    },
+    {
+      "name": "pod_L_seam_0",
+      "ok": true,
+      "detail": "z_rise=0.0000"
+    },
+    {
+      "name": "pod_L_watertight",
+      "ok": true,
+      "detail": "base=True lid=True"
+    },
+    {
+      "name": "pod_L_bosses_4of4",
+      "ok": true,
+      "detail": "cols=[(-22.0, -36.0), (-22.0, 36.0), (22.0, -36.0), (22.0, 36.0)]"
+    },
+    {
+      "name": "pod_L_poka_key",
+      "ok": true,
+      "detail": "key_xy=(18.0, 28.0)"
+    },
+    {
+      "name": "pod_R_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000"
+    },
+    {
+      "name": "pod_R_seam_0",
+      "ok": true,
+      "detail": "z_rise=0.0000"
+    },
+    {
+      "name": "pod_R_watertight",
+      "ok": true,
+      "detail": "base=True lid=True"
+    },
+    {
+      "name": "pod_R_bosses_4of4",
+      "ok": true,
+      "detail": "cols=[(-22.0, -36.0), (-22.0, 36.0), (22.0, -36.0), (22.0, 36.0)]"
+    },
+    {
+      "name": "pod_R_poka_key",
+      "ok": true,
+      "detail": "key_xy=(-18.0, -28.0)"
+    },
+    {
+      "name": "cw_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000"
+    },
+    {
+      "name": "cw_seam_0",
+      "ok": true,
+      "detail": "z_rise=0.0000"
+    },
+    {
+      "name": "cw_watertight",
+      "ok": true,
+      "detail": "tub=True lid=True"
+    },
+    {
+      "name": "cw_bosses_present",
+      "ok": true,
+      "detail": "screws=[(-19.0, -54.0), (-22.0, 54.0), (22.0, -54.0), (22.0, 54.0)]"
+    },
+    {
+      "name": "cw_clamp_holes_4",
+      "ok": true,
+      "detail": "\u00b136,\u00b128.5"
+    },
+    {
+      "name": "heatset_stop_shelf",
+      "ok": true,
+      "detail": "r@2=2.608695652173913 r@5=2.040133779264214"
+    },
+    {
+      "name": "wire_strip_5_8",
+      "ok": true,
+      "detail": "notches empty at y=-85/-82"
+    },
+    {
+      "name": "wire_m3_slot_10",
+      "ok": true,
+      "detail": "spans=[np.float64(10.36)]"
+    },
+    {
+      "name": "optb_L_shock_bore_open",
+      "ok": true,
+      "detail": "open_z_samples=12/12"
+    },
+    {
+      "name": "optb_L_cover_bore",
+      "ok": true,
+      "detail": "\u00d88.05 through cover"
+    },
+    {
+      "name": "optb_L_plug_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000"
+    },
+    {
+      "name": "optb_L_plug_clear",
+      "ok": true,
+      "detail": "clear/side=0.225"
+    },
+    {
+      "name": "optb_L_cover_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000"
+    },
+    {
+      "name": "optb_R_shock_bore_open",
+      "ok": true,
+      "detail": "open_z_samples=12/12"
+    },
+    {
+      "name": "optb_R_cover_bore",
+      "ok": true,
+      "detail": "\u00d88.05 through cover"
+    },
+    {
+      "name": "optb_R_plug_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000"
+    },
+    {
+      "name": "optb_R_plug_clear",
+      "ok": true,
+      "detail": "clear/side=0.225"
+    },
+    {
+      "name": "optb_R_cover_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000"
+    }
+  ],
+  "all_pass": true,
+  "assembly_poses": "/agent/repos/opencollar/hardware/rook/d6/out/assembly_poses.json",
+  "world_dir": "/agent/repos/opencollar/hardware/rook/d6/out/world",
+  "n_world": 35
+}
