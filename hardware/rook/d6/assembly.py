@@ -198,9 +198,19 @@ def world_poses():
 
     X = [1, 0, 0]
     Zax = [0, 0, 1]
+    # USB-C blank plug seated in cap_base −Y wall (stl/cap_report.json
+    # T_plug_in_base): Rz(π) so flange faces −Y; flange outer at y=−82;
+    # Z bbox centered in seat band [20.7, 30.2] (skirt-normalized STL).
+    _usbc_print_ymax = 6.0 + 2.6  # stem_l + fl_t
+    _usbc_print_zmid = 0.5 * 9.06  # fl_h after normalize_z0
+    usbc_plug = (
+        T([0.0, -82.0 + _usbc_print_ymax, CAP_Z0 + 0.5 * (20.7 + 30.2) - _usbc_print_zmid])
+        @ R(math.pi, Zax)
+    )
     poses = {
         "cap_base": T([0, 0, CAP_Z0]),
         "cap_lid": T([0, 0, CAP_Z0 + CAP_MATING_Z]),
+        "cap_usbc_plug": usbc_plug,
         # Saddle STL: channel along Y (width X); roof was bed → flip 180 X so roof
         # sits under the cap, no extra Z rot needed for strap-along-Y.
         "saddle": T([0, 0, CAP_Z0]) @ R(math.pi, X),
@@ -292,9 +302,12 @@ def _load_optb_seats():
     return {
         side: {
             "cover_seat_z": 29.7,
-            "cover_mating_from_bed": 2.5,
+            "cover_mating_from_bed": 0.0,
+            "cover_h": 2.5,
             "plug_flange_underside_z": 5.5,
-            "cover_flange_seat_from_outer": 0.50,
+            "cover_flange_seat_from_outer": 1.85,
+            "wire_gland_z": 34.5,
+            "wire_gland_y": 28.0 if side == "L" else -28.0,
         }
         for side in ("L", "R")
     }
@@ -334,19 +347,21 @@ def optb_world_poses():
             shared @ T([0, 0, seat_z - cov_mating])
         )
         flange_z = float(s.get("plug_flange_underside_z", 5.5))
-        seat_from_outer = float(s.get("cover_flange_seat_from_outer", 0.50))
-        # Cover mating-down: outer at seat+cover_h; flange countersink near outer.
-        # Plug stem must point −Z (into bay bore); Rx(π) after seating the flange.
+        # Exterior CB depth from outer face (default 1.85 = flange thickness).
+        seat_from_outer = float(s.get("cover_flange_seat_from_outer", 1.85))
+        # Cover mating-down: outer at seat+cover_h; CB floor at outer−depth.
+        # Blank plug STL has stem at low Z, flange underside at flange_z — NO
+        # Rx(π): stem already points −Z into the bore when flange seats on CB.
         flange_seat_z = (seat_z - cov_mating) + (cover_h - seat_from_outer)
         poses[f"jig_blank_shock_plug_{side}"] = (
-            shared @ T([0, 0, flange_seat_z]) @ R(math.pi, X) @ T([0, 0, -flange_z])
+            shared @ T([0, 0, flange_seat_z]) @ T([0, 0, -flange_z])
         )
-        gy = -28.0 if side == "L" else 28.0
-        body_h = float(s.get("body_h", seat_z))
+        # Wire plug on OptB: gland is on the high-Z (former skirt) face after
+        # curveUP flip. Seat flange on gland face; stem into −Z (no Rx).
+        gy = float(s.get("wire_gland_y", 28.0 if side == "L" else -28.0))
+        gland_z = float(s.get("wire_gland_z", s.get("body_h", seat_z)))
         poses[f"pod_{side}_wire_plug_optB"] = (
-            Am @ T([0.0, gy, POD_Z0 + POD_MATING_Z])
-            @ R(math.pi, X)
-            @ T([0.0, 0.0, -(body_h - 5.5)])
+            shared @ T([0.0, gy, gland_z]) @ T([0.0, 0.0, -flange_z])
         )
     return poses
 

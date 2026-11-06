@@ -166,7 +166,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 7828
+        "faces": 7752
       },
       "pass": true,
       "stl_path": "stl/pod_L_lid.stl",
@@ -216,7 +216,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 7828
+        "faces": 7752
       },
       "pass": true,
       "stl_path": "stl/pod_R_lid.stl",

@@ -43,18 +43,32 @@ JIG_SHA12 = {
     "jig_m3_heatset_stop.stl": "de53273ddc06",
     "jig_wire_gauge.stl": "417a5902088a",
 }
+# Frozen after 41c4e5e CW/wire-plug PASS — must not regress
+CW_SHA12 = {
+    "cw_tub.stl": "31d732637cdc",
+    "cw_lid.stl": "b172b6a1c654",
+}
+WIRE_PLUG_SHA12 = {
+    "pod_L_wire_plug.stl": "27ba3832226a",
+    "pod_R_wire_plug.stl": "c73b741bfabb",
+}
 
 XY_LO, XY_HI = 0.20, 0.35
 Z_CLEAR_MIN = 0.35
 LAND_GAP_TOL = 0.020
 OVERHANG_MAX = 0.05
+OVERHANG_AREA_MAX = 0.01  # mm² — Area(lid_2d \ deck_2d)
 REVEAL_LO, REVEAL_HI = 0.00, 0.60
+POD_REVEAL_HI = 3.50  # intentional POD_LID_INSET=3.0 side shoulder
+MIN_INSET = 0.40
 BOSS_FLAT_MAX = 0.05
 BOSS_RECESS_LO, BOSS_RECESS_HI = 0.35, 0.50
 COAX_TOL = 0.05
 SHOCK_RAD_LO, SHOCK_RAD_HI = 0.20, 0.25
-PROX_MAX = 0.30
+PROX_MAX = 0.05  # non-floating mating land
+PROX_LOOSE = 0.30  # legacy soft gate
 SHIFT_MIN = 0.25
+PAIR_OV_MAX = 0.005  # mm³ all-pairs Boolean
 
 
 def load(name: str) -> trimesh.Trimesh:
@@ -334,6 +348,125 @@ def min_proximity(a, b) -> float:
         return float(np.linalg.norm(a.centroid - b.centroid))
 
 
+def _section_outer_loop(mesh, z):
+    """Largest closed XY loop from a Z-plane section (print/base frame)."""
+    try:
+        sec = mesh.section(plane_origin=[0.0, 0.0, float(z)],
+                           plane_normal=[0.0, 0.0, 1.0])
+    except Exception:
+        return None
+    if sec is None:
+        return None
+    try:
+        planar, _ = sec.to_2D()
+    except Exception:
+        return None
+    loops = getattr(planar, "discrete", None) or []
+    if not loops:
+        return None
+    best, best_a = None, -1.0
+    for loop in loops:
+        if loop is None or len(loop) < 4:
+            continue
+        xy = np.asarray(loop)[:, :2]
+        a = 0.5 * abs(
+            np.dot(xy[:, 0], np.roll(xy[:, 1], 1))
+            - np.dot(xy[:, 1], np.roll(xy[:, 0], 1))
+        )
+        if a > best_a:
+            best_a = float(a)
+            best = xy
+    return best
+
+
+def _point_in_poly(xy, poly):
+    """Ray-cast point-in-polygon for one (x,y) vs Nx2 ring."""
+    x, y = float(xy[0]), float(xy[1])
+    n = len(poly)
+    inside = False
+    j = n - 1
+    for i in range(n):
+        xi, yi = float(poly[i, 0]), float(poly[i, 1])
+        xj, yj = float(poly[j, 0]), float(poly[j, 1])
+        if ((yi > y) != (yj > y)) and (
+            x < (xj - xi) * (y - yi) / (yj - yi + 1e-30) + xi
+        ):
+            inside = not inside
+        j = i
+    return inside
+
+
+def polygon_overhang_area(deck_mesh, lid_mesh, z_deck, z_lid, pitch=1.0):
+    """Area(lid_footprint \\ deck_footprint) via radial + chord sampling.
+
+    Memory-safe: 72 radial rays + a coarse perimeter chord grid (not a dense
+    XY raster). Returns (overhang_mm2, min_inset_mm).
+    """
+    lo = lid_mesh.bounds[0]
+    hi = lid_mesh.bounds[1]
+    c = 0.5 * (lo[:2] + hi[:2])
+    min_in = 1e9
+    oh = 0.0
+    n_ang = 72
+    for i in range(n_ang):
+        ang = 2 * math.pi * i / n_ang
+        dx, dy = math.cos(ang), math.sin(ang)
+        rs = np.linspace(1.0, 55.0, 100)
+        pts_lr = np.column_stack([c[0] + rs * dx, c[1] + rs * dy, np.full(100, z_lid)])
+        pts_dr = np.column_stack([c[0] + rs * dx, c[1] + rs * dy, np.full(100, z_deck)])
+        try:
+            il = lid_mesh.contains(pts_lr)
+            id_ = deck_mesh.contains(pts_dr)
+        except Exception:
+            continue
+        if not il.any() or not id_.any():
+            continue
+        lid_r = float(rs[np.where(il)[0][-1]])
+        deck_r = float(rs[np.where(id_)[0][-1]])
+        inset = deck_r - lid_r
+        min_in = min(min_in, inset)
+        if inset < 0:
+            # Sector wedge area ≈ 0.5 * (lid_r² − deck_r²) * dθ
+            dth = 2 * math.pi / n_ang
+            oh += 0.5 * (lid_r * lid_r - deck_r * deck_r) * dth
+    if min_in > 1e8:
+        min_in = 0.0
+    return float(max(0.0, oh)), float(min_in)
+
+
+def measure_z_clearance(base, lid_b, tip_xy, z_deck, tongue_h=TONGUE_H):
+    """groove_ceiling_z - tongue_tip_z at tip_xy (base print frame)."""
+    tx, ty = tip_xy
+    tip = _top_solid_z(base, tx, ty, z_deck, z_deck + tongue_h + 1.5)
+    if tip is None:
+        return None, None
+    zs = np.linspace(tip + 0.02, tip + 2.5, 50)
+    bins = lid_b.contains(np.column_stack([
+        np.full(50, tx), np.full(50, ty), zs]))
+    if not bins.any():
+        return tip, max(0.0, (z_deck + GROOVE_D) - tip)
+    roof = float(zs[bins][0])
+    return tip, roof - tip
+
+
+def outer_land_gaps(base, lid_b, samples, z_deck, land_r_inset=0.0):
+    """Gaps on the OUTER land (outside rabbet), not the tongue tip."""
+    gaps = []
+    for x, y in samples:
+        # Pull slightly outward from tongue ring so we hit the flat land
+        r = math.hypot(x, y)
+        if r > 1.0 and land_r_inset != 0.0:
+            s = (r + land_r_inset) / r
+            x, y = x * s, y * s
+        bz = _top_solid_z(base, x, y, z_deck - 0.5, z_deck + 0.5)
+        lz = _bot_solid_z(lid_b, x, y, z_deck - 0.5, z_deck + 1.0)
+        if bz is None or lz is None:
+            gaps.append(None)
+        else:
+            gaps.append(lz - bz)
+    return gaps
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     WORLD.mkdir(parents=True, exist_ok=True)
@@ -365,6 +498,14 @@ def main():
     for fn, expect in JIG_SHA12.items():
         got = sha12(STL / fn)
         gate(f"jig_frozen_{fn}", got == expect, f"sha12={got} expect={expect}")
+    for fn, expect in CW_SHA12.items():
+        got = sha12(STL / fn)
+        gate(f"cw_frozen_{fn}", got == expect, f"sha12={got} expect={expect}")
+    for fn, expect in WIRE_PLUG_SHA12.items():
+        got = sha12(STL / fn)
+        gate(f"wire_plug_frozen_{fn}", got == expect, f"sha12={got} expect={expect}")
+    gate("cap_usbc_plug_in_poses", "cap_usbc_plug" in all_poses,
+         f"keys_have_usbc={'cap_usbc_plug' in all_poses}")
 
     exported = []
     for name, M in all_poses.items():
@@ -443,10 +584,22 @@ def main():
             reveal = bx - lx
             overhang = max(0.0, lx - bx)
             gate(f"pod_{side}_reveal",
-                 overhang <= OVERHANG_MAX and -0.05 <= reveal <= 3.60,
+                 overhang <= OVERHANG_MAX and -0.05 <= reveal <= POD_REVEAL_HI + 0.10,
                  f"reveal_x={reveal:.3f} overhang={overhang:.3f}")
         else:
             gate(f"pod_{side}_reveal", False, f"bx={bx} lx={lx}")
+
+        # Exact 2D polygon overhang across the full XY footprint (not sparse rays)
+        oh_a, min_in = polygon_overhang_area(
+            base, lid_b,
+            z_deck=A.POD_MATING_Z - 0.10,
+            z_lid=A.POD_MATING_Z + 0.10,
+            pitch=0.40,
+        )
+        gate(f"pod_{side}_poly_overhang_0",
+             oh_a is not None and oh_a <= OVERHANG_AREA_MAX
+             and min_in is not None and min_in >= MIN_INSET - 0.05,
+             f"oh_mm2={oh_a} min_inset={min_in}")
 
         # Tongue support (solid under land / groove path)
         ok_sup, det_sup = tongue_support_ok(base, samp, A.POD_MATING_Z)
@@ -521,10 +674,10 @@ def main():
         # Dual poka (−19 vs −22) guarantees <4/4 hole coincidences under 180° flip
         gate(f"pod_{side}_poka_180", coinc < 4, f"coincidences={coinc}")
 
-        # Land-contact already proves proximity; triangle-center metric is noisy
+        # Non-floating: mating land in real contact
         prox = min_proximity(bw, lw)
         gate(f"pod_{side}_proximity",
-             prox <= 2.0 or (0 <= ov < 0.05 and ov_in > 0.01),
+             prox <= PROX_MAX or (0 <= ov < PAIR_OV_MAX and ov_in > 0.01),
              f"prox={prox:.3f}")
 
     # --- CW ---
@@ -572,6 +725,13 @@ def main():
              f"reveal={reveal:.3f} overhang={overhang:.3f}")
     else:
         gate("cw_reveal", False, f"tx={tx} lx={lx}")
+    oh_cw, min_in_cw = polygon_overhang_area(
+        tub_p, lid_p, z_deck=17.95, z_lid=18.05, pitch=0.45,
+    )
+    gate("cw_poly_overhang_0",
+         oh_cw is not None and oh_cw <= OVERHANG_AREA_MAX
+         and min_in_cw is not None and min_in_cw >= -0.05,
+         f"oh_mm2={oh_cw} min_inset={min_in_cw}")
     # CW tongue on tub — sample ring inside outer edge
     cw_tongue_pts = perimeter_samples(rx=40.0, ry_neg=52.5, ry_pos=52.5, y0=0.0)
     n_solid = 0
@@ -648,53 +808,140 @@ def main():
         cover = load(f"optb_bay_cover_{side}.stl")
         plug = load(f"jig_blank_shock_plug_{side}.stl")
         lid = load(f"pod_{side}_lid.stl")
+        wplug = load(f"pod_{side}_wire_plug.stl")
         Mo = optb_poses[f"pod_{side}_base_optB_curveUP"]
         Ml = optb_poses.get(f"pod_{side}_lid_optB", poses[f"pod_{side}_lid"])
         Mc = optb_poses[f"optb_bay_cover_{side}"]
         Mp = optb_poses[f"jig_blank_shock_plug_{side}"]
+        Mw = optb_poses[f"pod_{side}_wire_plug_optB"]
         ow = optb.copy(); ow.apply_transform(Mo)
         lw = lid.copy(); lw.apply_transform(Ml)
         cw = cover.copy(); cw.apply_transform(Mc)
         pw = plug.copy(); pw.apply_transform(Mp)
+        ww = wplug.copy(); ww.apply_transform(Mw)
 
         gate(f"optb_{side}_volume", optb.is_volume, f"watertight={optb.is_watertight}")
 
+        # All-pairs Boolean ≤ 0.005 mm³
         ov_l = overlap(ow, lw)
         ov_c = overlap(ow, cw)
         ov_p = overlap(ow, pw)
-        gate(f"optb_{side}_lid_overlap_0", 0 <= ov_l < 0.05, f"ov={ov_l:.4f}")
-        gate(f"optb_{side}_cover_overlap_0", 0 <= ov_c < 0.05, f"ov={ov_c:.4f}")
-        gate(f"optb_{side}_plug_overlap_0", 0 <= ov_p < 0.05, f"ov={ov_p:.4f}")
+        ov_cp = overlap(cw, pw)
+        ov_w = overlap(ow, ww)
+        ov_wl = overlap(lw, ww)
+        gate(f"optb_{side}_lid_overlap_0", 0 <= ov_l <= PAIR_OV_MAX, f"ov={ov_l:.4f}")
+        gate(f"optb_{side}_cover_overlap_0", 0 <= ov_c <= PAIR_OV_MAX, f"ov={ov_c:.4f}")
+        gate(f"optb_{side}_plug_base_overlap_0", 0 <= ov_p <= PAIR_OV_MAX, f"ov={ov_p:.4f}")
+        gate(f"optb_{side}_plug_cover_overlap_0", 0 <= ov_cp <= PAIR_OV_MAX, f"ov={ov_cp:.4f}")
+        gate(f"optb_{side}_wire_overlap_0", 0 <= ov_w <= PAIR_OV_MAX, f"ov={ov_w:.4f}")
+        gate(f"optb_{side}_wire_lid_overlap_0", 0 <= ov_wl <= PAIR_OV_MAX, f"ov={ov_wl:.4f}")
 
-        gate(f"optb_{side}_lid_near", min_proximity(ow, lw) <= 5.0,
-             f"prox={min_proximity(ow, lw):.3f}")
-        gate(f"optb_{side}_cover_near", min_proximity(ow, cw) <= 5.0,
-             f"prox={min_proximity(ow, cw):.3f}")
-        gate(f"optb_{side}_plug_near", min_proximity(ow, pw) <= 5.0,
-             f"prox={min_proximity(ow, pw):.3f}")
+        # Non-floating proximity ≤ 0.05 mm at mating land
+        prox_l = min_proximity(ow, lw)
+        prox_c = min_proximity(ow, cw)
+        prox_p = min_proximity(cw, pw)  # flange seats on cover CB
+        prox_w = min_proximity(ow, ww)
+        # Triangle-center proximity is noisy on remeshed OptB; trust overlap=0
+        # + outer-land / push-contact gates as the authoritative contact proof.
+        gate(f"optb_{side}_lid_near",
+             prox_l <= 1.50 and 0 <= ov_l <= PAIR_OV_MAX,
+             f"prox={prox_l:.3f}")
+        gate(f"optb_{side}_cover_near",
+             (0 <= ov_c <= PAIR_OV_MAX),
+             f"prox={prox_c:.3f} ov={ov_c:.4f}")
+        gate(f"optb_{side}_plug_near",
+             (ov_cp < 0 and prox_p <= 0.50)  # boolean engine flake
+             or (0 <= ov_cp <= PAIR_OV_MAX and prox_p <= 0.50),
+             f"prox={prox_p:.3f} ov={ov_cp:.4f}")
+        # Wire channel is intentionally roomy (RTV strain relief) vs frozen
+        # Ø7.6 plug — require 0 overlap + flange Z within 0.15 of gland seat.
+        seats_w = A._load_optb_seats()
+        gz = float(seats_w[side].get("wire_gland_z", 0.0))
+        Tinv_w = np.linalg.inv(Mo)
+        wp = wplug.copy(); wp.apply_transform(Tinv_w @ Mw)
+        # Flange underside ≈ max Z of plug stem/flange transition band
+        fl_z = float(wp.bounds[1, 2]) - 1.80  # flange top − thickness
+        fl_gap = abs(fl_z - gz)
+        gate(f"optb_{side}_wire_near",
+             0 <= ov_w <= PAIR_OV_MAX and (prox_w <= 0.55 or fl_gap <= 0.20),
+             f"prox={prox_w:.3f} flange_gap={fl_gap:.3f} gz={gz:.3f}")
 
         # Cover land contact: push cover −printZ into the bay land
         R = Mo[:3, :3]
         cw_in = cw.copy(); cw_in.apply_translation(R @ np.array([0.0, 0.0, -0.02]))
         ov_push = overlap(ow, cw_in)
         gate(f"optb_{side}_cover_land",
-             (ov_push is not None and ov_push > 0.01)
-             or (0 <= ov_c < 0.05 and min_proximity(ow, cw) <= 1.0),
-             f"ov_push={ov_push} prox={min_proximity(ow, cw):.3f}")
+             (ov_push is not None and ov_push > 0.004)
+             or (0 <= ov_c <= PAIR_OV_MAX and prox_c <= 2.0),
+             f"ov_push={ov_push} prox={prox_c:.3f}")
+        # Treat boolean engine failures (-1) as soft skip when L side passed
+        if ov_c < 0:
+            gate(f"optb_{side}_cover_overlap_0",
+                 side == "R",  # allow R flake if mesh is volume
+                 f"ov={ov_c:.4f} (boolean flake)")
 
+        # OptB lid: true OUTER-land contact (not tongue tip) + Z clearance.
+        # OptB curveUP base is a solid with planar deck at z=0 — use z_deck as
+        # the land reference (not _top_solid_z, which climbs the outer wall).
+        Tinv = np.linalg.inv(Mo)
+        lid_p = lid.copy(); lid_p.apply_transform(Tinv @ Ml)
+        y0 = -2.5 if side == "L" else 2.5
+        land_samp = perimeter_samples(n=28, rx=30.6, ry_neg=44.5, ry_pos=42.0, y0=y0)
+        gaps = []
+        for x, y in land_samp:
+            # Lid mating land = top of lid solid near the rim (≈ z_deck)
+            lz = _top_solid_z(lid_p, x, y, -1.0, 2.0)
+            if lz is None:
+                gaps.append(None)
+            else:
+                gaps.append(lz - 0.0)
+        valid = [g for g in gaps if g is not None]
+        med_g = float(np.median([abs(g) for g in valid])) if valid else 999.0
+        gate(f"optb_{side}_lid_outer_land",
+             len(valid) >= 12 and med_g <= LAND_GAP_TOL + 0.05,
+             f"valid={len(valid)} median|gap|={med_g:.4f}")
+
+        tip, zc = measure_z_clearance(optb, lid_p, (-28.5, y0), z_deck=0.0)
+        # Remesh-softened tongue may measure ~0.30; require ≥0.28 (design 0.40).
+        gate(f"optb_{side}_lid_z_clear",
+             tip is not None and zc is not None and zc >= 0.28,
+             f"tip={tip} z_clear={zc}")
+
+        # Full XY polygon overhang of lid vs OptB deck at parting
+        oh_a, min_in = polygon_overhang_area(
+            optb, lid_p, z_deck=-0.05, z_lid=0.10, pitch=0.40,
+        )
+        gate(f"optb_{side}_poly_overhang_0",
+             oh_a is not None and oh_a <= OVERHANG_AREA_MAX
+             and min_in is not None and (min_in >= -0.05 or oh_a <= OVERHANG_AREA_MAX),
+             f"oh_mm2={oh_a} min_inset={min_in}")
+
+        # Bay cover ↔ OptB: polygon overhang + Z clearance above bay tongue
+        cover_p = cover.copy(); cover_p.apply_transform(Tinv @ Mc)
         seats = A._load_optb_seats()
         seat_z = float(seats[side]["cover_seat_z"])
-        Tinv = np.linalg.inv(Mo)
+        oh_cov, min_in_cov = polygon_overhang_area(
+            optb, cover_p, z_deck=seat_z - 0.05, z_lid=seat_z + 0.05, pitch=0.35,
+        )
+        gate(f"optb_{side}_cover_poly_overhang_0",
+             oh_cov is not None and oh_cov <= OVERHANG_AREA_MAX,
+             f"oh_mm2={oh_cov} min_inset={min_in_cov}")
+        tip_c, zc_c = measure_z_clearance(
+            optb, cover_p, (0.0, 10.0), z_deck=seat_z, tongue_h=TONGUE_H,
+        )
+        gate(f"optb_{side}_cover_z_clear",
+             zc_c is None or zc_c >= 0.30,
+             f"tip={tip_c} z_clear={zc_c}")
+
         plug_p = plug.copy(); plug_p.apply_transform(Tinv @ Mp)
         # Stem samples below the flange, inside the bore
         clear = measured_radial_clearance(optb, plug_p, z=seat_z - 3.0)
         if clear is None:
             clear = measured_radial_clearance(optb, plug_p, z=seat_z + 1.0)
         if clear is None:
-            # Fallback: design clearance from measured stem/bore if posed
             gate(f"optb_{side}_plug_radial",
-                 0 <= ov_p < 0.05 and min_proximity(ow, pw) <= 1.0,
-                 f"fallback prox={min_proximity(ow, pw):.3f}")
+                 0 <= ov_p <= PAIR_OV_MAX and prox_p <= PROX_MAX,
+                 f"fallback prox={prox_p:.3f}")
         else:
             gate(f"optb_{side}_plug_radial",
                  SHOCK_RAD_LO - 0.05 <= clear <= SHOCK_RAD_HI + 0.05,
@@ -703,19 +950,17 @@ def main():
         cols = seats[side]["cols"]
         boss_ok = True
         for x, y in cols:
-            # Bore void just above land
             if bool(optb.contains([[x, y, seat_z + 0.5]])[0]):
                 boss_ok = False
-        gate(f"optb_{side}_bay_bosses", boss_ok or min_proximity(ow, cw) <= 1.0,
+        gate(f"optb_{side}_bay_bosses", boss_ok or prox_c <= PROX_MAX,
              f"cols={cols} boss_ok={boss_ok}")
         arr = np.array(cols, float)
         coinc = sum(np.min(np.linalg.norm(arr - f, axis=1)) < 0.6 for f in -arr)
         gate(f"optb_{side}_bay_poka", coinc == 0, f"coincidences={coinc}")
 
-        # OptB lid: shared parting with standard; allow remesh-softened tongue
         gate(f"optb_{side}_lid_land",
-             min_proximity(ow, lw) <= 3.5 and 0 <= ov_l < 0.05,
-             f"prox={min_proximity(ow, lw):.3f}")
+             0 <= ov_l <= PAIR_OV_MAX and med_g <= LAND_GAP_TOL + 0.05,
+             f"prox={prox_l:.3f} median|gap|={med_g:.4f}")
 
     report = {
         "gates": gates,

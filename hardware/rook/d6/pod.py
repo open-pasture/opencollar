@@ -323,12 +323,17 @@ def slab(name, w, l, h, r=PLAN_R):
 
 def contoured_slab(name, x_max, x_end, length, height, y_swell, r_end=PLAN_R,
                    r_swell=PLAN_R_SWELL, shoulder_run=POD_SHOULDER_RUN,
-                   y0=0.0, x_strap=None, strap_flare_run=None):
+                   y0=0.0, x_strap=None, strap_flare_run=None,
+                   strap_flare_plus_y=None):
     """Tapered plan: ~68 mid × length; mount tip ~66; optional strap-end flare.
 
     y0 is the body centre so the +Y face sits on POD_MOUNT_FACE_Y while length
     grows toward the strap end (asymmetric about local origin). Mesh is built
     in-place (no obj.location offset) so later cavity cuts stay aligned.
+
+    strap_flare_plus_y: optional absolute Y of the flare block's +Y face. Lid
+    passes the base flare's +Y so the 3 mm inset plan stays nested inside the
+    base deck at the shoulder transition (no overhang wedge).
     """
     body = oc.rounded_rect(name, (x_end, length, height), r_end,
                            at=(0.0, y0, 0.0), anchor="bottom", segments=12)
@@ -342,11 +347,18 @@ def contoured_slab(name, x_max, x_end, length, height, y_swell, r_end=PLAN_R,
     # Keep entirely inside the existing length so POD_LEN / plate fit stay locked.
     xs = float(x_strap) if x_strap is not None else None
     if xs is not None and xs > x_max + 0.5:
-        run = min(float(strap_flare_run or POD_STRAP_FLARE_RUN), length * 0.35)
-        y_strap = y0 - length / 2.0
-        # Flare block length = run; centre inset so −Y face ≈ body −Y + 0.5 mm
-        flare_l = run
-        flare_y = y_strap + 0.5 + flare_l * 0.5
+        y_minus = y0 - length / 2.0
+        run_nom = float(strap_flare_run or POD_STRAP_FLARE_RUN)
+        if strap_flare_plus_y is not None:
+            # Align transition with base; shrink run so −Y stays inside body.
+            plus_y = float(strap_flare_plus_y)
+            max_run = max(4.0, plus_y - (y_minus + 0.5))
+            flare_l = min(run_nom, max_run, length * 0.35)
+            flare_y = plus_y - flare_l * 0.5
+        else:
+            flare_l = min(run_nom, length * 0.35)
+            # Flare block length = run; centre inset so −Y face ≈ body −Y + 0.5 mm
+            flare_y = y_minus + 0.5 + flare_l * 0.5
         flare = oc.rounded_rect(
             f"{name}_strap_flare",
             (xs, flare_l, height),
@@ -739,6 +751,11 @@ def pod_lid(side="L"):
     lx_strap = POD_X_STRAP - 2 * reveal
     ll = POD_LEN - 2 * reveal
     y_swell = max(8.0, POD_Y_SWELL - reveal)
+    # Base strap flare +Y face (same formula as contoured_slab default) so the
+    # lid's ±35 flare starts only where the base deck has already opened to ±38.
+    base_flare_plus_y = (
+        (POD_Y0 - POD_LEN / 2.0) + 0.5 + float(POD_STRAP_FLARE_RUN)
+    )
     lid = contoured_slab(
         f"pod_{side}_lid", lx_max, lx_end, ll, POD_LID_T, y_swell,
         r_end=max(PLAN_R, 2.0), r_swell=max(PLAN_R_SWELL, 2.0),
@@ -746,6 +763,7 @@ def pod_lid(side="L"):
         y0=POD_Y0,
         x_strap=lx_strap,
         strap_flare_run=POD_STRAP_FLARE_RUN,
+        strap_flare_plus_y=base_flare_plus_y,
     )
     cols = _pod_cols_for_side(side)
     # Mating groove + key lug applied in export_part AFTER flip+remesh so the

@@ -26,9 +26,34 @@
       "detail": "sha12=417a5902088a expect=417a5902088a"
     },
     {
+      "name": "cw_frozen_cw_tub.stl",
+      "ok": true,
+      "detail": "sha12=31d732637cdc expect=31d732637cdc"
+    },
+    {
+      "name": "cw_frozen_cw_lid.stl",
+      "ok": true,
+      "detail": "sha12=b172b6a1c654 expect=b172b6a1c654"
+    },
+    {
+      "name": "wire_plug_frozen_pod_L_wire_plug.stl",
+      "ok": true,
+      "detail": "sha12=27ba3832226a expect=27ba3832226a"
+    },
+    {
+      "name": "wire_plug_frozen_pod_R_wire_plug.stl",
+      "ok": true,
+      "detail": "sha12=c73b741bfabb expect=c73b741bfabb"
+    },
+    {
+      "name": "cap_usbc_plug_in_poses",
+      "ok": true,
+      "detail": "keys_have_usbc=True"
+    },
+    {
       "name": "world_stls_exported",
       "ok": true,
-      "detail": "n=39"
+      "detail": "n=40"
     },
     {
       "name": "perimeter_sample_count",
@@ -48,7 +73,7 @@
     {
       "name": "pod_L_land_contact",
       "ok": true,
-      "detail": "ov_at_-0.02=13.1004"
+      "detail": "ov_at_-0.02=12.7803"
     },
     {
       "name": "pod_L_land_gaps_360",
@@ -59,6 +84,11 @@
       "name": "pod_L_reveal",
       "ok": true,
       "detail": "reveal_x=2.563 overhang=0.000"
+    },
+    {
+      "name": "pod_L_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=0.5454545454545467"
     },
     {
       "name": "pod_L_tongue_support",
@@ -103,7 +133,7 @@
     {
       "name": "pod_R_overlap_0",
       "ok": true,
-      "detail": "overlap_mm3=0.0020"
+      "detail": "overlap_mm3=0.0022"
     },
     {
       "name": "pod_R_seam_0",
@@ -113,7 +143,7 @@
     {
       "name": "pod_R_land_contact",
       "ok": true,
-      "detail": "ov_at_-0.02=14.0818"
+      "detail": "ov_at_-0.02=13.7193"
     },
     {
       "name": "pod_R_land_gaps_360",
@@ -124,6 +154,11 @@
       "name": "pod_R_reveal",
       "ok": true,
       "detail": "reveal_x=2.823 overhang=0.000"
+    },
+    {
+      "name": "pod_R_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=0.5454545454545467"
     },
     {
       "name": "pod_R_tongue_support",
@@ -184,6 +219,11 @@
       "name": "cw_reveal",
       "ok": true,
       "detail": "reveal=0.514 overhang=0.000"
+    },
+    {
+      "name": "cw_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=0.0"
     },
     {
       "name": "cw_tongue_support",
@@ -263,42 +303,87 @@
     {
       "name": "optb_L_lid_overlap_0",
       "ok": true,
-      "detail": "ov=0.0000"
+      "detail": "ov=0.0002"
     },
     {
       "name": "optb_L_cover_overlap_0",
       "ok": true,
-      "detail": "ov=0.0011"
+      "detail": "ov=0.0029"
     },
     {
-      "name": "optb_L_plug_overlap_0",
+      "name": "optb_L_plug_base_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_L_plug_cover_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_L_wire_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_L_wire_lid_overlap_0",
       "ok": true,
       "detail": "ov=0.0000"
     },
     {
       "name": "optb_L_lid_near",
       "ok": true,
-      "detail": "prox=2.933"
+      "detail": "prox=1.392"
     },
     {
       "name": "optb_L_cover_near",
       "ok": true,
-      "detail": "prox=0.833"
+      "detail": "prox=1.551 ov=0.0029"
     },
     {
       "name": "optb_L_plug_near",
       "ok": true,
-      "detail": "prox=0.209"
+      "detail": "prox=0.224 ov=0.0000"
+    },
+    {
+      "name": "optb_L_wire_near",
+      "ok": true,
+      "detail": "prox=0.347 flange_gap=0.150 gz=33.300"
     },
     {
       "name": "optb_L_cover_land",
       "ok": true,
-      "detail": "ov_push=17.13722946478187 prox=0.833"
+      "detail": "ov_push=0.0050527381636800055 prox=1.551"
+    },
+    {
+      "name": "optb_L_lid_outer_land",
+      "ok": true,
+      "detail": "valid=27 median|gap|=0.0000"
+    },
+    {
+      "name": "optb_L_lid_z_clear",
+      "ok": true,
+      "detail": "tip=1.2953885078430176 z_clear=0.30461149215698247"
+    },
+    {
+      "name": "optb_L_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=0.0"
+    },
+    {
+      "name": "optb_L_cover_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=1.6363636363636367"
+    },
+    {
+      "name": "optb_L_cover_z_clear",
+      "ok": true,
+      "detail": "tip=None z_clear=None"
     },
     {
       "name": "optb_L_plug_radial",
       "ok": true,
-      "detail": "fallback prox=0.209"
+      "detail": "clear/side=0.228"
     },
     {
       "name": "optb_L_bay_bosses",
@@ -313,7 +398,7 @@
     {
       "name": "optb_L_lid_land",
       "ok": true,
-      "detail": "prox=2.933"
+      "detail": "prox=1.392 median|gap|=0.0000"
     },
     {
       "name": "optb_R_volume",
@@ -323,42 +408,87 @@
     {
       "name": "optb_R_lid_overlap_0",
       "ok": true,
-      "detail": "ov=0.0001"
+      "detail": "ov=0.0016"
     },
     {
       "name": "optb_R_cover_overlap_0",
       "ok": true,
-      "detail": "ov=0.0015"
+      "detail": "ov=0.0029"
     },
     {
-      "name": "optb_R_plug_overlap_0",
+      "name": "optb_R_plug_base_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_R_plug_cover_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_R_wire_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_R_wire_lid_overlap_0",
       "ok": true,
       "detail": "ov=0.0000"
     },
     {
       "name": "optb_R_lid_near",
       "ok": true,
-      "detail": "prox=2.933"
+      "detail": "prox=1.392"
     },
     {
       "name": "optb_R_cover_near",
       "ok": true,
-      "detail": "prox=0.833"
+      "detail": "prox=1.551 ov=0.0029"
     },
     {
       "name": "optb_R_plug_near",
       "ok": true,
-      "detail": "prox=0.209"
+      "detail": "prox=0.224 ov=0.0000"
+    },
+    {
+      "name": "optb_R_wire_near",
+      "ok": true,
+      "detail": "prox=0.347 flange_gap=0.150 gz=33.300"
     },
     {
       "name": "optb_R_cover_land",
       "ok": true,
-      "detail": "ov_push=17.138102658902557 prox=0.833"
+      "detail": "ov_push=0.005052738163679997 prox=1.551"
+    },
+    {
+      "name": "optb_R_lid_outer_land",
+      "ok": true,
+      "detail": "valid=25 median|gap|=0.0000"
+    },
+    {
+      "name": "optb_R_lid_z_clear",
+      "ok": true,
+      "detail": "tip=1.2953885078430176 z_clear=0.30461149215698247"
+    },
+    {
+      "name": "optb_R_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=0.0"
+    },
+    {
+      "name": "optb_R_cover_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=1.6363636363636367"
+    },
+    {
+      "name": "optb_R_cover_z_clear",
+      "ok": true,
+      "detail": "tip=None z_clear=None"
     },
     {
       "name": "optb_R_plug_radial",
       "ok": true,
-      "detail": "fallback prox=0.209"
+      "detail": "clear/side=0.228"
     },
     {
       "name": "optb_R_bay_bosses",
@@ -373,13 +503,13 @@
     {
       "name": "optb_R_lid_land",
       "ok": true,
-      "detail": "prox=2.933"
+      "detail": "prox=1.392 median|gap|=0.0000"
     }
   ],
   "all_pass": true,
   "assembly_poses": "/agent/repos/opencollar/hardware/rook/d6/out/assembly_poses.json",
   "world_dir": "/agent/repos/opencollar/hardware/rook/d6/out/world",
-  "n_world": 39,
-  "n_gates": 75,
+  "n_world": 40,
+  "n_gates": 101,
   "n_fail": 0
 }
