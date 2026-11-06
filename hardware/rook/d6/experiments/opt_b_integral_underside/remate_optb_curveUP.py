@@ -26,7 +26,7 @@ TONGUE_H = 1.20
 # Locked to mating_rabbet.py (cap a189978 / pod Friday)
 TONGUE_IN0, TONGUE_IN1 = 1.80, 3.20
 BOSS_SPOT_D, BOSS_RECESS = 8.4, 0.40
-INSERT_D, INSERT_DEPTH = 4.0, 5.6
+INSERT_D, INSERT_DEPTH = 4.0, 5.9  # ≥5.8 mm heat-set depth gate
 POD_LID_W, POD_LID_L, POD_LID_R = 62.0, 91.0, 3.0
 COVER_W, COVER_L, COVER_R = 28.0, 42.0, 2.0
 OPTB_COVER_COLS = [(-10.0, 14.0), (8.0, 14.0), (-7.0, -14.0), (10.0, -12.0)]
@@ -39,12 +39,117 @@ OPTB_BED_COLS_L = [(-22.0, -36.0), (22.0, -36.0), (-19.0, 36.0), (22.0, 36.0)]
 OPTB_BED_Y0_L = 2.5
 OPTB_KEY_XY_L = (18.0, -28.0)
 OPTB_LID_SEAT_Z = TONGUE_H
+# Seed shell keeps std POD_Y0=−2.5 battery cavity; OptB lid/tongue use +2.5.
+STD_CAVITY_Y0 = -2.5
+CAV_X, CAV_Y = 58.0, 82.0
+BOSS_PILLAR_R = 4.0          # ≥3.8 mm closed wall around Ø4 bore
+BOSS_PILLAR_H = 22.0         # from land up into cavity (z_print 1.6..~20)
 
 
 def _cyl(r, h, at, segs=32):
     c = trimesh.creation.cylinder(radius=r, height=h, sections=segs)
     c.apply_translation([at[0], at[1], at[2] + 0.5 * h])
     return c
+
+
+def _rounded_cavity_box(w, l, h, at_xy, z0, r=2.0):
+    """Axis-aligned rounded box with bottom at z0 (height h)."""
+    from shapely.geometry import box as shapely_box
+    hw, hl = 0.5 * w, 0.5 * l
+    rr = min(r, hw - 0.05, hl - 0.05)
+    poly = shapely_box(-hw + rr, -hl + rr, hw - rr, hl - rr).buffer(rr)
+    poly = transform(
+        lambda x, y, z=None: (x + at_xy[0], y + at_xy[1]), poly
+    )
+    box = _extrude_poly(poly, h)
+    if box is None:
+        box = trimesh.creation.box(extents=(w, l, h))
+        box.apply_translation([at_xy[0], at_xy[1], z0 + 0.5 * h])
+        return box
+    box.apply_translation([0.0, 0.0, z0])
+    return box
+
+
+def _realign_battery_cavity(shell, y0: float, seat: float):
+    """Fill seed-shell cavity (std POD_Y0) and re-cut at OptB Y-flip centre.
+
+    Frozen lid / bed tongue sit on y0=+2.5; the imported shell still has the
+    battery pocket at POD_Y0=−2.5, so the +Y lid land hangs over open cavity
+    and the cavity carves through 3/4 sides of every bed M3 boss.
+    """
+    # Fill old void (slightly oversized so remnant ledges disappear).
+    fill_h = 28.0
+    fill = _rounded_cavity_box(
+        CAV_X + 2.5, CAV_Y + 2.5, fill_h,
+        (0.0, STD_CAVITY_Y0), seat + 0.05, r=2.5,
+    )
+    shell = shell.union(fill, engine="manifold")
+    print(
+        f"  cavity fill at y={STD_CAVITY_Y0:+.1f} "
+        f"({CAV_X + 2.5:.0f}x{CAV_Y + 2.5:.0f}x{fill_h:.0f})"
+    )
+    # Re-cut at OptB Y-flip centre (matches frozen lid y≈[−43,+48]).
+    cut_h = 26.0
+    cut = _rounded_cavity_box(
+        CAV_X, CAV_Y, cut_h, (0.0, y0), seat + 0.35, r=2.0,
+    )
+    shell = shell.difference(cut, engine="manifold")
+    print(f"  cavity re-cut at y={y0:+.1f} ({CAV_X:.0f}x{CAV_Y:.0f}x{cut_h:.0f})")
+    return shell
+
+
+def _bed_boss_pillars(body, cols, y0: float, seat: float):
+    """Union 360° M3 pillars + corner webs AFTER the cavity cut, then
+    recess −0.40 spotfaces and coaxial Ø4 heat-set bores into +Z pillars.
+    """
+    for i, (x, y) in enumerate(cols):
+        try:
+            # Pillar spans deck into cavity so r≥3.8 wall is continuous
+            # from z≈1.6 through the heat-set depth and beyond.
+            pillar = _cyl(BOSS_PILLAR_R, BOSS_PILLAR_H + 1.0,
+                          (x, y, seat - 0.5))
+            body = body.union(pillar, engine="manifold")
+            # Web into the nearest cavity corner walls (outward from centre).
+            sx = 1.0 if x >= 0.0 else -1.0
+            sy = 1.0 if y >= y0 else -1.0
+            web = trimesh.creation.box(extents=(8.0, 8.0, BOSS_PILLAR_H))
+            web.apply_translation([
+                x + sx * 3.5,
+                y + sy * 3.5,
+                seat + 0.5 * BOSS_PILLAR_H,
+            ])
+            body = body.union(web, engine="manifold")
+            # Shave cavity-fill leftovers above the land outside the pillar
+            # so the boss flange sits at seat (not a raised 1.55 island).
+            shave_outer = _cyl(7.0, 3.0, (x, y, seat + 0.01))
+            shave_keep = _cyl(BOSS_PILLAR_R - 0.05, 3.2, (x, y, seat - 0.05))
+            shave = shave_outer.difference(shave_keep, engine="manifold")
+            body = body.difference(shave, engine="manifold")
+            # Land flange pad flush at seat, then −0.40 spotface + bore.
+            flange = _cyl(0.5 * BOSS_SPOT_D + 1.4, 0.6, (x, y, seat - 0.6))
+            body = body.union(flange, engine="manifold")
+            body = body.difference(
+                _cyl(0.5 * BOSS_SPOT_D, BOSS_RECESS + 0.05,
+                     (x, y, seat - BOSS_RECESS)),
+                engine="manifold",
+            )
+            # Heat-set bore into the +Z pillar (curveUP: land on bed).
+            body = body.difference(
+                _cyl(0.5 * INSERT_D, INSERT_DEPTH + 0.3,
+                     (x, y, seat - BOSS_RECESS)),
+                engine="manifold",
+            )
+            # Kill zero-thickness boolean skin at seat+0.05 without eating
+            # the pillar (solid from ≈seat+0.3 upward).
+            body = body.difference(
+                _cyl(0.5 * BOSS_SPOT_D + 0.1, 0.28, (x, y, seat + 0.01)),
+                engine="manifold",
+            )
+            print(f"  bed boss pillar {i} @ ({x:.0f},{y:.0f})")
+        except Exception as exc:
+            print(f"  bed boss pillar {i} failed:", exc)
+            raise
+    return body
 
 
 def _section_exterior(mesh, z):
@@ -184,15 +289,40 @@ def remate(side: str, shell_path: str, out_path: str, land_nom: float) -> bool:
             pass
     if not shell.is_watertight:
         print("shell not watertight")
-        return False
+        return (False, 0.0)
 
     cols = list(OPTB_BED_COLS_L)
     y0 = OPTB_BED_Y0_L
     key_xy = OPTB_KEY_XY_L
     seat = float(OPTB_LID_SEAT_Z)
-    land_z = float(land_nom) + seat
 
     shell.apply_translation([0.0, 0.0, seat])
+    # Bay land tracks the raised shell roof (not a stale hard-coded land_nom).
+    # land_nom is retained as a floor so a damaged shell cannot drop the seat.
+    try:
+        tmp = os.path.join(OUT, "_optb_shell_raised_tmp.ply")
+        shell.export(tmp)
+        measured_land = _measure_land_z(tmp)
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+    except Exception:
+        measured_land = float(land_nom) + seat
+    if measured_land is not None and measured_land > 20.0:
+        land_z = float(measured_land)
+    else:
+        land_z = float(land_nom) + seat
+    print(f"  measured bay land={measured_land} → land_z={land_z:.3f}")
+
+    # Battery cavity: seed shell is still on std POD_Y0=−2.5; move it to the
+    # OptB Y-flip centre before deck/tongue/boss work so land_360_flush and
+    # M3 pillars are not carved open.
+    try:
+        shell = _realign_battery_cavity(shell, y0, seat)
+    except Exception as exc:
+        print("  cavity realign failed:", exc)
+        return (False, 0.0)
 
     # Restore missing std Y-flip silhouette (flare corners + tip past lid y=48).
     # ONLY a thin land plate near z=seat — a full-height slab through z=0..seat
@@ -205,7 +335,7 @@ def remate(side: str, shell_path: str, out_path: str, land_nom: float) -> bool:
             missing = std_poly.difference(cur_poly.buffer(0.05))
             if not missing.is_empty and missing.area > 1.0:
                 # Thin plate spanning seat .. seat+0.45 — must NOT start below
-                # seat or it kisses the lid underside (~1.2 mm³ sheet overlap).
+                # seat or it kisses the lid tongue (which fills z=0..seat).
                 fill = _extrude_poly(missing, 0.45)
                 if fill is not None:
                     fill.apply_translation([0.0, 0.0, seat])
@@ -239,21 +369,24 @@ def remate(side: str, shell_path: str, out_path: str, land_nom: float) -> bool:
     except Exception as exc:
         print("  shoulder skirt failed:", exc)
 
-    # Male tongue tip on bed — rounded stadium ring (not a sharp box) so
-    # corners match the lid groove. Width uses nominal TONGUE_IN0 (=0.30 mm
-    # XY); length is 0.25 mm longer/side so ±Y shift lands in 0.22..0.35
-    # (groove ends were ~0.50 mm open with symmetric insets).
-    LEN_IN0 = TONGUE_IN0 - 0.22  # 1.58 — ±Y ~0.25..0.38 without end kiss
-    LEN_IN1 = TONGUE_IN1 - 0.22  # 2.98
-    tw_o = POD_LID_W - 2 * TONGUE_IN0
-    tl_o = POD_LID_L - 2 * LEN_IN0
-    tw_i = POD_LID_W - 2 * TONGUE_IN1
-    tl_i = POD_LID_L - 2 * LEN_IN1
-    r_o = max(POD_LID_R - TONGUE_IN0, 0.5)
-    r_i = max(POD_LID_R - TONGUE_IN1, 0.4)
+    # Male tongue tip on bed — stadium matching frozen lid groove.
+    # Symmetric nominal insets leave ±Y ~0.50 mm open (749b9f4). Grow both
+    # axes so the rigid_shift meter (≈0.062 X / 0.125 Y quanta) lands on
+    # 0.250 inside the 0.245–0.305 gate; pull X-inner by 0.09 for remesh.
+    IN0_X = TONGUE_IN0 - 0.06       # 1.74 → ±X meter ≈0.25
+    IN1_X = TONGUE_IN1 - 0.09       # 3.11
+    # Symmetric length; verifier heals the frozen lid before contains so
+    # ±Y reads evenly (non-WT lid was skewing one end by a meter quantum).
+    IN0_Y = TONGUE_IN0 - 0.28       # 1.52 → ±Y meter 0.375→0.25
+    IN1_Y = TONGUE_IN1 - 0.16       # 3.04
+    tw_o = POD_LID_W - 2 * IN0_X
+    tl_o = POD_LID_L - 2 * IN0_Y
+    tw_i = POD_LID_W - 2 * IN1_X
+    tl_i = POD_LID_L - 2 * IN1_Y
+    r_o = max(POD_LID_R - min(IN0_X, IN0_Y), 0.5)
+    r_i = max(POD_LID_R - min(IN1_X, IN1_Y), 0.4)
 
     def _stadium_poly(w, l, r):
-        # Axis-aligned rounded rect of exact extents (w, l): shrink by r, buffer r.
         from shapely.geometry import box as shapely_box
         hw, hl = 0.5 * w, 0.5 * l
         rr = min(r, hw - 0.05, hl - 0.05)
@@ -276,21 +409,15 @@ def remate(side: str, shell_path: str, out_path: str, land_nom: float) -> bool:
         )
     except Exception as exc:
         print("tongue failed:", exc)
-        return False
+        return (False, 0.0)
 
-    for i, (x, y) in enumerate(cols):
-        try:
-            body = body.difference(
-                _cyl(0.5 * BOSS_SPOT_D, BOSS_RECESS + 0.15, (x, y, seat)),
-                engine="manifold",
-            )
-            body = body.difference(
-                _cyl(0.5 * INSERT_D, INSERT_DEPTH, (x, y, seat)),
-                engine="manifold",
-            )
-        except Exception as exc:
-            print(f"boss {i} failed:", exc)
-            return False
+    # Pillars AFTER cavity re-cut: closed 360° wall + webs, then −0.40
+    # spotface + Ø4 bore into the +Z pillar (curveUP land on bed).
+    try:
+        body = _bed_boss_pillars(body, cols, y0, seat)
+    except Exception as exc:
+        print("boss pillars failed:", exc)
+        return (False, 0.0)
 
     try:
         kx, ky = key_xy
@@ -300,38 +427,97 @@ def remate(side: str, shell_path: str, out_path: str, land_nom: float) -> bool:
     except Exception as exc:
         print("key failed:", exc)
 
-    # Shell already has bay tongue from cavityUP. Re-cut shock bore + cover
-    # bosses + wire gland at the raised land so blank-plug / wire_plug seat.
-    print(f"  bay land_z={land_z:.2f} (shock/wire/boss re-cut only)")
+    # Restore continuous bay cover land + male tongue, then re-cut shock/bosses.
+    # Prior remates left a patchy deck (centre ~21.9 mm) while seats.json posed
+    # the cover at a hard-coded 32.25 mm → open seam / floating cover.
+    print(f"  bay land_z={land_z:.2f} (clear old bay + land plate + tongue)")
+    try:
+        from shapely.geometry import box as shapely_box
+
+        def _stad(w, l, r):
+            hw, hl = 0.5 * w, 0.5 * l
+            rr = min(r, hw - 0.05, hl - 0.05)
+            return shapely_box(-hw + rr, -hl + rr, hw - rr, hl - rr).buffer(rr)
+
+        # Clear any prior bay tongue / ragged roof above land−0.5 inside cover.
+        clearer = _extrude_poly(_stad(COVER_W + 2.0, COVER_L + 2.0, COVER_R + 1.0), 8.0)
+        if clearer is not None:
+            clearer.apply_translation([0.0, 0.0, land_z - 0.5])
+            body = body.difference(clearer, engine="manifold")
+            print("  old bay roof cleared")
+
+        # Land plate top flush at land_z.
+        land_poly = _stad(COVER_W + 0.8, COVER_L + 0.8, COVER_R + 0.3)
+        land_plate = _extrude_poly(land_poly, 1.0)
+        if land_plate is not None:
+            land_plate.apply_translation([0.0, 0.0, land_z - 1.0])
+            body = body.union(land_plate, engine="manifold")
+            print(f"  bay land plate unioned area={land_poly.area:.1f}")
+        # Bay tongue slightly under-size vs cover groove (0.28 clear + remesh pad).
+        BAY_IN0 = TONGUE_IN0 + 0.12
+        BAY_IN1 = TONGUE_IN1 + 0.12
+        twc_o = COVER_W - 2 * BAY_IN0
+        tlc_o = COVER_L - 2 * BAY_IN0
+        twc_i = COVER_W - 2 * BAY_IN1
+        tlc_i = COVER_L - 2 * BAY_IN1
+        ring_bay = _stad(twc_o, tlc_o, max(COVER_R - BAY_IN0, 0.4)).difference(
+            _stad(twc_i, tlc_i, max(COVER_R - BAY_IN1, 0.3))
+        )
+        bay_tongue = _extrude_poly(ring_bay, TONGUE_H)
+        if bay_tongue is not None:
+            bay_tongue.apply_translation([0.0, 0.0, land_z])
+            body = body.union(bay_tongue, engine="manifold")
+            print(f"  bay tongue unioned IN0={BAY_IN0:.2f}")
+    except Exception as exc:
+        print("  bay land/tongue failed:", exc)
+        return (False, 0.0)
     for i, (x, y) in enumerate(OPTB_COVER_COLS):
         try:
+            # Bay M3: pad flush with land_z; spotface floor at land_z−0.40.
+            pad_h = 1.2
+            pad = _cyl(0.5 * BOSS_SPOT_D + 1.2, pad_h, (x, y, land_z - pad_h))
+            body = body.union(pad, engine="manifold")
             body = body.difference(
-                _cyl(0.5 * BOSS_SPOT_D, BOSS_RECESS + 0.25, (x, y, land_z)),
+                _cyl(0.5 * BOSS_SPOT_D, BOSS_RECESS + 0.05,
+                     (x, y, land_z - BOSS_RECESS)),
                 engine="manifold",
             )
             body = body.difference(
-                _cyl(0.5 * INSERT_D, INSERT_DEPTH, (x, y, land_z)),
+                _cyl(0.5 * INSERT_D, INSERT_DEPTH + 0.05,
+                     (x, y, land_z - BOSS_RECESS - INSERT_DEPTH)),
+                engine="manifold",
+            )
+            # Vacuum debris above the bay tongue tip only — do not notch the
+            # male tongue ring that may graze these columns.
+            body = body.difference(
+                _cyl(0.5 * BOSS_SPOT_D + 0.15, 2.5,
+                     (x, y, land_z + TONGUE_H + 0.05)),
                 engine="manifold",
             )
         except Exception as exc:
             print(f"  bay boss {i} failed:", exc)
-            return False
+            return (False, 0.0)
     try:
-        # Through-land shock bore: cut both +Z (roof) and −Z (into cavity).
         body = body.difference(
-            _cyl(0.5 * SHOCK_BORE_D, INSERT_DEPTH + 1.0, (0.0, 0.0, land_z - INSERT_DEPTH)),
+            _cyl(0.5 * SHOCK_BORE_D, INSERT_DEPTH + 0.05,
+                 (0.0, 0.0, land_z - INSERT_DEPTH)),
             engine="manifold",
         )
         body = body.difference(
-            _cyl(0.5 * SHOCK_FLANGE_SEAT_D, BOSS_RECESS + 0.15, (0.0, 0.0, land_z)),
+            _cyl(0.5 * SHOCK_FLANGE_SEAT_D, BOSS_RECESS + 0.05,
+                 (0.0, 0.0, land_z - BOSS_RECESS)),
+            engine="manifold",
+        )
+        body = body.difference(
+            _cyl(0.5 * SHOCK_FLANGE_SEAT_D + 0.2, 2.5,
+                 (0.0, 0.0, land_z + TONGUE_H + 0.05)),
             engine="manifold",
         )
     except Exception as exc:
         print("  shock failed:", exc)
-        return False
+        return (False, 0.0)
     gy = WIRE_GLAND_Y_L
     try:
-        # Modest gland bore from the high face — not a 20 mm tunnel through bed.
         z_top = float(body.bounds[1, 2])
         body = body.difference(
             _cyl(4.15, 8.0, (0.0, gy, z_top - 8.0)),
@@ -339,7 +525,7 @@ def remate(side: str, shell_path: str, out_path: str, land_nom: float) -> bool:
         )
     except Exception as exc:
         print("  wire gland failed:", exc)
-        return False
+        return (False, 0.0)
 
     body.apply_translation([0.0, 0.0, -float(body.bounds[0, 2])])
     # Also write a PLY that preserves volume for Boolean gates (binary STL
@@ -362,7 +548,7 @@ def remate(side: str, shell_path: str, out_path: str, land_nom: float) -> bool:
         f"stl_wt={check.is_watertight} stl_vol={check.is_volume} "
         f"h={body.extents[2]:.2f} faces={len(body.faces)}"
     )
-    return bool(body.is_volume or ply_ok)
+    return (bool(body.is_volume or ply_ok), float(land_z))
 
 
 def _top_solid_from_above(mesh, x, y, z_lo=15.0):
@@ -434,7 +620,7 @@ def main():
     out_l = os.path.join(OUT, "pod_L_base_optB_curveUP.stl")
     land_nom = 30.8  # prior bay land before seat raise
     print("Remating L…")
-    ok = remate("L", shell, out_l, land_nom)
+    ok, land_z_l = remate("L", shell, out_l, land_nom)
     if not ok:
         sys.exit(1)
     promo_l = os.path.join(D6_STL, "pod_L_base_optB_curveUP.stl")
@@ -454,15 +640,12 @@ def main():
     if os.path.isfile(ply_r):
         shutil.copy2(ply_r, os.path.join(OUT, "pod_R_base_optB_curveUP.ply"))
 
-    # Cover sits just above the raised bay land (design land_nom+seat; bump
-    # +0.25 so remesh fuzz cannot kiss the cover).
-    seat = float(OPTB_LID_SEAT_Z)
-    cover_seat_l = land_nom + seat + 0.25  # 32.25 — clears remesh fuzz
+    # Cover seats on remate land_z (+ hairline to avoid coplanar sheet overlap).
+    # Do NOT re-measure after boss pads — pads pollute the land probe.
+    cover_seat_l = float(land_z_l) + 0.02
     body_h = float(trimesh.load(ply_l if os.path.isfile(ply_l) else promo_l, force="mesh").bounds[1, 2])
-    # Flange seats on the high-Z saddle face near body top (measured channel
-    # is roomy; z≈body_h keeps the frozen Ø7.6 plug clear of the walls).
     wire_z_l = body_h
-    print(f"  cover_seat_z → {cover_seat_l:.2f} wire_gland_z → {wire_z_l:.2f}")
+    print(f"  cover_seat_z → {cover_seat_l:.2f} (land_z+0.02) wire_gland_z → {wire_z_l:.2f}")
     seats = {}
     for side in ("L", "R"):
         cols = [list(c) for c in OPTB_COVER_COLS]

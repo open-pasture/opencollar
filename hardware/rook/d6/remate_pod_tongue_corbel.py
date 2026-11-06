@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
-"""Post-process pod_L/R_base.stl: ≤45° corbel under floating tongue.
+"""Post-process pod_L/R_base.stl: true ≥45° corbel under floating tongue.
 
 Keeps frozen lid groove XY (0.28 mm clear). Roots tongue into the solid
-perimeter wall so z_mating-0.3 / z_mating-1.5 are solid under every tongue
-sample. Mirrors R from L. Does not touch lids (groove already matched).
+perimeter wall with a wedge whose underside is ≥45° above horizontal
+(0 mm² flat ceilings over the battery cavity). Mirrors R from L.
+Does not touch lids.
 """
 from __future__ import annotations
 
-import json
 import math
 import os
-import shutil
 
 import numpy as np
 import trimesh
 from shapely.geometry import box as shapely_box
-from shapely.ops import transform
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 STL = os.path.join(_HERE, "stl")
@@ -37,20 +35,30 @@ def _stadium_poly(w, l, r):
     return core.buffer(rr)
 
 
-def _extrude(poly, h):
-    from shapely.geometry import MultiPolygon
-    geoms = list(poly.geoms) if isinstance(poly, MultiPolygon) else [poly]
-    parts = []
-    for g in geoms:
-        if g is None or g.is_empty or g.area < 0.5:
-            continue
-        try:
-            parts.append(trimesh.creation.extrude_polygon(g, height=float(h)))
-        except Exception:
-            pass
-    if not parts:
-        return None
-    return parts[0] if len(parts) == 1 else trimesh.util.concatenate(parts)
+def _densify_boundary(poly, n: int = 160) -> np.ndarray:
+    coords = np.array(poly.exterior.coords)
+    d = np.r_[0.0, np.cumsum(np.linalg.norm(np.diff(coords, axis=0), axis=1))]
+    s = np.linspace(0.0, d[-1], n, endpoint=False)
+    x = np.interp(s, d, coords[:, 0])
+    y = np.interp(s, d, coords[:, 1])
+    return np.column_stack([x, y])
+
+
+def _inward_normals(pts: np.ndarray) -> np.ndarray:
+    """Unit normals pointing into the stadium (toward origin)."""
+    n = len(pts)
+    norms = np.zeros_like(pts)
+    for i in range(n):
+        p0 = pts[i - 1]
+        p2 = pts[(i + 1) % n]
+        t = p2 - p0
+        t = t / (np.linalg.norm(t) + 1e-12)
+        # Perp candidates; pick the one that points toward the origin.
+        left = np.array([-t[1], t[0]])
+        right = np.array([t[1], -t[0]])
+        mid = pts[i]
+        norms[i] = left if np.dot(left, mid) < 0 else right
+    return norms
 
 
 def _cyl(r, h, at, segs=32):
@@ -59,32 +67,69 @@ def _cyl(r, h, at, segs=32):
     return c
 
 
-def add_corbel(body, y0: float, z_part: float):
-    """Solid ≤45° corbel envelope under tongue, rooted into perimeter wall.
+def make_wedge_corbel(y0: float, z_part: float) -> trimesh.Trimesh:
+    """≥45° underside wedge ring rooted on the perimeter land.
 
-    Single manifold ring filling the 45° wedge AABB (outer on solid land,
-    inner at tongue_inner−depth). Avoids staircase air gaps / non-volume.
+    Cross-section is a right triangle: vertical outer face on the land wall,
+    horizontal top under the tongue, slanted underside (run == rise) so every
+    downward-facing facet is ≥45° above horizontal — no flat ceilings over
+    the battery cavity.
     """
-    depth = (TONGUE_IN1 - TONGUE_IN0) + 0.35  # ~1.75 mm
-    wall_in0 = max(0.25, TONGUE_IN0 - 1.55)  # outer ~±30.75 on solid land
-    in_i = TONGUE_IN1 + depth                 # bottom-most inner (45°)
-    in_o = wall_in0
-    ring = _stadium_poly(
-        POD_LID_W - 2 * in_o, POD_LID_L - 2 * in_o, max(POD_LID_R - in_o, 0.5),
-    ).difference(_stadium_poly(
-        POD_LID_W - 2 * in_i, POD_LID_L - 2 * in_i, max(POD_LID_R - in_i, 0.4),
-    ))
-    ring = transform(lambda x, y, z=None: (x, y + y0), ring)
-    # Top ≤ land − 0.02 — never kiss the lid land plate.
-    solid = _extrude(ring, depth)
-    if solid is None or not solid.is_volume:
-        raise RuntimeError("corbel extrude non-volume")
-    solid.apply_translation([0.0, 0.0, z_part - depth - 0.02])
-    print(
-        f"  corbel depth={depth:.2f} top={z_part - 0.02:.2f} "
-        f"inner_top={POD_LID_W / 2 - TONGUE_IN1:.2f} "
-        f"inner_bot={POD_LID_W / 2 - in_i:.2f} vol={solid.is_volume}"
+    # Outer just outside the tongue/wall (~inset 1.70).
+    in_o = TONGUE_IN0 - 0.10  # 1.70 → outer ~±29.3 (at wall)
+    # Rise must reach tongue-inner under z_mating−1.5: need t=h−1.5 ≥
+    # (TONGUE_IN1−in_o) so h ≥ (TONGUE_IN1−in_o)+1.5 ≈ 3.0 mm.
+    run = float(TONGUE_IN1 - in_o) + 1.55  # ~3.05 mm
+    run = float(max(2.5, min(run, 3.2)))
+    h = run  # exact 45°
+    z0 = z_part - h - 0.02
+    w_o = POD_LID_W - 2 * in_o
+    l_o = POD_LID_L - 2 * in_o
+    r_o = max(POD_LID_R - in_o, 0.5)
+    outer = _densify_boundary(_stadium_poly(w_o, l_o, r_o), n=160)
+    nin = _inward_normals(outer)
+    inner = outer + nin * run
+    outer = outer.copy()
+    inner = inner.copy()
+    outer[:, 1] += y0
+    inner[:, 1] += y0
+    n = len(outer)
+    verts = []
+    for x, y in outer:
+        verts.append([x, y, z0])
+    for x, y in outer:
+        verts.append([x, y, z0 + h])
+    for x, y in inner:
+        verts.append([x, y, z0 + h])
+    faces = []
+    for i in range(n):
+        j = (i + 1) % n
+        # outer vertical wall
+        faces.append([i, j, n + j])
+        faces.append([i, n + j, n + i])
+        # top land under tongue
+        faces.append([n + i, n + j, 2 * n + j])
+        faces.append([n + i, 2 * n + j, 2 * n + i])
+        # slanted underside (≥45°)
+        faces.append([i, 2 * n + i, 2 * n + j])
+        faces.append([i, 2 * n + j, j])
+    mesh = trimesh.Trimesh(
+        vertices=np.asarray(verts, float),
+        faces=np.asarray(faces, int),
+        process=True,
     )
+    mesh.fix_normals()
+    if not mesh.is_volume:
+        raise RuntimeError("wedge corbel non-volume")
+    print(
+        f"  wedge corbel run={run:.2f} h={h:.2f} top={z0 + h:.2f} "
+        f"in_o={in_o:.2f} vol={mesh.is_volume}"
+    )
+    return mesh
+
+
+def add_corbel(body, y0: float, z_part: float):
+    solid = make_wedge_corbel(y0, z_part)
     return body.union(solid, engine="manifold")
 
 
@@ -105,6 +150,9 @@ def recut_bosses(body, cols, z_part: float):
 
 
 def remate_L():
+    # Seed from d6bae12-clean base if current already has a bad corbel —
+    # caller restores seed before invoke. Always start from whatever STL is
+    # currently staged as pod_L_base.stl.
     src = os.path.join(STL, "pod_L_base.stl")
     body = trimesh.load(src, force="mesh")
     if not body.is_volume:

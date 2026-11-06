@@ -7,6 +7,8 @@ on lid (prints outer-down so tongue is last layers). Cap/cw keep prior usage.
 """
 from __future__ import annotations
 
+import math
+
 import oc  # noqa: F401 — caller ensures oc is on path
 
 # Locked clearances (match cap a189978)
@@ -145,28 +147,37 @@ def recess_insert_bosses(body, cols, z_parting, insert_d=4.0,
 def add_base_tongue_corbel(body, lid_w, lid_l, lid_r, z_parting,
                            at_xy=(0.0, 0.0), prefix="corbel",
                            depth=None, n_steps=5):
-    """≤45° corbel under the male tongue so it is not a mid-air bridge.
+    """≥45° underside wedge corbel under the male tongue.
 
-    Single ring filling the 45° wedge AABB: outer on the solid perimeter
-    land, inner at tongue_inner−depth. Depth capped so 2×18650 clearance
-    is preserved. `n_steps` retained for call-site compat (unused).
+    Right-triangle cross-section: vertical face on the perimeter wall, top
+    under the tongue, slanted underside with run==rise so every downward
+    face is ≥45° above horizontal (no flat cavity ceilings). Prefer the
+    trimesh wedge in `remate_pod_tongue_corbel.py` for exported STLs; this
+    OC path approximates with a staircase of thin rings (each step ≤45°).
     """
     del n_steps
     if depth is None:
         depth = float(TONGUE_IN1 - TONGUE_IN0) + 0.35  # ~1.75 mm
     depth = float(max(0.8, min(depth, 2.2)))
     ax, ay = at_xy
-    wall_in0 = max(0.25, TONGUE_IN0 - 1.55)  # ≈0.25 → outer ~±30.75
-    in_i = TONGUE_IN1 + depth
-    in_o = wall_in0
-    w_o, l_o = lid_w - 2 * in_o, lid_l - 2 * in_o
-    w_i, l_i = lid_w - 2 * in_i, lid_l - 2 * in_i
-    r_o, r_i = max(lid_r - in_o, 0.5), max(lid_r - in_i, 0.4)
-    # Top of corbel stays ≤ z_parting − 0.02 so it never kisses the lid
-    # land (h = depth + 0.15 with z0 = z_part − depth − 0.05 peaked +0.10
-    # above land and created a ~67 mm³ sheet overlap with pod lids).
-    oc.union(body, stadium_ring(
-        prefix, w_o, l_o, r_o, w_i, l_i, r_i,
-        h=depth, z0=z_parting - depth - 0.02, at_xy=(ax, ay),
-    ))
+    in_o = max(0.25, TONGUE_IN0 - 1.55)
+    # Staircase: N steps, each with run=rise so the envelope is ≤45°.
+    n = max(4, int(math.ceil(depth / 0.35)))
+    dz = depth / n
+    for i in range(n):
+        # Top step (i=0) spans full run; bottom step is a thin fillet at wall.
+        run_i = depth * (n - i) / n
+        z0 = z_parting - 0.02 - (i + 1) * dz
+        w_o = lid_w - 2 * in_o
+        l_o = lid_l - 2 * in_o
+        w_i = lid_w - 2 * (in_o + run_i)
+        l_i = lid_l - 2 * (in_o + run_i)
+        r_o = max(lid_r - in_o, 0.5)
+        r_i = max(lid_r - (in_o + run_i), 0.4)
+        if w_o <= w_i + 0.8 or l_o <= l_i + 0.8:
+            continue
+        oc.union(body, stadium_ring(
+            f"{prefix}_s{i}", w_o, l_o, r_o, w_i, l_i, r_i,
+            h=dz + 0.02, z0=z0, at_xy=(ax, ay),
+        ))
     return body
