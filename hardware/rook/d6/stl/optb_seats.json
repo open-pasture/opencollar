@@ -1,0 +1,56 @@
+{
+  "L": {
+    "cover_seat_z": 25.800006319323984,
+    "body_h": 35.72377395629883,
+    "cols": [
+      [
+        -10.0,
+        14.0
+      ],
+      [
+        8.0,
+        14.0
+      ],
+      [
+        -7.0,
+        -14.0
+      ],
+      [
+        10.0,
+        -12.0
+      ]
+    ],
+    "cover_h_print": 2.5,
+    "cover_mating_from_bed": 0.0,
+    "cover_h": 2.5,
+    "cover_flange_seat_from_outer": 0.5,
+    "plug_flange_underside_z": 5.5
+  },
+  "R": {
+    "cover_seat_z": 25.80000460035808,
+    "body_h": 35.72176742553711,
+    "cols": [
+      [
+        10.0,
+        -14.0
+      ],
+      [
+        -8.0,
+        -14.0
+      ],
+      [
+        7.0,
+        14.0
+      ],
+      [
+        -10.0,
+        12.0
+      ]
+    ],
+    "cover_h_print": 2.5,
+    "cover_mating_from_bed": 0.0,
+    "cover_h": 2.5,
+    "cover_flange_seat_from_outer": 0.5,
+    "plug_flange_underside_z": 5.5
+  }
+}

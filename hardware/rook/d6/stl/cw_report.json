@@ -109,12 +109,12 @@
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 52790.37974860581
+        "volume_mm3": 52769.11382602203
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 31840
+        "faces": 31858
       },
       "pass": true,
       "stl_path": "stl/cw_tub.stl",
@@ -128,27 +128,27 @@
     },
     "cw_lid": {
       "size_mm": [
-        88.4,
-        114.8,
-        6.35
+        84.3,
+        110.7,
+        6.294
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 45853.184483060206
+        "volume_mm3": 41762.141568514984
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 5030
+        "faces": 4510
       },
       "pass": true,
       "stl_path": "stl/cw_lid.stl",
       "export_flipped_outer_down": false,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 9319.2,
+      "bed_face_area_mm2": 8556.9,
       "support_note": "Flat crown land on bed (~42\u00d736 mm). Strap channel is a pocket on the bed (no bridge). Internal cbore/landing after flip face UP \u2014 no large tree supports expected; optional tiny supports only if land bridges fail.",
       "orientation": "PRINT: MATING face DOWN z=0 (no outer flip; less support)",
       "load_path": "lid screws; dome up; strap channel on outer",

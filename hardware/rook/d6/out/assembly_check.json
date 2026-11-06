@@ -202,7 +202,7 @@
   {
    "check": "cw_lid: volume>0",
    "ok": true,
-   "measured": 45853,
+   "measured": 41762,
    "expected": ">0",
    "note": ""
   },
@@ -217,9 +217,9 @@
    "check": "cw_lid: fits P2S 256^3",
    "ok": true,
    "measured": [
-    88.4,
-    114.8,
-    6.35
+    84.3,
+    110.7,
+    6.29
    ],
    "expected": "<=256",
    "note": ""
@@ -234,7 +234,7 @@
   {
    "check": "cw_tub: volume>0",
    "ok": true,
-   "measured": 52790,
+   "measured": 52769,
    "expected": ">0",
    "note": ""
   },
@@ -650,7 +650,7 @@
   {
    "check": "optb_bay_cover: volume>0",
    "ok": true,
-   "measured": 2336,
+   "measured": 2178,
    "expected": ">0",
    "note": ""
   },
@@ -682,7 +682,7 @@
   {
    "check": "optb_bay_cover_L: volume>0",
    "ok": true,
-   "measured": 2336,
+   "measured": 2178,
    "expected": ">0",
    "note": ""
   },
@@ -714,7 +714,7 @@
   {
    "check": "optb_bay_cover_R: volume>0",
    "ok": true,
-   "measured": 2336,
+   "measured": 2178,
    "expected": ">0",
    "note": ""
   },
@@ -746,7 +746,7 @@
   {
    "check": "pod_L_base: volume>0",
    "ok": true,
-   "measured": 81791,
+   "measured": 87024,
    "expected": ">0",
    "note": ""
   },
@@ -762,8 +762,8 @@
    "ok": true,
    "measured": [
     76.0,
-    98.8,
-    37.65
+    98.79,
+    37.4
    ],
    "expected": "<=256",
    "note": ""
@@ -778,7 +778,7 @@
   {
    "check": "pod_L_base_optB_curveUP: volume>0",
    "ok": true,
-   "measured": 68752,
+   "measured": 74529,
    "expected": ">0",
    "note": ""
   },
@@ -794,8 +794,8 @@
    "ok": true,
    "measured": [
     76.0,
-    98.8,
-    38.2
+    98.72,
+    35.72
    ],
    "expected": "<=256",
    "note": ""
@@ -842,14 +842,14 @@
   {
    "check": "pod_L_lid: volume>0",
    "ok": true,
-   "measured": 25012,
+   "measured": 25103,
    "expected": ">0",
    "note": ""
   },
   {
    "check": "pod_L_lid: min z = 0",
    "ok": true,
-   "measured": -0.0,
+   "measured": 0.0,
    "expected": 0,
    "note": ""
   },
@@ -859,7 +859,7 @@
    "measured": [
     70.0,
     91.0,
-    5.95
+    7.45
    ],
    "expected": "<=256",
    "note": ""
@@ -938,7 +938,7 @@
   {
    "check": "pod_R_base: volume>0",
    "ok": true,
-   "measured": 81794,
+   "measured": 87014,
    "expected": ">0",
    "note": ""
   },
@@ -955,7 +955,7 @@
    "measured": [
     76.0,
     98.8,
-    37.65
+    37.4
    ],
    "expected": "<=256",
    "note": ""
@@ -970,7 +970,7 @@
   {
    "check": "pod_R_base_optB_curveUP: volume>0",
    "ok": true,
-   "measured": 68758,
+   "measured": 74503,
    "expected": ">0",
    "note": ""
   },
@@ -986,8 +986,8 @@
    "ok": true,
    "measured": [
     76.0,
-    98.8,
-    38.2
+    98.76,
+    35.72
    ],
    "expected": "<=256",
    "note": ""
@@ -1034,14 +1034,14 @@
   {
    "check": "pod_R_lid: volume>0",
    "ok": true,
-   "measured": 25012,
+   "measured": 25103,
    "expected": ">0",
    "note": ""
   },
   {
    "check": "pod_R_lid: min z = 0",
    "ok": true,
-   "measured": -0.0,
+   "measured": 0.0,
    "expected": 0,
    "note": ""
   },
@@ -1051,7 +1051,7 @@
    "measured": [
     70.0,
     91.0,
-    5.95
+    7.45
    ],
    "expected": "<=256",
    "note": ""
@@ -1194,14 +1194,14 @@
   {
    "check": "cap pad L centre vs pod L cap-facing face centre",
    "ok": true,
-   "measured": "mesh min gap 5.1 mm (pad n=279 face n=19171)",
+   "measured": "mesh min gap 5.2 mm (pad n=279 face n=11512)",
    "expected": "<8 mm",
    "note": ""
   },
   {
    "check": "cap pad R centre vs pod R cap-facing face centre",
    "ok": true,
-   "measured": "mesh min gap 5.0 mm (pad n=365 face n=19173)",
+   "measured": "mesh min gap 5.1 mm (pad n=365 face n=19854)",
    "expected": "<8 mm",
    "note": ""
   },
@@ -1488,7 +1488,7 @@
   {
    "check": "pod mount-end tip width ~66 (x at +Y\u224840)",
    "ok": true,
-   "measured": "+Y 66.1",
+   "measured": "+Y 66.2",
    "expected": "62\u201370",
    "note": ""
   },
@@ -1544,7 +1544,7 @@
   {
    "check": "CW tub height lower than pod base",
    "ok": true,
-   "measured": "cw_tub H=19.2 vs pod_L_base H=37.7",
+   "measured": "cw_tub H=19.2 vs pod_L_base H=37.4",
    "expected": "CW < pod",
    "note": ""
   },
@@ -1600,14 +1600,14 @@
   {
    "check": "fairing_pod_strap_L near a body (not floating)",
    "ok": true,
-   "measured": "nearest pod_L_base gap/overlap=-13.1",
+   "measured": "nearest pod_L_base gap/overlap=-15.9",
    "expected": "<5 mm",
    "note": ""
   },
   {
    "check": "fairing_pod_strap_R near a body (not floating)",
    "ok": true,
-   "measured": "nearest pod_R_base gap/overlap=-13.1",
+   "measured": "nearest pod_R_base gap/overlap=-16.0",
    "expected": "<5 mm",
    "note": ""
   },
@@ -1684,14 +1684,14 @@
   {
    "check": "fairing fairing_cap_pod_L top vs pod_L roof \u2264 0.3 mm",
    "ok": true,
-   "measured": "\u0394z_base=0.09 (f=26.8 base=26.9) \u0394z_lid=3.66",
+   "measured": "\u0394z_base=1.44 (f=26.8 base=28.2) \u0394z_lid=3.61",
    "expected": "base\u22640.3+0.5 or lid\u22644.5 (inset lip)",
    "note": ""
   },
   {
    "check": "fairing fairing_cap_pod_R top vs pod_R roof \u2264 0.3 mm",
    "ok": true,
-   "measured": "\u0394z_base=0.09 (f=26.8 base=26.9) \u0394z_lid=3.66",
+   "measured": "\u0394z_base=1.47 (f=26.8 base=28.2) \u0394z_lid=3.61",
    "expected": "base\u22640.3+0.5 or lid\u22644.5 (inset lip)",
    "note": ""
   },
@@ -2026,10 +2026,17 @@
    "ok": true,
    "measured": [
     0.0,
-    0.0,
+    0.04,
     0.0
    ],
    "expected": "<1 mm",
+   "note": ""
+  },
+  {
+   "check": "Friday mating: cap_base \u2229 cap_lid == 0 mm\u00b3",
+   "ok": true,
+   "measured": 0.0,
+   "expected": "0.00 mm\u00b3",
    "note": ""
   },
   {
@@ -2041,13 +2048,6 @@
   },
   {
    "check": "Friday mating: pod_R_base \u2229 pod_R_lid == 0 mm\u00b3",
-   "ok": true,
-   "measured": 0.0,
-   "expected": "0.00 mm\u00b3",
-   "note": ""
-  },
-  {
-   "check": "Friday mating: cap_base \u2229 cap_lid == 0 mm\u00b3",
    "ok": true,
    "measured": 0.0,
    "expected": "0.00 mm\u00b3",
@@ -2089,7 +2089,7 @@
   {
    "check": "assembly_poses.json present",
    "ok": true,
-   "measured": "/agent/repos/opencollar/hardware/rook/d6/out/assembly_poses.json",
+   "measured": "out/assembly_poses.json",
    "expected": "out/assembly_poses.json",
    "note": ""
   },
@@ -2134,37 +2134,37 @@
   {
    "a": "pod_L_base",
    "b": "pod_L_bay_cover",
-   "mm3": 4369.0,
-   "class": "saddle/bay/plug engagement (OK)"
-  },
-  {
-   "a": "pod_L_base",
-   "b": "pod_L_wire_plug",
-   "mm3": 57.4,
+   "mm3": 4358.8,
    "class": "saddle/bay/plug engagement (OK)"
   },
   {
    "a": "pod_L_base",
    "b": "fairing_pod_strap_L",
-   "mm3": 8516.6,
+   "mm3": 9262.8,
    "class": "fairing blend (OK)"
   },
   {
    "a": "pod_L_base",
    "b": "clamp_bar_3",
-   "mm3": 672.9,
+   "mm3": 668.7,
    "class": "clamp pocket engagement (OK)"
   },
   {
    "a": "pod_L_base",
    "b": "clamp_bar_4",
-   "mm3": 672.1,
+   "mm3": 667.5,
    "class": "clamp pocket engagement (OK)"
   },
   {
    "a": "pod_L_saddle",
    "b": "pod_L_bay_cover",
    "mm3": 93.8,
+   "class": "expected lip/groove engagement"
+  },
+  {
+   "a": "pod_L_saddle",
+   "b": "pod_L_wire_plug",
+   "mm3": 183.9,
    "class": "expected lip/groove engagement"
   },
   {
@@ -2187,20 +2187,20 @@
   },
   {
    "a": "pod_L_wire_plug",
-   "b": "clamp_bar_4",
-   "mm3": 110.4,
+   "b": "clamp_bar_3",
+   "mm3": 165.0,
    "class": "clamp pocket engagement (OK)"
   },
   {
    "a": "pod_R_base",
    "b": "pod_R_bay_cover",
-   "mm3": 4369.2,
+   "mm3": 4370.2,
    "class": "saddle/bay/plug engagement (OK)"
   },
   {
    "a": "pod_R_base",
    "b": "fairing_pod_strap_R",
-   "mm3": 11273.2,
+   "mm3": 12048.4,
    "class": "fairing blend (OK)"
   },
   {
@@ -2219,6 +2219,12 @@
    "a": "pod_R_saddle",
    "b": "pod_R_bay_cover",
    "mm3": 93.8,
+   "class": "expected lip/groove engagement"
+  },
+  {
+   "a": "pod_R_saddle",
+   "b": "pod_R_wire_plug",
+   "mm3": 15.1,
    "class": "expected lip/groove engagement"
   },
   {
@@ -2242,7 +2248,7 @@
   {
    "a": "pod_R_wire_plug",
    "b": "clamp_bar_6",
-   "mm3": 110.4,
+   "mm3": 165.0,
    "class": "clamp pocket engagement (OK)"
   },
   {

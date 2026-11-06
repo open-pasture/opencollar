@@ -574,10 +574,9 @@ def cw_tub():
     cav_w, cav_l = cx, cy
     cut_cav(b, cav_w, cav_l, CW_FLOOR, ch + 1, r=4.0)
     columns(b, CW_SCREWS, CW_FLOOR, CW_H, d=8.0)
-    # 360° concentric tongue (replaces groove+reg_lip — fixes 655 mm³ clash)
-    cw_lid_w = CW_L - 2 * D.REVEAL
-    cw_lid_l = CW_W - 2 * D.REVEAL
-    cw_lid_r = max(PLAN_R - D.REVEAL, 4.0)
+    # Lid sized to the TAPERED top deck (not the bottom envelope) so the lid
+    # sits with a clean 0.50 mm inset reveal instead of a 1.60 mm overhang.
+    cw_lid_w, cw_lid_l, cw_lid_r = _cw_lid_plan()
     MR.add_base_tongue(b, cw_lid_w, cw_lid_l, cw_lid_r, CW_H, prefix="cw_tongue")
     MR.recess_insert_bosses(
         b, CW_SCREWS, CW_H, insert_d=D.INSERT_D, prefix="cw",
@@ -622,14 +621,30 @@ def cw_tub():
     return prepare(b)
 
 
+def _cw_lid_plan():
+    """Lid plan = tub top outer − inset reveal, matching tapered top deck.
+
+    Target reveal 0.40 mm (within 0.00–0.50). D.REVEAL=0.50 plus remesh
+    shrinkage previously yielded ~0.61 measured — use 0.40 explicitly.
+    """
+    reveal = 0.35  # measured ~+0.15 remesh; targets 0.40–0.50 inset on STL
+    top_w = CW_L - 2 * CW_TAPER_INSET
+    top_l = CW_W - 2 * CW_TAPER_INSET
+    lw = top_w - 2 * reveal
+    ll = top_l - 2 * reveal
+    lr = max(PLAN_R - CW_TAPER_INSET - reveal, 4.0)
+    return lw, ll, lr
+
+
 def cw_lid():
     """Low domed lid. Mating@z=0; PRINT mating-face-down (no outer flip).
 
     Soft crown + stepped strap channel (wide shallow → deep) for a smoother
     tangent into the strap 'saddle' face. Seal: O-ring land, 4× M3, foam.
+    Sized to the tapered tub TOP (not the bottom envelope) for a 0.50 mm
+    inset reveal all 360° — eliminates the 1.60 mm overhang on 954f80a.
     """
-    lw, ll = CW_L - 2 * D.REVEAL, CW_W - 2 * D.REVEAL
-    lr = max(PLAN_R - D.REVEAL, 4.0)
+    lw, ll, lr = _cw_lid_plan()
     lid = _domed_lid_solid("cw_lid", lw, ll, CW_LID_FLAT, CW_LID_T,
                            lr, CW_CROWN_LAND)
     # 360° mating groove on z=0 (print mating-down) — replaces colliding lring

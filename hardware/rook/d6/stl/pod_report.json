@@ -130,8 +130,8 @@
     "pod_L_base": {
       "size_mm": [
         76.0,
-        98.8,
-        37.65
+        98.79,
+        37.4
       ],
       "watertight": {
         "watertight": true,
@@ -141,7 +141,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 802872
+        "faces": 473472
       },
       "pass": true,
       "stl_path": "stl/pod_L_base.stl",
@@ -156,7 +156,7 @@
       "size_mm": [
         70.0,
         91.0,
-        5.949
+        7.45
       ],
       "watertight": {
         "watertight": true,
@@ -166,22 +166,22 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 367226
+        "faces": 7828
       },
       "pass": true,
       "stl_path": "stl/pod_L_lid.stl",
-      "export_flipped_outer_down": false,
+      "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 4968.8,
-      "orientation": "PRINT: MATING face DOWN z=0 (groove on bed; no flip)",
+      "bed_face_area_mm2": 1104.5,
+      "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X; tongue last layers)",
       "load_path": "lid screws; ribs"
     },
     "pod_R_base": {
       "size_mm": [
         76.0,
         98.8,
-        37.65
+        37.4
       ],
       "watertight": {
         "watertight": true,
@@ -191,7 +191,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 802904
+        "faces": 805998
       },
       "pass": true,
       "stl_path": "stl/pod_R_base.stl",
@@ -206,7 +206,7 @@
       "size_mm": [
         70.0,
         91.0,
-        5.949
+        7.45
       ],
       "watertight": {
         "watertight": true,
@@ -216,15 +216,15 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 367190
+        "faces": 7828
       },
       "pass": true,
       "stl_path": "stl/pod_R_lid.stl",
-      "export_flipped_outer_down": false,
+      "export_flipped_outer_down": true,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 4967.9,
-      "orientation": "PRINT: MATING face DOWN z=0 (groove on bed; no flip)",
+      "bed_face_area_mm2": 1104.5,
+      "orientation": "PRINT: OUTER face DOWN z=0 (180\u00b0 about X; tongue last layers)",
       "load_path": "true mirror of L"
     },
     "fairing_cap_pod_L": {
@@ -356,14 +356,14 @@
   "pass": true,
   "lid_print": {
     "pod_L_lid": {
-      "bed_face_area_mm2": 4968.8,
+      "bed_face_area_mm2": 1104.5,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
-      "note": "Mating-down; soft tip taper only \u2014 groove prints on bed"
+      "note": "Outer-down; male tongue last layers; soft tip taper"
     },
     "pod_R_lid": {
-      "bed_face_area_mm2": 4967.9,
+      "bed_face_area_mm2": 1104.5,
       "supports": "NONE expected for outer shell (flat outer on bed); optional tiny supports under mating-face ribs/posts if they bridge",
-      "note": "Mating-down; soft tip taper only \u2014 groove prints on bed"
+      "note": "Outer-down; male tongue last layers; soft tip taper"
     }
   },
   "review_blend": "review/pod_review.blend"

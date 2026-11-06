@@ -1,32 +1,51 @@
 {
   "experiment": "opt_B_integral_R220_L_and_R",
-  "warning": "Production-candidate STLs under stl/ \u2014 still DRAFT / unprinted until Cody approves. assembly_check is geometry/interference only, not fit/print proof. R220 / 25\u00d742 cm ellipse is a sizing model, not measured cattle.",
+  "warning": "DRAFT \u2014 assembly_check is geometry only, not fit/print proof.",
   "chosen_orientation": "curve_UP_cavity_DOWN",
   "bodies": {
     "pod_L_base_optB_curveUP": {
       "path": "/agent/repos/opencollar/hardware/rook/d6/stl/pod_L_base_optB_curveUP.stl",
-      "experiment_path": "/agent/repos/opencollar/hardware/rook/d6/experiments/opt_b_integral_underside/stl/pod_L_base_optB_curveUP.stl",
       "size_mm": [
         76.0,
-        98.8,
-        38.2
+        98.74,
+        35.42
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 720210
+        "faces": 1733700
       },
-      "first_layer_area_mm2": 308.1,
+      "first_layer_area_mm2": 419.2,
       "sagitta_mm": 5.41,
       "bay": {
-        "bay_w": 31.0,
-        "bay_l": 46.0,
-        "bay_h": 9.41260521642937,
+        "bay_w": 29.0,
+        "bay_l": 43.0,
+        "land_floor_t": 6.0,
         "shock_bore_d": 8.05,
-        "shock_boss_d": 14.0,
-        "cover_land_z": 5.41260521642937
-      },
-      "print": "curve UP / cavity DOWN; brim recommended"
+        "cover_cols": [
+          [
+            -10.0,
+            14.0
+          ],
+          [
+            8.0,
+            14.0
+          ],
+          [
+            -7.0,
+            -14.0
+          ],
+          [
+            10.0,
+            -12.0
+          ]
+        ],
+        "cover_seat_z_curveUP": 33.423587799072266,
+        "body_h_curveUP": 35.423587799072266,
+        "h_cavityUP": 35.255550384521484,
+        "h_before": 37.400001525878906,
+        "land_cav": 7.0
+      }
     },
     "optb_bay_cover_L": {
       "path": "/agent/repos/opencollar/hardware/rook/d6/stl/optb_bay_cover_L.stl",
@@ -38,33 +57,71 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 1340
-      }
+        "faces": 2142
+      },
+      "cols": [
+        [
+          -10.0,
+          14.0
+        ],
+        [
+          8.0,
+          14.0
+        ],
+        [
+          -7.0,
+          -14.0
+        ],
+        [
+          10.0,
+          -12.0
+        ]
+      ],
+      "cover_h": 2.5
     },
     "pod_R_base_optB_curveUP": {
       "path": "/agent/repos/opencollar/hardware/rook/d6/stl/pod_R_base_optB_curveUP.stl",
-      "experiment_path": "/agent/repos/opencollar/hardware/rook/d6/experiments/opt_b_integral_underside/stl/pod_R_base_optB_curveUP.stl",
       "size_mm": [
         76.0,
-        98.8,
-        38.2
+        98.75,
+        35.4
       ],
       "watertight": {
-        "watertight": true,
-        "bad_edges": 0,
-        "faces": 720986
+        "watertight": false,
+        "bad_edges": 7,
+        "faces": 675002
       },
-      "first_layer_area_mm2": 308.0,
+      "first_layer_area_mm2": 427.1,
       "sagitta_mm": 5.41,
       "bay": {
-        "bay_w": 31.0,
-        "bay_l": 46.0,
-        "bay_h": 9.41260521642937,
+        "bay_w": 29.0,
+        "bay_l": 43.0,
+        "land_floor_t": 6.0,
         "shock_bore_d": 8.05,
-        "shock_boss_d": 14.0,
-        "cover_land_z": 5.41260521642937
-      },
-      "print": "curve UP / cavity DOWN; brim recommended"
+        "cover_cols": [
+          [
+            -10.0,
+            14.0
+          ],
+          [
+            8.0,
+            14.0
+          ],
+          [
+            -7.0,
+            -14.0
+          ],
+          [
+            10.0,
+            -12.0
+          ]
+        ],
+        "cover_seat_z_curveUP": 33.399925231933594,
+        "body_h_curveUP": 35.399925231933594,
+        "h_cavityUP": 35.250553131103516,
+        "h_before": 37.400001525878906,
+        "land_cav": 7.0
+      }
     },
     "optb_bay_cover_R": {
       "path": "/agent/repos/opencollar/hardware/rook/d6/stl/optb_bay_cover_R.stl",
@@ -76,29 +133,84 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 1340
-      }
+        "faces": 2142
+      },
+      "cols": [
+        [
+          -10.0,
+          14.0
+        ],
+        [
+          8.0,
+          14.0
+        ],
+        [
+          -7.0,
+          -14.0
+        ],
+        [
+          10.0,
+          -12.0
+        ]
+      ],
+      "cover_h": 2.5
     }
   },
-  "pass": true,
-  "symmetry": {
-    "L_extents_mm": [
-      76.0,
-      98.8,
-      38.2
-    ],
-    "R_extents_mm": [
-      76.0,
-      98.8,
-      38.2
-    ],
-    "L_volume_cm3": 68.75,
-    "R_volume_cm3": 68.76,
-    "extent_delta_mm": [
-      0.0,
-      0.0,
-      -0.0
-    ],
-    "volume_delta_cm3": 0.006
+  "pass": false,
+  "optb_seats": {
+    "L": {
+      "cover_seat_z": 33.423587799072266,
+      "body_h": 35.423587799072266,
+      "cols": [
+        [
+          -10.0,
+          14.0
+        ],
+        [
+          8.0,
+          14.0
+        ],
+        [
+          -7.0,
+          -14.0
+        ],
+        [
+          10.0,
+          -12.0
+        ]
+      ],
+      "cover_h_print": 2.5,
+      "cover_mating_from_bed": 0.0,
+      "cover_h": 2.5,
+      "cover_flange_seat_from_outer": 0.5,
+      "plug_flange_underside_z": 5.5
+    },
+    "R": {
+      "cover_seat_z": 33.399925231933594,
+      "body_h": 35.399925231933594,
+      "cols": [
+        [
+          -10.0,
+          14.0
+        ],
+        [
+          8.0,
+          14.0
+        ],
+        [
+          -7.0,
+          -14.0
+        ],
+        [
+          10.0,
+          -12.0
+        ]
+      ],
+      "cover_h_print": 2.5,
+      "cover_mating_from_bed": 0.0,
+      "cover_h": 2.5,
+      "cover_flange_seat_from_outer": 0.5,
+      "plug_flange_underside_z": 5.5
+    }
   }
 }

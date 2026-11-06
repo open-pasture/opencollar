@@ -35,7 +35,27 @@ POD_BASE_H = 22.2          # cavity stack to mating (pre-skirt); cavity still 19
 POD_SKIRT_H = 14.0         # D7r5/r6 deep strap skirt below z=0 before normalize
 # Print-STL mating Z after skirt normalize (underside z=0 → mating at skirt+base)
 POD_MATING_Z = POD_BASE_H + POD_SKIRT_H  # 36.2
-POD_LID_T = 4.2            # as-exported lid thickness (~4.0 modeled + ribs)
+POD_LID_T = 4.0            # solid lid body (excl. crown / tongue)
+POD_LID_CROWN = 1.8        # outer dome sagitta
+POD_LID_TONGUE_H = 1.20    # male rabbet tongue (matches mating_rabbet.TONGUE_H)
+# After outer-down flip: bed=outer at z=0, mating land at measured top (see
+# stl/pod_lid_mating_z.json). Fallback ≈ POD_LID_T once crown sits on the bed.
+POD_LID_MATING_FROM_BED = 5.80  # measured side-land top after outer-down flip
+POD_LID_PRINT_H = 7.45
+
+
+def pod_lid_mating_from_bed(side: str = "L") -> float:
+    """Measured lid mating-face Z in print frame (outer-down), fallback constant."""
+    import json
+    from pathlib import Path
+    p = Path(__file__).resolve().parent / "stl" / "pod_lid_mating_z.json"
+    if p.is_file():
+        data = json.loads(p.read_text())
+        if side in data:
+            return float(data[side])
+        if "L" in data:
+            return float(data["L"])
+    return float(POD_LID_MATING_FROM_BED)
 # D7r2: cavity rotated — 58 across X / 82 along Y → outer ~68 wide × ~97 long
 # (was 92 wide with 82 across X). Mount face local Y locked at old ±46.
 POD_L = 68.0               # max X = cell swell (58 + 2×5); narrower than cap 76
@@ -188,8 +208,13 @@ def world_poses():
     for side in ("L", "R"):
         A = pod_anchor_matrix(side)
         poses[f"pod_{side}_base"] = A @ T([0, 0, POD_Z0])
-        # Lid prints mating-down (z=0 = parting) — same as cap_lid; no Rx flip.
-        poses[f"pod_{side}_lid"] = A @ T([0, 0, POD_Z0 + POD_MATING_Z])
+        # Lid prints outer-down; Rx(π) + shift puts mating face on base parting.
+        lid_mz = pod_lid_mating_from_bed(side)
+        poses[f"pod_{side}_lid"] = (
+            A @ T([0, 0, POD_Z0 + POD_MATING_Z])
+            @ R(math.pi, X)
+            @ T([0, 0, -lid_mz])
+        )
         # Neck saddle: flat mates pod skirt bed (z=0); Rx(π) points concave to neck.
         poses[f"pod_{side}_saddle"] = (
             A @ T([0, 0, POD_Z0]) @ R(math.pi, X)
@@ -198,9 +223,13 @@ def world_poses():
         poses[f"pod_{side}_bay_cover"] = (
             A @ T([0, 0, POD_Z0]) @ R(math.pi, X) @ T([0, 0, -2.5])
         )
-        # Wire blank plug — saddle local Y matches pod.py POD_WIRE_GLAND_Y (−28)
+        # Wire blank plug — stem into underside gland at POD_WIRE_GLAND_Y.
+        # R base is X+Y mirrored so the gland sits at −(−28)=+28 in R print frame.
+        # Rx aims the stem (+Z after flip) into the channel; flange seats on bed.
+        gy = -28.0 if side == "L" else 28.0
+        wire_flange_z = 5.5  # stem×6 with flange overlap; underside of flange
         poses[f"pod_{side}_wire_plug"] = (
-            A @ T([0, 0, POD_Z0]) @ R(math.pi, X) @ T([0, -28.0, -3.0])
+            A @ T([0.0, gy, POD_Z0]) @ R(math.pi, X) @ T([0.0, 0.0, -wire_flange_z])
         )
 
     CWA = T([0, 0, CW_ANCH_Z]) @ R(math.pi, X)
@@ -252,27 +281,72 @@ def world_poses():
     return poses
 
 
-def optb_world_poses():
-    """Option B + blank-shock-plug poses (mutually exclusive with Option A saddle).
+def _load_optb_seats():
+    """Seat Z / cover print metrics from last optB build (stl/optb_seats.json)."""
+    import json
+    from pathlib import Path
+    p = Path(__file__).resolve().parent / "stl" / "optb_seats.json"
+    if p.is_file():
+        return json.loads(p.read_text())
+    # Safe fallbacks until build_opt_b writes the file
+    return {
+        side: {
+            "cover_seat_z": 29.7,
+            "cover_mating_from_bed": 2.5,
+            "plug_flange_underside_z": 5.5,
+            "cover_flange_seat_from_outer": 0.50,
+        }
+        for side in ("L", "R")
+    }
 
-    Kept separate from world_poses() so assembly_check does not treat optB covers /
-    blank plugs as simultaneous with standard pod_base / saddle.
+
+def optb_world_poses():
+    """Option B poses (mutually exclusive with Option A saddle in assembly_check).
+
+    curveUP print: parting on bed (z=0), bay land near max Z. Shared Rx(π,X)
+    puts parting onto the same lid-mating plane as standard pod_base and puts
+    the bay on the neck underside. Cover prints mating-down (z=0); blank-plug
+    flange seats on the cover countersink; stem points into the Ø8.05 bore.
     """
     from trimesh.transformations import rotation_matrix as R
     from trimesh.transformations import translation_matrix as T
 
     X = [1, 0, 0]
+    seats = _load_optb_seats()
     poses = {}
     for side in ("L", "R"):
         Am = pod_anchor_matrix(side)
-        poses[f"pod_{side}_base_optB_curveUP"] = (
-            Am @ T([0, 0, POD_Z0]) @ R(math.pi, X)
+        # Parting (print z=0) → lid-mating plane at POD_Z0+POD_MATING_Z
+        shared = Am @ T([0, 0, POD_Z0 + POD_MATING_Z]) @ R(math.pi, X)
+        poses[f"pod_{side}_base_optB_curveUP"] = shared
+        # Same lid pose as standard — shared parting plane
+        lid_mz = pod_lid_mating_from_bed(side)
+        poses[f"pod_{side}_lid_optB"] = (
+            Am @ T([0, 0, POD_Z0 + POD_MATING_Z])
+            @ R(math.pi, X)
+            @ T([0, 0, -lid_mz])
         )
+        s = seats[side]
+        seat_z = float(s["cover_seat_z"])
+        cov_mating = float(s.get("cover_mating_from_bed", 0.0))
+        cover_h = float(s.get("cover_h", 2.5))
         poses[f"optb_bay_cover_{side}"] = (
-            Am @ T([0, 0, POD_Z0]) @ R(math.pi, X) @ T([0, 0, -2.5])
+            shared @ T([0, 0, seat_z - cov_mating])
         )
+        flange_z = float(s.get("plug_flange_underside_z", 5.5))
+        seat_from_outer = float(s.get("cover_flange_seat_from_outer", 0.50))
+        # Cover mating-down: outer at seat+cover_h; flange countersink near outer.
+        # Plug stem must point −Z (into bay bore); Rx(π) after seating the flange.
+        flange_seat_z = (seat_z - cov_mating) + (cover_h - seat_from_outer)
         poses[f"jig_blank_shock_plug_{side}"] = (
-            Am @ T([0, 0, POD_Z0]) @ R(math.pi, X) @ T([0, 0, -7.3])
+            shared @ T([0, 0, flange_seat_z]) @ R(math.pi, X) @ T([0, 0, -flange_z])
+        )
+        gy = -28.0 if side == "L" else 28.0
+        body_h = float(s.get("body_h", seat_z))
+        poses[f"pod_{side}_wire_plug_optB"] = (
+            Am @ T([0.0, gy, POD_Z0 + POD_MATING_Z])
+            @ R(math.pi, X)
+            @ T([0.0, 0.0, -(body_h - 5.5)])
         )
     return poses
 

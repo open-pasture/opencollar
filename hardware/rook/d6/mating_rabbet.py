@@ -1,7 +1,9 @@
 """Shared 360° concentric tongue-and-groove rabbet (cap a189978 pattern).
 
 Lid-referenced insets → 0.28 mm/wall XY clearance and 0.40 mm Z top clearance.
-Import from pod.py / cw.py / opt_b builders. Do NOT change cap.py (frozen).
+
+Pod Friday fix: female groove on base (curveUP-printable on z=0), male tongue
+on lid (prints outer-down so tongue is last layers). Cap/cw keep prior usage.
 """
 from __future__ import annotations
 
@@ -17,6 +19,8 @@ BOSS_RECESS = 0.40
 BOSS_SPOT_D = 8.4
 INSERT_BORE_DEPTH = 6.5
 RABBET_SEGS = 32
+# Closed-end 45° roof chamfer depth (parallel walls cover full tongue engagement)
+CHAMFER_D = Z_CLEAR  # 0.40
 
 
 def stadium_ring(name, w_out, l_out, r_out, w_in, l_in, r_in, h, z0,
@@ -36,7 +40,10 @@ def stadium_ring(name, w_out, l_out, r_out, w_in, l_in, r_in, h, z0,
 
 def add_base_tongue(body, lid_w, lid_l, lid_r, z_parting, at_xy=(0.0, 0.0),
                     prefix="tongue"):
-    """Union 360° raised tongue on base parting deck (lid-referenced)."""
+    """Union 360° raised tongue on base parting deck (lid-referenced).
+
+    Used by cw (and legacy). Pods use cut_base_groove + add_lid_tongue instead.
+    """
     tw_o, tl_o = lid_w - 2 * TONGUE_IN0, lid_l - 2 * TONGUE_IN0
     tw_i, tl_i = lid_w - 2 * TONGUE_IN1, lid_l - 2 * TONGUE_IN1
     tr_o, tr_i = lid_r - TONGUE_IN0, lid_r - TONGUE_IN1
@@ -55,6 +62,55 @@ def cut_lid_groove(lid, lid_w, lid_l, lid_r, at_xy=(0.0, 0.0), prefix="groove"):
     oc.cut(lid, stadium_ring(
         prefix, gw_o, gl_o, gr_o, gw_i, gl_i, gr_i,
         h=GROOVE_D + 0.4, z0=-0.2, at_xy=at_xy,
+    ))
+    return lid
+
+
+def cut_base_groove(body, lid_w, lid_l, lid_r, z_parting, at_xy=(0.0, 0.0),
+                    prefix="groove", chamfer=True):
+    """Cut 360° female groove into base parting (opens at z_parting, into −Z).
+
+    Parallel walls for full tongue engagement (TONGUE_H), then optional 45°
+    closed-end chamfer in the remaining Z_CLEAR so curveUP (parting on bed)
+    needs 0 support moves inside the groove.
+    """
+    gw_o, gl_o = lid_w - 2 * GROOVE_IN0, lid_l - 2 * GROOVE_IN0
+    gw_i, gl_i = lid_w - 2 * GROOVE_IN1, lid_l - 2 * GROOVE_IN1
+    gr_o, gr_i = lid_r - GROOVE_IN0, lid_r - GROOVE_IN1
+    # Parallel engagement section (full tongue height + tiny float)
+    eng_h = TONGUE_H + 0.05
+    oc.cut(body, stadium_ring(
+        f"{prefix}_eng", gw_o, gl_o, gr_o, gw_i, gl_i, gr_i,
+        h=eng_h + 0.2, z0=z_parting - eng_h, at_xy=at_xy,
+    ))
+    if chamfer and CHAMFER_D > 0.05:
+        # 45° step: inset walls by CHAMFER_D over depth CHAMFER_D
+        cw_o = lid_w - 2 * (GROOVE_IN0 + CHAMFER_D)
+        cl_o = lid_l - 2 * (GROOVE_IN0 + CHAMFER_D)
+        cw_i = lid_w - 2 * (GROOVE_IN1 - CHAMFER_D)
+        cl_i = lid_l - 2 * (GROOVE_IN1 - CHAMFER_D)
+        cr_o = max(lid_r - GROOVE_IN0 - CHAMFER_D, 0.5)
+        cr_i = max(lid_r - GROOVE_IN1 + CHAMFER_D, 0.4)
+        if cw_o > cw_i + 1.0 and cl_o > cl_i + 1.0:
+            oc.cut(body, stadium_ring(
+                f"{prefix}_ch", cw_o, cl_o, cr_o, cw_i, cl_i, cr_i,
+                h=CHAMFER_D + 0.15, z0=z_parting - GROOVE_D, at_xy=at_xy,
+            ))
+    return body
+
+
+def add_lid_tongue(lid, lid_w, lid_l, lid_r, at_xy=(0.0, 0.0), prefix="tongue"):
+    """Union 360° male tongue protruding −Z from lid mating face at z=0.
+
+    Print outer-down: after flip_outer_down the tongue becomes last layers on
+    the up-facing mating face (no overhang).
+    """
+    tw_o, tl_o = lid_w - 2 * TONGUE_IN0, lid_l - 2 * TONGUE_IN0
+    tw_i, tl_i = lid_w - 2 * TONGUE_IN1, lid_l - 2 * TONGUE_IN1
+    tr_o, tr_i = lid_r - TONGUE_IN0, lid_r - TONGUE_IN1
+    oc.union(lid, stadium_ring(
+        prefix, tw_o, tl_o, tr_o, tw_i, tl_i, tr_i,
+        h=TONGUE_H + 0.05, z0=-TONGUE_H, at_xy=at_xy,
     ))
     return lid
 
