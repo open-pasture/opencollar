@@ -56,6 +56,18 @@ POD_LID_W, POD_LID_L, POD_LID_R = 62.0, 91.0, 3.0
 # Wire gland (frozen plug STL) — physical seat after curveUP flip
 WIRE_GLAND_Y_L = 28.0   # former −28 after Rx(π) about centre
 WIRE_GLAND_Y_R = -28.0
+# curveUP Rx(π) about X negates Y. Frozen pod_*_lid.stl is itself
+# outer-down-flipped, so lid holes/groove sit on the Y-negated POD_COLS /
+# POD_Y0. Bed bosses + tongue MUST use the same Y-negated frame.
+OPTB_BED_COLS_L = [
+    (-22.0, -36.0),  # was (+Y −X) before flip
+    (22.0, -36.0),   # was (+Y +X)
+    (-19.0, 36.0),   # poka (was −Y −X at −19)
+    (22.0, 36.0),    # was (−Y +X)
+]
+OPTB_BED_Y0_L = 2.5          # −POD_Y0 after Rx(π)
+OPTB_KEY_XY_L = (18.0, -28.0)  # Y-negated POD_KEY_XY
+OPTB_LID_SEAT_Z = MR.TONGUE_H  # land at +1.20; tongue tip on bed z=0
 
 
 def _sagitta(R, half):
@@ -226,16 +238,27 @@ def flatten_parting_deck(body, probe_x=32.0, pad=0.05):
     return float(deck_z)
 
 
+def _optb_bed_frame(side: str):
+    """Y-negated lid-matching bed frame (L explicit; R = X+Y mirror of L)."""
+    if side == "L":
+        return list(OPTB_BED_COLS_L), OPTB_BED_Y0_L, OPTB_KEY_XY_L
+    cols = [(-x, -y) for x, y in OPTB_BED_COLS_L]
+    return cols, -OPTB_BED_Y0_L, (-OPTB_KEY_XY_L[0], -OPTB_KEY_XY_L[1])
+
+
 def apply_curveUP_mating(body, side: str, land_z: float):
-    y0 = -2.5 if side == "L" else 2.5
-    cols = (
-        [(-22.0, 36.0), (22.0, 36.0), (-19.0, -36.0), (22.0, -36.0)]
-        if side == "L"
-        else [(22.0, -36.0), (-22.0, -36.0), (19.0, 36.0), (-22.0, 36.0)]
-    )
-    # Parting deck is z=0 after flatten. Place tongue ON the deck (z0=0,
-    # h=TONGUE_H) — do NOT root below bed (that forced a destructive clip).
-    # Tip at z=1.20 → ≥0.40 Z clearance into the lid's 1.60 groove.
+    """Tongue tip on bed (z=0), outer land at OPTB_LID_SEAT_Z, Y-negated bosses.
+
+    Frozen pod_*_lid has a female groove and mates from −Z. Raising the shell
+    by TONGUE_H before adding the tongue puts the tip on the build plate and
+    the lid seat land at +1.20 mm (printable with the existing OptB supports
+    + brim). Boss XY matches the outer-down lid holes (Y-negated POD_COLS).
+    """
+    cols, y0, key_xy = _optb_bed_frame(side)
+    seat = float(OPTB_LID_SEAT_Z)
+    # Raise flattened deck so land sits at +seat; tongue fills [0, seat].
+    oc.move(body, dz=seat)
+    land_z = float(land_z) + seat
     tw_o = POD_LID_W - 2 * MR.TONGUE_IN0
     tl_o = POD_LID_L - 2 * MR.TONGUE_IN0
     tw_i = POD_LID_W - 2 * MR.TONGUE_IN1
@@ -244,17 +267,25 @@ def apply_curveUP_mating(body, side: str, land_z: float):
         f"optb_bed_tongue_{side}",
         tw_o, tl_o, POD_LID_R - MR.TONGUE_IN0,
         tw_i, tl_i, POD_LID_R - MR.TONGUE_IN1,
-        h=MR.TONGUE_H, z0=0.0, at_xy=(0.0, y0),
+        h=seat, z0=0.0, at_xy=(0.0, y0),
     ))
     for i, (x, y) in enumerate(cols):
+        # Spotface + bore open from the land into +Z (away from the lid).
         oc.cut(body, oc.cylinder(
             f"bed_spot{i}", MR.BOSS_SPOT_D, MR.BOSS_RECESS + 0.15,
-            at=(x, y, 0.0), anchor="bottom", segments=24,
+            at=(x, y, seat), anchor="bottom", segments=24,
         ))
         oc.cut(body, oc.cylinder(
             f"bed_ins{i}", INSERT_D, INSERT_DEPTH,
-            at=(x, y, 0.0), anchor="bottom", segments=24,
+            at=(x, y, seat), anchor="bottom", segments=24,
         ))
+    kx, ky = key_xy
+    oc.cut(body, oc.box(
+        "optb_bed_key",
+        (3.6, 4.6, 1.8),
+        at=(kx, ky, seat - 1.6),
+        anchor="bottom",
+    ))
     tw_o = COVER_W - 2 * MR.TONGUE_IN0
     tl_o = COVER_L - 2 * MR.TONGUE_IN0
     tw_i = COVER_W - 2 * MR.TONGUE_IN1
@@ -379,8 +410,83 @@ def _cyl(r, h, at, segs=32):
     return c
 
 
+def _deck_enforcer_from_std(side: str, h: float, y0: float):
+    """Outer-shoulder enforcer from std mating outline (Y-flipped).
+
+    Lid plan is punched out so the male tongue channel stays clear.
+    """
+    import numpy as np
+    import trimesh
+    from shapely.geometry import Polygon, MultiPolygon
+    from shapely.ops import unary_union, transform
+
+    src = os.path.join(D6_STL, f"pod_{side}_base.stl")
+    if not os.path.isfile(src):
+        src = os.path.join(D6_STL, "pod_L_base.stl")
+    std = trimesh.load(src, force="mesh")
+    mz = 36.2
+    try:
+        sec = std.section(
+            plane_origin=[0.0, 0.0, mz - 0.15],
+            plane_normal=[0.0, 0.0, 1.0],
+        )
+    except Exception as exc:
+        print(f"  deck enforcer section failed: {exc}")
+        return None
+    if sec is None:
+        print("  deck enforcer: empty section")
+        return None
+    try:
+        planar, _ = sec.to_2D()
+    except Exception as exc:
+        print(f"  deck enforcer to_2D failed: {exc}")
+        return None
+    polys = list(getattr(planar, "polygons_full", []) or [])
+    if not polys:
+        loops = getattr(planar, "discrete", None) or []
+        best, best_a = None, -1.0
+        for loop in loops:
+            if loop is None or len(loop) < 4:
+                continue
+            xy = np.asarray(loop)[:, :2]
+            a = 0.5 * abs(
+                np.dot(xy[:, 0], np.roll(xy[:, 1], 1))
+                - np.dot(xy[:, 1], np.roll(xy[:, 0], 1))
+            )
+            if a > best_a:
+                best_a = float(a)
+                best = Polygon(xy)
+        if best is None:
+            return None
+        poly = best
+    else:
+        poly = unary_union(polys)
+        if isinstance(poly, MultiPolygon):
+            poly = max(poly.geoms, key=lambda g: g.area)
+        poly = Polygon(poly.exterior)
+    poly = transform(lambda x, y, z=None: (x, -y), poly)
+    try:
+        solid = trimesh.creation.extrude_polygon(poly, height=float(h))
+    except Exception as exc:
+        print(f"  deck enforcer extrude failed: {exc}")
+        return None
+    cut = trimesh.creation.box(
+        extents=(POD_LID_W + 1.0, POD_LID_L + 1.0, float(h) + 0.6)
+    )
+    cut.apply_translation([0.0, y0, 0.5 * float(h)])
+    try:
+        solid = solid.difference(cut, engine="manifold")
+    except Exception as exc:
+        print(f"  deck enforcer lid punch failed: {exc}")
+        return None
+    print(
+        f"  deck enforcer: outer-shoulder area≈{poly.area:.1f} mm² h={h:.2f}"
+    )
+    return solid
+
+
 def _apply_curveUP_mating_manifold(shell_path, out_path, side: str, land_z: float) -> bool:
-    """Union bed/bay tongues and cut bosses on a watertight shell via manifold."""
+    """Tongue tip on bed, land at OPTB_LID_SEAT_Z, Y-negated bosses, flare deck."""
     import trimesh
     import numpy as np
 
@@ -395,22 +501,34 @@ def _apply_curveUP_mating_manifold(shell_path, out_path, side: str, land_z: floa
         print(f"  manifold mating: shell not watertight")
         return False
 
-    y0 = -2.5 if side == "L" else 2.5
-    cols = (
-        [(-22.0, 36.0), (22.0, 36.0), (-19.0, -36.0), (22.0, -36.0)]
-        if side == "L"
-        else [(22.0, -36.0), (-22.0, -36.0), (19.0, 36.0), (-22.0, 36.0)]
-    )
-    # Bed tongue on z=0 deck
+    cols, y0, key_xy = _optb_bed_frame(side)
+    seat = float(OPTB_LID_SEAT_Z)
+    land_z = float(land_z) + seat
+
+    # 1) Raise shell so former z=0 deck becomes the lid seat at +seat.
+    shell.apply_translation([0.0, 0.0, seat])
+
+    # 2) Restore remesh-eroded strap-flare tip as an OUTER shoulder only
+    #    (lid plan punched out so the male tongue channel stays clear).
+    enforcer = _deck_enforcer_from_std("L", h=seat, y0=OPTB_BED_Y0_L)
+    if side == "R" and enforcer is not None:
+        enforcer.apply_scale([-1.0, -1.0, 1.0])
+        enforcer.invert()
+    if enforcer is not None:
+        try:
+            shell = shell.union(enforcer, engine="manifold")
+        except Exception as exc:
+            print(f"  deck enforcer union failed (continuing): {exc}")
+
+    # 3) Male tongue tip on bed (z=0..seat) — enters frozen lid groove from +Z.
     tw_o = POD_LID_W - 2 * MR.TONGUE_IN0
     tl_o = POD_LID_L - 2 * MR.TONGUE_IN0
     tw_i = POD_LID_W - 2 * MR.TONGUE_IN1
     tl_i = POD_LID_L - 2 * MR.TONGUE_IN1
-    # Use rounded_rect via box approx for reliability
-    bed_outer = trimesh.creation.box(extents=(tw_o, tl_o, MR.TONGUE_H))
-    bed_outer.apply_translation([0.0, y0, 0.5 * MR.TONGUE_H])
-    bed_inner = trimesh.creation.box(extents=(tw_i, tl_i, MR.TONGUE_H + 0.4))
-    bed_inner.apply_translation([0.0, y0, 0.5 * MR.TONGUE_H])
+    bed_outer = trimesh.creation.box(extents=(tw_o, tl_o, seat))
+    bed_outer.apply_translation([0.0, y0, 0.5 * seat])
+    bed_inner = trimesh.creation.box(extents=(tw_i, tl_i, seat + 0.4))
+    bed_inner.apply_translation([0.0, y0, 0.5 * seat])
     try:
         bed_tongue = bed_outer.difference(bed_inner, engine="manifold")
         body = shell.union(bed_tongue, engine="manifold")
@@ -418,22 +536,31 @@ def _apply_curveUP_mating_manifold(shell_path, out_path, side: str, land_z: floa
         print(f"  bed tongue union failed: {exc}")
         return False
 
-    # Spotfaces + insert bores on bed
+    # 4) Spotfaces + Ø4 insert bores from the land into +Z (lid-matching XY).
     for i, (x, y) in enumerate(cols):
         try:
             body = body.difference(
-                _cyl(0.5 * MR.BOSS_SPOT_D, MR.BOSS_RECESS + 0.15, (x, y, 0.0)),
+                _cyl(0.5 * MR.BOSS_SPOT_D, MR.BOSS_RECESS + 0.15, (x, y, seat)),
                 engine="manifold",
             )
             body = body.difference(
-                _cyl(0.5 * INSERT_D, INSERT_DEPTH, (x, y, 0.0)),
+                _cyl(0.5 * INSERT_D, INSERT_DEPTH, (x, y, seat)),
                 engine="manifold",
             )
         except Exception as exc:
             print(f"  bed boss cut {i} failed: {exc}")
             return False
 
-    # Bay tongue at land_z
+    # 5) Poka key recess on the land (matches flipped lid lug).
+    try:
+        kx, ky = key_xy
+        key = trimesh.creation.box(extents=(3.6, 4.6, 1.8))
+        key.apply_translation([kx, ky, seat - 0.9])
+        body = body.difference(key, engine="manifold")
+    except Exception as exc:
+        print(f"  bed key cut failed (continuing): {exc}")
+
+    # 6) Bay tongue / bosses / shock at raised land_z
     bw_o = COVER_W - 2 * MR.TONGUE_IN0
     bl_o = COVER_L - 2 * MR.TONGUE_IN0
     bw_i = COVER_W - 2 * MR.TONGUE_IN1
@@ -475,9 +602,7 @@ def _apply_curveUP_mating_manifold(shell_path, out_path, side: str, land_z: floa
         print(f"  shock cut failed: {exc}")
         return False
 
-    # Wire gland: do NOT union a pad here — a full pad at y=±28 collides with
-    # the bay cover footprint (|y|≤21). Clearance for the frozen Ø7.6 plug is
-    # a stem bore only; flange seats against the existing saddle face / RTV.
+    # Wire gland: stem bore only (RTV strain relief vs frozen Ø7.6 plug).
     gy = WIRE_GLAND_Y_L if side == "L" else WIRE_GLAND_Y_R
     try:
         z_top = float(body.bounds[1, 2])
@@ -499,7 +624,7 @@ def _apply_curveUP_mating_manifold(shell_path, out_path, side: str, land_z: floa
     body.export(out_path)
     print(
         f"  manifold mating ok wt={body.is_watertight} vol={body.is_volume} "
-        f"h={body.extents[2]:.2f}"
+        f"h={body.extents[2]:.2f} seat={seat:.2f} y0={y0} cols={cols}"
     )
     return bool(body.is_watertight and body.is_volume)
 
@@ -693,8 +818,16 @@ def _mirror_optb_R_from_L(report: dict) -> bool:
         return False
     m = trimesh.load(src, force="mesh")
     # Match standard pod_R: Scale X=-1, Y=-1 (equivalent to 180° about Z)
-    m.apply_scale([-1.0, -1.0, 1.0])
-    m.invert()
+    # X+Y mirror ≡ Rz(π) (det=+1) — do NOT invert winding.
+    import numpy as _np
+    _T = _np.array(
+        [[-1.0, 0.0, 0.0, 0.0],
+         [0.0, -1.0, 0.0, 0.0],
+         [0.0, 0.0, 1.0, 0.0],
+         [0.0, 0.0, 0.0, 1.0]],
+        dtype=float,
+    )
+    m.apply_transform(_T)
     m.apply_translation([0.0, 0.0, -float(m.bounds[0, 2])])
     m.export(dst)
     shutil.copy2(dst, os.path.join(OUT, "pod_R_base_optB_curveUP.stl"))
@@ -702,8 +835,7 @@ def _mirror_optb_R_from_L(report: dict) -> bool:
     csrc = os.path.join(D6_STL, "optb_bay_cover_L.stl")
     cdst = os.path.join(D6_STL, "optb_bay_cover_R.stl")
     cm = trimesh.load(csrc, force="mesh")
-    cm.apply_scale([-1.0, -1.0, 1.0])
-    cm.invert()
+    cm.apply_transform(_T)
     cm.apply_translation([0.0, 0.0, -float(cm.bounds[0, 2])])
     cm.export(cdst)
     shutil.copy2(cdst, os.path.join(OUT, "optb_bay_cover_R.stl"))
@@ -775,6 +907,7 @@ def main():
         cols = bay["cover_cols"]
         if side == "R":
             cols = [[-x, -y] for x, y in OPTB_COVER_COLS]
+        bed_cols, bed_y0, bed_key = _optb_bed_frame(side)
         seats[side] = {
             "cover_seat_z": bay["cover_seat_z_curveUP"],
             "body_h": bay["body_h_curveUP"],
@@ -796,6 +929,12 @@ def main():
                 "frozen Ø7.6 wire_plug stem (RTV strain relief); do not edit "
                 "pod_*_wire_plug.stl."
             ),
+            # Lid mates on the raised land; tongue tip stays on the bed.
+            "lid_seat_z": float(OPTB_LID_SEAT_Z),
+            "bed_cols": [list(c) for c in bed_cols],
+            "bed_y0": float(bed_y0),
+            "bed_key_xy": [float(bed_key[0]), float(bed_key[1])],
+            "tongue_tip_z": 0.0,
         }
     report["optb_seats"] = seats
     with open(os.path.join(_HERE, "opt_b_report.json"), "w") as f:

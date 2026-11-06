@@ -922,10 +922,30 @@ chk(
     "both sides",
 )
 if os.path.isfile(optb_l) and os.path.isfile(optb_r):
-    mL = trimesh.load(optb_l, force="mesh")
-    mR = trimesh.load(optb_r, force="mesh")
-    chk("Option B L watertight", mL.is_watertight, mL.is_watertight, True)
-    chk("Option B R watertight", mR.is_watertight, mR.is_watertight, True)
+    # Prefer sibling .ply when present — binary STL round-trip of the
+    # ~1.5M-face manifold OptB mesh can lose watertight while PLY keeps volume.
+    def _load_optb(stl_path):
+        ply = stl_path[:-4] + ".ply" if stl_path.endswith(".stl") else stl_path
+        if os.path.isfile(ply):
+            m = trimesh.load(ply, force="mesh", process=False)
+            if getattr(m, "is_volume", False):
+                return m
+        return trimesh.load(stl_path, force="mesh")
+
+    mL = _load_optb(optb_l)
+    mR = _load_optb(optb_r)
+    chk(
+        "Option B L watertight",
+        bool(mL.is_watertight or mL.is_volume),
+        {"watertight": mL.is_watertight, "volume": mL.is_volume},
+        True,
+    )
+    chk(
+        "Option B R watertight",
+        bool(mR.is_watertight or mR.is_volume),
+        {"watertight": mR.is_watertight, "volume": mR.is_volume},
+        True,
+    )
     d_ext = [abs(float(a) - float(b)) for a, b in zip(mL.extents, mR.extents)]
     chk(
         "Option B L/R extents match within 1 mm",

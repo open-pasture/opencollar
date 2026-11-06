@@ -650,7 +650,7 @@
   {
    "check": "optb_bay_cover: volume>0",
    "ok": true,
-   "measured": 2178,
+   "measured": 2080,
    "expected": ">0",
    "note": ""
   },
@@ -682,7 +682,7 @@
   {
    "check": "optb_bay_cover_L: volume>0",
    "ok": true,
-   "measured": 2178,
+   "measured": 2080,
    "expected": ">0",
    "note": ""
   },
@@ -714,7 +714,7 @@
   {
    "check": "optb_bay_cover_R: volume>0",
    "ok": true,
-   "measured": 2178,
+   "measured": 2080,
    "expected": ">0",
    "note": ""
   },
@@ -778,7 +778,7 @@
   {
    "check": "pod_L_base_optB_curveUP: volume>0",
    "ok": true,
-   "measured": 74529,
+   "measured": 75247,
    "expected": ">0",
    "note": ""
   },
@@ -794,8 +794,8 @@
    "ok": true,
    "measured": [
     76.0,
-    98.72,
-    35.72
+    101.85,
+    34.28
    ],
    "expected": "<=256",
    "note": ""
@@ -842,7 +842,7 @@
   {
    "check": "pod_L_lid: volume>0",
    "ok": true,
-   "measured": 25103,
+   "measured": 25007,
    "expected": ">0",
    "note": ""
   },
@@ -970,7 +970,7 @@
   {
    "check": "pod_R_base_optB_curveUP: volume>0",
    "ok": true,
-   "measured": 74503,
+   "measured": 75247,
    "expected": ">0",
    "note": ""
   },
@@ -986,8 +986,8 @@
    "ok": true,
    "measured": [
     76.0,
-    98.76,
-    35.72
+    101.85,
+    34.28
    ],
    "expected": "<=256",
    "note": ""
@@ -1034,7 +1034,7 @@
   {
    "check": "pod_R_lid: volume>0",
    "ok": true,
-   "measured": 25103,
+   "measured": 25007,
    "expected": ">0",
    "note": ""
   },
@@ -2010,14 +2010,20 @@
   {
    "check": "Option B L watertight",
    "ok": true,
-   "measured": true,
+   "measured": {
+    "watertight": true,
+    "volume": true
+   },
    "expected": true,
    "note": ""
   },
   {
    "check": "Option B R watertight",
    "ok": true,
-   "measured": true,
+   "measured": {
+    "watertight": true,
+    "volume": true
+   },
    "expected": true,
    "note": ""
   },
@@ -2026,7 +2032,7 @@
    "ok": true,
    "measured": [
     0.0,
-    0.04,
+    0.0,
     0.0
    ],
    "expected": "<1 mm",
@@ -2034,13 +2040,6 @@
   },
   {
    "check": "Friday mating: cap_base \u2229 cap_lid == 0 mm\u00b3",
-   "ok": true,
-   "measured": 0.0,
-   "expected": "0.00 mm\u00b3",
-   "note": ""
-  },
-  {
-   "check": "Friday mating: pod_L_base \u2229 pod_L_lid == 0 mm\u00b3",
    "ok": true,
    "measured": 0.0,
    "expected": "0.00 mm\u00b3",
@@ -2055,6 +2054,13 @@
   },
   {
    "check": "Friday mating: cw_tub \u2229 cw_lid == 0 mm\u00b3",
+   "ok": true,
+   "measured": 0.0,
+   "expected": "0.00 mm\u00b3",
+   "note": ""
+  },
+  {
+   "check": "Friday mating: pod_L_base \u2229 pod_L_lid == 0 mm\u00b3",
    "ok": true,
    "measured": 0.0,
    "expected": "0.00 mm\u00b3",
@@ -2089,7 +2095,7 @@
   {
    "check": "assembly_poses.json present",
    "ok": true,
-   "measured": "out/assembly_poses.json",
+   "measured": "/agent/repos/opencollar/hardware/rook/d6/out/assembly_poses.json",
    "expected": "out/assembly_poses.json",
    "note": ""
   },
@@ -2130,6 +2136,12 @@
    "b": "clamp_bar_2",
    "mm3": 17.4,
    "class": "clamp pocket engagement (OK)"
+  },
+  {
+   "a": "cap_usbc_plug",
+   "b": "fairing_cap_pod_L",
+   "mm3": 343.6,
+   "class": "fairing blend (OK)"
   },
   {
    "a": "pod_L_base",

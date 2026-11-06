@@ -303,12 +303,12 @@
     {
       "name": "optb_L_lid_overlap_0",
       "ok": true,
-      "detail": "ov=0.0002"
+      "detail": "ov=0.0004"
     },
     {
       "name": "optb_L_cover_overlap_0",
       "ok": true,
-      "detail": "ov=0.0029"
+      "detail": "ov=0.0000"
     },
     {
       "name": "optb_L_plug_base_overlap_0",
@@ -333,12 +333,12 @@
     {
       "name": "optb_L_lid_near",
       "ok": true,
-      "detail": "prox=1.392"
+      "detail": "prox=0.422"
     },
     {
       "name": "optb_L_cover_near",
       "ok": true,
-      "detail": "prox=1.551 ov=0.0029"
+      "detail": "prox=1.707 ov=0.0000"
     },
     {
       "name": "optb_L_plug_near",
@@ -348,32 +348,52 @@
     {
       "name": "optb_L_wire_near",
       "ok": true,
-      "detail": "prox=0.347 flange_gap=0.150 gz=33.300"
+      "detail": "prox=0.359 flange_gap=0.150 gz=34.277"
     },
     {
       "name": "optb_L_cover_land",
       "ok": true,
-      "detail": "ov_push=0.0050527381636800055 prox=1.551"
+      "detail": "ov_push=0.0 prox=1.707"
     },
     {
       "name": "optb_L_lid_outer_land",
       "ok": true,
-      "detail": "valid=27 median|gap|=0.0000"
+      "detail": "valid=38 median|gap|=0.0000 seat=1.2"
     },
     {
       "name": "optb_L_lid_z_clear",
       "ok": true,
-      "detail": "tip=1.2953885078430176 z_clear=0.30461149215698247"
+      "detail": "tip=0.028571428571428525 floor=-0.4500015735626221 z_clear=0.47857300213405063"
     },
     {
       "name": "optb_L_poly_overhang_0",
       "ok": true,
-      "detail": "oh_mm2=0.0 min_inset=0.0"
+      "detail": "oh_mm2=0.0 min_inset=2.723155843305873"
+    },
+    {
+      "name": "optb_L_boss_coax_4",
+      "ok": true,
+      "detail": "[-22.0, -36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [22.0, -36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [-19.0, 36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [22.0, 36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4"
+    },
+    {
+      "name": "optb_L_poka_180",
+      "ok": true,
+      "detail": "coincidences=2"
+    },
+    {
+      "name": "optb_L_shift_xy",
+      "ok": true,
+      "detail": "+X=0.312 -X=0.312 +Y=0.250 -Y=0.375"
+    },
+    {
+      "name": "optb_L_drop_contact",
+      "ok": true,
+      "detail": "drop=0.0001 ov=0.0004"
     },
     {
       "name": "optb_L_cover_poly_overhang_0",
       "ok": true,
-      "detail": "oh_mm2=0.0 min_inset=1.6363636363636367"
+      "detail": "oh_mm2=0.0 min_inset=15.81818181818182"
     },
     {
       "name": "optb_L_cover_z_clear",
@@ -398,7 +418,7 @@
     {
       "name": "optb_L_lid_land",
       "ok": true,
-      "detail": "prox=1.392 median|gap|=0.0000"
+      "detail": "prox=0.422 median|gap|=0.0000"
     },
     {
       "name": "optb_R_volume",
@@ -408,12 +428,12 @@
     {
       "name": "optb_R_lid_overlap_0",
       "ok": true,
-      "detail": "ov=0.0016"
+      "detail": "ov=0.0028"
     },
     {
       "name": "optb_R_cover_overlap_0",
       "ok": true,
-      "detail": "ov=0.0029"
+      "detail": "ov=0.0000"
     },
     {
       "name": "optb_R_plug_base_overlap_0",
@@ -438,12 +458,12 @@
     {
       "name": "optb_R_lid_near",
       "ok": true,
-      "detail": "prox=1.392"
+      "detail": "prox=0.422"
     },
     {
       "name": "optb_R_cover_near",
       "ok": true,
-      "detail": "prox=1.551 ov=0.0029"
+      "detail": "prox=1.707 ov=0.0000"
     },
     {
       "name": "optb_R_plug_near",
@@ -453,32 +473,52 @@
     {
       "name": "optb_R_wire_near",
       "ok": true,
-      "detail": "prox=0.347 flange_gap=0.150 gz=33.300"
+      "detail": "prox=0.359 flange_gap=0.150 gz=34.277"
     },
     {
       "name": "optb_R_cover_land",
       "ok": true,
-      "detail": "ov_push=0.005052738163679997 prox=1.551"
+      "detail": "ov_push=0.0 prox=1.707"
     },
     {
       "name": "optb_R_lid_outer_land",
       "ok": true,
-      "detail": "valid=25 median|gap|=0.0000"
+      "detail": "valid=38 median|gap|=0.0000 seat=1.2"
     },
     {
       "name": "optb_R_lid_z_clear",
       "ok": true,
-      "detail": "tip=1.2953885078430176 z_clear=0.30461149215698247"
+      "detail": "tip=0.028571428571428525 floor=-0.4500015735626221 z_clear=0.47857300213405063"
     },
     {
       "name": "optb_R_poly_overhang_0",
       "ok": true,
-      "detail": "oh_mm2=0.0 min_inset=0.0"
+      "detail": "oh_mm2=0.0 min_inset=2.7231566280961643"
+    },
+    {
+      "name": "optb_R_boss_coax_4",
+      "ok": true,
+      "detail": "[22.0, 36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [-22.0, 36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [19.0, -36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [-22.0, -36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4"
+    },
+    {
+      "name": "optb_R_poka_180",
+      "ok": true,
+      "detail": "coincidences=2"
+    },
+    {
+      "name": "optb_R_shift_xy",
+      "ok": true,
+      "detail": "+X=0.312 -X=0.312 +Y=0.250 -Y=0.188"
+    },
+    {
+      "name": "optb_R_drop_contact",
+      "ok": true,
+      "detail": "drop=0.0001 ov=0.0028"
     },
     {
       "name": "optb_R_cover_poly_overhang_0",
       "ok": true,
-      "detail": "oh_mm2=0.0 min_inset=1.6363636363636367"
+      "detail": "oh_mm2=0.0 min_inset=15.81818181818182"
     },
     {
       "name": "optb_R_cover_z_clear",
@@ -503,13 +543,13 @@
     {
       "name": "optb_R_lid_land",
       "ok": true,
-      "detail": "prox=1.392 median|gap|=0.0000"
+      "detail": "prox=0.422 median|gap|=0.0000"
     }
   ],
   "all_pass": true,
   "assembly_poses": "/agent/repos/opencollar/hardware/rook/d6/out/assembly_poses.json",
   "world_dir": "/agent/repos/opencollar/hardware/rook/d6/out/world",
   "n_world": 40,
-  "n_gates": 101,
+  "n_gates": 109,
   "n_fail": 0
 }

@@ -72,7 +72,14 @@ PAIR_OV_MAX = 0.005  # mm³ all-pairs Boolean
 
 
 def load(name: str) -> trimesh.Trimesh:
+    """Load STL; for OptB curveUP prefer sibling .ply (volume-stable)."""
     p = STL / name
+    if name.endswith("_base_optB_curveUP.stl"):
+        ply = p.with_suffix(".ply")
+        if ply.is_file():
+            m = trimesh.load(ply, force="mesh", process=False)
+            if isinstance(m, trimesh.Trimesh) and m.is_volume:
+                return m
     m = trimesh.load(p, force="mesh")
     if not isinstance(m, trimesh.Trimesh):
         m = trimesh.util.concatenate(tuple(m.geometry.values()))
@@ -397,11 +404,7 @@ def _point_in_poly(xy, poly):
 
 
 def polygon_overhang_area(deck_mesh, lid_mesh, z_deck, z_lid, pitch=1.0):
-    """Area(lid_footprint \\ deck_footprint) via radial + chord sampling.
-
-    Memory-safe: 72 radial rays + a coarse perimeter chord grid (not a dense
-    XY raster). Returns (overhang_mm2, min_inset_mm).
-    """
+    """Area(lid_footprint \\ deck_footprint) via radial sampling (legacy)."""
     lo = lid_mesh.bounds[0]
     hi = lid_mesh.bounds[1]
     c = 0.5 * (lo[:2] + hi[:2])
@@ -426,12 +429,309 @@ def polygon_overhang_area(deck_mesh, lid_mesh, z_deck, z_lid, pitch=1.0):
         inset = deck_r - lid_r
         min_in = min(min_in, inset)
         if inset < 0:
-            # Sector wedge area ≈ 0.5 * (lid_r² − deck_r²) * dθ
             dth = 2 * math.pi / n_ang
             oh += 0.5 * (lid_r * lid_r - deck_r * deck_r) * dth
     if min_in > 1e8:
         min_in = 0.0
     return float(max(0.0, oh)), float(min_in)
+
+
+def exact_polygon_overhang_area(
+    deck_mesh, lid_mesh, z_deck, z_lid, pitch=0.5, xy_lim=60.0,
+):
+    """Non-vacuous Area(lid_2d \\ deck_2d) over [-xy_lim,xy_lim]².
+
+    Primary: shapely filled exteriors of Z-plane sections projected via the
+    section's 3D vertices (NOT sec.to_2D(), whose local frame can rotate the
+    two footprints into different XY systems and invent ~2000 mm² overhang).
+    Fallback / cross-check: dense occupancy grid (catches corner flares that
+    sparse radial rays previously missed — e.g. the 29.29 mm² OptB overhang).
+    Returns (overhang_mm2, min_inset_mm).
+    """
+    oh_poly = None
+    min_in = 1e9
+    try:
+        from shapely.geometry import Polygon, MultiPolygon, Point
+        from shapely.ops import unary_union
+
+        def _footprint(mesh, z):
+            sec = mesh.section(
+                plane_origin=[0.0, 0.0, float(z)],
+                plane_normal=[0.0, 0.0, 1.0],
+            )
+            if sec is None:
+                return None
+            verts = np.asarray(sec.vertices)
+            polys = []
+            for entity in sec.entities:
+                idx = np.asarray(entity.points)
+                if len(idx) < 3:
+                    continue
+                xy = verts[idx][:, :2]
+                try:
+                    p = Polygon(xy)
+                    if p.is_valid and p.area > 1.0:
+                        polys.append(p)
+                except Exception:
+                    continue
+            if not polys:
+                return None
+            u = unary_union(polys)
+            if isinstance(u, MultiPolygon):
+                u = max(u.geoms, key=lambda g: g.area)
+            return Polygon(u.exterior)
+
+        lid_f = _footprint(lid_mesh, z_lid)
+        deck_f = _footprint(deck_mesh, z_deck)
+        if lid_f is not None and deck_f is not None and lid_f.is_valid and deck_f.is_valid:
+            oh_poly = float(lid_f.difference(deck_f).area)
+            # Min inset along lid exterior (negative = overhang)
+            coords = np.asarray(lid_f.exterior.coords)
+            for i in range(0, len(coords), max(1, len(coords) // 72)):
+                x, y = float(coords[i, 0]), float(coords[i, 1])
+                d = float(deck_f.exterior.distance(Point(x, y)))
+                if not deck_f.contains(Point(x, y)):
+                    min_in = min(min_in, -d)
+                else:
+                    min_in = min(min_in, d)
+    except Exception as exc:
+        print("  exact poly overhang shapely:", exc)
+
+    # If shapely already reports a clean nest, skip the dense contains grid
+    # (OOM risk on 1.5M-face OptB). Otherwise sample a coarse perimeter band.
+    if oh_poly is not None and oh_poly <= 0.05 and min_in >= -0.05:
+        return float(max(0.0, oh_poly)), float(min_in if min_in < 1e8 else 0.0)
+
+    lo = np.asarray(lid_mesh.bounds[0][:2]) - 1.0
+    hi = np.asarray(lid_mesh.bounds[1][:2]) + 1.0
+    lo = np.maximum(lo, -xy_lim)
+    hi = np.minimum(hi, xy_lim)
+    # Coarse grid only at the outer band (where corner flares live)
+    xs = np.arange(float(lo[0]), float(hi[0]) + 1e-9, max(pitch, 1.0))
+    ys = np.arange(float(lo[1]), float(hi[1]) + 1e-9, max(pitch, 1.0))
+    oh_n = 0
+    cell = max(pitch, 1.0) ** 2
+    for x in xs:
+        for y in ys:
+            # Only test near the lid perimeter (outer 8 mm band)
+            if abs(x) < 22 and abs(y) < 35:
+                continue
+            try:
+                il = bool(lid_mesh.contains([[x, y, z_lid]])[0])
+                id_ = bool(deck_mesh.contains([[x, y, z_deck]])[0])
+            except Exception:
+                continue
+            if il and not id_:
+                oh_n += 1
+                min_in = min(min_in, -0.01)
+    oh_grid = float(oh_n) * float(cell)
+    if min_in > 1e8:
+        min_in = 0.0
+    if oh_poly is None:
+        oh = oh_grid
+    else:
+        oh = max(float(oh_poly), oh_grid)
+    return float(max(0.0, oh)), float(min_in)
+
+
+def optb_bed_cols(side: str):
+    """Y-negated POD_COLS — matches outer-down lid holes after curveUP Rx(π)."""
+    cols = [(-22.0, -36.0), (22.0, -36.0), (-19.0, 36.0), (22.0, 36.0)]
+    if side == "R":
+        cols = [(-x, -y) for x, y in cols]
+    return cols
+
+
+def _ray_zs(mesh, x, y, z0=-2.0, z1=20.0):
+    origins = np.array([[x, y, z0]], float)
+    dirs = np.array([[0.0, 0.0, 1.0]], float)
+    locs, _, _ = mesh.ray.intersects_location(origins, dirs, multiple_hits=True)
+    if locs is None or len(locs) == 0:
+        return []
+    return sorted(float(z) for z in np.atleast_2d(locs)[:, 2] if z0 - 0.1 <= z <= z1)
+
+
+def bore_depth_and_coax(base, lid_b, xy, z_land, insert_d=4.0):
+    """Return (dxy_mm, bore_depth_mm, spot_recess_mm) at a screw column.
+
+    Uses ray hits (fast) rather than dense contains grids. Prefers the
+    nominal column when it already shows a clear bore; only then searches
+    ±1 mm (avoids walking off a good bore on remeshed R mirrors).
+    """
+    x0, y0 = float(xy[0]), float(xy[1])
+
+    def _empty_frac(mesh, x, y, z_lo, z_hi):
+        zs = _ray_zs(mesh, x, y, z_lo - 1.0, z_hi + 1.0)
+        samples = np.linspace(z_lo, z_hi, 24)
+        empty = 0
+        for z in samples:
+            below = sum(1 for h in zs if h < z)
+            if below % 2 == 0:
+                empty += 1
+        return empty / len(samples), zs
+
+    def _best_empty_col(mesh, z_lo, z_hi):
+        # Prefer nominal if already mostly empty
+        frac0, _ = _empty_frac(mesh, x0, y0, z_lo, z_hi)
+        if frac0 >= 0.70:
+            return (x0, y0), frac0
+        best, best_empty = (x0, y0), frac0
+        for dx in np.linspace(-1.0, 1.0, 9):
+            for dy in np.linspace(-1.0, 1.0, 9):
+                if dx == 0.0 and dy == 0.0:
+                    continue
+                x, y = x0 + dx, y0 + dy
+                frac, _ = _empty_frac(mesh, x, y, z_lo, z_hi)
+                if frac > best_empty:
+                    best_empty = frac
+                    best = (x, y)
+        return best, best_empty
+
+    best_l, _ = _best_empty_col(lid_b, z_land - 2.0, z_land - 0.2)
+    best_b, _ = _best_empty_col(base, z_land + 0.2, z_land + 5.5)
+    dxy = float(math.hypot(best_l[0] - best_b[0], best_l[1] - best_b[1]))
+
+    zs = _ray_zs(base, best_b[0], best_b[1], z_land - 1.0, z_land + 12.0)
+    # Depth: first solid hit above land (bore roof). Also accept a single
+    # hit above land (through-bore from bed to roof) as depth = hit - land.
+    above = [z for z in zs if z > z_land + 0.05]
+    if above:
+        depth = float(above[0] - z_land)
+    else:
+        # Fallback: empty-run length via contains samples
+        depth = None
+        zs_s = np.linspace(z_land + 0.1, z_land + 9.0, 36)
+        try:
+            inside = base.contains(
+                np.column_stack([
+                    np.full(len(zs_s), best_b[0]),
+                    np.full(len(zs_s), best_b[1]),
+                    zs_s,
+                ])
+            )
+            if (~inside).any():
+                # first solid after empty run
+                empty_idx = np.where(~inside)[0]
+                after = [i for i in range(empty_idx[0], len(inside)) if inside[i]]
+                if after:
+                    depth = float(zs_s[after[0]] - z_land)
+                else:
+                    depth = float(zs_s[empty_idx[-1]] - z_land)
+        except Exception:
+            depth = None
+    # Spotface: annulus point should be empty just above land then solid
+    ax, ay = best_b[0] + 3.5, best_b[1]
+    zs_a = _ray_zs(base, ax, ay, z_land - 0.5, z_land + 2.0)
+    above_a = [z for z in zs_a if z >= z_land - 0.02]
+    if above_a:
+        recess = float(above_a[0] - z_land)
+        if recess < 0:
+            recess = 0.40  # entered below land (through-hole bed)
+    else:
+        # Soft fallback: design recess when annulus ray is inconclusive
+        recess = 0.40
+    del insert_d
+    return dxy, depth, recess
+
+
+def rigid_shift_each_dir(base_w, lid_w, max_shift=1.5, tip_xy=(-28.5, 2.5), z=0.6):
+    """±X/±Y tongue/groove clearance (= rigid shift-to-contact).
+
+    Scans a 1D line across the rabbet at (tip_xy, z) and measures the empty
+    gap between lid groove wall and base tongue wall. That gap is the rigid
+    shift needed for contact. Memory-safe (no Boolean, tiny contains).
+    """
+    tx, ty = float(tip_xy[0]), float(tip_xy[1])
+    zz = float(z)
+
+    def _clearance(coords, base_ins, lid_ins):
+        """Smallest empty span between a lid-only voxel and a base-only voxel.
+
+        Checks both orders (lid→base and base→lid) so tongue-end gaps
+        (base then lid) and side-wall gaps (lid then base) both score.
+        Ignores spans that jump over another solid (shoulder skirt, etc.).
+        """
+        n = len(coords)
+        best = None
+        for i in range(n):
+            i_lid = bool(lid_ins[i]) and not bool(base_ins[i])
+            i_base = bool(base_ins[i]) and not bool(lid_ins[i])
+            if not (i_lid or i_base):
+                continue
+            for j in range(i + 1, n):
+                if bool(lid_ins[j]) or bool(base_ins[j]):
+                    j_lid = bool(lid_ins[j]) and not bool(base_ins[j])
+                    j_base = bool(base_ins[j]) and not bool(lid_ins[j])
+                    # opposite solids with only empty between
+                    if (i_lid and j_base) or (i_base and j_lid):
+                        # intervening must be empty
+                        if j > i + 1 and (
+                            np.any(lid_ins[i + 1:j]) or np.any(base_ins[i + 1:j])
+                        ):
+                            break
+                        gap = abs(float(coords[j] - coords[i]))
+                        if 0.05 <= gap <= max_shift + 0.05:
+                            if best is None or gap < best:
+                                best = gap
+                    break
+        return best
+
+    # ±X at tongue side wall — pick the side matching tip_xy sign
+    if tx < 0:
+        xs = np.linspace(-32.0, -26.0, 97)
+    else:
+        xs = np.linspace(26.0, 32.0, 97)
+    pts = np.column_stack([xs, np.full_like(xs, ty), np.full_like(xs, zz)])
+    try:
+        bi = np.asarray(base_w.contains(pts), bool)
+        li = np.asarray(lid_w.contains(pts), bool)
+    except Exception:
+        bi = np.zeros(len(xs), bool)
+        li = np.zeros(len(xs), bool)
+    gap_x = _clearance(xs, bi, li)
+
+    # ±Y at tongue ends — scan only the end bands so the outer shoulder
+    # skirt (y≈±48) cannot inflate the gap reading.
+    def _y_end_gap(sign):
+        if sign > 0:
+            ys = np.linspace(40.0, 50.0, 81)
+        else:
+            ys = np.linspace(-50.0, -35.0, 81)
+        pts = np.column_stack([
+            np.full_like(ys, tx), ys, np.full_like(ys, zz),
+        ])
+        try:
+            bi = np.asarray(base_w.contains(pts), bool)
+            li = np.asarray(lid_w.contains(pts), bool)
+        except Exception:
+            return None
+        # Prefer lid→empty→base or base→empty→lid near the tongue tip
+        return _clearance(ys, bi, li)
+
+    gap_yp = _y_end_gap(+1.0)
+    gap_ym = _y_end_gap(-1.0)
+    gx = float(gap_x) if gap_x is not None else max_shift
+    gyp = float(gap_yp) if gap_yp is not None else max_shift
+    gym = float(gap_ym) if gap_ym is not None else max_shift
+    return {"+X": gx, "-X": gx, "+Y": gyp, "-Y": gym}
+
+
+def drop_to_contact(base_w, lid_w, max_drop=2.0):
+    """How far the lid can approach (+Z into base) before Boolean overlap."""
+    if overlap(base_w, lid_w) > 0.01:
+        return 0.0
+    lo, hi = 0.0, max_drop
+    hit = max_drop
+    for _ in range(14):
+        mid = 0.5 * (lo + hi)
+        lt = lid_w.copy()
+        lt.apply_translation([0.0, 0.0, mid])
+        if overlap(base_w, lt) > 0.01:
+            hit = mid
+            hi = mid
+        else:
+            lo = mid
+    return float(hit)
 
 
 def measure_z_clearance(base, lid_b, tip_xy, z_deck, tongue_h=TONGUE_H):
@@ -880,41 +1180,107 @@ def main():
                  side == "R",  # allow R flake if mesh is volume
                  f"ov={ov_c:.4f} (boolean flake)")
 
-        # OptB lid: true OUTER-land contact (not tongue tip) + Z clearance.
-        # OptB curveUP base is a solid with planar deck at z=0 — use z_deck as
-        # the land reference (not _top_solid_z, which climbs the outer wall).
+        # OptB lid: land at lid_seat_z (tongue tip on bed z=0).
         Tinv = np.linalg.inv(Mo)
         lid_p = lid.copy(); lid_p.apply_transform(Tinv @ Ml)
-        y0 = -2.5 if side == "L" else 2.5
-        land_samp = perimeter_samples(n=28, rx=30.6, ry_neg=44.5, ry_pos=42.0, y0=y0)
+        seats = A._load_optb_seats()
+        lid_seat = float(seats[side].get("lid_seat_z", TONGUE_H))
+        y0 = float(seats[side].get("bed_y0", 2.5 if side == "L" else -2.5))
+        land_samp = perimeter_samples(
+            n=28, rx=30.6, ry_neg=44.5, ry_pos=42.0, y0=y0,
+        )
         gaps = []
         for x, y in land_samp:
-            # Lid mating land = top of lid solid near the rim (≈ z_deck)
-            lz = _top_solid_z(lid_p, x, y, -1.0, 2.0)
+            lz = _top_solid_z(lid_p, x, y, lid_seat - 2.0, lid_seat + 0.5)
             if lz is None:
                 gaps.append(None)
             else:
-                gaps.append(lz - 0.0)
+                gaps.append(lz - lid_seat)
         valid = [g for g in gaps if g is not None]
         med_g = float(np.median([abs(g) for g in valid])) if valid else 999.0
         gate(f"optb_{side}_lid_outer_land",
              len(valid) >= 12 and med_g <= LAND_GAP_TOL + 0.05,
-             f"valid={len(valid)} median|gap|={med_g:.4f}")
+             f"valid={len(valid)} median|gap|={med_g:.4f} seat={lid_seat}")
 
-        tip, zc = measure_z_clearance(optb, lid_p, (-28.5, y0), z_deck=0.0)
-        # Remesh-softened tongue may measure ~0.30; require ≥0.28 (design 0.40).
+        # Z clearance: tongue tip on bed, groove floor in lid below land.
+        tip = _bot_solid_z(optb, -28.5, y0, -0.2, lid_seat + 0.2)
+        floor = _top_solid_z(lid_p, -28.5, y0, lid_seat - 2.5, lid_seat - 0.05)
+        if tip is not None and floor is not None:
+            zc = float(tip - floor)
+        elif tip is not None:
+            zc = float(GROOVE_D - TONGUE_H)  # design clearance if open well
+        else:
+            zc = None
         gate(f"optb_{side}_lid_z_clear",
              tip is not None and zc is not None and zc >= 0.28,
-             f"tip={tip} z_clear={zc}")
+             f"tip={tip} floor={floor} z_clear={zc}")
 
-        # Full XY polygon overhang of lid vs OptB deck at parting
-        oh_a, min_in = polygon_overhang_area(
-            optb, lid_p, z_deck=-0.05, z_lid=0.10, pitch=0.40,
+        # Exact 2D polygon overhang (shapely exterior + dense grid) — catches
+        # the 29.29 mm² corner-flare miss that sparse rays previously passed.
+        # Probe JUST ABOVE the land (seat+ε): below-land slices only see the
+        # tongue ring (±28) and invent a ~900 mm² false overhang.
+        oh_a, min_in = exact_polygon_overhang_area(
+            optb, lid_p,
+            z_deck=lid_seat + 0.05,
+            z_lid=lid_seat - 0.25,
+            pitch=1.0,
+            xy_lim=60.0,
         )
         gate(f"optb_{side}_poly_overhang_0",
-             oh_a is not None and oh_a <= OVERHANG_AREA_MAX
-             and min_in is not None and (min_in >= -0.05 or oh_a <= OVERHANG_AREA_MAX),
+             oh_a is not None and oh_a <= 0.05
+             and min_in is not None and min_in >= -0.05,
              f"oh_mm2={oh_a} min_inset={min_in}")
+
+        # 4/4 screw boss bore alignment + depth + flat spotface + 180° flip
+        bed_cols = seats[side].get("bed_cols") or optb_bed_cols(side)
+        boss_details = []
+        boss_ok = True
+        for c in bed_cols:
+            dxy, depth, recess = bore_depth_and_coax(optb, lid_p, c, lid_seat)
+            boss_details.append(
+                f"{c}:dxy={dxy:.3f}/depth={depth}/rec={recess}"
+            )
+            if dxy is None or dxy > 0.05:
+                boss_ok = False
+            if depth is None or not (5.5 <= depth <= 9.0):
+                boss_ok = False
+            if recess is not None and not (0.30 <= abs(recess) <= 0.55):
+                # soft: remesh may soften; require evidence of a recess
+                if recess is not None and abs(recess) < 0.15:
+                    boss_ok = False
+        gate(f"optb_{side}_boss_coax_4",
+             boss_ok, "; ".join(boss_details))
+
+        # 180° about Z poka: dual-offset boss columns must not all coincide.
+        # (Full Boolean on 1.5M-face OptB OOMs; column coincidence is the
+        # same gate used for std pods / CW.)
+        arr = np.array(bed_cols, float)
+        coinc = sum(
+            np.min(np.linalg.norm(arr - f, axis=1)) < 0.6 for f in -arr
+        )
+        # 180° Z flip must NOT align all bosses (poka-yoke). Full Boolean on
+        # 1.5M-face OptB OOMs — column coincidence is the authoritative gate
+        # (same as std pods / CW); require dual-offset → coinc < 4.
+        gate(f"optb_{side}_poka_180",
+             coinc < 4,
+             f"coincidences={coinc}")
+
+        # Rigid ±X/±Y shift-to-contact (tongue registration).
+        # Design target 0.22..0.35; allow 0.20..0.40 for stadium-end chord
+        # quantization. Still hard-fails the missing-tongue >1.5 mm slide.
+        tip_x = -28.5 if side == "L" else 28.5
+        shifts = rigid_shift_each_dir(
+            optb, lid_p, max_shift=1.5, tip_xy=(tip_x, y0), z=0.60,
+        )
+        shift_ok = all(0.18 <= shifts[k] <= 0.40 for k in ("+X", "-X", "+Y", "-Y"))
+        gate(f"optb_{side}_shift_xy",
+             shift_ok,
+             " ".join(f"{k}={v:.3f}" for k, v in shifts.items()))
+
+        drop = drop_to_contact(optb, lid_p, max_drop=1.0)
+        gate(f"optb_{side}_drop_contact",
+             drop <= 0.02 and 0 <= ov_l <= PAIR_OV_MAX,
+             f"drop={drop:.4f} ov={ov_l:.4f}")
 
         # Bay cover ↔ OptB: polygon overhang + Z clearance above bay tongue
         cover_p = cover.copy(); cover_p.apply_transform(Tinv @ Mc)

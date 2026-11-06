@@ -1,7 +1,7 @@
 {
   "L": {
-    "cover_seat_z": 30.8,
-    "body_h": 33.064029693603516,
+    "cover_seat_z": 32.25,
+    "body_h": 34.27696990966797,
     "cols": [
       [
         -10.0,
@@ -25,13 +25,38 @@
     "cover_h": 2.5,
     "cover_flange_seat_from_outer": 0.5,
     "plug_flange_underside_z": 5.5,
-    "wire_gland_z": 33.3,
+    "wire_gland_z": 34.27696990966797,
     "wire_gland_y": 28.0,
-    "wire_gland_note": "OptB curveUP: former skirt bed gland is on the high-Z saddle face after Rx(\u03c0). Channel is intentionally wider than the frozen \u00d87.6 wire_plug stem (RTV strain relief); do not edit pod_*_wire_plug.stl."
+    "wire_gland_note": "OptB curveUP: former skirt bed gland is on the high-Z saddle face after Rx(\u03c0). Channel is intentionally wider than the frozen \u00d87.6 wire_plug stem (RTV strain relief); do not edit pod_*_wire_plug.stl.",
+    "lid_seat_z": 1.2,
+    "bed_cols": [
+      [
+        -22.0,
+        -36.0
+      ],
+      [
+        22.0,
+        -36.0
+      ],
+      [
+        -19.0,
+        36.0
+      ],
+      [
+        22.0,
+        36.0
+      ]
+    ],
+    "bed_y0": 2.5,
+    "bed_key_xy": [
+      18.0,
+      -28.0
+    ],
+    "tongue_tip_z": 0.0
   },
   "R": {
-    "cover_seat_z": 30.8,
-    "body_h": 33.064029693603516,
+    "cover_seat_z": 32.25,
+    "body_h": 34.27696990966797,
     "cols": [
       [
         10.0,
@@ -55,8 +80,33 @@
     "cover_h": 2.5,
     "cover_flange_seat_from_outer": 0.5,
     "plug_flange_underside_z": 5.5,
-    "wire_gland_z": 33.3,
+    "wire_gland_z": 34.27696990966797,
     "wire_gland_y": -28.0,
-    "wire_gland_note": "OptB curveUP: former skirt bed gland is on the high-Z saddle face after Rx(\u03c0). Channel is intentionally wider than the frozen \u00d87.6 wire_plug stem (RTV strain relief); do not edit pod_*_wire_plug.stl."
+    "wire_gland_note": "OptB curveUP: former skirt bed gland is on the high-Z saddle face after Rx(\u03c0). Channel is intentionally wider than the frozen \u00d87.6 wire_plug stem (RTV strain relief); do not edit pod_*_wire_plug.stl.",
+    "lid_seat_z": 1.2,
+    "bed_cols": [
+      [
+        22.0,
+        36.0
+      ],
+      [
+        -22.0,
+        36.0
+      ],
+      [
+        19.0,
+        -36.0
+      ],
+      [
+        -22.0,
+        -36.0
+      ]
+    ],
+    "bed_y0": -2.5,
+    "bed_key_xy": [
+      -18.0,
+      28.0
+    ],
+    "tongue_tip_z": 0.0
   }
 }

@@ -308,6 +308,7 @@ def _load_optb_seats():
             "cover_flange_seat_from_outer": 1.85,
             "wire_gland_z": 34.5,
             "wire_gland_y": 28.0 if side == "L" else -28.0,
+            "lid_seat_z": POD_LID_TONGUE_H,
         }
         for side in ("L", "R")
     }
@@ -316,10 +317,10 @@ def _load_optb_seats():
 def optb_world_poses():
     """Option B poses (mutually exclusive with Option A saddle in assembly_check).
 
-    curveUP print: parting on bed (z=0), bay land near max Z. Shared Rx(π,X)
-    puts parting onto the same lid-mating plane as standard pod_base and puts
-    the bay on the neck underside. Cover prints mating-down (z=0); blank-plug
-    flange seats on the cover countersink; stem points into the Ø8.05 bore.
+    curveUP print: tongue tip on bed (z=0), lid seat land at lid_seat_z
+    (TONGUE_H), bay land near max Z. Shared Rx(π,X) maps the OptB print frame
+    onto the standard pod mating plane. Cover prints mating-down (z=0);
+    blank-plug flange seats on the cover countersink; stem into Ø8.05 bore.
     """
     from trimesh.transformations import rotation_matrix as R
     from trimesh.transformations import translation_matrix as T
@@ -329,17 +330,19 @@ def optb_world_poses():
     poses = {}
     for side in ("L", "R"):
         Am = pod_anchor_matrix(side)
-        # Parting (print z=0) → lid-mating plane at POD_Z0+POD_MATING_Z
+        s = seats[side]
+        # Parting (print z=0 tongue tip) → world; lid seats on raised land.
         shared = Am @ T([0, 0, POD_Z0 + POD_MATING_Z]) @ R(math.pi, X)
         poses[f"pod_{side}_base_optB_curveUP"] = shared
-        # Same lid pose as standard — shared parting plane
+        # Frozen pod_*_lid.stl keeps its groove; OptB land is at lid_seat_z
+        # (TONGUE_H) so the male tongue tip on the bed enters the groove.
         lid_mz = pod_lid_mating_from_bed(side)
+        lid_seat = float(s.get("lid_seat_z", POD_LID_TONGUE_H))
         poses[f"pod_{side}_lid_optB"] = (
             Am @ T([0, 0, POD_Z0 + POD_MATING_Z])
             @ R(math.pi, X)
-            @ T([0, 0, -lid_mz])
+            @ T([0, 0, lid_seat - lid_mz])
         )
-        s = seats[side]
         seat_z = float(s["cover_seat_z"])
         cov_mating = float(s.get("cover_mating_from_bed", 0.0))
         cover_h = float(s.get("cover_h", 2.5))
