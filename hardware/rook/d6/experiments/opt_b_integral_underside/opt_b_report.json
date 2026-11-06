@@ -1,131 +1,98 @@
 {
-  "experiment": "opt_B_integral_R220_underside",
-  "warning": "EXPERIMENT ONLY \u2014 does not replace PR #28 geometry. assembly_check is a geometry/interference check, NOT a fit or print test.",
-  "source_stl": "/agent/repos/opencollar/hardware/rook/d6/stl/pod_L_base.stl",
-  "R_mm": 220.0,
-  "pass": true,
-  "orientations": {
-    "1_cavity_UP": {
-      "label": "cavity_UP_curve_on_bed",
-      "size_mm": [
-        76.0,
-        98.79,
-        35.61
-      ],
-      "bed_z0": 2.094,
-      "first_layer_area_mm2": 0.0,
-      "overhang_faces": 53596,
-      "overhang_area_mm2": 8357.5,
-      "verdict": "REJECT \u2014 curved face on bed (violates bed rule); rim-only first layer",
-      "supports": "none for curve-on-bed, but first layer is a thin rim \u2014 fails bed rule"
-    },
-    "2_cavity_DOWN_curve_UP": {
-      "label": "cavity_DOWN_curve_UP",
-      "size_mm": [
-        76.0,
-        98.79,
-        35.61
-      ],
-      "bed_z0": -0.0,
-      "first_layer_area_mm2": 872.0,
-      "overhang_faces": 62327,
-      "overhang_area_mm2": 8579.9,
-      "verdict": "CANDIDATE \u2014 curve off the bed; bowl needs light supports; mating rim / cavity features face down (may need supports under lips)",
-      "supports": "light tree/bowl supports in the R220 concave; optional supports under cavity-down lips/columns; brim on the (now flat-ish) outer roof islands",
-      "why": "Bed rule kept (nothing curved on bed). First layer is the former outer roof / tip patches \u2014 smaller than today's cavity-up bed, so watch adhesion."
-    },
-    "3_side_print": {
-      "label": "side_print_curve_as_wall",
-      "verdict": "REJECT as default \u2014 skin/seal face = vertical layers; weaker, leakier",
-      "supports": "minimal, but quality on neck face is poor"
-    }
-  },
+  "experiment": "opt_B_integral_R220_L_and_R",
+  "warning": "Production-candidate STLs under stl/ \u2014 still DRAFT / unprinted until Cody approves. assembly_check is geometry/interference only, not fit/print proof. R220 / 25\u00d742 cm ellipse is a sizing model, not measured cattle.",
+  "chosen_orientation": "curve_UP_cavity_DOWN",
   "bodies": {
-    "pod_L_base_optB_cavityUP": {
-      "path": "/agent/repos/opencollar/hardware/rook/d6/experiments/opt_b_integral_underside/stl/pod_L_base_optB_cavityUP.stl",
+    "pod_L_base_optB_curveUP": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/pod_L_base_optB_curveUP.stl",
+      "experiment_path": "/agent/repos/opencollar/hardware/rook/d6/experiments/opt_b_integral_underside/stl/pod_L_base_optB_curveUP.stl",
       "size_mm": [
         76.0,
         98.79,
-        35.606
+        36.16
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 250578
+        "faces": 251950
       },
+      "first_layer_area_mm2": 871.5,
       "sagitta_mm": 5.41,
-      "bay_placeholder": {
+      "bay": {
         "bay_w": 31.0,
         "bay_l": 46.0,
         "bay_h": 9.41260521642937
-      }
-    },
-    "pod_L_base_optB_curveUP": {
-      "path": "/agent/repos/opencollar/hardware/rook/d6/experiments/opt_b_integral_underside/stl/pod_L_base_optB_curveUP.stl",
-      "size_mm": [
-        76.0,
-        98.79,
-        35.606
-      ],
-      "watertight": {
-        "watertight": true,
-        "bad_edges": 0,
-        "faces": 250578
       },
-      "print_orientation": "curve UP / cavity DOWN",
-      "first_layer_area_mm2": 872.0,
-      "overhang_area_mm2": 8579.9
+      "print": "curve UP / cavity DOWN; brim recommended"
     },
-    "optb_bay_cover": {
-      "path": "/agent/repos/opencollar/hardware/rook/d6/experiments/opt_b_integral_underside/stl/optb_bay_cover.stl",
+    "optb_bay_cover_L": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/optb_bay_cover_L.stl",
       "size_mm": [
         28.0,
         42.0,
-        2.5
+        2.9
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 350
+        "faces": 4034
+      }
+    },
+    "pod_R_base_optB_curveUP": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/pod_R_base_optB_curveUP.stl",
+      "experiment_path": "/agent/repos/opencollar/hardware/rook/d6/experiments/opt_b_integral_underside/stl/pod_R_base_optB_curveUP.stl",
+      "size_mm": [
+        76.0,
+        98.79,
+        36.16
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 252724
       },
-      "role": "service lid on neck face of integral bay opening"
+      "first_layer_area_mm2": 872.0,
+      "sagitta_mm": 5.41,
+      "bay": {
+        "bay_w": 31.0,
+        "bay_l": 46.0,
+        "bay_h": 9.41260521642937
+      },
+      "print": "curve UP / cavity DOWN; brim recommended"
+    },
+    "optb_bay_cover_R": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/optb_bay_cover_R.stl",
+      "size_mm": [
+        28.0,
+        42.0,
+        2.9
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 4218
+      }
     }
   },
-  "chosen_orientation": "2_cavity_DOWN_curve_UP",
-  "neck_standoff_opt_B": {
-    "75": {
-      "R": 208.0,
-      "centre_neck_to_lid_mm": 31.32,
-      "ends_neck_to_lid_mm": 31.0,
-      "flat_a6b2118_centre": 36.73,
-      "flat_a6b2118_ends": 31.0,
-      "delta_centre_vs_flat": -5.41,
-      "delta_ends_vs_flat": 0.0
-    },
-    "107": {
-      "R": 218.0,
-      "centre_neck_to_lid_mm": 31.05,
-      "ends_neck_to_lid_mm": 31.0,
-      "flat_a6b2118_centre": 36.46,
-      "flat_a6b2118_ends": 31.0,
-      "delta_centre_vs_flat": -5.41,
-      "delta_ends_vs_flat": 0.0
-    },
-    "130": {
-      "R": 221.0,
-      "centre_neck_to_lid_mm": 31.03,
-      "ends_neck_to_lid_mm": 31.0,
-      "flat_a6b2118_centre": 36.39,
-      "flat_a6b2118_ends": 31.0,
-      "delta_centre_vs_flat": -5.36,
-      "delta_ends_vs_flat": 0.0
-    }
-  },
-  "sagitta_mm": 5.41,
-  "geometry_sanity": {
-    "note": "Watertight + bounds only. If wired into assembly_check, that tool is a geometry/interference check \u2014 NOT a fit test and NOT a print test. Do not treat its pass count as proof of fit.",
-    "watertight_curveUP": true,
-    "first_layer_area_curveUP_mm2": 872.0,
-    "overhang_area_curveUP_mm2": 8579.9
+  "pass": true,
+  "symmetry": {
+    "L_extents_mm": [
+      76.0,
+      98.79,
+      36.16
+    ],
+    "R_extents_mm": [
+      76.0,
+      98.79,
+      36.16
+    ],
+    "L_volume_cm3": 69.24,
+    "R_volume_cm3": 69.25,
+    "extent_delta_mm": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "volume_delta_cm3": 0.005
   }
 }

@@ -81,9 +81,59 @@ NOSE_TIP_H = 3.0                       # as low as wall allows; cavities unchang
 NOSE_ARC_SEGS = 10                     # smoother elliptical roof (D4-like)
 NOSE_PLAN_R = 14.0                     # match pod tip plan R — no shadow line
 NOSE_BULL_R = 6.0                      # bullnose blends into fairing
-PANEL_LAND = (68.0, 116.0)             # flat plateau containing 66.6×113.6 pocket
+PANEL_LAND = (71.0, 120.0)             # flat plateau — fits D8 P124 pocket 67.2×114.2
 PLAN_R = 3.0                               # D8: R3 plan corners (D4 / r19)
 REVEAL = 0.5                               # cap lid stay near-flush; pods use 3 mm
+
+# ===========================================================================
+# D8 X2a hardware clearances (overrides D5 headline dims — FDM-realistic)
+# Audit: review/d8_x2a_hardware_clearance_audit.md
+# Vendor: Adafruit GPS-01.pdf (960), Voltaic P124_ds.pdf, makerdiary nRF9151.
+# ===========================================================================
+# Voltaic P124: 113 × 66 × 2.6 mm ±0.5 (vendor); brief target 2.8. Axes (X across, Y along).
+PANEL_SIZE = (66.0, 113.0, 2.6)         # vendor datasheet thickness 2.6 (not 2.8)
+PANEL_POCKET = (67.2, 114.2, 3.1)       # +0.6/side XY; depth 3.1 → 2.6–2.8 + thin VHB flush
+PANEL_Y = 0.0                          # centered on 164 mm cap (end margin 25.5 mm each)
+PANEL_MIN_LID_UNDER = D.PANEL_MIN_LID_UNDER  # 2.0
+PANEL_FRAME_PROUD = D.PANEL_FRAME_PROUD
+assert LID_H - PANEL_POCKET[2] >= PANEL_MIN_LID_UNDER
+
+# makerdiary nRF9151 Connect Kit: PCB 55.88×20.32×1.0; USB-C overhang +1.5 → 57.38;
+# USB +3.26 above PCB; J2 −1.95 below; 4×Ø1.4 inset 1.27.
+KIT_BOARD = D.KIT_BOARD                # 55.88 × 20.32 × 1.0
+KIT_POCKET = (57.6, 21.4, 7.5)         # ≥56.8×21.2 locating (+0.4/side min) + USB overhang
+KIT_JST_RELIEF = (20.0, 12.0, 2.6)     # underside J2 MX1.25-2P ≥2.5 deep so PCB sits flat
+KIT_USB_RELIEF = (12.0, 10.0, 5.5)     # in-pocket nose at USB-C end
+KIT_AT = D.KIT_AT                      # (0, −24)
+# Plugged USB-C access: through −Y wall + elastomer-plug seat (115200 without board pull).
+USBC_PORT = (10.5, 9.0, 6.5)           # slightly over D5 for plug body
+USBC_PLUG_SEAT = (13.0, 3.5, 11.0)     # gasketed plug ledge at outer −Y face
+
+# Adafruit #960 (GPS-01.pdf): housing 41.2 × 38.5 × 13.3 mm magnetic IP66 puck +
+# 5 m RG174 + SMA male. CANNOT fit in 12 mm lid or 12.6 mm cavity → EXTERNAL mount.
+# Paired with SMA-female bulkhead pigtail (Adafruit 851 class): 1/4"-36 UNEF =
+# Ø6.35 mm thread → through-port Ø6.6; hex nut ~8–10 mm AF; 15 cm RG178 → U.FL.
+GNSS_960_HOUSING = (41.2, 38.5, 13.3)  # datasheet — external only this weekend
+GNSS_PATCH_CERAMIC = (25.0, 25.0, 4.0) # optional bare patch — NOT reserved in lid (see audit)
+GNSS_INTERNAL_POCKET = None            # removed: would violate 15 mm keep-clear vs centered P124
+SMA_BULKHEAD_D = 6.6                   # clears 1/4"-36 (Ø6.35); was Ø6.0 at 4e52f6c — BLOCKED
+SMA_NUT_SEAT_AF = 10.0                 # flat hex-nut seat across-flats
+SMA_NUT_SEAT_T = 1.5
+UFL_ROUTE_CH = (6.0, 28.0, 4.0)        # internal U.FL / RG178 slack toward WIO
+ANTENNA_METAL_KEEP = D.ANTENNA_METAL_KEEP  # 15.0
+# Honest end-margin math (centered P124 on 164 mm cap):
+#   (164 − 113) / 2 = 25.5 mm per end. A 25 mm patch + 15 mm keep-clear needs 40 mm
+#   beyond the panel edge → 14.5 mm shortfall. Do NOT cut an internal GNSS recess
+#   that pretends to honor the keep-clear. Weekend path = external 960 + SMA bulkhead.
+_END_MARGIN = 0.5 * (CAP_L - PANEL_SIZE[1])
+assert abs(_END_MARGIN - 25.5) < 0.05
+assert _END_MARGIN < (ANTENNA_METAL_KEEP + GNSS_PATCH_CERAMIC[1]), (
+    "internal ceramic patch + 15 mm keep-clear cannot fit with centered P124"
+)
+
+BQ_AT = D.BQ_AT
+WIO_AT = D.WIO_AT
+assert (CAP_W / 2) - (WIO_AT[0] + D.WIO_POCKET[0] / 2) >= D.WIO_MIN_WALL
 
 # Pod interface — shared with assembly.py / pod.py (D4 tilt signs; D6 outboard anchors)
 POD_ANCHOR_Y = A.POD_ANCHOR_Y
@@ -113,12 +163,15 @@ assert all(abs(x) > A.STRAP_HALF for x, _ in CAP_CLAMP)
 # Rescale D5 column Y to 164 length (D5 was 160): keep x, stretch y by 164/160
 _Y_SCALE = CAP_L / D.CAP_L  # 164/160 = 1.025
 CAP_COLS = [(x, round(y * _Y_SCALE, 2)) for x, y in D.CAP_COLS]
+# Poka-yoke: shift SCR1 (+x,+y) by +3 mm in X so 180° lid rotation cannot seat
+CAP_COLS_POKA = [
+    (CAP_COLS[0][0] + 3.0, CAP_COLS[0][1]),  # asymmetric key boss
+    CAP_COLS[1],
+    CAP_COLS[2],
+    CAP_COLS[3],
+]
+CAP_COLS = CAP_COLS_POKA
 CAP_ORANGE = [(x, round(y * _Y_SCALE, 2)) for x, y in D.CAP_ORANGE]
-# Keep AT positions from D5 (fit inside 160 interior; length grew at ends only)
-KIT_AT = D.KIT_AT
-BQ_AT = D.BQ_AT
-WIO_AT = D.WIO_AT
-assert (CAP_W / 2) - (WIO_AT[0] + D.WIO_POCKET[0] / 2) >= D.WIO_MIN_WALL
 
 STL_DIR = os.path.join(_D6, "stl")
 RENDER_DIR = os.path.join(_D6, "renders")
@@ -363,12 +416,23 @@ def cap_base():
     d5.groove(b, CAP_W, CAP_L, PLAN_R, CAP_BASE_H, D.CAP_WALL)
     d5.reg_lip(b, CAP_W, CAP_L, PLAN_R, CAP_BASE_H, D.CAP_WALL)
 
-    # --- D5 pockets (unchanged positions) ---
-    d5.pocket_box(b, "kit", D.KIT_POCKET, KIT_AT, CAP_FLOOR)
-    oc.cut(b, oc.rounded_rect("kitjst", (20.0, 10.0, D.KIT_JST_H + 0.5), 1.0,
-                              at=(KIT_AT[0], KIT_AT[1] - 4.0, CAP_FLOOR - 0.1),
-                              anchor="bottom"))
-    d5.board_holes(b, D.KIT_BOARD, D.KIT_HOLE_D, D.KIT_HOLE_INSET, KIT_AT,
+    # --- D8 pockets (X2a clearances — datasheet-corrected) ---
+    # Locating pocket walls ≥0.4 mm/side around nRF9151 PCB (+ USB overhang budget).
+    d5.pocket_box(b, "kit", KIT_POCKET, KIT_AT, CAP_FLOOR)
+    # Underside J2 MX1.25-2P relief (≥2.5 mm) so PCB seats flat (no rock).
+    jw, jl, jd = KIT_JST_RELIEF
+    oc.cut(b, oc.rounded_rect(
+        "kitjst", (jw, jl, jd + 0.2), 1.0,
+        at=(KIT_AT[0], KIT_AT[1] - 4.0, CAP_FLOOR - 0.1),
+        anchor="bottom",
+    ))
+    # USB-C overhang + in-pocket plug nose at kit −Y end
+    oc.cut(b, oc.rounded_rect(
+        "kit_usb_relief", KIT_USB_RELIEF, 1.2,
+        at=(KIT_AT[0], KIT_AT[1] - 0.5 * KIT_POCKET[1] - 2.5, CAP_FLOOR + 1.5),
+        anchor="bottom",
+    ))
+    d5.board_holes(b, KIT_BOARD, D.KIT_HOLE_D, D.KIT_HOLE_INSET, KIT_AT,
                    CAP_FLOOR, depth=2.5, prefix="kith")
 
     d5.pocket_box(b, "bq", D.BQ_POCKET, BQ_AT, CAP_FLOOR)
@@ -381,6 +445,11 @@ def cap_base():
                               at=(ux_s, uy_s, CAP_FLOOR), anchor="bottom"))
     oc.cut(b, oc.cylinder("uflstrain", D.UFL_STRAIN_D, 4.0,
                           at=(ux_s, 35.0, CAP_FLOOR - 0.1), anchor="bottom"))
+    # U.FL routing slack from SMA bulkhead (+X) toward Wio
+    oc.cut(b, oc.rounded_rect(
+        "sma_ufl_ch", UFL_ROUTE_CH, 1.2,
+        at=(ux_s - 2.0, 20.0, CAP_FLOOR), anchor="bottom",
+    ))
 
     for i, (px, py) in enumerate(D.LID_SUPPORT_POSTS):
         h = CAP_CAVITY_H + 0.1
@@ -388,13 +457,16 @@ def cap_base():
                            at=(px, py, CAP_FLOOR - 0.5), anchor="bottom", segments=24)
         oc.union(b, post)
 
-    ux, uy, uz = D.USBC_PORT
+    # Plugged/gasketed USB-C access at −Y wall (elastomer plug when sealed).
+    # Port faces the kit USB-C end so 115200 serial can mate without board pull-out
+    # once a short board-to-wall jumper / board shift is fitted; plug seat keeps weather seal.
+    ux, uy, uz = USBC_PORT
     oc.cut(b, oc.rounded_rect("usbc", (ux, uy, uz), D.POCKET_CORNER_R,
                               at=(0, -(CAP_L / 2 - D.CAP_WALL / 2), CAP_FLOOR + 2.0),
                               anchor="bottom"))
-    oc.cut(b, oc.rounded_rect("usbcseat", (D.USBC_CAP[0] + 0.4, 3.0, D.USBC_CAP[1] + 0.4),
-                              1.2,
-                              at=(0, -(CAP_L / 2 - 1.5), CAP_FLOOR + 1.5),
+    pw, pt, ph = USBC_PLUG_SEAT
+    oc.cut(b, oc.rounded_rect("usbc_plug_seat", (pw, pt, ph), 1.2,
+                              at=(0, -(CAP_L / 2 - pt / 2), CAP_FLOOR + 1.2),
                               anchor="bottom"))
 
     for i, (lx, ly) in enumerate(D.LIGHTPIPE_AT):
@@ -402,27 +474,28 @@ def cap_base():
                               at=(lx, ly, CAP_FLOOR + 1.0), anchor="bottom"))
     for i, (bx, by) in enumerate(D.BTN_AT):
         oc.cut(b, oc.rounded_rect(f"btn{i}", D.BTN_MEMBRANE, 1.0,
-                                  at=(bx, by, CAP_FLOOR + D.KIT_POCKET[2] - 0.5),
+                                  at=(bx, by, CAP_FLOOR + KIT_POCKET[2] - 0.5),
                                   anchor="bottom"))
 
-    # Cable exits toward pods — D4/D5 used ±X; D6 pods hang off ±Y ends, so
-    # primary cable exits are on ±Y ends (toward pods) plus keep ±X for harness.
+    # Cable / SMA exits: ±Y toward pods (Ø6.0 harness); ±X SMA bulkhead Ø6.6
+    # (1/4"-36 UNEF Ø6.35 — 4e52f6c Ø6.0 blocked the bulkhead thread).
     for sy in (-1, 1):
         oc.cut(b, oc.cylinder(f"cableY{sy}", 6.0, D.CAP_WALL + 6,
                               at=(0, sy * (CAP_L / 2 - D.CAP_WALL / 2), CAP_FLOOR + 6),
                               axis="Y", segments=32))
     for sx in (-1, 1):
-        oc.cut(b, oc.cylinder(f"cableX{sx}", 6.0, D.CAP_WALL + 4,
+        oc.cut(b, oc.cylinder(f"smaX{sx}", SMA_BULKHEAD_D, D.CAP_WALL + 4,
                               at=(sx * (CAP_W / 2 - D.CAP_WALL / 2), 0, CAP_FLOOR + 6),
                               axis="X", segments=32))
 
     end_taper_d4(b, CAP_W, CAP_L, CAP_BASE_H, END_TAPER)
     b = prepare(b)
 
+    # Flat hex-nut seats for SMA-female bulkhead (~8–10 mm AF) on ±X outer walls
     for sx in (-1, 1):
-        oc.cut(b, oc.cylinder(f"cablesink{sx}", 8.0, 1.2,
-                              at=(sx * (CAP_W / 2 - 0.6), 0, CAP_FLOOR + 6),
-                              axis="X", segments=32))
+        oc.cut(b, oc.cylinder(f"sma_nut{sx}", SMA_NUT_SEAT_AF, SMA_NUT_SEAT_T,
+                              at=(sx * (CAP_W / 2 - SMA_NUT_SEAT_T / 2), 0, CAP_FLOOR + 6),
+                              axis="X", segments=6))
     for sy in (-1, 1):
         oc.cut(b, oc.cylinder(f"cablesinkY{sy}", 8.0, 1.2,
                               at=(0, sy * (CAP_L / 2 - 0.6), CAP_FLOOR + 6),
@@ -432,16 +505,19 @@ def cap_base():
     for side in ("L", "R"):
         oc.union(b, pod_mount_pad(side))
 
-    # Floor glyphs — reuse D5 table / positions (scaled Y lightly where needed)
+    # Floor glyphs — KEEP CLEAR of nRF9151 PCB seating pads (no KIT/PIN1 under board).
+    # Board footprint at KIT_AT: x±27.94, y∈[KIT_AT.y±10.16]. Labels sit beside pocket.
     fz = CAP_FLOOR
-    emboss_label(b, "KIT", (-18.0, KIT_AT[1] + 2.0, fz))
+    emboss_label(b, "KIT", (-30.0, KIT_AT[1] + 14.0, fz))   # +Y of pocket, outside PCB
     emboss_label(b, "BQ", (-18.0, BQ_AT[1] - 2.0, fz))
     emboss_label(b, "WIO", (WIO_AT[0] - 2.0, WIO_AT[1] + 14.0, fz))
     emboss_label(b, "USB", (0.0, -58.0, fz))
     emboss_label(b, "POST", (14.0, -1.5, fz))
-    emboss_label(b, "GNSS", (-18.0, 55.0, fz))
+    emboss_label(b, "GNSS", (0.0, 70.0, fz))                 # crest cue — 960 mounts externally
     emboss_label(b, "LTE", (18.0, 48.0, fz))
-    emboss_label(b, "PIN1", (22.0, KIT_AT[1] - 4.0, fz), rot_z=-90.0)
+    emboss_label(b, "PIN1", (30.0, KIT_AT[1], fz), rot_z=-90.0)  # +X of pocket wall
+    # Spine / forward orientation arrow (+Y crest / external GNSS forward)
+    d5.emboss_glyph(b, "ARROW", (0.0, 8.0, fz), size=7.0)
     for key, (sx, sy) in (("SCR1", (1, 1)), ("SCR2", (-1, 1)),
                           ("SCR3", (1, -1)), ("SCR4", (-1, -1))):
         emboss_label(b, key, (sx * 28.0, sy * 62.0, fz))
@@ -508,28 +584,30 @@ def cap_lid():
     crown_shoulders(lid, PANEL_LAND, CROWN, LID_H, lw, ll)
     end_crown_taper(lid, PANEL_LAND, LID_H, lw, ll, END_TAPER)
 
-    # P124 pocket in flat land — depth from outer face; ≥2 mm lid under
-    px, py, pz = D.PANEL_POCKET
+    # P124 pocket in flat land — D8 X2a depth/XY; ≥2 mm lid under
+    px, py, pz = PANEL_POCKET
     under = LID_H - pz
-    assert under >= D.PANEL_MIN_LID_UNDER, f"lid under panel {under} < {D.PANEL_MIN_LID_UNDER}"
+    assert under >= PANEL_MIN_LID_UNDER, f"lid under panel {under} < {PANEL_MIN_LID_UNDER}"
     oc.cut(lid, oc.rounded_rect("ppocket", (px, py, pz + 0.2), 1.2,
-                                at=(0, D.PANEL_Y, LID_H - pz), anchor="bottom"))
-    frame_z = LID_H + D.PANEL_FRAME_PROUD - 0.5
+                                at=(0, PANEL_Y, LID_H - pz), anchor="bottom"))
+    # Wire-exit relief for P124 rear solder-pad / lead (toward −Y / USB end)
+    oc.cut(lid, oc.rounded_rect(
+        "pwire_slot", (10.0, 8.0, pz + 1.0), 1.0,
+        at=(0.0, PANEL_Y - 0.5 * py + 4.0, LID_H - pz - 0.2),
+        anchor="bottom",
+    ))
+    frame_z = LID_H + PANEL_FRAME_PROUD - 0.5
     frame = oc.rounded_rect("pframe", (px + 2.8, py + 2.8, 0.5), 1.5,
-                            at=(0, D.PANEL_Y, frame_z), anchor="bottom")
+                            at=(0, PANEL_Y, frame_z), anchor="bottom")
     oc.cut(frame, oc.rounded_rect("pfi", (px + 0.3, py + 0.3, 1.0), 1.0,
-                                  at=(0, D.PANEL_Y, frame_z - 0.1), anchor="bottom"))
+                                  at=(0, PANEL_Y, frame_z - 0.1), anchor="bottom"))
     oc.union(lid, frame)
-    oc.cut(lid, oc.cylinder("pwire", 4.0, LID_H + 2,
-                            at=(0, D.PANEL_Y + py / 2 - 10, -1), anchor="bottom"))
+    oc.cut(lid, oc.cylinder("pwire", 4.5, LID_H + 2,
+                            at=(0, PANEL_Y - py / 2 + 8, -1), anchor="bottom"))
 
-    # GNSS / LTE from mating face (z=0) — same as D5
-    gx, gy = D.GNSS_AT
-    gsz = D.GNSS_PATCH[2] + 0.2
-    # With thicker lid, cover is larger; still open from z=0
-    oc.cut(lid, oc.rounded_rect("gnss", (D.GNSS_PATCH[0] + 0.8, D.GNSS_PATCH[1] + 0.8,
-                                         min(gsz + 0.2, LID_H - 1.5)),
-                                D.POCKET_CORNER_R, at=(gx, gy, -0.1), anchor="bottom"))
+    # NO internal GNSS recess. Adafruit 960 (41.2×38.5×13.3) is external-only;
+    # centered P124 leaves only 25.5 mm end margin — cannot hold 15 mm keep-clear
+    # + 25 mm ceramic patch (needs 40 mm). SMA bulkhead lives on cap_base ±X.
     lx, ly = D.LTE_AT
     oc.cut(lid, oc.rounded_rect("lte", (D.LTE_FLEX[0] + 0.8, D.LTE_FLEX[1] + 0.8, 1.4),
                                 D.POCKET_CORNER_R, at=(lx, ly, -0.1), anchor="bottom"))
@@ -574,7 +652,7 @@ def cap_floor_layout():
 
 
 def panel_p124():
-    return prepare(oc.rounded_rect("panel_p124", D.PANEL_SIZE, 1.0, anchor="bottom", segments=8))
+    return prepare(oc.rounded_rect("panel_p124", PANEL_SIZE, 1.0, anchor="bottom", segments=8))
 
 
 # ---------------------------------------------------------------- orientation compare + export
@@ -675,7 +753,7 @@ def render_set(base, lid, panel, out_dir):
     # Apply chosen print orient already mating-at-z0; for assembly lift lid
     p = panel_p124()
     oc.move(l, dz=CAP_BASE_H)
-    oc.move(p, dz=CAP_BASE_H + LID_H - D.PANEL_POCKET[2])
+    oc.move(p, dz=CAP_BASE_H + LID_H - PANEL_POCKET[2])
     for o, rgba in ((b, BODY_ASA), (l, BODY_ASA), (p, PANEL_NAVY)):
         o.data.materials.clear()
         o.data.materials.append(oc._material(o.name + "_mat", rgba))
@@ -769,8 +847,11 @@ D4 contoured skin around D5 internals (PR head `6b1f882`). Script: `hardware/roo
 | Plan R / reveal | {PLAN_R} / {REVEAL} | Soft plan; 0.5 inset lid |
 | End nose | {END_TAPER} taper / tip {NOSE_TIP_H} / plan R {NOSE_PLAN_R} | D7 rounded ellipse + bullnose (was hard ~4 mm cut) |
 | Panel land (flat) | {PANEL_LAND[0]} × {PANEL_LAND[1]} | Contains pocket; crown outside |
-| Panel pocket | {D.PANEL_POCKET[0]} × {D.PANEL_POCKET[1]} × {D.PANEL_POCKET[2]} | P124 KEPT; 15 mm keep-clear |
-| Lid under panel | {round(LID_H - D.PANEL_POCKET[2], 2)} | ≥ {D.PANEL_MIN_LID_UNDER} |
+| Panel pocket | {PANEL_POCKET[0]} × {PANEL_POCKET[1]} × {PANEL_POCKET[2]} | P124 vendor 66×113×2.6 ±0.5; +0.6/side |
+| Lid under panel | {round(LID_H - PANEL_POCKET[2], 2)} | ≥ {PANEL_MIN_LID_UNDER} |
+| Kit pocket | {KIT_POCKET[0]} × {KIT_POCKET[1]} × {KIT_POCKET[2]} | nRF9151 locating; J2 relief {KIT_JST_RELIEF[2]} deep |
+| SMA bulkhead | Ø{SMA_BULKHEAD_D} ±X + {SMA_NUT_SEAT_AF} AF nut seat | Adafruit 960 external; no internal GNSS recess |
+| End margin math | {(CAP_L - PANEL_SIZE[1]) / 2:.1f} mm/end | 15+25 patch needs 40 → external GPS required |
 
 ## Pod interface (cap side)
 
@@ -781,7 +862,7 @@ D4 contoured skin around D5 internals (PR head `6b1f882`). Script: `hardware/roo
 | Mount pad size | {POD_MOUNT_SIZE[0]} × {POD_MOUNT_SIZE[1]} × {POD_MOUNT_SIZE[2]} |
 | Mount face Y | inset pads; outer envelope stays {CAP_L} (tilt-compensated) |
 | Screws in pad | 4× Ø{D.CLEAR} clear through pad (local ±10 X, two Z rows) |
-| Cable exits | Ø6 through ±Y ends + ±X walls; countersink Ø8 × 1.2 |
+| Cable / SMA | Ø6 ±Y pods; Ø{SMA_BULKHEAD_D} SMA bulkhead ±X + nut seat |
 
 Pod agent builds the mating pod face / fairing to these anchors.
 
@@ -827,8 +908,12 @@ Keys on cap floor: KIT, BQ, WIO, USB, POST, GNSS, LTE, PIN1, SCR1–4.
 | Cap width | 76 | {CAP_W} | YES |
 | Cap length | 164 | {CAP_L} | YES |
 | Stack ~31 | ~31 | {CAP_STACK_H} | YES |
-| P124 pocket | 66.6×113.6×2.3 | same | YES |
-| 15 mm keep-clear | ANTENNA_METAL_KEEP=15 | same | YES |
+| P124 pocket | 66.6×113.6×2.3 X2a | **{PANEL_POCKET[0]}×{PANEL_POCKET[1]}×{PANEL_POCKET[2]}** | YES |
+| P124 vendor T | 2.6 ±0.5 | PANEL_SIZE z={PANEL_SIZE[2]} | YES |
+| Kit pocket | 56.7×21.1 X2a | **{KIT_POCKET[0]}×{KIT_POCKET[1]}×{KIT_POCKET[2]}** | YES |
+| J2 relief | none on X2a | {KIT_JST_RELIEF[2]} mm deep | YES |
+| SMA bulkhead | Ø6.0 X2a (blocked 6.35) | **Ø{SMA_BULKHEAD_D}** | YES |
+| Internal GNSS | 25.8³ recess (keep-clear FAIL) | **removed** (960 external) | YES |
 | Flat panel land | required | {PANEL_LAND[0]}×{PANEL_LAND[1]} | YES |
 | Crown ~2.7 | D4 | {CROWN} outside land | YES |
 | Low seam | ~z=8/27 | seam {SEAM_Z} / stack {CAP_STACK_H} | YES |
@@ -836,8 +921,7 @@ Keys on cap floor: KIT, BQ, WIO, USB, POST, GNSS, LTE, PIN1, SCR1–4.
 | +X wall ≥3 | WIO_MIN_WALL | {round(CAP_W/2 - (WIO_AT[0]+D.WIO_POCKET[0]/2), 2)} mm | YES |
 | Lid posts | (0,5),(0,−8) | same | YES |
 | Gasket groove | 2.0×1.5 | same | YES |
-| GNSS/LTE from z=0 | D5 | same | YES |
-| Cable countersink | Ø8×1.2 | same (+ ±Y) | YES |
+| LTE shelf | D5 | kept (no GNSS recess) | YES |
 | Floor glyphs real text | DejaVu table | reused D5 table | YES |
 | Pod anchors | ±113.8, z−27.8, ±29.1° | same | YES |
 | Print: base cavity up | yes | yes | YES |
@@ -876,8 +960,17 @@ def main():
             "seam_z": SEAM_Z, "crown": CROWN, "end_taper": END_TAPER,
             "nose_tip_h": NOSE_TIP_H, "nose_plan_r": NOSE_PLAN_R,
             "nose_bull_r": NOSE_BULL_R,
-            "panel_pocket": list(D.PANEL_POCKET), "panel_land": list(PANEL_LAND),
-            "keep_clear": D.ANTENNA_METAL_KEEP,
+            "panel_pocket": list(PANEL_POCKET), "panel_land": list(PANEL_LAND),
+            "panel_y": PANEL_Y, "panel_size_vendor": list(PANEL_SIZE),
+            "gnss_internal_pocket": GNSS_INTERNAL_POCKET,
+            "gnss_960_housing_external": list(GNSS_960_HOUSING),
+            "sma_bulkhead_d": SMA_BULKHEAD_D,
+            "kit_pocket": list(KIT_POCKET),
+            "kit_jst_relief": list(KIT_JST_RELIEF),
+            "usbc_port": list(USBC_PORT),
+            "keep_clear": ANTENNA_METAL_KEEP,
+            "end_margin_mm": _END_MARGIN,
+            "poka_yoke_cap_cols": [list(p) for p in CAP_COLS],
             "pod_anchor_y": POD_ANCHOR_Y, "pod_anchor_z": POD_ANCHOR_Z,
             "pod_tilt_deg": POD_TILT_DEG,
         },

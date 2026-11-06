@@ -11,15 +11,62 @@
     "nose_plan_r": 14.0,
     "nose_bull_r": 6.0,
     "panel_pocket": [
-      66.6,
-      113.6,
-      2.3
+      67.2,
+      114.2,
+      3.1
     ],
     "panel_land": [
-      68.0,
-      116.0
+      71.0,
+      120.0
+    ],
+    "panel_y": 0.0,
+    "panel_size_vendor": [
+      66.0,
+      113.0,
+      2.6
+    ],
+    "gnss_internal_pocket": null,
+    "gnss_960_housing_external": [
+      41.2,
+      38.5,
+      13.3
+    ],
+    "sma_bulkhead_d": 6.6,
+    "kit_pocket": [
+      57.6,
+      21.4,
+      7.5
+    ],
+    "kit_jst_relief": [
+      20.0,
+      12.0,
+      2.6
+    ],
+    "usbc_port": [
+      10.5,
+      9.0,
+      6.5
     ],
     "keep_clear": 15.0,
+    "end_margin_mm": 25.5,
+    "poka_yoke_cap_cols": [
+      [
+        -26.5,
+        -69.7
+      ],
+      [
+        -29.5,
+        43.05
+      ],
+      [
+        -29.5,
+        69.7
+      ],
+      [
+        29.5,
+        -69.7
+      ]
+    ],
     "pod_anchor_y": 126.0,
     "pod_anchor_z": -21.9,
     "pod_tilt_deg": 29.141828721535205
@@ -97,7 +144,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 37700
+        "faces": 30406
       },
       "print": "cavity UP; bed=underside z=0"
     },
@@ -123,11 +170,11 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 6972
+        "faces": 4644
       },
       "print": "mating_down",
-      "bed_face_mm2": 10118.1,
-      "support_ceiling_mm2": 1863.1
+      "bed_face_mm2": 10808.8,
+      "support_ceiling_mm2": 1189.9
     },
     "cap_floor_layout": {
       "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/cap_floor_layout.stl",
@@ -147,12 +194,12 @@
   },
   "orient": {
     "mating_down": {
-      "bed_face_mm2": 10118.1,
-      "support_ceiling_mm2": 1863.1
+      "bed_face_mm2": 10808.8,
+      "support_ceiling_mm2": 1189.9
     },
     "outer_down": {
-      "bed_face_mm2": 263.2,
-      "support_ceiling_mm2": 11826.2
+      "bed_face_mm2": 194.8,
+      "support_ceiling_mm2": 11907.2
     },
     "picked": "mating_down",
     "note": "Mating-down: panel pocket +Z, GNSS/LTE are bed recesses (small trees OK). Outer-down: flat panel land on bed; mating bosses become ceilings. Crown is shallow (2.7 mm) outside the land."

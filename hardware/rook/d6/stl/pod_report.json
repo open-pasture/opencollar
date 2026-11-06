@@ -141,7 +141,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 281390
+        "faces": 281404
       },
       "pass": true,
       "stl_path": "stl/pod_L_base.stl",
@@ -166,7 +166,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 6830
+        "faces": 6834
       },
       "pass": true,
       "stl_path": "stl/pod_L_lid.stl",
@@ -191,7 +191,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 281364
+        "faces": 281368
       },
       "pass": true,
       "stl_path": "stl/pod_R_base.stl",
@@ -216,7 +216,7 @@
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 6830
+        "faces": 6834
       },
       "pass": true,
       "stl_path": "stl/pod_R_lid.stl",

@@ -109,12 +109,12 @@
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 59868.63067250622
+        "volume_mm3": 51952.062093077104
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 32882
+        "faces": 31852
       },
       "pass": true,
       "stl_path": "stl/cw_tub.stl",
@@ -136,12 +136,12 @@
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 46333.90948343443
+        "volume_mm3": 46341.72769496277
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4450
+        "faces": 4440
       },
       "pass": true,
       "stl_path": "stl/cw_lid.stl",
@@ -165,12 +165,12 @@
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 20915.871087480475
+        "volume_mm3": 16247.483630228611
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 2392
+        "faces": 1468
       },
       "pass": true,
       "stl_path": "stl/saddle.stl",
@@ -211,20 +211,20 @@
     },
     "fairing_cw_L": {
       "size_mm": [
-        88.778,
-        31.992,
-        12.0
+        89.731,
+        31.999,
+        14.0
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 26518.947885389083
+        "volume_mm3": 31377.95741499021
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4244
+        "faces": 4096
       },
       "pass": true,
       "stl_path": "stl/fairing_cw_L.stl",
@@ -238,20 +238,20 @@
     },
     "fairing_cw_R": {
       "size_mm": [
-        88.778,
-        31.992,
-        12.0
+        89.731,
+        31.999,
+        14.0
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 26518.947885389083
+        "volume_mm3": 31377.95741499021
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4244
+        "faces": 4096
       },
       "pass": true,
       "stl_path": "stl/fairing_cw_R.stl",

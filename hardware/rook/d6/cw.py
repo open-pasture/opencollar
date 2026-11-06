@@ -83,7 +83,10 @@ CW_LID_FLAT = 3.0
 CW_CROWN_RISE = CW_LID_T - CW_LID_FLAT              # 4.5
 CW_CROWN_LAND = (36.0, 48.0)                        # land elongated along Y
 # Screws sit in the Y-end land outside the 2×2 pack (|y|≥ pack_y/2 + boss)
-CW_SCREWS = [(sx * 22.0, sy * 54.0) for sx in (-1, 1) for sy in (-1, 1)]
+# Poka-yoke: shift one boss so 180° lid rotation cannot seat
+_CW_SCREWS_BASE = [(sx * 22.0, sy * 54.0) for sx in (-1, 1) for sy in (-1, 1)]
+CW_SCREWS = [(_CW_SCREWS_BASE[0][0] + 3.0, _CW_SCREWS_BASE[0][1]),
+             _CW_SCREWS_BASE[1], _CW_SCREWS_BASE[2], _CW_SCREWS_BASE[3]]
 # Clamp bar holes stay y=±28.5; X stays ±36 (see assembly.py)
 CW_CLAMP = list(A.CW_CLAMP)                         # (±36, ±28.5)
 CAP_CLAMP = list(A.CAP_CLAMP)                       # (±28.5, ±20) strap-along-Y

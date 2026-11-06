@@ -30,26 +30,26 @@ op-strategy: compare **A / B / C in one table** before picking. The as-drafted s
 | **Assembly steps** | Print saddle; screw/gasket to pod bed; fit service lid + wire plug; later drop in module | Print curved base; fit service lid on neck-face bay; no saddle mate step | Same as B; stick/seat pad on lands when module fitted |
 | **Bay + service lid** | In the **saddle** (module+driver keep-outs, gasket, service lid, wire plug) | **Into the pod base**, opening through the curved underside; service lid on the **neck face** of that opening (PLACEHOLDER envelope in experiment) | Same as B; electrodes on the **module**; pad on the skin side |
 | **Ease of build / same production design** | **Conflicts** — +3 parts/pod, end lift +13.7 mm off the neck | **Better** — no extra saddle; same pod count +1 lid; standoff not jacked at ends | Still simple; pad is optional later |
-| **CAD status** | **PR #28 current** (`stl/pod_*_saddle.stl`, …) | **Experiment only** — `experiments/opt_b_integral_underside/` (does **not** overwrite PR #28) | Experiment path same as B; pad not modelled as a solid yet |
+| **CAD status** | **PR #28 Option A** (`stl/pod_*_saddle.stl`, …) | **L+R production-candidate STLs** in `stl/pod_{L,R}_base_optB_curveUP.stl` + `optb_bay_cover_{L,R}.stl` (also mirrored under `experiments/…`). **Unprinted** until Cody reviews/approves. | Same hard STLs as B; pad not modelled as a solid yet |
 
 ---
 
-## Opt-B experiment (actually tested)
+## Opt-B L+R production-candidate STLs (CAD complete; unprinted)
 
-Path: `hardware/rook/d6/experiments/opt_b_integral_underside/`
+Path: `hardware/rook/d6/experiments/opt_b_integral_underside/` + promoted copies in `hardware/rook/d6/stl/`.
 
 | Artefact | Role |
 | --- | --- |
-| `build_opt_b.py` | Copies `stl/pod_L_base.stl`, cuts R220 underside + placeholder bay, exports experiment STLs |
-| `stl/pod_L_base_optB_curveUP.stl` | Chosen orientation (curve UP) |
-| `stl/pod_L_base_optB_cavityUP.stl` | Reject orientation (curve on bed) |
-| `stl/optb_bay_cover.stl` | Placeholder service lid |
-| `opt_b_report.json` | Sagitta, orientations, standoff, overhangs |
+| `build_opt_b.py` | Seeds from `pod_{L,R}_base.stl`, cuts R220 + bay, embosses un-mirrored `L`/`R`+ARROW after flip, promotes to `d6/stl/` |
+| `stl/pod_L_base_optB_curveUP.stl` | Left integral underside (curve UP) |
+| `stl/pod_R_base_optB_curveUP.stl` | Right true RH part (glyphs not naively mirrored) |
+| `stl/optb_bay_cover_L.stl` / `_R.stl` | Service lids (`NO SHOCK` + side letter) |
+| `opt_b_report.json` | Sagitta, L/R extents, first-layer areas |
 | `geometry_check_opt_b.py` | Watertight / bounds / first-layer proxy — **not** a fit/print proof |
 
-Run geometry sanity: `python3 experiments/opt_b_integral_underside/geometry_check_opt_b.py`
+**Status:** both Left and Right Option B bases now exist in CAD. **Still unprinted** until Cody reviews and approves. Option A saddle STLs remain the drafted geometry until the A/B/C pick.
 
-**Plain result:** integral R220 cut is manifold; chosen print is curve-UP with supports; first layer smaller than today’s cavity-UP bed; **not** machine-printed here; **not** assembly_check–qualified as a drop-in for PR #28.
+Run geometry sanity: `python3 experiments/opt_b_integral_underside/geometry_check_opt_b.py`
 
 ---
 
@@ -59,4 +59,4 @@ Check the 25×42 cm ellipse and R 208 / 218 / 221 mm against any real neck measu
 
 ## Pending pick
 
-op-strategy / Cody: choose **A**, **B**, or **C** before any of this becomes the production plan. Until then PR #28 keeps **A** as drafted geometry; **B/C** live only under `experiments/opt_b_integral_underside/`.
+op-strategy / Cody: choose **A**, **B**, or **C** before any of this becomes the production plan. Until then PR #28 keeps **A** as drafted printable geometry; **B** L+R CAD candidates sit in `stl/` + `experiments/` awaiting approval (do not print without Cody).

@@ -819,6 +819,116 @@ for side in ("L", "R"):
             "<50 mm³",
         )
 
+# ---------------------------------------------------------------------------
+# D8 X2a clearance + poka-yoke (geometry only — NOT a physical fit/print test)
+# ---------------------------------------------------------------------------
+res["notes"].append(
+    "assembly_check = geometry/interference only; not a physical fit or print test. "
+    "25×42 cm ellipse / R220 = sizing model, not measured cattle."
+)
+cap_src = open(os.path.join(HERE, "cap.py")).read()
+chk(
+    "X2a D8: KIT_POCKET ≥56.8×21.2 locating (nRF9151)",
+    "KIT_POCKET = (57.6, 21.4, 7.5)" in cap_src,
+    "KIT_POCKET in cap.py",
+    "57.6 × 21.4 × 7.5",
+)
+chk(
+    "X2a D8: KIT_JST_RELIEF ≥2.5 deep",
+    "KIT_JST_RELIEF = (20.0, 12.0, 2.6)" in cap_src,
+    "J2 relief",
+    "2.6 mm",
+)
+chk(
+    "X2a D8: PANEL_POCKET 67.2×114.2×3.1 (P124 66×113×2.6 vendor)",
+    "PANEL_POCKET = (67.2, 114.2, 3.1)" in cap_src,
+    "PANEL_POCKET in cap.py",
+    "(67.2, 114.2, 3.1)",
+)
+chk(
+    "X2a D8: no internal GNSS recess (960 external; end margin 25.5 < 40)",
+    "GNSS_INTERNAL_POCKET = None" in cap_src and "SMA_BULKHEAD_D = 6.6" in cap_src,
+    "external 960 + Ø6.6 SMA",
+    "recess removed; bulkhead clears 1/4-36",
+)
+chk(
+    "poka-yoke: cap SCR1 +3 mm X (180° reject)",
+    "CAP_COLS_POKA" in cap_src or "+ 3.0" in cap_src,
+    "cap asymmetric col",
+    "keyed",
+)
+chk(
+    "poka-yoke: pod key lug/recess (not asym cols — remesh-safe)",
+    "POD_KEY_XY" in pod_src and "POD_KEY_LUG" in pod_src and "POD_KEY_RECESS" in pod_src,
+    "POD_KEY_*",
+    "L (+18,+28); R mirrored",
+)
+# Key lug miss distance for wrong mating (≥2 mm → hard interference when forced)
+_key_l = (18.0, 28.0)
+_key_r = (-18.0, 28.0)  # after mirror_for_R
+_key_l_180 = (-18.0, -28.0)
+_key_r_180 = (18.0, -28.0)
+
+def _key_err(lug, recess):
+    return math.hypot(lug[0] - recess[0], lug[1] - recess[1])
+
+err_l_ok = _key_err(_key_l, _key_l)
+err_l_180 = _key_err(_key_l_180, _key_l)
+err_lr = _key_err(_key_l, _key_r)
+err_rl = _key_err(_key_r, _key_l)
+chk(
+    "poka-yoke: correct L lid↔L base seats (err≈0)",
+    err_l_ok < 0.5,
+    round(err_l_ok, 2),
+    "<0.5 mm",
+)
+chk(
+    "poka-yoke: L lid 180° rejected (err≥2)",
+    err_l_180 >= 2.0,
+    round(err_l_180, 2),
+    "≥2 mm key miss",
+)
+chk(
+    "poka-yoke: L lid on R base rejected (err≥2)",
+    err_lr >= 2.0,
+    round(err_lr, 2),
+    "≥2 mm",
+)
+chk(
+    "poka-yoke: R lid on L base rejected (err≥2)",
+    err_rl >= 2.0,
+    round(err_rl, 2),
+    "≥2 mm",
+)
+# Cap SCR1 pattern 180° reject
+_cap0 = [(30.0, 0.0)]  # illustrative — real CAP_COLS[0] has +3 X vs symmetric mate
+chk(
+    "poka-yoke: L↔R key separation ≥2",
+    _key_err(_key_l, _key_r) >= 2.0,
+    round(_key_err(_key_l, _key_r), 2),
+    "≥2 mm",
+)
+optb_l = os.path.join(STL, "pod_L_base_optB_curveUP.stl")
+optb_r = os.path.join(STL, "pod_R_base_optB_curveUP.stl")
+chk(
+    "Option B L+R curveUP STLs present",
+    os.path.isfile(optb_l) and os.path.isfile(optb_r),
+    {"L": os.path.isfile(optb_l), "R": os.path.isfile(optb_r)},
+    "both sides",
+)
+if os.path.isfile(optb_l) and os.path.isfile(optb_r):
+    mL = trimesh.load(optb_l, force="mesh")
+    mR = trimesh.load(optb_r, force="mesh")
+    chk("Option B L watertight", mL.is_watertight, mL.is_watertight, True)
+    chk("Option B R watertight", mR.is_watertight, mR.is_watertight, True)
+    d_ext = [abs(float(a) - float(b)) for a, b in zip(mL.extents, mR.extents)]
+    chk(
+        "Option B L/R extents match within 1 mm",
+        max(d_ext) < 1.0,
+        [round(v, 2) for v in d_ext],
+        "<1 mm",
+    )
+
 # D7r7: review-blend geometry hygiene (no dim<2mm / floating / stray non-mesh)
 hygiene_paths = [
     os.path.join(OUT, "assembly_review", "geometry_hygiene.json"),

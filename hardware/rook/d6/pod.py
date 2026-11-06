@@ -99,7 +99,51 @@ POD_STRAP_FLARE_RUN = 14.0                   # mid 68 → strap-end 76
 POD_GROOVE_X = CAV_X + 2 * POD_WALL          # 68
 POD_GROOVE_Y = CAV_Y + 2 * POD_WALL          # 92
 # Screw bosses inset from oriented cavity corners (real M3)
+# L/R poka-yoke fastener patterns — not mirrors of each other; 180° ≠ self.
+# Rejects wrong lid rotation and L↔R lid swap (>2 mm boss/hole miss → hard clash).
+# Screw columns stay symmetric (asym + glyphs collapsed remesh on L). Poka-yoke
+# is a separate keyed lug/recess at (+18,+28) on L — mirrors to (−18,+28) on R.
 POD_COLS = [(sx * 22.0, sy * 36.0) for sx in (-1, 1) for sy in (-1, 1)]
+POD_KEY_XY = (18.0, 28.0)              # L local; R after mirror_for_R
+POD_KEY_RECESS = (3.6, 4.6, 1.6)       # base recess (clearance over lug)
+POD_KEY_LUG = (3.0, 4.0, 1.5)          # lid lug
+
+
+def _pod_cols_for_side(side: str):
+    """Symmetric M3 columns (side ignored — poka-yoke is POD_KEY_XY lug/recess)."""
+    return list(POD_COLS)
+
+
+def _add_pod_key_recess(body):
+    """Asymmetric poka-yoke recess on base rim (L at +X/+Y; R after mirror)."""
+    kx, ky = POD_KEY_XY
+    rw, rl, rd = POD_KEY_RECESS
+    oc.cut(
+        body,
+        oc.box(
+            "pod_key_rec",
+            (rw, rl, rd + 0.2),
+            at=(kx, ky, POD_BASE_H - rd),
+            anchor="bottom",
+        ),
+    )
+
+
+def _add_pod_key_lug(lid):
+    """Matching poka-yoke lug on lid mating face."""
+    kx, ky = POD_KEY_XY
+    lw, ll, lh = POD_KEY_LUG
+    oc.union(
+        lid,
+        oc.box(
+            "pod_key_lug",
+            (lw, ll, lh),
+            at=(kx, ky, -0.05),
+            anchor="bottom",
+        ),
+    )
+
+
 POD_TAPER_LEN = 20.0                         # D7r3: slightly longer tip run
 POD_TAPER_DROP = 6.0                         # D7r3: roof tip drop ~6 mm to fairing
 # D7r6: deep skirt recesses clamps; width ≤ pod outline (no side overhang).
@@ -479,7 +523,8 @@ def pod_base(side="L"):
     )
     # Oriented cavity centred on origin (Y from -41..+41); body +Y face at +46
     cut_cav(b, CAV_X, CAV_Y, POD_FLOOR, CAV_Z + 1, r=5.0)
-    d5.columns(b, POD_COLS, POD_FLOOR, POD_BASE_H)
+    cols = _pod_cols_for_side(side)
+    d5.columns(b, cols, POD_FLOOR, POD_BASE_H)
     d5.groove(b, POD_GROOVE_X, POD_GROOVE_Y, PLAN_R, POD_BASE_H, POD_WALL)
     d5.reg_lip(b, POD_GROOVE_X, POD_GROOVE_Y, PLAN_R, POD_BASE_H, POD_WALL)
 
@@ -533,9 +578,10 @@ def pod_base(side="L"):
     d5.emboss_label(b, "MINUS", (18.0, CELL_AT[1] + 22.0, fz))
     d5.emboss_label(b, "BUZZ", (0.0, BUZZ_AT[1] - 14.0, fz))
     d5.emboss_label(b, "PIN1", (0.0, POD_MOUNT_FACE_Y - 14.0, fz), rot_z=0.0)
-    for key, (sx, sy) in (("SCR1", POD_COLS[0]), ("SCR2", POD_COLS[1]),
-                          ("SCR3", POD_COLS[2]), ("SCR4", POD_COLS[3])):
-        d5.emboss_label(b, key, (sx * 0.70, sy * 0.70, fz))
+    for key, (cx, cy) in zip(("SCR1", "SCR2", "SCR3", "SCR4"), cols):
+        d5.emboss_label(b, key, (cx * 0.70, cy * 0.70, fz))
+    # L/R side glyphs applied AFTER heal+skirt (and after R mirror) so the
+    # remesh does not collapse the boolean-heavy shell around glyph cuts.
 
     end_taper_skin(b, POD_L, POD_LEN, POD_BASE_H, POD_TAPER_LEN, POD_TAPER_DROP,
                    y0=POD_Y0)
@@ -590,6 +636,9 @@ def pod_base(side="L"):
         ),
     )
 
+    # Poka-yoke key recess (before heal) — L at (+18,+28); mirrors on R
+    _add_pod_key_recess(b)
+
     # Heal the boolean-heavy shell BEFORE attaching the skirt so the union
     # doesn't inherit open edges that collapse under remesh.
     prepare(b, merge=0.012)
@@ -624,6 +673,15 @@ def pod_base(side="L"):
 
     if side == "R":
         mirror_for_R(b)
+        # Side letter AFTER mirror so "R" is not X-reversed
+        fz = POD_FLOOR
+        d5.emboss_glyph(b, "R", (22.0, 0.0, fz), size=8.0)
+        d5.emboss_glyph(b, "ARROW", (-22.0, 8.0, fz), size=6.0)
+        return prepare(b, merge=0.01)
+    # L glyphs after solid heal+skirt (same stage as R) — floor-facing
+    fz = POD_FLOOR
+    d5.emboss_glyph(b, "L", (-22.0, 0.0, fz), size=8.0)
+    d5.emboss_glyph(b, "ARROW", (22.0, 8.0, fz), size=6.0)
     return prepare(b, merge=0.01)
 
 
@@ -643,7 +701,9 @@ def pod_lid(side="L"):
         x_strap=lx_strap,
         strap_flare_run=POD_STRAP_FLARE_RUN,
     )
-    d5.lid_fasteners(lid, POD_COLS, POD_LID_T)
+    cols = _pod_cols_for_side(side)
+    d5.lid_fasteners(lid, cols, POD_LID_T)
+    _add_pod_key_lug(lid)
 
     # Landing ring on mating face only (z≈0) — outer stays closed
     ring_w = 1.5
@@ -688,7 +748,7 @@ def pod_lid(side="L"):
     ]
     n_screws = 0
     for i, (px, py) in enumerate(screw_xy):
-        if any(math.hypot(px - cx, py - cy) < 10.0 for cx, cy in POD_COLS):
+        if any(math.hypot(px - cx, py - cy) < 10.0 for cx, cy in cols):
             continue
         oc.cut(
             lid,

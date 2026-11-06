@@ -1,0 +1,89 @@
+{
+  "revision": "D8_diy_jig_plate",
+  "note": "Compact PLA jig set. Do NOT invent print hours from volume formulas \u2014 measure in OrcaSlicer 2.4.2. Target real PLA ~60\u201390 min for the set.",
+  "bodies": {
+    "jig_m3_heatset_stop.stl": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/jig_m3_heatset_stop.stl",
+      "size_mm": [
+        28.0,
+        20.0,
+        9.01
+      ],
+      "volume_cm3": 4.3,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 4468
+      },
+      "print": "flat on bed Z=0; no supports intended"
+    },
+    "jig_wire_gauge.stl": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/jig_wire_gauge.stl",
+      "size_mm": [
+        28.0,
+        180.0,
+        5.2
+      ],
+      "volume_cm3": 20.38,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 4634
+      },
+      "print": "flat on bed Z=0; no supports intended"
+    },
+    "jig_blank_shock_plug_L.stl": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/jig_blank_shock_plug_L.stl",
+      "size_mm": [
+        16.31,
+        12.0,
+        7.7
+      ],
+      "volume_cm3": 0.46,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 3780
+      },
+      "print": "flat on bed Z=0; no supports intended"
+    },
+    "jig_blank_shock_plug_R.stl": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/jig_blank_shock_plug_R.stl",
+      "size_mm": [
+        16.31,
+        12.0,
+        7.7
+      ],
+      "volume_cm3": 0.46,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 3916
+      },
+      "print": "flat on bed Z=0; no supports intended"
+    },
+    "jig_blank_shock_plug_spare.stl": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/jig_blank_shock_plug_spare.stl",
+      "size_mm": [
+        16.31,
+        12.0,
+        7.7
+      ],
+      "volume_cm3": 0.46,
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 3856
+      },
+      "print": "flat on bed Z=0; no supports intended"
+    }
+  },
+  "pass": true,
+  "total_volume_cm3": 26.06,
+  "qty_note": {
+    "jig_blank_shock_plug_L": 1,
+    "jig_blank_shock_plug_R": 1,
+    "jig_blank_shock_plug_spare": 1,
+    "use": "Seats Option A saddle bay and Option B integral bay; embossed NO SHOCK"
+  }
+}
