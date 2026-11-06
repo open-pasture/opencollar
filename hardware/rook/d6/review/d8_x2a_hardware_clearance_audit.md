@@ -21,11 +21,15 @@ Cross-section figure (trimesh on `4e52f6c`): `x2a_clearance_cross_sections.png` 
 
 ## Summary
 
-| Component | X2a (`4e52f6c`) | Updated D8 |
+| Component | X2a (`4e52f6c`) | Updated D8 (mesh-verified) |
 | --- | --- | --- |
-| nRF9151 | no locating walls; **no J2 recess**; KIT/PIN1 glyphs under PCB; **no USB-C access** | Pocket **57.6 × 21.4 × 7.5**; J2 relief **2.6** deep; glyphs clear of pads; plugged USB-C seat |
+| nRF9151 | no locating walls; **no J2 recess**; KIT/PIN1 glyphs under PCB; **no USB-C access** | Raised locating ribs **57.6 × 21.4** clear; J2 **2.8 mm** drop in STL; glyphs clear; **USB tunnel open**; `cap_usbc_plug.stl` |
 | Adafruit #960 | internal GNSS recess 25.8³ sized for bare patch; **FAIL** vs 41.2×38.5×13.3; Ø6.0 SMA **blocks** Ø6.35 bulkhead; keep-clear **violated** (5.4 mm overlap) | **External mount only**; internal recess **removed**; SMA bulkhead **Ø6.6** + 10 mm AF nut seat; U.FL route channel |
 | Voltaic P124 | pocket 66.6 × 113.6 × **2.3** → panel 0.3–0.5 **proud** | Pocket **67.2 × 114.2 × 3.1** (+0.6/side; flush for 2.6–2.8 + thin VHB) |
+
+### Mesh bug fixed after `a07db1b`
+
+`a07db1b` coded kit/J2/USB against `CAP_FLOOR=6` with `pocket_box` cutting *up into cavity air* and a wall-only USB punch — **none of those cuts appeared in `cap_base.stl`** (floor stayed flat at z≈20; J2 only 0.1 mm; USB solid y≈−55..−77). Fix: raised `locate_rib_rect` fence, J2 cut *down* into floor solid, full cavity→exterior USB tunnel, glyphs moved outside PCB footprint, export `stl/cap_usbc_plug.stl`. Verified by `review/verify_cap_base_x2a_mesh.py` on the exported STL (PASS).
 
 ## Honest end-margin math (why 960 is external)
 

@@ -1,0 +1,58 @@
+{
+  "stl": "/agent/repos/opencollar/hardware/rook/d6/review/../stl/cap_base.stl",
+  "bounds": [
+    [
+      -38.30268478393555,
+      -93.45565032958984,
+      0.0
+    ],
+    [
+      38.0,
+      93.45565032958984,
+      34.20000076293945
+    ]
+  ],
+  "checks": [
+    {
+      "check": "PCB seating plane found",
+      "pass": true,
+      "detail": "seat_z\u224820.00"
+    },
+    {
+      "check": "J2 relief depth \u22652.6 mm",
+      "pass": true,
+      "detail": "seat=20.00 j2=17.20 drop=2.80"
+    },
+    {
+      "check": "locating ribs present 0.8 mm above seat",
+      "pass": true,
+      "detail": "inside_count=3/4 at z=20.80"
+    },
+    {
+      "check": "kit pocket interior open at seat+0.8",
+      "pass": true,
+      "detail": "centre_inside=False"
+    },
+    {
+      "check": "no glyph proud above seat inside PCB footprint",
+      "pass": true,
+      "detail": "proud_pts=0 max_over=0.00"
+    },
+    {
+      "check": "USB-C through-channel open cavity\u2192exterior",
+      "pass": true,
+      "detail": "solid_frac=0.00 along y=-48..-86 at z=25.0"
+    },
+    {
+      "check": "cap_usbc_plug.stl exported",
+      "pass": true,
+      "detail": "/agent/repos/opencollar/hardware/rook/d6/review/../stl/cap_usbc_plug.stl"
+    },
+    {
+      "check": "cap_usbc_plug watertight",
+      "pass": true,
+      "detail": "V=587.8"
+    }
+  ],
+  "pass": true
+}

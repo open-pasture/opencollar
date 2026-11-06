@@ -40,9 +40,11 @@ import bpy
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(_HERE, "..", "..", "common", "cad", "lib")))
+sys.path.insert(0, os.path.abspath(os.path.join(_HERE, "..", "d5", "cad")))
 sys.path.insert(0, _HERE)
 
 import oc  # noqa: E402
+import build_d5 as d5  # noqa: E402 — L/R glyphs on wire plugs
 
 OUT = os.path.join(_HERE, "stl")
 os.makedirs(OUT, exist_ok=True)
@@ -579,7 +581,10 @@ def service_lid(side: str = "L", open_w=None, open_l=None,
 
 
 def wire_blank_plug(side: str = "L"):
-    """Blank plug — seals wire pass-through when bay is unfitted."""
+    """Blank plug — seals wire pass-through when bay is unfitted.
+
+    L and R are distinct parts (embossed side letter) — do not share geometry.
+    """
     # Stem into channel + flange for seat
     stem = oc.cylinder(
         f"pod_{side}_wire_plug",
@@ -590,7 +595,7 @@ def wire_blank_plug(side: str = "L"):
         segments=24,
     )
     flange = oc.cylinder(
-        "wire_plug_flange",
+        f"wire_plug_flange_{side}",
         WIRE_GLAND_D + 0.5,
         1.5,
         at=(0.0, 0.0, 5.5),
@@ -598,6 +603,12 @@ def wire_blank_plug(side: str = "L"):
         segments=24,
     )
     oc.union(stem, flange)
+    try:
+        # Distinct L vs R glyph on flange top (readable, un-mirrored)
+        d5.emboss_glyph(stem, side, (0.0, 0.0, 7.0), size=5.0, depth=0.6)
+        d5.emboss_glyph(stem, "ARROW", (0.0, 3.2, 7.0), size=3.5, depth=0.55)
+    except Exception as exc:
+        print(f"  wire_plug {side} glyph skipped: {exc}")
     oc.bake(stem)
     oc.move(stem, dz=-oc.bounds(stem)[0][2])
     return stem

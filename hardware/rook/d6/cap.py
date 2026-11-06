@@ -417,27 +417,37 @@ def cap_base():
     d5.reg_lip(b, CAP_W, CAP_L, PLAN_R, CAP_BASE_H, D.CAP_WALL)
 
     # --- D8 pockets (X2a clearances — datasheet-corrected) ---
-    # Locating pocket walls ≥0.4 mm/side around nRF9151 PCB (+ USB overhang budget).
-    d5.pocket_box(b, "kit", KIT_POCKET, KIT_AT, CAP_FLOOR)
-    # Underside J2 MX1.25-2P relief (≥2.5 mm) so PCB seats flat (no rock).
+    # IMPORTANT: cavity is already open above CAP_FLOOR. d5.pocket_box() cuts *up*
+    # into empty air and leaves no walls — use raised locating ribs + cuts *down*
+    # into the floor solid for J2. (Verified missing on a07db1b cap_base.stl.)
+    seat_z = CAP_FLOOR  # PCB seating plane (model coords; +skirt → ~20 in STL)
+    # Locating fence: INNER clear = KIT_POCKET XY (57.6×21.4) so board 55.88×20.32 drops in
+    # with ≥0.4 mm/side; ribs rise above seat (visible in z=seat+0.8 STL slice).
+    d5.locate_rib_rect(
+        b, "kit",
+        (KIT_POCKET[0], KIT_POCKET[1]),
+        KIT_AT, seat_z, h=2.4, wall=1.4,
+    )
+    # J2 MX1.25-2P relief: cut DOWN from seating plane (≥2.6 mm into floor solid).
     jw, jl, jd = KIT_JST_RELIEF
     oc.cut(b, oc.rounded_rect(
-        "kitjst", (jw, jl, jd + 0.2), 1.0,
-        at=(KIT_AT[0], KIT_AT[1] - 4.0, CAP_FLOOR - 0.1),
+        "kitjst", (jw, jl, jd + 0.4), 1.0,
+        at=(KIT_AT[0], KIT_AT[1] - 4.0, seat_z - jd - 0.2),
         anchor="bottom",
     ))
-    # USB-C overhang + in-pocket plug nose at kit −Y end
+    # USB-C overhang nose relief at kit −Y end (in-cavity, above seat)
     oc.cut(b, oc.rounded_rect(
         "kit_usb_relief", KIT_USB_RELIEF, 1.2,
-        at=(KIT_AT[0], KIT_AT[1] - 0.5 * KIT_POCKET[1] - 2.5, CAP_FLOOR + 1.5),
+        at=(KIT_AT[0], KIT_AT[1] - 0.5 * KIT_POCKET[1] - 2.5, seat_z + 0.2),
         anchor="bottom",
     ))
     d5.board_holes(b, KIT_BOARD, D.KIT_HOLE_D, D.KIT_HOLE_INSET, KIT_AT,
-                   CAP_FLOOR, depth=2.5, prefix="kith")
+                   seat_z, depth=2.5, prefix="kith")
 
     d5.pocket_box(b, "bq", D.BQ_POCKET, BQ_AT, CAP_FLOOR)
     d5.board_holes(b, D.BQ_BOARD, D.BQ_HOLE_D, D.BQ_HOLE_INSET, BQ_AT,
                    CAP_FLOOR, depth=3.0, prefix="bqh")
+    # BQ still uses pocket_box (cuts into residual floor bosses / is shallow OK for charger)
 
     d5.pocket_box(b, "wio", D.WIO_POCKET, WIO_AT, CAP_FLOOR)
     ux_s, uy_s = D.UFL_SLACK_AT
@@ -457,18 +467,27 @@ def cap_base():
                            at=(px, py, CAP_FLOOR - 0.5), anchor="bottom", segments=24)
         oc.union(b, post)
 
-    # Plugged/gasketed USB-C access at −Y wall (elastomer plug when sealed).
-    # Port faces the kit USB-C end so 115200 serial can mate without board pull-out
-    # once a short board-to-wall jumper / board shift is fitted; plug seat keeps weather seal.
-    ux, uy, uz = USBC_PORT
-    oc.cut(b, oc.rounded_rect("usbc", (ux, uy, uz), D.POCKET_CORNER_R,
-                              at=(0, -(CAP_L / 2 - D.CAP_WALL / 2), CAP_FLOOR + 2.0),
-                              anchor="bottom"))
+    # USB-C through-channel: cavity ends ~y=±(cav_l/2); outer wall at ±CAP_L/2.
+    # A short wall-only punch leaves solid between y≈-49 and y≈-80 — tunnel the full run.
+    ux, _uy, uz = USBC_PORT
+    # Match cut_cav length (max with 110) so tunnel meets the real cavity −Y end.
+    cav_half = 0.5 * max(CAP_L - 2 * D.CAP_WALL - 2 * END_TAPER + 8, 110.0)
+    cav_y_lo = -cav_half + 3.0                         # just inside cavity
+    outer_y = -(CAP_L / 2.0 + 2.0)                      # past outer −Y face
+    tunnel_len = cav_y_lo - outer_y
+    tunnel_cy = 0.5 * (cav_y_lo + outer_y)
+    usbc_z = seat_z + 2.0
+    oc.cut(b, oc.rounded_rect(
+        "usbc_tunnel", (ux + 0.4, tunnel_len, uz + 0.4), D.POCKET_CORNER_R,
+        at=(0.0, tunnel_cy, usbc_z), anchor="bottom",
+    ))
+    # Outer elastomer-plug seat (larger recess at −Y face)
     pw, pt, ph = USBC_PLUG_SEAT
-    oc.cut(b, oc.rounded_rect("usbc_plug_seat", (pw, pt, ph), 1.2,
-                              at=(0, -(CAP_L / 2 - pt / 2), CAP_FLOOR + 1.2),
-                              anchor="bottom"))
-
+    oc.cut(b, oc.rounded_rect(
+        "usbc_plug_seat", (pw, pt + 2.0, ph), 1.2,
+        at=(0.0, -(CAP_L / 2.0 - pt / 2.0), seat_z + 1.0),
+        anchor="bottom",
+    ))
     for i, (lx, ly) in enumerate(D.LIGHTPIPE_AT):
         oc.cut(b, oc.cylinder(f"lp{i}", D.LIGHTPIPE_D, CAP_CAVITY_H + 2,
                               at=(lx, ly, CAP_FLOOR + 1.0), anchor="bottom"))
@@ -505,18 +524,17 @@ def cap_base():
     for side in ("L", "R"):
         oc.union(b, pod_mount_pad(side))
 
-    # Floor glyphs — KEEP CLEAR of nRF9151 PCB seating pads (no KIT/PIN1 under board).
-    # Board footprint at KIT_AT: x±27.94, y∈[KIT_AT.y±10.16]. Labels sit beside pocket.
+    # Floor glyphs — MUST NOT raise the PCB seating plane inside the nRF9151 footprint
+    # (board x∈±27.94, y∈[KIT_AT.y±10.16] ≈ [-34.2, -13.8]). Keep KIT/PIN1 outside.
     fz = CAP_FLOOR
-    emboss_label(b, "KIT", (-30.0, KIT_AT[1] + 14.0, fz))   # +Y of pocket, outside PCB
+    emboss_label(b, "KIT", (-32.0, -6.0, fz))                 # +Y of board, outside footprint
     emboss_label(b, "BQ", (-18.0, BQ_AT[1] - 2.0, fz))
     emboss_label(b, "WIO", (WIO_AT[0] - 2.0, WIO_AT[1] + 14.0, fz))
-    emboss_label(b, "USB", (0.0, -58.0, fz))
+    emboss_label(b, "USB", (18.0, -48.0, fz))                 # beside tunnel, not under board
     emboss_label(b, "POST", (14.0, -1.5, fz))
-    emboss_label(b, "GNSS", (0.0, 70.0, fz))                 # crest cue — 960 mounts externally
+    emboss_label(b, "GNSS", (0.0, 70.0, fz))                  # crest cue — 960 external
     emboss_label(b, "LTE", (18.0, 48.0, fz))
-    emboss_label(b, "PIN1", (30.0, KIT_AT[1], fz), rot_z=-90.0)  # +X of pocket wall
-    # Spine / forward orientation arrow (+Y crest / external GNSS forward)
+    emboss_label(b, "PIN1", (32.0, -6.0, fz), rot_z=-90.0)    # clear of board + rib
     d5.emboss_glyph(b, "ARROW", (0.0, 8.0, fz), size=7.0)
     for key, (sx, sy) in (("SCR1", (1, 1)), ("SCR2", (-1, 1)),
                           ("SCR3", (1, -1)), ("SCR4", (-1, -1))):
@@ -628,6 +646,29 @@ def cap_lid():
 
     # D7r5: no proud rear lip plate — was reading as a thin protruding shelf.
     return prepare(lid)
+
+
+def cap_usbc_plug():
+    """Elastomer/PLA plug for the −Y USB-C access seat (weather seal when inserted)."""
+    pw, pt, ph = USBC_PLUG_SEAT
+    ux, _uy, uz = USBC_PORT
+    # Stem fills tunnel aperture; flange fills outer seat
+    stem = oc.rounded_rect(
+        "cap_usbc_plug_stem", (ux - 0.6, 8.0, uz - 0.6), 1.0,
+        at=(0.0, 0.0, 0.0), anchor="bottom",
+    )
+    flange = oc.rounded_rect(
+        "cap_usbc_plug_flange", (pw - 0.4, pt + 1.0, 2.2), 1.2,
+        at=(0.0, -4.5, 6.5), anchor="bottom",
+    )
+    oc.union(stem, flange)
+    try:
+        d5.emboss_glyph(stem, "USB", (0.0, -4.5, 8.7), size=4.0, depth=0.55)
+    except Exception:
+        pass
+    oc.bake(stem)
+    oc.move(stem, dz=-oc.bounds(stem)[0][2])
+    return prepare(stem)
 
 
 def cap_floor_layout():
@@ -1036,6 +1077,23 @@ def main():
     }
     print("  bbox", report["bodies"]["cap_lid"]["bbox"]["size"],
           "bed", bed, "sup", sup, "wt", wt)
+
+    # ---- USB-C weather plug ----
+    print("=== cap_usbc_plug ===")
+    oc.reset()
+    plug = cap_usbc_plug()
+    plug_path = os.path.join(STL_DIR, "cap_usbc_plug.stl")
+    export_stl(plug, plug_path, weld=1e-4)
+    wt = check_stl(plug_path)
+    lo, hi = oc.bounds(plug)
+    report["bodies"]["cap_usbc_plug"] = {
+        "stl": plug_path,
+        "bbox": {"size": [round(hi[i] - lo[i], 3) for i in range(3)]},
+        "watertight": wt,
+        "print": "flange out; stem into −Y USB seat; PLA or TPU",
+        "role": "gasketed/blank plug — seals USB-C access when not provisioning",
+    }
+    print("  bbox", report["bodies"]["cap_usbc_plug"]["bbox"]["size"], "wt", wt)
 
     # ---- floor coupon ----
     print("=== cap_floor_layout ===")

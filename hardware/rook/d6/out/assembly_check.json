@@ -10,7 +10,7 @@
   {
    "check": "cap_base: volume>0",
    "ok": true,
-   "measured": 194678,
+   "measured": 193327,
    "expected": ">0",
    "note": ""
   },
@@ -25,7 +25,7 @@
    "check": "cap_base: fits P2S 256^3",
    "ok": true,
    "measured": [
-    76.0,
+    76.3,
     186.91,
     34.2
    ],
@@ -92,6 +92,38 @@
     75.0,
     163.0,
     12.0
+   ],
+   "expected": "<=256",
+   "note": ""
+  },
+  {
+   "check": "cap_usbc_plug: watertight",
+   "ok": true,
+   "measured": true,
+   "expected": true,
+   "note": ""
+  },
+  {
+   "check": "cap_usbc_plug: volume>0",
+   "ok": true,
+   "measured": 588,
+   "expected": ">0",
+   "note": ""
+  },
+  {
+   "check": "cap_usbc_plug: min z = 0",
+   "ok": true,
+   "measured": 0.0,
+   "expected": 0,
+   "note": ""
+  },
+  {
+   "check": "cap_usbc_plug: fits P2S 256^3",
+   "ok": true,
+   "measured": [
+    12.6,
+    10.75,
+    9.1
    ],
    "expected": "<=256",
    "note": ""
@@ -746,7 +778,7 @@
   {
    "check": "pod_L_base_optB_curveUP: volume>0",
    "ok": true,
-   "measured": 69241,
+   "measured": 69274,
    "expected": ">0",
    "note": ""
   },
@@ -778,7 +810,7 @@
   {
    "check": "pod_L_bay_cover: volume>0",
    "ok": true,
-   "measured": 9360,
+   "measured": 9454,
    "expected": ">0",
    "note": ""
   },
@@ -795,7 +827,7 @@
    "measured": [
     39.0,
     97.0,
-    2.5
+    3.1
    ],
    "expected": "<=256",
    "note": ""
@@ -874,7 +906,7 @@
   {
    "check": "pod_L_wire_plug: volume>0",
    "ok": true,
-   "measured": 429,
+   "measured": 431,
    "expected": ">0",
    "note": ""
   },
@@ -891,7 +923,7 @@
    "measured": [
     12.5,
     12.5,
-    7.0
+    7.45
    ],
    "expected": "<=256",
    "note": ""
@@ -938,7 +970,7 @@
   {
    "check": "pod_R_base_optB_curveUP: volume>0",
    "ok": true,
-   "measured": 69246,
+   "measured": 69279,
    "expected": ">0",
    "note": ""
   },
@@ -970,7 +1002,7 @@
   {
    "check": "pod_R_bay_cover: volume>0",
    "ok": true,
-   "measured": 9360,
+   "measured": 9454,
    "expected": ">0",
    "note": ""
   },
@@ -987,7 +1019,7 @@
    "measured": [
     39.0,
     97.0,
-    2.5
+    3.1
    ],
    "expected": "<=256",
    "note": ""
@@ -1066,7 +1098,7 @@
   {
    "check": "pod_R_wire_plug: volume>0",
    "ok": true,
-   "measured": 429,
+   "measured": 431,
    "expected": ">0",
    "note": ""
   },
@@ -1083,7 +1115,7 @@
    "measured": [
     12.5,
     12.5,
-    7.0
+    7.45
    ],
    "expected": "<=256",
    "note": ""
@@ -2081,6 +2113,12 @@
    "class": "clamp pocket engagement (OK)"
   },
   {
+   "a": "pod_L_saddle",
+   "b": "pod_L_bay_cover",
+   "mm3": 93.8,
+   "class": "expected lip/groove engagement"
+  },
+  {
    "a": "pod_L_bay_cover",
    "b": "pod_L_wire_plug",
    "mm3": 112.1,
@@ -2133,6 +2171,12 @@
    "b": "clamp_bar_6",
    "mm3": 661.2,
    "class": "clamp pocket engagement (OK)"
+  },
+  {
+   "a": "pod_R_saddle",
+   "b": "pod_R_bay_cover",
+   "mm3": 93.8,
+   "class": "expected lip/groove engagement"
   },
   {
    "a": "pod_R_bay_cover",

@@ -169,12 +169,12 @@
       "size_mm": [
         39.0,
         97.0,
-        2.5
+        3.1
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 414
+        "faces": 21700
       },
       "role": "service lid \u2014 bay openable without cell cavity",
       "print": {
@@ -186,12 +186,12 @@
       "size_mm": [
         12.5,
         12.5,
-        7.0
+        7.45
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 188
+        "faces": 868
       },
       "role": "blank plug \u2014 seals wire pass-through when unfitted",
       "print": {
@@ -346,12 +346,12 @@
       "size_mm": [
         39.0,
         97.0,
-        2.5
+        3.1
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 414
+        "faces": 21700
       },
       "role": "service lid \u2014 bay openable without cell cavity",
       "print": {
@@ -363,12 +363,12 @@
       "size_mm": [
         12.5,
         12.5,
-        7.0
+        7.45
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 188
+        "faces": 1090
       },
       "role": "blank plug \u2014 seals wire pass-through when unfitted",
       "print": {

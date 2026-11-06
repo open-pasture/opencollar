@@ -126,7 +126,7 @@
       "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/cap_base.stl",
       "bbox": {
         "min": [
-          -38.0,
+          -38.303,
           -93.456,
           0.0
         ],
@@ -136,7 +136,7 @@
           34.2
         ],
         "size": [
-          76.0,
+          76.303,
           186.911,
           34.2
         ]
@@ -144,7 +144,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 30406
+        "faces": 35870
       },
       "print": "cavity UP; bed=underside z=0"
     },
@@ -175,6 +175,23 @@
       "print": "mating_down",
       "bed_face_mm2": 10808.8,
       "support_ceiling_mm2": 1189.9
+    },
+    "cap_usbc_plug": {
+      "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/cap_usbc_plug.stl",
+      "bbox": {
+        "size": [
+          12.6,
+          10.75,
+          9.1
+        ]
+      },
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 1846
+      },
+      "print": "flange out; stem into \u2212Y USB seat; PLA or TPU",
+      "role": "gasketed/blank plug \u2014 seals USB-C access when not provisioning"
     },
     "cap_floor_layout": {
       "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/cap_floor_layout.stl",

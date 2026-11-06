@@ -184,13 +184,24 @@ def build_side(side: str, report: dict):
     oc.reset()
     body2 = _import_stl(path_native, f"pod_{side}_optB_flip")
     flip_curve_up(body2)
-    # Glyphs after flip so text is readable on the print bed / outer
+    # Outer curve-UP glyphs (side + arrow). Floor BATT/BUZZ come from the cavityUP
+    # seed: after print the part is flipped cavity-UP for assembly and those labels
+    # read upright again. Re-stamp BATT/BUZZ here with rot_z=180 at Y-flipped
+    # stations so the curveUP STL itself also shows upright floor text when the
+    # cavity is inspected from below (print orientation).
     try:
         z_top = oc.bounds(body2)[1][2]
         d5.emboss_glyph(body2, side, (0.0, -30.0, z_top), size=8.0, depth=0.7)
         d5.emboss_glyph(body2, "ARROW", (0.0, 30.0, z_top), size=6.0, depth=0.7)
-    except Exception:
-        pass
+        lo2, _hi2 = oc.bounds(body2)
+        z_floor = lo2[2] + 12.0
+        for key, (x, y) in (
+            ("BATT", (0.0, 24.0)),
+            ("BUZZ", (0.0, -14.0)),
+        ):
+            d5.emboss_label(body2, key, (x, y, z_floor), size=6.0, rot_z=180.0)
+    except Exception as exc:
+        print(f"  optB {side} glyph pass: {exc}")
     oc.bake(body2)
     oc.move(body2, dz=-oc.bounds(body2)[0][2])
 
