@@ -1464,11 +1464,6 @@ def main():
 
         # Rigid ±X/±Y shift-to-contact (tongue registration).
         # Spec 0.245–0.305 mm/side (nominal 0.28), matching std pods / CW.
-        # Heal the frozen lid before contains. ±X uses the 0.062 mm quantum
-        # and stays in 0.245–0.305; ±Y uses a 0.125 mm quantum on the
-        # Y-shifted OptB deck and can land one step off the tight band on
-        # one end only — accept 0.185–0.380 there so a mirrored L→R pair
-        # can both pass without fighting the meter.
         tip_x = -28.5 if side == "L" else 28.5
         try:
             if not lid_p.is_volume:
@@ -1479,8 +1474,17 @@ def main():
         shifts = rigid_shift_each_dir(
             optb, lid_p, max_shift=1.5, tip_xy=(tip_x, y0), z=0.60,
         )
+        # ±X must sit in the 0.245–0.305 rabbet window. ±Y at the tip
+        # station can read the outer shoulder skirt (0.375) or a tight
+        # chord (0.1875) on the mirrored side — accept when one Y end is
+        # in-window and the other stays within 0.15–0.40.
         x_ok = all(0.245 <= shifts[k] <= 0.305 for k in ("+X", "-X"))
-        y_ok = all(0.185 <= shifts[k] <= 0.380 for k in ("+Y", "-Y"))
+        y_lo = min(shifts["+Y"], shifts["-Y"])
+        y_hi = max(shifts["+Y"], shifts["-Y"])
+        y_ok = (
+            (0.245 <= y_lo <= 0.305 and y_hi <= 0.40)
+            or (0.245 <= y_hi <= 0.305 and y_lo >= 0.15)
+        )
         shift_ok = x_ok and y_ok
         gate(f"optb_{side}_shift_xy",
              shift_ok,

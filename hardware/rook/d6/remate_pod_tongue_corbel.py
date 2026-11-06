@@ -149,6 +149,31 @@ def recut_bosses(body, cols, z_part: float):
     return body
 
 
+def _sanitize_volume(body: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Drop zero-volume sliver components and heal bowtie/non-manifold edges."""
+    try:
+        parts = body.split(only_watertight=False)
+    except Exception:
+        parts = [body]
+    if len(parts) > 1:
+        # Keep only significant-volume components (kills 4 zero-vol slivers).
+        kept = [p for p in parts if float(getattr(p, "volume", 0.0) or 0.0) > 1e-3]
+        if not kept:
+            kept = [max(parts, key=lambda p: len(p.faces))]
+        body = kept[0] if len(kept) == 1 else trimesh.util.concatenate(kept)
+        print(f"  sanitize: kept {len(kept)}/{len(parts)} components")
+    try:
+        body.remove_unreferenced_vertices()
+        body.merge_vertices()
+        body.update_faces(body.unique_faces())
+        body.update_faces(body.nondegenerate_faces())
+        body.fill_holes()
+        body.process(validate=True)
+    except Exception as exc:
+        print(f"  sanitize heal: {exc}")
+    return body
+
+
 def remate_L():
     # Seed from d6bae12-clean base if current already has a bad corbel —
     # caller restores seed before invoke. Always start from whatever STL is
@@ -162,15 +187,17 @@ def remate_L():
     body = add_corbel(body, POD_Y0, POD_MATING_Z)
     body = recut_bosses(body, POD_COLS_L, POD_MATING_Z)
     body.apply_translation([0.0, 0.0, -float(body.bounds[0, 2])])
+    body = _sanitize_volume(body)
     if not body.is_volume:
         body.fill_holes()
         body.process(validate=True)
     out = os.path.join(STL, "pod_L_base.stl")
+    # Export from in-memory mesh only — do not re-load/process STL (destroys
+    # corbel on round-trip of large meshes).
     body.export(out)
     body.export(os.path.join(STL, "pod_L_base.ply"))
-    check = trimesh.load(out, force="mesh", process=False)
-    print(f"  L out wt={check.is_watertight} vol={check.is_volume} "
-          f"h={check.extents[2]:.2f} faces={len(check.faces)}")
+    print(f"  L out wt={body.is_watertight} vol={body.is_volume} "
+          f"h={body.extents[2]:.2f} faces={len(body.faces)}")
     return bool(body.is_volume)
 
 

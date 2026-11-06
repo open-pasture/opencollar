@@ -74,81 +74,115 @@ def _realign_battery_cavity(shell, y0: float, seat: float):
     """Fill seed-shell cavity (std POD_Y0) and re-cut at OptB Y-flip centre.
 
     Frozen lid / bed tongue sit on y0=+2.5; the imported shell still has the
-    battery pocket at POD_Y0=−2.5, so the +Y lid land hangs over open cavity
-    and the cavity carves through 3/4 sides of every bed M3 boss.
+    battery pocket at POD_Y0=−2.5. Open the new cavity at the land plane
+    (not seat+0.35) — a raised cavity floor kisses the lid underside.
     """
     # Fill old void (slightly oversized so remnant ledges disappear).
     fill_h = 28.0
     fill = _rounded_cavity_box(
         CAV_X + 2.5, CAV_Y + 2.5, fill_h,
-        (0.0, STD_CAVITY_Y0), seat + 0.05, r=2.5,
+        (0.0, STD_CAVITY_Y0), seat - 0.05, r=2.5,
     )
     shell = shell.union(fill, engine="manifold")
     print(
         f"  cavity fill at y={STD_CAVITY_Y0:+.1f} "
         f"({CAV_X + 2.5:.0f}x{CAV_Y + 2.5:.0f}x{fill_h:.0f})"
     )
-    # Re-cut at OptB Y-flip centre (matches frozen lid y≈[−43,+48]).
-    cut_h = 26.0
+    # Re-cut through the deck (from near bed) so no 1.15–1.55 membrane
+    # remains under the lid. Pillars are re-added afterward.
+    cut_h = 28.0
     cut = _rounded_cavity_box(
-        CAV_X, CAV_Y, cut_h, (0.0, y0), seat + 0.35, r=2.0,
+        CAV_X, CAV_Y, cut_h, (0.0, y0), 0.10, r=2.0,
     )
     shell = shell.difference(cut, engine="manifold")
-    print(f"  cavity re-cut at y={y0:+.1f} ({CAV_X:.0f}x{CAV_Y:.0f}x{cut_h:.0f})")
+    print(f"  cavity re-cut at y={y0:+.1f} through-deck ({CAV_X:.0f}x{CAV_Y:.0f})")
     return shell
 
 
 def _bed_boss_pillars(body, cols, y0: float, seat: float):
-    """Union 360° M3 pillars + corner webs AFTER the cavity cut, then
-    recess −0.40 spotfaces and coaxial Ø4 heat-set bores into +Z pillars.
+    """Cavity-side M3 pads with +Z spotface (OptB land-at-bed).
+
+    Lid solid fills z≲seat under the land; pads/pillars live strictly on the
+    cavity side (z≥seat). Spotface empty seat..seat+0.40 at the annulus.
     """
+    del y0  # webs omitted — sleeve/pad only (see patch_optb_boss_walls.py)
+    pad_r = 0.5 * BOSS_SPOT_D + 1.0
+    spot_r = 0.5 * BOSS_SPOT_D
+    pad_h = INSERT_DEPTH + 1.5
+    wipe_r = pad_r + 0.5
     for i, (x, y) in enumerate(cols):
-        try:
-            # Pillar spans deck into cavity so r≥3.8 wall is continuous
-            # from z≈1.6 through the heat-set depth and beyond.
-            pillar = _cyl(BOSS_PILLAR_R, BOSS_PILLAR_H + 1.0,
-                          (x, y, seat - 0.5))
-            body = body.union(pillar, engine="manifold")
-            # Web into the nearest cavity corner walls (outward from centre).
-            sx = 1.0 if x >= 0.0 else -1.0
-            sy = 1.0 if y >= y0 else -1.0
-            web = trimesh.creation.box(extents=(8.0, 8.0, BOSS_PILLAR_H))
-            web.apply_translation([
-                x + sx * 3.5,
-                y + sy * 3.5,
-                seat + 0.5 * BOSS_PILLAR_H,
-            ])
-            body = body.union(web, engine="manifold")
-            # Shave cavity-fill leftovers above the land outside the pillar
-            # so the boss flange sits at seat (not a raised 1.55 island).
-            shave_outer = _cyl(7.0, 3.0, (x, y, seat + 0.01))
-            shave_keep = _cyl(BOSS_PILLAR_R - 0.05, 3.2, (x, y, seat - 0.05))
-            shave = shave_outer.difference(shave_keep, engine="manifold")
-            body = body.difference(shave, engine="manifold")
-            # Land flange pad flush at seat, then −0.40 spotface + bore.
-            flange = _cyl(0.5 * BOSS_SPOT_D + 1.4, 0.6, (x, y, seat - 0.6))
-            body = body.union(flange, engine="manifold")
-            body = body.difference(
-                _cyl(0.5 * BOSS_SPOT_D, BOSS_RECESS + 0.05,
-                     (x, y, seat - BOSS_RECESS)),
-                engine="manifold",
-            )
-            # Heat-set bore into the +Z pillar (curveUP: land on bed).
-            body = body.difference(
-                _cyl(0.5 * INSERT_D, INSERT_DEPTH + 0.3,
-                     (x, y, seat - BOSS_RECESS)),
-                engine="manifold",
-            )
-            # Kill zero-thickness boolean skin at seat+0.05 without eating
-            # the pillar (solid from ≈seat+0.3 upward).
-            body = body.difference(
-                _cyl(0.5 * BOSS_SPOT_D + 0.1, 0.28, (x, y, seat + 0.01)),
-                engine="manifold",
-            )
-            print(f"  bed boss pillar {i} @ ({x:.0f},{y:.0f})")
-        except Exception as exc:
-            print(f"  bed boss pillar {i} failed:", exc)
-            raise
+        body = body.difference(
+            _cyl(wipe_r, seat - 0.05, (x, y, 0.05)), engine="manifold",
+        )
+        pad = _cyl(pad_r, pad_h, (x, y, seat))
+        body = body.union(pad, engine="manifold")
+        spot = _cyl(spot_r, BOSS_RECESS + 0.02, (x, y, seat))
+        core = _cyl(0.5 * INSERT_D + 0.15, BOSS_RECESS + 0.2, (x, y, seat - 0.05))
+        body = body.difference(spot.difference(core, engine="manifold"), engine="manifold")
+        body = body.difference(
+            _cyl(0.5 * INSERT_D, pad_h + seat + 0.5, (x, y, 0.0)),
+            engine="manifold",
+        )
+        print(f"  bed boss pad+spot {i} @ ({x:.0f},{y:.0f})")
+    return body
+
+
+def _clear_above_land_in_lid(body, y0: float, seat: float, cols, tongue_inner):
+    """Remove cavity floor membranes / ribs under the lid — not the walls.
+
+    XY is inset ≥2 mm from the cavity wall so Y-end walls stay continuous
+    from the deck. Z band is a thin lid-kiss slab (seat−0.08 .. seat+0.55).
+    Pillar keep-outs protect M3 sleeves.
+    """
+    from shapely.geometry import box as shapely_box
+
+    del tongue_inner  # retained for call-site compat
+    # Inset from cavity walls so we never notch the perimeter shell.
+    inset = 2.5
+    hw, hl = 0.5 * CAV_X - inset, 0.5 * CAV_Y - inset
+    rr = min(1.5, hw - 0.05, hl - 0.05)
+    poly = shapely_box(-hw + rr, -hl + rr + y0, hw - rr, hl - rr + y0).buffer(rr)
+    clear_h = 0.65  # seat-0.08 → seat+0.57
+    clearer = _extrude_poly(poly, clear_h)
+    if clearer is None:
+        return body
+    clearer.apply_translation([0.0, 0.0, seat - 0.08])
+    keep = []
+    for x, y in cols:
+        # Protect land ring + hole-fit sleeve (OD ~5.6 / 1.7).
+        keep.append(_cyl(0.5 * BOSS_SPOT_D + 1.6, clear_h + 0.4, (x, y, seat - 0.15)))
+    if keep:
+        keep_m = keep[0] if len(keep) == 1 else trimesh.util.concatenate(keep)
+        clearer = clearer.difference(keep_m, engine="manifold")
+    body = body.difference(clearer, engine="manifold")
+    print("  cleared cavity-floor membranes under lid (walls+pillars kept)")
+    return body
+
+
+def _stitch_walls_to_deck(body, y0: float, seat: float):
+    """Close 0.05 mm air gaps where Y-end walls float above the deck."""
+    from shapely.geometry import box as shapely_box
+
+    # Thin collar rings at each Y-end wall foot, from bed to seat+0.15.
+    parts = []
+    for y_sign in (-1.0, +1.0):
+        # Wall foot near |y|≈41–48 along the deck.
+        yc = y0 + y_sign * 43.0
+        poly = shapely_box(-30.0, yc - 4.0, 30.0, yc + 4.0)
+        # Only the outer wall band (outside cavity).
+        cav = shapely_box(-0.5 * CAV_X, y0 - 0.5 * CAV_Y,
+                          0.5 * CAV_X, y0 + 0.5 * CAV_Y).buffer(0.5)
+        poly = poly.difference(cav)
+        if poly.is_empty:
+            continue
+        slab = _extrude_poly(poly, seat + 0.15)
+        if slab is not None:
+            parts.append(slab)
+    if not parts:
+        return body
+    collar = parts[0] if len(parts) == 1 else trimesh.util.concatenate(parts)
+    body = body.union(collar, engine="manifold")
+    print("  Y-end wall feet stitched to deck")
     return body
 
 
@@ -334,11 +368,11 @@ def remate(side: str, shell_path: str, out_path: str, land_nom: float) -> bool:
         if std_poly is not None and cur_poly is not None:
             missing = std_poly.difference(cur_poly.buffer(0.05))
             if not missing.is_empty and missing.area > 1.0:
-                # Thin plate spanning seat .. seat+0.45 — must NOT start below
-                # seat or it kisses the lid tongue (which fills z=0..seat).
-                fill = _extrude_poly(missing, 0.45)
+                # Hairline plate at the land only — taller slabs above seat
+                # kiss the lid ceiling (46dc5f7 overlap).
+                fill = _extrude_poly(missing, 0.08)
                 if fill is not None:
-                    fill.apply_translation([0.0, 0.0, seat])
+                    fill.apply_translation([0.0, 0.0, seat - 0.02])
                     shell = shell.union(fill, engine="manifold")
                     print(f"  missing land-plate area={missing.area:.1f} unioned")
             else:
@@ -370,15 +404,12 @@ def remate(side: str, shell_path: str, out_path: str, land_nom: float) -> bool:
         print("  shoulder skirt failed:", exc)
 
     # Male tongue tip on bed — stadium matching frozen lid groove.
-    # Symmetric nominal insets leave ±Y ~0.50 mm open (749b9f4). Grow both
-    # axes so the rigid_shift meter (≈0.062 X / 0.125 Y quanta) lands on
-    # 0.250 inside the 0.245–0.305 gate; pull X-inner by 0.09 for remesh.
-    IN0_X = TONGUE_IN0 - 0.06       # 1.74 → ±X meter ≈0.25
+    # 749b9f4 length insets (IN0−0.22) + X-inner −0.09 for remesh → 0.245–0.305
+    # once above-land interference is gone (overlap forced shift=0 on 46dc5f7).
+    IN0_X = TONGUE_IN0              # 1.80
     IN1_X = TONGUE_IN1 - 0.09       # 3.11
-    # Symmetric length; verifier heals the frozen lid before contains so
-    # ±Y reads evenly (non-WT lid was skewing one end by a meter quantum).
-    IN0_Y = TONGUE_IN0 - 0.28       # 1.52 → ±Y meter 0.375→0.25
-    IN1_Y = TONGUE_IN1 - 0.16       # 3.04
+    IN0_Y = TONGUE_IN0 - 0.22       # 1.58
+    IN1_Y = TONGUE_IN1 - 0.22       # 2.98
     tw_o = POD_LID_W - 2 * IN0_X
     tl_o = POD_LID_L - 2 * IN0_Y
     tw_i = POD_LID_W - 2 * IN1_X
@@ -411,19 +442,36 @@ def remate(side: str, shell_path: str, out_path: str, land_nom: float) -> bool:
         print("tongue failed:", exc)
         return (False, 0.0)
 
-    # Pillars AFTER cavity re-cut: closed 360° wall + webs, then −0.40
-    # spotface + Ø4 bore into the +Z pillar (curveUP land on bed).
+    # Pillars AFTER cavity re-cut: closed 360° wall + webs above land, then
+    # −0.40 spotface + Ø4 bore into the +Z pillar (curveUP land on bed).
     try:
         body = _bed_boss_pillars(body, cols, y0, seat)
     except Exception as exc:
         print("boss pillars failed:", exc)
         return (False, 0.0)
 
+    # Kill cavity-floor slabs / ribs / key bumps above the land under the lid.
+    try:
+        body = _clear_above_land_in_lid(body, y0, seat, cols, (tw_i, tl_i))
+    except Exception as exc:
+        print("  above-land clear failed:", exc)
+        return (False, 0.0)
+
+    # Stitch Y-end walls that floated 0.05 mm above the deck.
+    try:
+        body = _stitch_walls_to_deck(body, y0, seat)
+    except Exception as exc:
+        print("  wall stitch failed:", exc)
+
     try:
         kx, ky = key_xy
+        # Key pocket only below the land — never a raised boss into the lid.
         key = trimesh.creation.box(extents=(3.6, 4.6, 1.8))
         key.apply_translation([kx, ky, seat - 0.9])
         body = body.difference(key, engine="manifold")
+        body = body.difference(
+            _cyl(3.5, 2.0, (kx, ky, seat + 0.02)), engine="manifold",
+        )
     except Exception as exc:
         print("key failed:", exc)
 
