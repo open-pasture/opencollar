@@ -11,7 +11,7 @@ D4 contoured skin around D5 internals (PR head `6b1f882`). Script: `hardware/roo
 | Seam Z (assembly) | **9.0** | Low seam ~0.29 of stack; lid perimeter step 3.2 mm (no hanging skirt) |
 | Base H (mating) | 19.0 | Floor 6.0 + cavity 13.0 (D5) |
 | Lid H (above mating) | 12.0 | Flat panel land; crown 3.5 outside land |
-| Plan R / reveal | 3.0 / 0.5 | Soft plan; 0.5 inset lid |
+| Plan R / reveal | 14.0 / 0.5 | Soft plan; 0.5 inset lid |
 | End nose | 32.0 taper / tip 3.0 / plan R 14.0 | D7 rounded ellipse + bullnose (was hard ~4 mm cut) |
 | Panel land (flat) | 71.0 × 120.0 | Contains pocket; crown outside |
 | Panel pocket | 67.2 × 114.2 × 3.1 | P124 vendor 66×113×2.6 ±0.5; +0.6/side |
@@ -54,8 +54,8 @@ Pod agent builds the mating pod face / fairing to these anchors.
 
 | Orient | Bed-face area (mm²) | Downward/support ceiling (mm²) |
 | --- | --- | --- |
-| Mating-down | 10808.8 | 1189.9 |
-| Outer-down | 194.8 | 11907.2 |
+| Mating-down | 10628.7 | 1342.5 |
+| Outer-down | 194.8 | 11872.5 |
 | **Picked** | **mating_down** | |
 
 Mating-down: panel pocket +Z, GNSS/LTE are bed recesses (small trees OK). Outer-down: flat panel land on bed; mating bosses become ceilings. Crown is shallow (2.7 mm) outside the land.

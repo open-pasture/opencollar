@@ -1,9 +1,33 @@
 {
-  "revision": "D7_cap_nose_fairing_flow",
+  "revision": "D8_cap_planar_parting_360_rabbet",
   "contract": {
     "cap_w": 76.0,
     "cap_l": 164.0,
     "stack_h": 31.0,
+    "cap_base_h": 19.0,
+    "lid_h": 12.0,
+    "r_base": 14.0,
+    "r_lid": 13.5,
+    "reveal": 0.5,
+    "lw_ll": [
+      75.0,
+      163.0
+    ],
+    "rabbet": {
+      "land_w": 1.8,
+      "groove_inset": [
+        1.52,
+        3.48
+      ],
+      "groove_d": 1.6,
+      "tongue_inset": [
+        1.8,
+        3.2
+      ],
+      "tongue_h": 1.2,
+      "xy_clear_mm": 0.28,
+      "z_clear_mm": 0.40000000000000013
+    },
     "seam_z": 9.0,
     "crown": 3.5,
     "end_taper": 32.0,
@@ -32,6 +56,7 @@
       13.3
     ],
     "sma_bulkhead_d": 6.6,
+    "sma_z": 11.0,
     "kit_pocket": [
       57.6,
       21.4,
@@ -42,34 +67,91 @@
       12.0,
       2.6
     ],
-    "usbc_port": [
-      10.5,
-      9.0,
-      6.5
+    "usbc_tunnel": [
+      10.9,
+      6.9
     ],
+    "usbc_plug_seat": [
+      13.0,
+      3.0,
+      9.5
+    ],
+    "usbc_plug_clear_mm": 0.22,
+    "T_plug_in_base": {
+      "note": "STL print pose: stem at ymin, flange at +Y. Seated in cap_base: rotate 180\u00b0 about Z then translate so flange outer face sits on \u2212Y wall and stem runs +Y into usbc_tunnel.",
+      "stem_mm": [
+        10.46,
+        6.0,
+        6.46
+      ],
+      "flange_mm": [
+        12.56,
+        2.6,
+        9.06
+      ],
+      "clear_mm_per_side": 0.22,
+      "model_y_flange_outer_face": -82.0,
+      "model_y_flange_inner_face": -79.0,
+      "seat_z_stl": [
+        20.7,
+        30.2
+      ],
+      "tunnel_z_stl": [
+        22.0,
+        28.9
+      ],
+      "seated": {
+        "rotation_deg_xyz": [
+          0.0,
+          0.0,
+          180.0
+        ],
+        "note": "After rot180 Z (flange\u2192\u2212Y): translate so flange outer face y=-82 and plug Z bbox is centered in seat_z_stl band."
+      }
+    },
     "keep_clear": 15.0,
     "end_margin_mm": 25.5,
-    "poka_yoke_cap_cols": [
+    "CAP_COLS": [
       [
-        -26.5,
-        -69.7
+        -28.0,
+        69.5
       ],
       [
-        -29.5,
-        43.05
+        28.0,
+        69.5
       ],
       [
-        -29.5,
-        69.7
+        -24.5,
+        -67.5
       ],
       [
-        29.5,
-        -69.7
+        28.0,
+        -67.5
       ]
     ],
+    "poka_yoke_cap_cols": [
+      [
+        -28.0,
+        69.5
+      ],
+      [
+        28.0,
+        69.5
+      ],
+      [
+        -24.5,
+        -67.5
+      ],
+      [
+        28.0,
+        -67.5
+      ]
+    ],
+    "boss_recess_mm": 0.4,
     "pod_anchor_y": 126.0,
     "pod_anchor_z": -21.9,
-    "pod_tilt_deg": 29.141828721535205
+    "pod_tilt_deg": 29.141828721535205,
+    "pad_usb_notch_w": 12.6
   },
   "match_cw": {
     "clamp": [
@@ -126,7 +208,7 @@
       "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/cap_base.stl",
       "bbox": {
         "min": [
-          -38.303,
+          -38.0,
           -93.456,
           0.0
         ],
@@ -136,7 +218,7 @@
           34.2
         ],
         "size": [
-          76.303,
+          76.0,
           186.911,
           34.2
         ]
@@ -144,7 +226,7 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 35870
+        "faces": 53460
       },
       "print": "cavity UP; bed=underside z=0"
     },
@@ -170,25 +252,25 @@
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4644
+        "faces": 4862
       },
       "print": "mating_down",
-      "bed_face_mm2": 10808.8,
-      "support_ceiling_mm2": 1189.9
+      "bed_face_mm2": 10628.7,
+      "support_ceiling_mm2": 1342.5
     },
     "cap_usbc_plug": {
       "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/cap_usbc_plug.stl",
       "bbox": {
         "size": [
-          12.6,
-          10.75,
-          9.1
+          12.56,
+          8.6,
+          9.06
         ]
       },
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 1846
+        "faces": 412
       },
       "print": "flange out; stem into \u2212Y USB seat; PLA or TPU",
       "role": "gasketed/blank plug \u2014 seals USB-C access when not provisioning"
@@ -211,12 +293,12 @@
   },
   "orient": {
     "mating_down": {
-      "bed_face_mm2": 10808.8,
-      "support_ceiling_mm2": 1189.9
+      "bed_face_mm2": 10628.7,
+      "support_ceiling_mm2": 1342.5
     },
     "outer_down": {
       "bed_face_mm2": 194.8,
-      "support_ceiling_mm2": 11907.2
+      "support_ceiling_mm2": 11872.5
     },
     "picked": "mating_down",
     "note": "Mating-down: panel pocket +Z, GNSS/LTE are bed recesses (small trees OK). Outer-down: flat panel land on bed; mating bosses become ceilings. Crown is shallow (2.7 mm) outside the land."

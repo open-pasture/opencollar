@@ -10,7 +10,7 @@
   {
    "check": "cap_base: volume>0",
    "ok": true,
-   "measured": 193327,
+   "measured": 217837,
    "expected": ">0",
    "note": ""
   },
@@ -25,7 +25,7 @@
    "check": "cap_base: fits P2S 256^3",
    "ok": true,
    "measured": [
-    76.3,
+    76.0,
     186.91,
     34.2
    ],
@@ -74,7 +74,7 @@
   {
    "check": "cap_lid: volume>0",
    "ok": true,
-   "measured": 101994,
+   "measured": 100903,
    "expected": ">0",
    "note": ""
   },
@@ -106,7 +106,7 @@
   {
    "check": "cap_usbc_plug: volume>0",
    "ok": true,
-   "measured": 588,
+   "measured": 692,
    "expected": ">0",
    "note": ""
   },
@@ -121,9 +121,9 @@
    "check": "cap_usbc_plug: fits P2S 256^3",
    "ok": true,
    "measured": [
-    12.6,
-    10.75,
-    9.1
+    12.56,
+    8.6,
+    9.41
    ],
    "expected": "<=256",
    "note": ""
@@ -1194,14 +1194,14 @@
   {
    "check": "cap pad L centre vs pod L cap-facing face centre",
    "ok": true,
-   "measured": "mesh min gap 5.3 mm (pad n=201 face n=6201)",
+   "measured": "mesh min gap 5.3 mm (pad n=279 face n=6201)",
    "expected": "<8 mm",
    "note": ""
   },
   {
    "check": "cap pad R centre vs pod R cap-facing face centre",
    "ok": true,
-   "measured": "mesh min gap 5.3 mm (pad n=201 face n=6200)",
+   "measured": "mesh min gap 5.3 mm (pad n=365 face n=6200)",
    "expected": "<8 mm",
    "note": ""
   },
@@ -2048,20 +2048,14 @@
  "interference": [
   {
    "a": "cap_base",
-   "b": "cap_lid",
-   "mm3": 144.0,
-   "class": "expected lip/groove engagement"
-  },
-  {
-   "a": "cap_base",
    "b": "fairing_cap_pod_L",
-   "mm3": 2899.5,
+   "mm3": 5179.2,
    "class": "fairing blend (OK)"
   },
   {
    "a": "cap_base",
    "b": "fairing_cap_pod_R",
-   "mm3": 2899.5,
+   "mm3": 5605.7,
    "class": "fairing blend (OK)"
   },
   {

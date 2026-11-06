@@ -82,8 +82,22 @@ NOSE_ARC_SEGS = 10                     # smoother elliptical roof (D4-like)
 NOSE_PLAN_R = 14.0                     # match pod tip plan R — no shadow line
 NOSE_BULL_R = 6.0                      # bullnose blends into fairing
 PANEL_LAND = (71.0, 120.0)             # flat plateau — fits D8 P124 pocket 67.2×114.2
-PLAN_R = 3.0                               # D8: R3 plan corners (D4 / r19)
-REVEAL = 0.5                               # cap lid stay near-flush; pods use 3 mm
+# Production planar parting (Cody mating audit): one stadium R across the whole plan.
+# PLAN_R kept as alias for older call sites; slab uses R_BASE / R_LID.
+REVEAL = 0.50
+R_BASE = NOSE_PLAN_R                       # 14.0 — entire 76×164 stadium
+R_LID = R_BASE - REVEAL                    # 13.5 — entire 75×163 stadium
+PLAN_R = R_BASE                            # was 3.0 (caused plan-radius mismatch)
+LW = CAP_W - 2 * REVEAL                    # 75.0
+LL = CAP_L - 2 * REVEAL                    # 163.0
+# 360° concentric tongue-and-groove rabbet (lid-referenced insets)
+LAND_W = 1.80                              # outer flush land (lid edge → groove)
+GROOVE_IN0, GROOVE_IN1, GROOVE_D = 1.52, 3.48, 1.60
+TONGUE_IN0, TONGUE_IN1, TONGUE_H = 1.80, 3.20, 1.20
+BOSS_SPOT_D, BOSS_RECESS = 8.4, 0.40
+INSERT_BORE_DEPTH = 6.5
+LID_CBORE_D, LID_CBORE_FLOOR_Z = 6.4, 3.80
+RABBET_SEGS = 32
 
 # ===========================================================================
 # D8 X2a hardware clearances (overrides D5 headline dims — FDM-realistic)
@@ -106,8 +120,15 @@ KIT_JST_RELIEF = (20.0, 12.0, 2.6)     # underside J2 MX1.25-2P ≥2.5 deep so P
 KIT_USB_RELIEF = (12.0, 10.0, 5.5)     # in-pocket nose at USB-C end
 KIT_AT = D.KIT_AT                      # (0, −24)
 # Plugged USB-C access: through −Y wall + elastomer-plug seat (115200 without board pull).
-USBC_PORT = (10.5, 9.0, 6.5)           # slightly over D5 for plug body
-USBC_PLUG_SEAT = (13.0, 3.5, 11.0)     # gasketed plug ledge at outer −Y face
+# Exact tunnel / seat / plug dims for 0.22 mm/side clearance (mating audit).
+USBC_TUNNEL_W = 10.90
+USBC_TUNNEL_H = 6.90
+USBC_PORT = (USBC_TUNNEL_W, 9.0, USBC_TUNNEL_H)  # W × (legacy Y) × H
+USBC_PLUG_SEAT = (13.00, 3.00, 9.50)              # W × depth_Y × H on −Y outer wall
+USBC_PLUG_CLEAR = 0.22                            # mm per side stem + flange
+PAD_USB_NOTCH_W = 12.60                           # U-arch through pod_mount_pad("L")
+PAD_USB_NOTCH_H = 14.00
+SMA_Z = CAP_FLOOR + 5.0                           # lowered so hex seat clears parting deck
 
 # Adafruit #960 (GPS-01.pdf): housing 41.2 × 38.5 × 13.3 mm magnetic IP66 puck +
 # 5 m RG174 + SMA male. CANNOT fit in 12 mm lid or 12.6 mm cavity → EXTERNAL mount.
@@ -160,17 +181,17 @@ assert all(abs(abs(x) - 28.5) < 1e-6 for x, _ in CAP_CLAMP)
 assert all(abs(abs(y) - 20.0) < 1e-6 for _, y in CAP_CLAMP)
 assert all(abs(x) > A.STRAP_HALF for x, _ in CAP_CLAMP)
 
-# Rescale D5 column Y to 164 length (D5 was 160): keep x, stretch y by 164/160
-_Y_SCALE = CAP_L / D.CAP_L  # 164/160 = 1.025
-CAP_COLS = [(x, round(y * _Y_SCALE, 2)) for x, y in D.CAP_COLS]
-# Poka-yoke: shift SCR1 (+x,+y) by +3 mm in X so 180° lid rotation cannot seat
+# Lid screws MUST sit outside P124 pocket (|Y|≥57.1+cbore) so lid stays removable
+# after VHB. Dual poka-yoke: −Y −X shifted +3.5 mm in X AND −Y bosses at |Y|=67.5
+# vs +Y at 69.5 → 180° flip has 0/4 hole coincidences.
 CAP_COLS_POKA = [
-    (CAP_COLS[0][0] + 3.0, CAP_COLS[0][1]),  # asymmetric key boss
-    CAP_COLS[1],
-    CAP_COLS[2],
-    CAP_COLS[3],
+    (-28.0,  69.50),  # +Y −X
+    ( 28.0,  69.50),  # +Y +X
+    (-24.5, -67.50),  # −Y −X  poka-yoke (+3.5 mm X from −28.0)
+    ( 28.0, -67.50),  # −Y +X
 ]
-CAP_COLS = CAP_COLS_POKA
+CAP_COLS = list(CAP_COLS_POKA)
+_Y_SCALE = CAP_L / D.CAP_L  # 164/160 = 1.025 (legacy)
 CAP_ORANGE = [(x, round(y * _Y_SCALE, 2)) for x, y in D.CAP_ORANGE]
 
 STL_DIR = os.path.join(_D6, "stl")
@@ -200,8 +221,23 @@ def emboss_label(body, key, at, **kw):
     return d5.emboss_label(body, key, at, **kw)
 
 
-def slab(name, w, l, h, r=PLAN_R):
-    return oc.rounded_rect(name, (w, l, h), r, anchor="bottom", segments=10)
+def slab(name, w, l, h, r=None):
+    if r is None:
+        r = R_BASE
+    return oc.rounded_rect(name, (w, l, h), r, anchor="bottom", segments=RABBET_SEGS)
+
+
+def stadium_ring(name, w_out, l_out, r_out, w_in, l_in, r_in, h, z0, segments=RABBET_SEGS):
+    """Concentric stadium ring (outer − inner) as a solid for union/cut."""
+    outer = oc.rounded_rect(
+        f"{name}_o", (w_out, l_out, h), max(r_out, 0.5),
+        at=(0.0, 0.0, z0), anchor="bottom", segments=segments,
+    )
+    inner = oc.rounded_rect(
+        f"{name}_i", (w_in, l_in, h + 0.6), max(r_in, 0.4),
+        at=(0.0, 0.0, z0 - 0.2), anchor="bottom", segments=segments,
+    )
+    return oc.cut(outer, inner)
 
 
 def bed_face_area(obj, z_eps=0.25):
@@ -383,6 +419,7 @@ def pod_mount_pad(side):
     Tilted ±29.142° about X matching pod.py / d4.json:
       side 'L' → −Y, tilt = +29.142°; side 'R' → +Y, tilt = −29.142°.
     4× M3 clear through the pad; pod carries matching holes + 36×4×14 recess.
+    L/−Y pad gets a U-notch so USB-C plug + cable overmold clear the pad.
     """
     place_sign = -1 if side == "L" else 1          # L at −Y, R at +Y
     tilt = A.pod_tilt_sign(side) * POD_TILT_DEG    # L +29.142, R −29.142
@@ -391,9 +428,16 @@ def pod_mount_pad(side):
     for i, (lx, lz) in enumerate(POD_MOUNT_SCREWS):
         oc.cut(pad, oc.cylinder(f"pmh_{side}_{i}", D.CLEAR, pt + 4,
                                 at=(lx, 0, lz - ph / 2), axis="Y", segments=24))
+    if side == "L":
+        # U-arch centered on X=0: clears USB tunnel / overmold; ≥2 mm to M3 at ±10
+        oc.cut(pad, oc.box(
+            "usb_notch_L",
+            (PAD_USB_NOTCH_W, pt + 6.0, PAD_USB_NOTCH_H),
+            at=(0.0, 0.0, 0.0),
+            anchor="center",
+        ))
     oc.bake(pad)
     pad.data.transform(Matrix.Rotation(math.radians(tilt), 4, "X"))
-    # Place pad centre on the pod cap-facing end (Y and Z matched in assembly).
     y_place = place_sign * POD_MOUNT_FACE_Y
     z_place = POD_MOUNT_FACE_Z
     oc.move(pad, dy=y_place, dz=z_place)
@@ -403,39 +447,57 @@ def pod_mount_pad(side):
 # ---------------------------------------------------------------- parts
 
 def cap_base():
-    """D5 internals in D6 76×164 skin; cavity UP; pod mount pads on ±Y ends."""
-    b = slab("cap_base", CAP_W, CAP_L, CAP_BASE_H, PLAN_R)
-    # Cavity — same free height as D5; length uses D6 wall/taper budget
-    cav_l = CAP_L - 2 * D.CAP_WALL - 2 * END_TAPER + 8
-    d5.cut_cav(b, CAP_W - 2 * D.CAP_WALL, max(cav_l, 110), CAP_FLOOR, CAP_CAVITY_H + 2, r=5.0)
-    d5.columns(b, CAP_COLS, CAP_FLOOR, CAP_BASE_H)
+    """76×164×19 stadium (R=14) with planar parting deck + 360° tongue.
+
+    Print: cavity UP; bed = underside z=0 after skirts. Do NOT call
+    end_nose_contoured / end_taper_d4 above the parting deck (keeps z=CAP_BASE_H
+    planar across the full lid footprint).
+    """
+    b = slab("cap_base", CAP_W, CAP_L, CAP_BASE_H, R_BASE)
+    # Cavity — leave solid nose lands (|Y|≳55) for M3 bosses at |Y|=69.7
+    cav_l = min(CAP_L - 2 * D.CAP_WALL - 2 * 18.0, 110.0)
+    d5.cut_cav(b, CAP_W - 2 * D.CAP_WALL, cav_l, CAP_FLOOR, CAP_CAVITY_H + 2, r=5.0)
+
+    # Clamp / pin inserts (underside)
     for i, (x, y) in enumerate(CAP_CLAMP):
         oc.cut(b, oc.cylinder(f"cl{i}", D.INSERT_D, 4.0, at=(x, y, -0.1), anchor="bottom"))
     for i, (x, y) in enumerate([(sx * 28.0, sy * 32.0) for sx in (-1, 1) for sy in (-1, 1)]):
         oc.cut(b, oc.cylinder(f"pin{i}", 4.35, 2.2, at=(x, y, -0.1), anchor="bottom"))
-    d5.groove(b, CAP_W, CAP_L, PLAN_R, CAP_BASE_H, D.CAP_WALL)
-    d5.reg_lip(b, CAP_W, CAP_L, PLAN_R, CAP_BASE_H, D.CAP_WALL)
 
-    # --- D8 pockets (X2a clearances — datasheet-corrected) ---
-    # IMPORTANT: cavity is already open above CAP_FLOOR. d5.pocket_box() cuts *up*
-    # into empty air and leaves no walls — use raised locating ribs + cuts *down*
-    # into the floor solid for J2. (Verified missing on a07db1b cap_base.stl.)
-    seat_z = CAP_FLOOR  # PCB seating plane (model coords; +skirt → ~20 in STL)
-    # Locating fence: INNER clear = KIT_POCKET XY (57.6×21.4) so board 55.88×20.32 drops in
-    # with ≥0.4 mm/side; ribs rise above seat (visible in z=seat+0.8 STL slice).
+    # --- 360° raised tongue (replaces d5.groove + d5.reg_lip) ---
+    # Tongue outer/inner referenced to lid plan so XY clear = 0.28 mm/wall.
+    tw_o, tl_o = LW - 2 * TONGUE_IN0, LL - 2 * TONGUE_IN0          # 71.40 × 159.40
+    tw_i, tl_i = LW - 2 * TONGUE_IN1, LL - 2 * TONGUE_IN1          # 68.60 × 156.60
+    tr_o, tr_i = R_LID - TONGUE_IN0, R_LID - TONGUE_IN1            # 11.70 / 10.30
+    oc.union(b, stadium_ring(
+        "tongue", tw_o, tl_o, tr_o, tw_i, tl_i, tr_i,
+        h=TONGUE_H + 0.2, z0=CAP_BASE_H - 0.2, segments=RABBET_SEGS,
+    ))
+
+    # --- Nose-land M3 bosses (outside P124; recessed 0.40 below parting) ---
+    for i, (x, y) in enumerate(CAP_COLS):
+        # Spotface Ø8.4 × 0.40 so boss top = CAP_BASE_H - 0.40
+        oc.cut(b, oc.cylinder(
+            f"bspot{i}", BOSS_SPOT_D, BOSS_RECESS + 0.6,
+            at=(x, y, CAP_BASE_H - BOSS_RECESS), anchor="bottom", segments=32,
+        ))
+        # Insert bore Ø4.0 × 6.5 deep below spotface
+        oc.cut(b, oc.cylinder(
+            f"bins{i}", D.INSERT_D, INSERT_BORE_DEPTH + 0.3,
+            at=(x, y, CAP_BASE_H - BOSS_RECESS - INSERT_BORE_DEPTH),
+            anchor="bottom", segments=32,
+        ))
+
+    # --- D8 hardware pockets (keep 7fdaf2f clearances) ---
+    seat_z = CAP_FLOOR
     d5.locate_rib_rect(
-        b, "kit",
-        (KIT_POCKET[0], KIT_POCKET[1]),
-        KIT_AT, seat_z, h=2.4, wall=1.4,
+        b, "kit", (KIT_POCKET[0], KIT_POCKET[1]), KIT_AT, seat_z, h=2.4, wall=1.4,
     )
-    # J2 MX1.25-2P relief: cut DOWN from seating plane (≥2.6 mm into floor solid).
     jw, jl, jd = KIT_JST_RELIEF
     oc.cut(b, oc.rounded_rect(
         "kitjst", (jw, jl, jd + 0.4), 1.0,
-        at=(KIT_AT[0], KIT_AT[1] - 4.0, seat_z - jd - 0.2),
-        anchor="bottom",
+        at=(KIT_AT[0], KIT_AT[1] - 4.0, seat_z - jd - 0.2), anchor="bottom",
     ))
-    # USB-C overhang nose relief at kit −Y end (in-cavity, above seat)
     oc.cut(b, oc.rounded_rect(
         "kit_usb_relief", KIT_USB_RELIEF, 1.2,
         at=(KIT_AT[0], KIT_AT[1] - 0.5 * KIT_POCKET[1] - 2.5, seat_z + 0.2),
@@ -447,47 +509,43 @@ def cap_base():
     d5.pocket_box(b, "bq", D.BQ_POCKET, BQ_AT, CAP_FLOOR)
     d5.board_holes(b, D.BQ_BOARD, D.BQ_HOLE_D, D.BQ_HOLE_INSET, BQ_AT,
                    CAP_FLOOR, depth=3.0, prefix="bqh")
-    # BQ still uses pocket_box (cuts into residual floor bosses / is shallow OK for charger)
-
     d5.pocket_box(b, "wio", D.WIO_POCKET, WIO_AT, CAP_FLOOR)
     ux_s, uy_s = D.UFL_SLACK_AT
     oc.cut(b, oc.rounded_rect("uflslack", (6.0, D.WIO_WIRE_BEND, 4.0), D.POCKET_CORNER_R,
                               at=(ux_s, uy_s, CAP_FLOOR), anchor="bottom"))
     oc.cut(b, oc.cylinder("uflstrain", D.UFL_STRAIN_D, 4.0,
                           at=(ux_s, 35.0, CAP_FLOOR - 0.1), anchor="bottom"))
-    # U.FL routing slack from SMA bulkhead (+X) toward Wio
     oc.cut(b, oc.rounded_rect(
         "sma_ufl_ch", UFL_ROUTE_CH, 1.2,
         at=(ux_s - 2.0, 20.0, CAP_FLOOR), anchor="bottom",
     ))
 
+    # Lid support posts — tops recessed 0.40 below parting (never hold seam open)
     for i, (px, py) in enumerate(D.LID_SUPPORT_POSTS):
-        h = CAP_CAVITY_H + 0.1
-        post = oc.cylinder(f"sup{i}", D.LID_SUPPORT_D, h,
+        post_h = (CAP_BASE_H - BOSS_RECESS) - (CAP_FLOOR - 0.5)
+        post = oc.cylinder(f"sup{i}", D.LID_SUPPORT_D, post_h,
                            at=(px, py, CAP_FLOOR - 0.5), anchor="bottom", segments=24)
         oc.union(b, post)
 
-    # USB-C through-channel: cavity ends ~y=±(cav_l/2); outer wall at ±CAP_L/2.
-    # A short wall-only punch leaves solid between y≈-49 and y≈-80 — tunnel the full run.
-    ux, _uy, uz = USBC_PORT
-    # Match cut_cav length (max with 110) so tunnel meets the real cavity −Y end.
-    cav_half = 0.5 * max(CAP_L - 2 * D.CAP_WALL - 2 * END_TAPER + 8, 110.0)
-    cav_y_lo = -cav_half + 3.0                         # just inside cavity
-    outer_y = -(CAP_L / 2.0 + 2.0)                      # past outer −Y face
+    # USB-C tunnel: exact 10.90 × 6.90 from cavity to −Y exterior
+    cav_half = 0.5 * cav_l
+    cav_y_lo = -cav_half + 3.0
+    outer_y = -(CAP_L / 2.0 + 2.0)
     tunnel_len = cav_y_lo - outer_y
     tunnel_cy = 0.5 * (cav_y_lo + outer_y)
-    usbc_z = seat_z + 2.0
+    usbc_z0 = seat_z + 2.0
     oc.cut(b, oc.rounded_rect(
-        "usbc_tunnel", (ux + 0.4, tunnel_len, uz + 0.4), D.POCKET_CORNER_R,
-        at=(0.0, tunnel_cy, usbc_z), anchor="bottom",
+        "usbc_tunnel", (USBC_TUNNEL_W, tunnel_len, USBC_TUNNEL_H), 1.0,
+        at=(0.0, tunnel_cy, usbc_z0), anchor="bottom", segments=16,
     ))
-    # Outer elastomer-plug seat (larger recess at −Y face)
+    # Outer plug seat: 13.00 × 3.00 × 9.50 (leaves ≥2.8 mm under parting)
     pw, pt, ph = USBC_PLUG_SEAT
     oc.cut(b, oc.rounded_rect(
-        "usbc_plug_seat", (pw, pt + 2.0, ph), 1.2,
-        at=(0.0, -(CAP_L / 2.0 - pt / 2.0), seat_z + 1.0),
-        anchor="bottom",
+        "usbc_plug_seat", (pw, pt, ph), 1.0,
+        at=(0.0, -(CAP_L / 2.0 - pt / 2.0), seat_z + 0.70),
+        anchor="bottom", segments=16,
     ))
+
     for i, (lx, ly) in enumerate(D.LIGHTPIPE_AT):
         oc.cut(b, oc.cylinder(f"lp{i}", D.LIGHTPIPE_D, CAP_CAVITY_H + 2,
                               at=(lx, ly, CAP_FLOOR + 1.0), anchor="bottom"))
@@ -496,59 +554,52 @@ def cap_base():
                                   at=(bx, by, CAP_FLOOR + KIT_POCKET[2] - 0.5),
                                   anchor="bottom"))
 
-    # Cable / SMA exits: ±Y toward pods (Ø6.0 harness); ±X SMA bulkhead Ø6.6
-    # (1/4"-36 UNEF Ø6.35 — 4e52f6c Ø6.0 blocked the bulkhead thread).
-    for sy in (-1, 1):
-        oc.cut(b, oc.cylinder(f"cableY{sy}", 6.0, D.CAP_WALL + 6,
-                              at=(0, sy * (CAP_L / 2 - D.CAP_WALL / 2), CAP_FLOOR + 6),
-                              axis="Y", segments=32))
+    # +Y cable only (USB owns −Y); SMA bulkhead ±X at lowered Z
+    oc.cut(b, oc.cylinder("cableY_pos", 6.0, D.CAP_WALL + 6,
+                          at=(0, +(CAP_L / 2 - D.CAP_WALL / 2), SMA_Z),
+                          axis="Y", segments=32))
     for sx in (-1, 1):
         oc.cut(b, oc.cylinder(f"smaX{sx}", SMA_BULKHEAD_D, D.CAP_WALL + 4,
-                              at=(sx * (CAP_W / 2 - D.CAP_WALL / 2), 0, CAP_FLOOR + 6),
+                              at=(sx * (CAP_W / 2 - D.CAP_WALL / 2), 0, SMA_Z),
                               axis="X", segments=32))
 
-    end_taper_d4(b, CAP_W, CAP_L, CAP_BASE_H, END_TAPER)
+    # DO NOT call end_taper_d4 / end_nose_contoured — parting deck stays planar.
     b = prepare(b)
 
-    # Flat hex-nut seats for SMA-female bulkhead (~8–10 mm AF) on ±X outer walls
     for sx in (-1, 1):
         oc.cut(b, oc.cylinder(f"sma_nut{sx}", SMA_NUT_SEAT_AF, SMA_NUT_SEAT_T,
-                              at=(sx * (CAP_W / 2 - SMA_NUT_SEAT_T / 2), 0, CAP_FLOOR + 6),
+                              at=(sx * (CAP_W / 2 - SMA_NUT_SEAT_T / 2), 0, SMA_Z),
                               axis="X", segments=6))
-    for sy in (-1, 1):
-        oc.cut(b, oc.cylinder(f"cablesinkY{sy}", 8.0, 1.2,
-                              at=(0, sy * (CAP_L / 2 - 0.6), CAP_FLOOR + 6),
-                              axis="Y", segments=32))
+    oc.cut(b, oc.cylinder("cablesinkY_pos", 8.0, 1.2,
+                          at=(0, +(CAP_L / 2 - 0.6), SMA_Z), axis="Y", segments=32))
 
-    # Pod mount pads (cap-end interface)
     for side in ("L", "R"):
         oc.union(b, pod_mount_pad(side))
 
-    # Floor glyphs — MUST NOT raise the PCB seating plane inside the nRF9151 footprint
-    # (board x∈±27.94, y∈[KIT_AT.y±10.16] ≈ [-34.2, -13.8]). Keep KIT/PIN1 outside.
+    # Floor glyphs — clear of nRF9151 PCB footprint
     fz = CAP_FLOOR
-    emboss_label(b, "KIT", (-32.0, -6.0, fz))                 # +Y of board, outside footprint
+    emboss_label(b, "KIT", (-32.0, -6.0, fz))
     emboss_label(b, "BQ", (-18.0, BQ_AT[1] - 2.0, fz))
     emboss_label(b, "WIO", (WIO_AT[0] - 2.0, WIO_AT[1] + 14.0, fz))
-    emboss_label(b, "USB", (18.0, -48.0, fz))                 # beside tunnel, not under board
+    emboss_label(b, "USB", (18.0, -48.0, fz))
     emboss_label(b, "POST", (14.0, -1.5, fz))
-    emboss_label(b, "GNSS", (0.0, 70.0, fz))                  # crest cue — 960 external
-    emboss_label(b, "LTE", (18.0, 48.0, fz))
-    emboss_label(b, "PIN1", (32.0, -6.0, fz), rot_z=-90.0)    # clear of board + rib
+    emboss_label(b, "GNSS", (0.0, 48.0, fz))
+    emboss_label(b, "LTE", (18.0, 40.0, fz))
+    emboss_label(b, "PIN1", (32.0, -6.0, fz), rot_z=-90.0)
     d5.emboss_glyph(b, "ARROW", (0.0, 8.0, fz), size=7.0)
-    for key, (sx, sy) in (("SCR1", (1, 1)), ("SCR2", (-1, 1)),
-                          ("SCR3", (1, -1)), ("SCR4", (-1, -1))):
-        emboss_label(b, key, (sx * 28.0, sy * 62.0, fz))
+    for key, (cx, cy) in zip(("SCR1", "SCR2", "SCR3", "SCR4"), CAP_COLS):
+        # Labels on cavity floor toward nose — not on boss tops above parting
+        emboss_label(b, key, (cx * 0.55, math.copysign(48.0, cy), fz))
 
-    # D7r6: deep skirts under ±Y ends — width ≤ cap outline, R12 tangent down.
+    # Underside skirts (do not affect planar parting deck)
     ch_w, ch_d = D.SADDLE_CHANNEL_W, D.SADDLE_CHANNEL_D
-    bar_w, bar_l, bar_h = D.CLAMP_FLANGE_W, D.CLAMP_L, D.CLAMP_DEPTH  # 10×70×8
+    bar_w, bar_l, bar_h = D.CLAMP_FLANGE_W, D.CLAMP_L, D.CLAMP_DEPTH
     skirt_h, plan_r = 14.0, 12.0
     shoulder = 12.0
     pocket_h = bar_h + 0.2
     for sy in (-1.0, 1.0):
         cy = sy * 38.0
-        sk_w = min(CAP_W - 2.0, max(bar_l, ch_w + 4.0))  # ≤ cap width
+        sk_w = min(CAP_W - 2.0, max(bar_l, ch_w + 4.0))
         sk_l = 58.0
         sk = oc.rounded_rect(
             f"cap_skirt{int(sy + 2)}",
@@ -576,43 +627,49 @@ def cap_base():
             at=(0.0, cy, -skirt_h + pocket_h), anchor="bottom",
         ))
         oc.union(b, sk)
+    # Exact ±CAP_W/2 plan width — shave boolean/bevel spikes so reveal stays 0.50
+    half_w = CAP_W / 2.0
+    clip_h = skirt_h + CAP_BASE_H + TONGUE_H + 8.0
+    clip_z0 = -skirt_h - 2.0
+    for sx, tag in ((-1.0, "xm"), (1.0, "xp")):
+        oc.cut(b, oc.box(
+            f"cap_plan_clip_{tag}",
+            (12.0, CAP_L + 80.0, clip_h),
+            at=(sx * (half_w + 6.0), 0.0, clip_z0),
+            anchor="bottom",
+        ))
     return prepare(b)
 
 
 def cap_lid():
-    """Crowned wrap-over lid with flat P124 land. Modelled mating-at-z=0.
+    """75×163×12 stadium (R=13.5); mating face flat at z=0; contour above.
 
-    Print choice: MATING DOWN (see orientation_compare). Panel pocket faces +Z.
+    Print: MATING DOWN (zero supports). Contoured nose via end_crown_taper
+    above z=0. 360° groove replaces old lring. Contour-aware M3 cbore.
     """
-    lw, ll = CAP_W - 2 * REVEAL, CAP_L - 2 * REVEAL
-    lid = slab("cap_lid", lw, ll, LID_H, PLAN_R - 0.5)
-    d5.lid_fasteners(lid, CAP_COLS, LID_H)
+    lid = slab("cap_lid", LW, LL, LID_H, R_LID)
 
-    # Landing ring on mating face (z≈0)
-    ring_w = 1.6
-    ring_out_w, ring_out_l = lw - 6.0, ll - 6.0
-    r_o, r_i = 4.0, 4.0 - ring_w
-    outer = oc.rounded_rect("lring_o", (ring_out_w, ring_out_l, 1.5), r_o,
-                            at=(0, 0, -0.1), anchor="bottom")
-    inner = oc.rounded_rect("lring_i", (ring_out_w - 2 * ring_w, ring_out_l - 2 * ring_w, 2.0),
-                            r_i, at=(0, 0, -0.2), anchor="bottom")
-    oc.cut(lid, oc.cut(outer, inner))
+    # --- 360° mating groove (replaces lring_o / lring_i) ---
+    gw_o, gl_o = LW - 2 * GROOVE_IN0, LL - 2 * GROOVE_IN0      # 71.96 × 159.96
+    gw_i, gl_i = LW - 2 * GROOVE_IN1, LL - 2 * GROOVE_IN1      # 68.04 × 156.04
+    gr_o, gr_i = R_LID - GROOVE_IN0, R_LID - GROOVE_IN1        # 11.98 / 10.02
+    oc.cut(lid, stadium_ring(
+        "groove", gw_o, gl_o, gr_o, gw_i, gl_i, gr_i,
+        h=GROOVE_D + 0.4, z0=-0.2, segments=RABBET_SEGS,
+    ))
 
-    # Flat panel land: crown shoulders outside land, then end taper
-    crown_shoulders(lid, PANEL_LAND, CROWN, LID_H, lw, ll)
-    end_crown_taper(lid, PANEL_LAND, LID_H, lw, ll, END_TAPER)
+    # Contoured top (above z=0) — flat mating face stays on bed
+    crown_shoulders(lid, PANEL_LAND, CROWN, LID_H, LW, LL)
+    end_crown_taper(lid, PANEL_LAND, LID_H, LW, LL, END_TAPER)
 
-    # P124 pocket in flat land — D8 X2a depth/XY; ≥2 mm lid under
+    # P124 pocket
     px, py, pz = PANEL_POCKET
-    under = LID_H - pz
-    assert under >= PANEL_MIN_LID_UNDER, f"lid under panel {under} < {PANEL_MIN_LID_UNDER}"
+    assert LID_H - pz >= PANEL_MIN_LID_UNDER
     oc.cut(lid, oc.rounded_rect("ppocket", (px, py, pz + 0.2), 1.2,
                                 at=(0, PANEL_Y, LID_H - pz), anchor="bottom"))
-    # Wire-exit relief for P124 rear solder-pad / lead (toward −Y / USB end)
     oc.cut(lid, oc.rounded_rect(
         "pwire_slot", (10.0, 8.0, pz + 1.0), 1.0,
-        at=(0.0, PANEL_Y - 0.5 * py + 4.0, LID_H - pz - 0.2),
-        anchor="bottom",
+        at=(0.0, PANEL_Y - 0.5 * py + 4.0, LID_H - pz - 0.2), anchor="bottom",
     ))
     frame_z = LID_H + PANEL_FRAME_PROUD - 0.5
     frame = oc.rounded_rect("pframe", (px + 2.8, py + 2.8, 0.5), 1.5,
@@ -623,15 +680,9 @@ def cap_lid():
     oc.cut(lid, oc.cylinder("pwire", 4.5, LID_H + 2,
                             at=(0, PANEL_Y - py / 2 + 8, -1), anchor="bottom"))
 
-    # NO internal GNSS recess. Adafruit 960 (41.2×38.5×13.3) is external-only;
-    # centered P124 leaves only 25.5 mm end margin — cannot hold 15 mm keep-clear
-    # + 25 mm ceramic patch (needs 40 mm). SMA bulkhead lives on cap_base ±X.
     lx, ly = D.LTE_AT
     oc.cut(lid, oc.rounded_rect("lte", (D.LTE_FLEX[0] + 0.8, D.LTE_FLEX[1] + 0.8, 1.4),
                                 D.POCKET_CORNER_R, at=(lx, ly, -0.1), anchor="bottom"))
-
-    # D7r6: light-pipe / button wells open from mating face only (not through
-    # the outer crown) so the top no longer reads as an "oo" mark in review.
     for i, (lpx, lpy) in enumerate(D.LIGHTPIPE_AT):
         oc.cut(lid, oc.cylinder(f"lplid{i}", D.LIGHTPIPE_D + 0.2, LID_H - 1.2,
                                 at=(lpx, lpy, -0.1), anchor="bottom"))
@@ -639,35 +690,57 @@ def cap_lid():
         oc.cut(lid, oc.cylinder(f"btnw{i}", 5.0, LID_H - 1.2,
                                 at=(bx, by, -0.1), anchor="bottom"))
 
-    # No outer label pocket — was reading as a stray plate/mark next to the panel.
+    # Perimeter wrap step follows R_LID
+    add_wrap_step(lid, LW, LL, LID_WRAP_STEP, LID_H, r=max(R_LID - 0.5, 2.0))
 
-    # Perimeter wrap step (z≥0) — low-seam read without hanging skirt
-    add_wrap_step(lid, lw, ll, LID_WRAP_STEP, LID_H, r=PLAN_R - 1.0)
+    # Contour-aware M3 fasteners AFTER nose sculpt (no d5.lid_fasteners)
+    for i, (x, y) in enumerate(CAP_COLS):
+        oc.cut(lid, oc.cylinder(
+            f"lh{i}", D.CLEAR, LID_H + 4.0,
+            at=(x, y, -1.0), anchor="bottom", segments=24,
+        ))
+        # Flat-bottom cbore from z=3.80 up through contoured nose
+        oc.cut(lid, oc.cylinder(
+            f"lcb{i}", LID_CBORE_D, LID_H - LID_CBORE_FLOOR_Z + 2.0,
+            at=(x, y, LID_CBORE_FLOOR_Z), anchor="bottom", segments=24,
+        ))
 
-    # D7r5: no proud rear lip plate — was reading as a thin protruding shelf.
     return prepare(lid)
 
 
 def cap_usbc_plug():
-    """Elastomer/PLA plug for the −Y USB-C access seat (weather seal when inserted)."""
-    pw, pt, ph = USBC_PLUG_SEAT
-    ux, _uy, uz = USBC_PORT
-    # Stem fills tunnel aperture; flange fills outer seat
+    """Elastomer/PLA plug — exact 0.22 mm/side clearance to tunnel + seat.
+
+    Mesh layout (print STL): stem at ymin so mating verifier samples stem at
+    ymin+2; flange at +Y. Seated in base: rotate so flange faces −Y outer wall
+    and stem runs +Y into usbc_tunnel (see T_plug_in_base in cap_report.json).
+    """
+    stem_w = USBC_TUNNEL_W - 2 * USBC_PLUG_CLEAR   # 10.46
+    stem_h = USBC_TUNNEL_H - 2 * USBC_PLUG_CLEAR   # 6.46
+    stem_l = 6.00
+    fl_w = USBC_PLUG_SEAT[0] - 2 * USBC_PLUG_CLEAR  # 12.56
+    fl_t = 2.60
+    fl_h = USBC_PLUG_SEAT[2] - 2 * USBC_PLUG_CLEAR  # 9.06
+    # Stem occupies y∈[0, stem_l]; flange at y∈[stem_l, stem_l+fl_t] (coaxial X/Z)
     stem = oc.rounded_rect(
-        "cap_usbc_plug_stem", (ux - 0.6, 8.0, uz - 0.6), 1.0,
-        at=(0.0, 0.0, 0.0), anchor="bottom",
+        "cap_usbc_plug_stem", (stem_w, stem_l, stem_h), 0.8,
+        at=(0.0, 0.5 * stem_l, 0.0), anchor="bottom",
     )
+    stem_zc = 0.5 * stem_h
+    fl_z0 = stem_zc - 0.5 * fl_h
     flange = oc.rounded_rect(
-        "cap_usbc_plug_flange", (pw - 0.4, pt + 1.0, 2.2), 1.2,
-        at=(0.0, -4.5, 6.5), anchor="bottom",
+        "cap_usbc_plug_flange", (fl_w, fl_t, fl_h), 1.0,
+        at=(0.0, stem_l + 0.5 * fl_t, fl_z0), anchor="bottom",
     )
     oc.union(stem, flange)
-    try:
-        d5.emboss_glyph(stem, "USB", (0.0, -4.5, 8.7), size=4.0, depth=0.55)
-    except Exception:
-        pass
+    # No proud floor-glyph on the plug — emboss_glyph unions +Z and would
+    # break the 0.22 mm flange/seat clearance. Identity is by silhouette.
     oc.bake(stem)
     oc.move(stem, dz=-oc.bounds(stem)[0][2])
+    bz = oc.bounds(stem)
+    assert (bz[1][2] - bz[0][2]) <= fl_h + 0.05, (
+        f"cap_usbc_plug Z envelope {bz[1][2]-bz[0][2]:.3f} > flange {fl_h}"
+    )
     return prepare(stem)
 
 
@@ -995,9 +1068,18 @@ def main():
         os.makedirs(d, exist_ok=True)
 
     report = {
-        "revision": "D7_cap_nose_fairing_flow",
+        "revision": "D8_cap_planar_parting_360_rabbet",
         "contract": {
             "cap_w": CAP_W, "cap_l": CAP_L, "stack_h": CAP_STACK_H,
+            "cap_base_h": CAP_BASE_H, "lid_h": LID_H,
+            "r_base": R_BASE, "r_lid": R_LID, "reveal": REVEAL,
+            "lw_ll": [LW, LL],
+            "rabbet": {
+                "land_w": LAND_W,
+                "groove_inset": [GROOVE_IN0, GROOVE_IN1], "groove_d": GROOVE_D,
+                "tongue_inset": [TONGUE_IN0, TONGUE_IN1], "tongue_h": TONGUE_H,
+                "xy_clear_mm": 0.28, "z_clear_mm": GROOVE_D - TONGUE_H,
+            },
             "seam_z": SEAM_Z, "crown": CROWN, "end_taper": END_TAPER,
             "nose_tip_h": NOSE_TIP_H, "nose_plan_r": NOSE_PLAN_R,
             "nose_bull_r": NOSE_BULL_R,
@@ -1005,15 +1087,43 @@ def main():
             "panel_y": PANEL_Y, "panel_size_vendor": list(PANEL_SIZE),
             "gnss_internal_pocket": GNSS_INTERNAL_POCKET,
             "gnss_960_housing_external": list(GNSS_960_HOUSING),
-            "sma_bulkhead_d": SMA_BULKHEAD_D,
+            "sma_bulkhead_d": SMA_BULKHEAD_D, "sma_z": SMA_Z,
             "kit_pocket": list(KIT_POCKET),
             "kit_jst_relief": list(KIT_JST_RELIEF),
-            "usbc_port": list(USBC_PORT),
+            "usbc_tunnel": [USBC_TUNNEL_W, USBC_TUNNEL_H],
+            "usbc_plug_seat": list(USBC_PLUG_SEAT),
+            "usbc_plug_clear_mm": USBC_PLUG_CLEAR,
+            "T_plug_in_base": {
+                "note": (
+                    "STL print pose: stem at ymin, flange at +Y. Seated in cap_base: "
+                    "rotate 180° about Z then translate so flange outer face sits on "
+                    "−Y wall and stem runs +Y into usbc_tunnel."
+                ),
+                "stem_mm": [USBC_TUNNEL_W - 2 * USBC_PLUG_CLEAR, 6.0,
+                            USBC_TUNNEL_H - 2 * USBC_PLUG_CLEAR],
+                "flange_mm": [USBC_PLUG_SEAT[0] - 2 * USBC_PLUG_CLEAR, 2.60,
+                              USBC_PLUG_SEAT[2] - 2 * USBC_PLUG_CLEAR],
+                "clear_mm_per_side": USBC_PLUG_CLEAR,
+                "model_y_flange_outer_face": -(CAP_L / 2.0),
+                "model_y_flange_inner_face": -(CAP_L / 2.0) + USBC_PLUG_SEAT[1],
+                "seat_z_stl": [14.0 + CAP_FLOOR + 0.70, 14.0 + CAP_FLOOR + 0.70 + USBC_PLUG_SEAT[2]],
+                "tunnel_z_stl": [14.0 + CAP_FLOOR + 2.0, 14.0 + CAP_FLOOR + 2.0 + USBC_TUNNEL_H],
+                "seated": {
+                    "rotation_deg_xyz": [0.0, 0.0, 180.0],
+                    "note": (
+                        "After rot180 Z (flange→−Y): translate so flange outer face "
+                        "y=-82 and plug Z bbox is centered in seat_z_stl band."
+                    ),
+                },
+            },
             "keep_clear": ANTENNA_METAL_KEEP,
             "end_margin_mm": _END_MARGIN,
+            "CAP_COLS": [list(p) for p in CAP_COLS],
             "poka_yoke_cap_cols": [list(p) for p in CAP_COLS],
+            "boss_recess_mm": BOSS_RECESS,
             "pod_anchor_y": POD_ANCHOR_Y, "pod_anchor_z": POD_ANCHOR_Z,
             "pod_tilt_deg": POD_TILT_DEG,
+            "pad_usb_notch_w": PAD_USB_NOTCH_W,
         },
         "match_cw": {
             "clamp": [D.CLAMP_FLANGE_W, D.CLAMP_L, D.CLAMP_DEPTH],
