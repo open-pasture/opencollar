@@ -160,6 +160,12 @@ def apply_pod_base_mating(obj, side: str):
         obj, POD_LID_W, POD_LID_L, POD_LID_R, z_part,
         at_xy=(0.0, y0), prefix=f"pod_tongue_{side}",
     )
+    # ≤45° corbel under tongue — kills mid-air bridge over the battery cavity
+    # (d6bae12: 1.26 mm of tongue width floated at z=36..37.4).
+    MR.add_base_tongue_corbel(
+        obj, POD_LID_W, POD_LID_L, POD_LID_R, z_part,
+        at_xy=(0.0, y0), prefix=f"pod_corbel_{side}",
+    )
     MR.recess_insert_bosses(
         obj, cols, z_part, insert_d=D.INSERT_D, prefix=f"pod_{side}",
     )

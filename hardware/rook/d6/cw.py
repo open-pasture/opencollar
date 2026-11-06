@@ -83,9 +83,14 @@ CW_LID_T = 7.5
 CW_LID_FLAT = 3.0
 CW_CROWN_RISE = CW_LID_T - CW_LID_FLAT              # 4.5
 CW_CROWN_LAND = (36.0, 48.0)                        # land elongated along Y
-# Screws sit in the Y-end land outside the 2×2 pack (|y|≥ pack_y/2 + boss)
-# Poka-yoke: shift one boss so 180° lid rotation cannot seat
-_CW_SCREWS_BASE = [(sx * 22.0, sy * 54.0) for sx in (-1, 1) for sy in (-1, 1)]
+# Screws sit in the Y-end land outside the 2×2 pack (|y|≥ pack_y/2 + boss).
+# d6bae12 had y=±54 with lid outer ±55.35 — Ø3.4/Ø6.2 broke the edge into
+# open U-notches. y=±50.0 keeps ≥2.0 mm closed wall to the lid perimeter
+# (50 + 3.1 + 2.0 = 55.1 ≤ 55.35) and clears clamp holes at y=±28.5.
+# Poka-yoke: shift one boss (+3 X on the −Y/−X corner → (−19, −y)) so 180°
+# lid rotation cannot seat.
+_CW_SCREW_Y = 50.0
+_CW_SCREWS_BASE = [(sx * 22.0, sy * _CW_SCREW_Y) for sx in (-1, 1) for sy in (-1, 1)]
 CW_SCREWS = [(_CW_SCREWS_BASE[0][0] + 3.0, _CW_SCREWS_BASE[0][1]),
              _CW_SCREWS_BASE[1], _CW_SCREWS_BASE[2], _CW_SCREWS_BASE[3]]
 # Clamp bar holes stay y=±28.5; X stays ±36 (see assembly.py)

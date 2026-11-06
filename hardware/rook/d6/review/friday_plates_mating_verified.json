@@ -26,16 +26,6 @@
       "detail": "sha12=417a5902088a expect=417a5902088a"
     },
     {
-      "name": "cw_frozen_cw_tub.stl",
-      "ok": true,
-      "detail": "sha12=31d732637cdc expect=31d732637cdc"
-    },
-    {
-      "name": "cw_frozen_cw_lid.stl",
-      "ok": true,
-      "detail": "sha12=b172b6a1c654 expect=b172b6a1c654"
-    },
-    {
       "name": "wire_plug_frozen_pod_L_wire_plug.stl",
       "ok": true,
       "detail": "sha12=27ba3832226a expect=27ba3832226a"
@@ -73,12 +63,12 @@
     {
       "name": "pod_L_land_contact",
       "ok": true,
-      "detail": "ov_at_-0.02=12.7803"
+      "detail": "ov_at_-0.02=12.7805"
     },
     {
       "name": "pod_L_land_gaps_360",
       "ok": true,
-      "detail": "valid=15 bad=3 none=25 median|gap|=0.0102 max|gap|=1.1939"
+      "detail": "valid=24 bad=12 none=16 median|gap|=0.0224 max|gap|=0.4102"
     },
     {
       "name": "pod_L_reveal",
@@ -93,7 +83,12 @@
     {
       "name": "pod_L_tongue_support",
       "ok": true,
-      "detail": "checked=20 bad=0"
+      "detail": "checked=31 bad=0"
+    },
+    {
+      "name": "pod_L_tongue_fully_supported",
+      "ok": true,
+      "detail": "n=1132 miss=0 bridge=0"
     },
     {
       "name": "pod_L_rabbet_xy_2z",
@@ -133,7 +128,7 @@
     {
       "name": "pod_R_overlap_0",
       "ok": true,
-      "detail": "overlap_mm3=0.0022"
+      "detail": "overlap_mm3=0.0015"
     },
     {
       "name": "pod_R_seam_0",
@@ -143,17 +138,17 @@
     {
       "name": "pod_R_land_contact",
       "ok": true,
-      "detail": "ov_at_-0.02=13.7193"
+      "detail": "ov_at_-0.02=12.7820"
     },
     {
       "name": "pod_R_land_gaps_360",
       "ok": true,
-      "detail": "valid=18 bad=3 none=22 median|gap|=0.0102 max|gap|=0.4102"
+      "detail": "valid=26 bad=11 none=14 median|gap|=0.0146 max|gap|=0.4102"
     },
     {
       "name": "pod_R_reveal",
       "ok": true,
-      "detail": "reveal_x=2.823 overhang=0.000"
+      "detail": "reveal_x=2.563 overhang=0.000"
     },
     {
       "name": "pod_R_poly_overhang_0",
@@ -163,7 +158,12 @@
     {
       "name": "pod_R_tongue_support",
       "ok": true,
-      "detail": "checked=23 bad=0"
+      "detail": "checked=33 bad=0"
+    },
+    {
+      "name": "pod_R_tongue_fully_supported",
+      "ok": true,
+      "detail": "n=1132 miss=0 bridge=0"
     },
     {
       "name": "pod_R_rabbet_xy_2z",
@@ -208,12 +208,12 @@
     {
       "name": "cw_land_contact",
       "ok": true,
-      "detail": "ov_at_-0.02=10.3050"
+      "detail": "ov_at_-0.02=11.2418"
     },
     {
       "name": "cw_land_gaps_360",
       "ok": true,
-      "detail": "n=17 median|gap|=0.0714 max|gap|=1.8571"
+      "detail": "n=23 median|gap|=0.0714 max|gap|=1.8571"
     },
     {
       "name": "cw_reveal",
@@ -231,14 +231,34 @@
       "detail": "solid=6 float=0"
     },
     {
+      "name": "cw_tongue_fully_supported",
+      "ok": true,
+      "detail": "n=1712 miss=0 bridge=0"
+    },
+    {
       "name": "cw_boss_flat",
       "ok": true,
       "detail": "4\u00d7 annulus"
     },
     {
+      "name": "cw_no_vertical_bridge",
+      "ok": true,
+      "detail": "bridge_cols=0 screws=[(-19.0, -50.0), (-22.0, 50.0), (22.0, -50.0), (22.0, 50.0)]"
+    },
+    {
       "name": "cw_poka_180",
       "ok": true,
       "detail": "coincidences=2"
+    },
+    {
+      "name": "cw_lid_holes_closed",
+      "ok": true,
+      "detail": "(-19.0, -50.0):OK wall=5.35; (-22.0, 50.0):OK wall=5.35; (22.0, -50.0):OK wall=5.35; (22.0, 50.0):OK wall=5.35"
+    },
+    {
+      "name": "cw_lid_boss_coax",
+      "ok": true,
+      "detail": "(-19.0, -50.0):dxy=0.0000 depth=9.0 recess=0.4; (-22.0, 50.0):dxy=0.0000 depth=9.0 recess=0.4; (22.0, -50.0):dxy=0.0000 depth=9.0 recess=0.4; (22.0, 50.0):dxy=0.0000 depth=9.0 recess=0.4"
     },
     {
       "name": "cw_clamp_holes_4",
@@ -283,12 +303,12 @@
     {
       "name": "wire_plug_R_seated",
       "ok": true,
-      "detail": "prox=0.500"
+      "detail": "prox=0.503"
     },
     {
       "name": "wire_plug_R_radial",
       "ok": true,
-      "detail": "clear/side=None prox=0.500"
+      "detail": "clear/side=None prox=0.503"
     },
     {
       "name": "wire_plug_LR_mirror",
@@ -369,6 +389,11 @@
       "name": "optb_L_poly_overhang_0",
       "ok": true,
       "detail": "oh_mm2=0.0 min_inset=2.723155843305873"
+    },
+    {
+      "name": "optb_L_tongue_fully_supported",
+      "ok": true,
+      "detail": "n=1144 miss=0 bridge=0"
     },
     {
       "name": "optb_L_boss_coax_4",
@@ -496,6 +521,11 @@
       "detail": "oh_mm2=0.0 min_inset=2.7231566280961643"
     },
     {
+      "name": "optb_R_tongue_fully_supported",
+      "ok": true,
+      "detail": "n=1144 miss=0 bridge=0"
+    },
+    {
       "name": "optb_R_boss_coax_4",
       "ok": true,
       "detail": "[22.0, 36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [-22.0, 36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [19.0, -36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [-22.0, -36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4"
@@ -550,6 +580,6 @@
   "assembly_poses": "/agent/repos/opencollar/hardware/rook/d6/out/assembly_poses.json",
   "world_dir": "/agent/repos/opencollar/hardware/rook/d6/out/world",
   "n_world": 40,
-  "n_gates": 109,
+  "n_gates": 115,
   "n_fail": 0
 }

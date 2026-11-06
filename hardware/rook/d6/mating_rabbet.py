@@ -117,11 +117,21 @@ def add_lid_tongue(lid, lid_w, lid_l, lid_r, at_xy=(0.0, 0.0), prefix="tongue"):
 
 def recess_insert_bosses(body, cols, z_parting, insert_d=4.0,
                          spot_d=BOSS_SPOT_D, recess=BOSS_RECESS,
-                         depth=INSERT_BORE_DEPTH, prefix="bins"):
-    """Spotface + insert bore so boss top sits `recess` below parting."""
+                         depth=INSERT_BORE_DEPTH, prefix="bins",
+                         through_tongue=True):
+    """Spotface + insert bore so boss top sits `recess` below parting.
+
+    When `through_tongue` (default), the spotface cutter extends above the
+    parting deck through any male tongue (TONGUE_H) so a floating 0.6 mm
+    bridge cannot remain at z_parting..z_parting+TONGUE_H (CW d6bae12 defect).
+    """
+    spot_h = recess + 0.6
+    if through_tongue:
+        # From (z_parting - recess) up past tongue tip + margin.
+        spot_h = recess + TONGUE_H + 1.2
     for i, (x, y) in enumerate(cols):
         oc.cut(body, oc.cylinder(
-            f"{prefix}_spot{i}", spot_d, recess + 0.6,
+            f"{prefix}_spot{i}", spot_d, spot_h,
             at=(x, y, z_parting - recess), anchor="bottom", segments=32,
         ))
         oc.cut(body, oc.cylinder(
@@ -129,4 +139,34 @@ def recess_insert_bosses(body, cols, z_parting, insert_d=4.0,
             at=(x, y, z_parting - recess - depth),
             anchor="bottom", segments=32,
         ))
+    return body
+
+
+def add_base_tongue_corbel(body, lid_w, lid_l, lid_r, z_parting,
+                           at_xy=(0.0, 0.0), prefix="corbel",
+                           depth=None, n_steps=5):
+    """≤45° corbel under the male tongue so it is not a mid-air bridge.
+
+    Single ring filling the 45° wedge AABB: outer on the solid perimeter
+    land, inner at tongue_inner−depth. Depth capped so 2×18650 clearance
+    is preserved. `n_steps` retained for call-site compat (unused).
+    """
+    del n_steps
+    if depth is None:
+        depth = float(TONGUE_IN1 - TONGUE_IN0) + 0.35  # ~1.75 mm
+    depth = float(max(0.8, min(depth, 2.2)))
+    ax, ay = at_xy
+    wall_in0 = max(0.25, TONGUE_IN0 - 1.55)  # ≈0.25 → outer ~±30.75
+    in_i = TONGUE_IN1 + depth
+    in_o = wall_in0
+    w_o, l_o = lid_w - 2 * in_o, lid_l - 2 * in_o
+    w_i, l_i = lid_w - 2 * in_i, lid_l - 2 * in_i
+    r_o, r_i = max(lid_r - in_o, 0.5), max(lid_r - in_i, 0.4)
+    # Top of corbel stays ≤ z_parting − 0.02 so it never kisses the lid
+    # land (h = depth + 0.15 with z0 = z_part − depth − 0.05 peaked +0.10
+    # above land and created a ~67 mm³ sheet overlap with pod lids).
+    oc.union(body, stadium_ring(
+        prefix, w_o, l_o, r_o, w_i, l_i, r_i,
+        h=depth, z0=z_parting - depth - 0.02, at_xy=(ax, ay),
+    ))
     return body

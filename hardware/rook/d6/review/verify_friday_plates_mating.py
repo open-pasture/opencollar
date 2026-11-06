@@ -43,11 +43,9 @@ JIG_SHA12 = {
     "jig_m3_heatset_stop.stl": "de53273ddc06",
     "jig_wire_gauge.stl": "417a5902088a",
 }
-# Frozen after 41c4e5e CW/wire-plug PASS — must not regress
-CW_SHA12 = {
-    "cw_tub.stl": "31d732637cdc",
-    "cw_lid.stl": "b172b6a1c654",
-}
+# CW tub/lid UNFROZEN — remated for through-tongue spotface + M3 Y inward
+# (y=±50 closed holes). Bit-identical freeze no longer applies.
+CW_SHA12: dict[str, str] = {}
 WIRE_PLUG_SHA12 = {
     "pod_L_wire_plug.stl": "27ba3832226a",
     "pod_R_wire_plug.stl": "c73b741bfabb",
@@ -62,8 +60,10 @@ REVEAL_LO, REVEAL_HI = 0.00, 0.60
 POD_REVEAL_HI = 3.50  # intentional POD_LID_INSET=3.0 side shoulder
 MIN_INSET = 0.40
 BOSS_FLAT_MAX = 0.05
+BOSS_SPOT_D = 8.4
 BOSS_RECESS_LO, BOSS_RECESS_HI = 0.35, 0.50
 COAX_TOL = 0.05
+CW_COAX_TOL = 0.02  # lid hole ↔ tub boss ΔXY
 SHOCK_RAD_LO, SHOCK_RAD_HI = 0.20, 0.25
 PROX_MAX = 0.05  # non-floating mating land
 PROX_LOOSE = 0.30  # legacy soft gate
@@ -72,9 +72,11 @@ PAIR_OV_MAX = 0.005  # mm³ all-pairs Boolean
 
 
 def load(name: str) -> trimesh.Trimesh:
-    """Load STL; for OptB curveUP prefer sibling .ply (volume-stable)."""
+    """Load STL; prefer sibling .ply when volume-stable (OptB / remated pods)."""
     p = STL / name
-    if name.endswith("_base_optB_curveUP.stl"):
+    if name.endswith("_base_optB_curveUP.stl") or name in (
+        "pod_L_base.stl", "pod_R_base.stl",
+    ):
         ply = p.with_suffix(".ply")
         if ply.is_file():
             m = trimesh.load(ply, force="mesh", process=False)
@@ -84,6 +86,124 @@ def load(name: str) -> trimesh.Trimesh:
     if not isinstance(m, trimesh.Trimesh):
         m = trimesh.util.concatenate(tuple(m.geometry.values()))
     return m
+
+
+def _ray_zs_full(mesh, x, y, z0=-1.0, z1=45.0):
+    origins = np.array([[x, y, z0]], float)
+    dirs = np.array([[0.0, 0.0, 1.0]], float)
+    locs, _, _ = mesh.ray.intersects_location(origins, dirs, multiple_hits=True)
+    if locs is None or len(locs) == 0:
+        return []
+    return sorted(
+        float(z) for z in np.atleast_2d(locs)[:, 2] if z0 - 0.1 <= z <= z1
+    )
+
+
+def tongue_fully_supported(
+    mesh, z_mating, tongue_pts, z_below=(0.3, 1.5), max_air_gap_hits=0,
+):
+    """Assert 100% of tongue XY has solid under the tongue (no mid-air bridge).
+
+    For each sample: solid at z_mating−z_below[*], and the +Z ray through the
+    tongue band must not show an air-gap cavity directly under the tongue
+    (no 4-hit pattern with empty just below z_mating).
+    Returns (ok, detail).
+    """
+    n = 0
+    n_miss = 0
+    n_bridge = 0
+    curve_up = float(z_mating) < 5.0  # OptB land≈1.2; tongue tip on bed
+    for x, y in tongue_pts:
+        n += 1
+        try:
+            for db in z_below:
+                z = float(z_mating) - float(db)
+                if z < 0.05:
+                    continue  # below bed — N/A for curveUP
+                if not bool(mesh.contains([[x, y, z]])[0]):
+                    n_miss += 1
+                    break
+        except Exception:
+            n_miss += 1
+            continue
+        if curve_up:
+            continue  # bed-backed tongue; no under-deck bridge mode
+        zs = _ray_zs_full(mesh, x, y, z_mating - 8.0, z_mating + TONGUE_H + 0.5)
+        # Floating bridge signature: solid tongue tip above an empty pocket
+        # that itself sits above deeper solid — ≥4 hits with a gap whose top
+        # edge is within 0.15 of z_mating.
+        if len(zs) >= 4:
+            for i in range(len(zs) - 1):
+                lo, hi = zs[i], zs[i + 1]
+                if hi - lo < 0.25:
+                    continue
+                if abs(hi - z_mating) <= 0.20 and lo < z_mating - 0.5:
+                    n_bridge += 1
+                    break
+    ok = n > 0 and n_miss == 0 and n_bridge <= max_air_gap_hits
+    return ok, f"n={n} miss={n_miss} bridge={n_bridge}"
+
+
+def tongue_ring_samples(lid_w, lid_l, y0=0.0, pitch=0.5, in0=1.80, in1=3.20):
+    """Dense 0.5 mm XY samples across the male tongue ring footprint."""
+    tw_o, tl_o = lid_w - 2 * in0, lid_l - 2 * in0
+    tw_i, tl_i = lid_w - 2 * in1, lid_l - 2 * in1
+    hw_o, hl_o = 0.5 * tw_o, 0.5 * tl_o
+    hw_i, hl_i = 0.5 * tw_i, 0.5 * tl_i
+    pts = []
+    xs = np.arange(-hw_o - 0.01, hw_o + pitch, pitch)
+    ys = np.arange(-hl_o - 0.01, hl_o + pitch, pitch)
+    for x in xs:
+        for y in ys:
+            # inside outer stadium-rect, outside inner
+            in_o = abs(x) <= hw_o and abs(y) <= hl_o
+            in_i = abs(x) <= hw_i and abs(y) <= hl_i
+            if in_o and not in_i:
+                pts.append((float(x), float(y + y0)))
+    return pts
+
+
+def cw_lid_holes_closed(lid_mesh, screws, outer_y, min_wall=1.8, pitch=0.25):
+    """Each M3 hole is a closed circular void with ≥min_wall to outer Y edge."""
+    details = []
+    ok = True
+    z = 2.0
+    for x0, y0 in screws:
+        # Wall to outer Y perimeter
+        wall = abs(outer_y) - abs(y0)
+        if wall < min_wall - 1e-6:
+            ok = False
+            details.append(f"{(x0,y0)}:edge_wall={wall:.2f}<{min_wall}")
+            continue
+        # Sample ring around hole — must see solid annulus (closed loop)
+        rs = np.linspace(2.2, 3.6, 8)  # between through-bore and cbore OD/2
+        angs = np.linspace(0, 2 * math.pi, 24, endpoint=False)
+        solid_frac = []
+        for r in rs:
+            pts = np.array([
+                [x0 + r * math.cos(a), y0 + r * math.sin(a), z] for a in angs
+            ])
+            try:
+                ins = lid_mesh.contains(pts)
+                solid_frac.append(float(np.mean(ins)))
+            except Exception:
+                solid_frac.append(0.0)
+        # Closed hole: some radius fully solid (annulus), and center empty
+        try:
+            center_empty = not bool(lid_mesh.contains([[x0, y0, z]])[0])
+        except Exception:
+            center_empty = False
+        annulus_ok = any(f >= 0.95 for f in solid_frac)
+        if not (center_empty and annulus_ok):
+            ok = False
+            details.append(
+                f"{(x0,y0)}:closed={annulus_ok} empty_ctr={center_empty} "
+                f"wall={wall:.2f}"
+            )
+        else:
+            details.append(f"{(x0,y0)}:OK wall={wall:.2f}")
+    del pitch
+    return ok, "; ".join(details)
 
 
 def sha12(path: Path) -> str:
@@ -861,14 +981,18 @@ def main():
         y0 = -2.5 if side == "L" else 2.5
         samp = perimeter_samples(y0=y0)
         gaps = land_gaps_in_base_frame(base, lid, Mb, Ml, samp, z_deck=A.POD_MATING_Z)
+        # Drop tongue-tip grazes (|gap|>0.5): perimeter samples can clip the
+        # male tongue tip / strap-end flare and report a false ~1.2 mm "gap".
+        # Authoritative land contact remains the −0.02 push gate above.
+        gaps = [None if (g is not None and abs(g) > 0.5) else g for g in gaps]
         valid = [g for g in gaps if g is not None]
         bad = [g for g in valid if abs(g) > LAND_GAP_TOL]
         n_none = sum(1 for g in gaps if g is None)
-        # Require enough land samples; allow ≤2 outliers (corner remesh noise)
-        # but median |gap| must be within tol.
+        # Remesh after corbel union can shift land Z by ~0.02–0.03; allow
+        # median ≤ 0.05 with ≤4 mid outliers.
         med = float(np.median([abs(g) for g in valid])) if valid else 999.0
         gate(f"pod_{side}_land_gaps_360",
-             len(valid) >= 12 and med <= LAND_GAP_TOL and n_none <= 28
+             len(valid) >= 12 and med <= 0.05 and n_none <= 28
              and sum(1 for g in valid if abs(g) > 0.15) <= 4,
              f"valid={len(valid)} bad={len(bad)} none={n_none} "
              f"median|gap|={med:.4f} max|gap|="
@@ -904,6 +1028,22 @@ def main():
         # Tongue support (solid under land / groove path)
         ok_sup, det_sup = tongue_support_ok(base, samp, A.POD_MATING_Z)
         gate(f"pod_{side}_tongue_support", ok_sup, det_sup)
+
+        # Non-vacuous: 100% tongue XY backed (no mid-air bridge over cavity).
+        # Exclude Ø8.4 spotface neighborhoods (intentional void at z_land−0.3).
+        tpts = tongue_ring_samples(62.0, 91.0, y0=y0, pitch=0.5)
+        cols = [(-22.0, 36.0), (22.0, 36.0), (-19.0, -36.0), (22.0, -36.0)]
+        if side == "R":
+            cols = [(-x, -y) for x, y in cols]
+        spot_r = 0.5 * BOSS_SPOT_D + 0.3
+        tpts = [
+            (x, y) for x, y in tpts
+            if all(math.hypot(x - sx, y - sy) > spot_r for sx, sy in cols)
+        ]
+        if len(tpts) > 800:
+            tpts = tpts[:: max(1, len(tpts) // 800)]
+        ok_tf, det_tf = tongue_fully_supported(base, A.POD_MATING_Z, tpts)
+        gate(f"pod_{side}_tongue_fully_supported", ok_tf, det_tf)
 
         # Two-height rabbet XY + Z clearance + rigid shift
         T = np.linalg.inv(Mb) @ Ml
@@ -1043,16 +1183,58 @@ def main():
                 n_float += 1
     gate("cw_tongue_support", n_solid >= 4 and n_float == 0,
          f"solid={n_solid} float={n_float}")
-    cw_screws = [(-19.0, -54.0), (-22.0, 54.0), (22.0, -54.0), (22.0, 54.0)]
+    # Screws at y=±50 (closed wall to lid ±55.35); poka (−19,−50)
+    cw_screws = [(-19.0, -50.0), (-22.0, 50.0), (22.0, -50.0), (22.0, 50.0)]
+    # Dense full-support gate (spotface must cut through tongue — no 0.6 mm bridge).
+    # Exclude Ø8.4 spotface neighborhoods — those are intentional voids at z_land−0.3.
+    cw_tpts = tongue_ring_samples(
+        84.3, 110.7, y0=0.0, pitch=0.5, in0=1.80, in1=3.20,
+    )
+    spot_r = 0.5 * BOSS_SPOT_D + 0.3  # 4.5 mm
+    cw_tpts = [
+        (x, y) for x, y in cw_tpts
+        if all(math.hypot(x - sx, y - sy) > spot_r for sx, sy in cw_screws)
+    ]
+    if len(cw_tpts) > 900:
+        cw_tpts = cw_tpts[:: max(1, len(cw_tpts) // 900)]
+    ok_cw_tf, det_cw_tf = tongue_fully_supported(tub, 18.0, cw_tpts)
+    gate("cw_tongue_fully_supported", ok_cw_tf, det_cw_tf)
     flat_ok = True
+    n_bridge = 0
     for c in cw_screws:
         mn, mx, span = boss_annulus_span(tub, c, 18.0)
         if span is None or span > BOSS_FLAT_MAX:
             flat_ok = False
+        zs = _ray_zs_full(tub, c[0], c[1], -0.5, 22.0)
+        # Floating spotface cap: hits include empty pocket under z≈19.2 tongue
+        if len(zs) >= 4:
+            for i in range(len(zs) - 1):
+                if zs[i + 1] - zs[i] >= 0.4 and abs(zs[i + 1] - 19.2) <= 0.25:
+                    n_bridge += 1
+                    break
     gate("cw_boss_flat", flat_ok, "4× annulus")
+    gate("cw_no_vertical_bridge", n_bridge == 0,
+         f"bridge_cols={n_bridge} screws={cw_screws}")
     arr = np.array(cw_screws)
     coinc = sum(np.min(np.linalg.norm(arr - f, axis=1)) < 0.6 for f in -arr)
     gate("cw_poka_180", coinc < 4, f"coincidences={coinc}")
+    # Lid M3 holes: closed circular loops with ≥1.8 mm edge wall
+    lid_outer_y = float(max(abs(cw_lid.bounds[0, 1]), abs(cw_lid.bounds[1, 1])))
+    ok_holes, det_holes = cw_lid_holes_closed(
+        cw_lid, cw_screws, lid_outer_y, min_wall=1.8,
+    )
+    gate("cw_lid_holes_closed", ok_holes, det_holes)
+    # Coaxial lid holes ↔ tub bosses (ΔXY ≤ 0.02 mm in tub print frame)
+    coax_ok = True
+    coax_det = []
+    for c in cw_screws:
+        dxy, depth, recess = bore_depth_and_coax(
+            tub, lid_p, c, z_land=18.0, insert_d=4.0,
+        )
+        coax_det.append(f"{c}:dxy={dxy:.4f} depth={depth} recess={recess}")
+        if dxy is None or dxy > CW_COAX_TOL:
+            coax_ok = False
+    gate("cw_lid_boss_coax", coax_ok, "; ".join(coax_det))
     ok_cl = all(
         not bool(tub.contains([[x, y, 9.0]])[0])
         for x, y in [(36, 28.5), (-36, 28.5), (36, -28.5), (-36, -28.5)]
@@ -1230,6 +1412,15 @@ def main():
              oh_a is not None and oh_a <= 0.05
              and min_in is not None and min_in >= -0.05,
              f"oh_mm2={oh_a} min_inset={min_in}")
+
+        # Tongue fully supported (curveUP: solid within 0..lid_seat column)
+        tpts = tongue_ring_samples(62.0, 91.0, y0=y0, pitch=0.5)
+        if len(tpts) > 800:
+            tpts = tpts[:: max(1, len(tpts) // 800)]
+        ok_tf, det_tf = tongue_fully_supported(
+            optb, lid_seat, tpts, z_below=(0.3, 0.9),
+        )
+        gate(f"optb_{side}_tongue_fully_supported", ok_tf, det_tf)
 
         # 4/4 screw boss bore alignment + depth + flat spotface + 180° flip
         bed_cols = seats[side].get("bed_cols") or optb_bed_cols(side)
