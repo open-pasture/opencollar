@@ -39,3 +39,29 @@ Offline Orca on earlier **76×160×29** STLs: stock PLA supports on 4h41m/140 g,
 | Aids budget | ~**13 g** / ~**50 min** on the bases plate before coupon ladder + XYZ scale |
 
 Log the restart plate here when started (file, material, layers, estimate, route).
+
+
+## 2026-11-06 — overnight plate (PR #28 `a189978`)
+
+| Field | Value |
+| --- | --- |
+| File | `x2a_a189978.gcode.3mf` |
+| sha256 | `c58222c55de93354…` |
+| Printer | Bambu P2S `Openpasture-1` |
+| Material | PLA AMS A4 |
+| Parts | `cap_base` + `cap_lid` + 3 plugs (`pod_L_wire_plug`, `cap_usbc_plug`, …) |
+| Estimate | 7h 43m 31s / 182.83 g |
+| Result | **Stopped early (~1h in, Z ≈ 6–7.5 mm)** — spaghetti detection after unbrimmed `pod_L_wire_plug` and `cap_usbc_plug` detached on Textured PEI; `cap_base`/`cap_lid` adhered cleanly. Bed cleared & cleaned by Cody at 10:05 AM CT. |
+| Superseded by | `jigs_and_plugs_d6bae12.gcode.3mf` (`dd986807e64f456f`, 58m 08s, 5 mm outer brims on all 7 small parts) and `x2a_cap_only_a189978.gcode.3mf`. |
+
+## 2026-11-06 — 12:52 PM CT cap-only plate (PR #28 `a189978`)
+
+| Field | Value |
+| --- | --- |
+| File | `x2a_cap_only_a189978.gcode.3mf` |
+| sha256 | `069060795a75f0d550ba04a16e4ae4f07cfb3cd5d763c1e434aa23ae54f44165` |
+| Printer | Bambu P2S `Openpasture-1` via Bambu Connect |
+| Material | PLA AMS slot A4, Textured PEI |
+| Parts | `cap_base` (tree supports) + `cap_lid` (flat, 0 supports); **no** small plugs |
+| Slice | 214 layers, 181.49 g, 7h 39m 44s |
+| Status | **Started ~12:52 PM CT** after Cody's Blender + in-person bed check and typed go (ETA ~8:32 PM CT). |

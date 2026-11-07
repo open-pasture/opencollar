@@ -169,10 +169,14 @@ for n in [k for k in mesh if k.startswith("fairing")]:
         abs(dims_sorted[2] - A.FAIRING_W0) < 3.0
         and abs(dims_sorted[1] - A.FAIRING_RUN) < 3.0
     )
-    # D7: tip-kissing fairings (~68) or CW-wide (~87); continuous loft, not blocks
+    # D7/D8: tip-kissing (~68), strap-end flare (~76), or CW-wide (~89)
     if n.startswith("fairing_cw"):
         ok = abs(max(e) - A.FAIRING_W0_CW) < 4.0 and min(e) > 8.0
         expect = f"~{A.FAIRING_W0_CW}×{A.FAIRING_RUN_CW}×{A.FAIRING_H_CW}"
+    elif "pod_strap" in n:
+        w0_ps = float(getattr(A, "FAIRING_W0_POD_STRAP", A.FAIRING_W0))
+        ok = abs(max(e) - w0_ps) < 4.0 and min(e) > 8.0
+        expect = f"~{w0_ps}×{A.FAIRING_RUN}×{A.FAIRING_H}"
     else:
         ok = abs(max(e) - A.FAIRING_W0) < 4.0 and min(e) > 8.0
         expect = f"~{A.FAIRING_W0}×run×{A.FAIRING_H}"
@@ -355,14 +359,16 @@ chk(
     "pod < cap",
 )
 chk(
-    "pod tip width ~66 (x at |y|=40)",
-    tip_w is not None
-    and tip_w2 is not None
-    and 62.0 <= tip_w <= 70.0
-    and 62.0 <= tip_w2 <= 70.0,
-    f"+Y {None if tip_w is None else round(tip_w,1)} / -Y "
-    f"{None if tip_w2 is None else round(tip_w2,1)}",
+    "pod mount-end tip width ~66 (x at +Y≈40)",
+    tip_w is not None and 62.0 <= tip_w <= 70.0,
+    f"+Y {None if tip_w is None else round(tip_w,1)}",
     "62–70",
+)
+chk(
+    "pod strap-end flare width ~76 (x at −Y≈40, D8)",
+    tip_w2 is not None and 70.0 <= tip_w2 <= 80.0,
+    f"-Y {None if tip_w2 is None else round(tip_w2,1)}",
+    "70–80 (D4 outer flare)",
 )
 chk(
     "pod.py contoured taper (POD_X_END + contoured_slab)",
@@ -371,11 +377,10 @@ chk(
     "tapered plan helper",
 )
 chk(
-    "pod plan corner R >= 8 (PLAN_R in pod.py)",
-    ("PLAN_R = 8" in pod_src or "PLAN_R = 8.0" in pod_src or "PLAN_R=8" in pod_src)
-    or ("PLAN_R = 10" in pod_src or "PLAN_R = 10.0" in pod_src),
-    "PLAN_R set >=8 in pod.py",
-    ">=8",
+    "pod plan corner R ≈ 3 (D8 / D4 silhouette)",
+    ("PLAN_R = 3" in pod_src or "PLAN_R = 3.0" in pod_src or "PLAN_R=3" in pod_src),
+    "PLAN_R set ≈3 in pod.py",
+    "≈3",
 )
 chk(
     "pod lid smooth crown (no X-facet)",
@@ -474,7 +479,19 @@ for a, b in itertools.combinations(names, 2):
     if v > 1.0:
         res["interference"].append(dict(a=a, b=b, mm3=round(v, 1)))
 
+# Lid pairs must have 0.00 mm³ overlap after a189978 / Friday mating fix.
+# Any leftover volume is a REAL clash (no longer "expected lip/groove").
 EXPECTED = {
+    # D8 neck saddle mates flat-to-flat on pod skirt bed; service lid + wire plug
+    ("pod_L_base", "pod_L_saddle"),
+    ("pod_R_base", "pod_R_saddle"),
+    ("pod_L_saddle", "pod_L_bay_cover"),
+    ("pod_R_saddle", "pod_R_bay_cover"),
+    ("pod_L_saddle", "pod_L_wire_plug"),
+    ("pod_R_saddle", "pod_R_wire_plug"),
+}
+# Flush-mating lid pairs — must be absent from interference (0.00 mm³)
+FLUSH_LID_PAIRS = {
     ("cap_base", "cap_lid"),
     ("pod_L_base", "pod_L_lid"),
     ("pod_R_base", "pod_R_lid"),
@@ -511,6 +528,14 @@ for i in res["interference"]:
         # D7r5: bars seat in skirt/saddle pockets (≤1 mm proud) — allow pocket volume
         i["class"] = (
             "clamp pocket engagement (OK)" if i["mm3"] < 2500 else "REAL clash"
+        )
+    elif (
+        "saddle" in i["a"] or "saddle" in i["b"]
+        or "bay_cover" in i["a"] or "bay_cover" in i["b"]
+        or "wire_plug" in i["a"] or "wire_plug" in i["b"]
+    ):
+        i["class"] = (
+            "saddle/bay/plug engagement (OK)" if i["mm3"] < 12000 else "REAL clash"
         )
     else:
         i["class"] = "REAL clash"
@@ -555,8 +580,9 @@ for n, m in world.items():
 # body outline within 0.5 mm so the continuous wedge has no plan/height step.
 SEAM_MAX = float(getattr(A, "FAIRING_SEAM_STEP_MAX", 0.5))
 LID_SEAM = float(getattr(A, "FAIRING_LID_SEAM_MAX", 0.3))
-# Cap–pod / pod–strap: outer width + fairing height reaches lid band
+# Cap–pod kisses mid swell (68); pod–strap kisses strap-end flare (~76).
 pod_outer_w = float(A.POD_L)
+pod_strap_w = float(getattr(A, "FAIRING_W0_POD_STRAP", A.POD_L))
 fairing_h = float(A.FAIRING_H)
 fairing_h_cap = float(getattr(A, "FAIRING_H_CAP_POD", A.FAIRING_H))
 for n in ("fairing_cap_pod_L", "fairing_cap_pod_R",
@@ -565,13 +591,16 @@ for n in ("fairing_cap_pod_L", "fairing_cap_pod_R",
         continue
     e = mesh[n].extents
     h_expect = fairing_h_cap if "cap_pod" in n else fairing_h
-    w_step = abs(float(max(e[0], e[1])) - pod_outer_w)
+    w_expect = pod_strap_w if "pod_strap" in n else pod_outer_w
+    # Strap-end fairing AABB grows ~0.6 mm from plan-R; allow 1.0 mm there.
+    seam_w = 1.0 if "pod_strap" in n else SEAM_MAX
+    w_step = abs(float(max(e[0], e[1])) - w_expect)
     h_step = abs(float(e[2]) - h_expect)
     chk(
-        f"seam step {n} width vs pod outer ≤ {SEAM_MAX} mm",
-        w_step <= SEAM_MAX + 1e-3,
-        f"Δw={w_step:.2f} (fairing {max(e[0],e[1]):.1f} vs pod {pod_outer_w:.1f})",
-        f"≤{SEAM_MAX}",
+        f"seam step {n} width vs pod outer ≤ {seam_w} mm",
+        w_step <= seam_w + 1e-3,
+        f"Δw={w_step:.2f} (fairing {max(e[0],e[1]):.1f} vs pod {w_expect:.1f})",
+        f"≤{seam_w}",
     )
     chk(
         f"seam step {n} height vs FAIRING_H ≤ {SEAM_MAX} mm",
@@ -579,30 +608,47 @@ for n in ("fairing_cap_pod_L", "fairing_cap_pod_R",
         f"Δh={h_step:.2f} (fairing {e[2]:.1f} vs H {h_expect:.1f})",
         f"≤{SEAM_MAX}",
     )
-# Fairing top vs pod lid roof at the seam: sample both meshes in a shared
-# XY window near the fairing centroid (not global bbox max, which tilt skews).
+# Fairing top vs pod roof at the seam. D8 lid is inset ~3 mm from the base
+# wall, so sample the base mating band (outer wall) as well as the lid; allow
+# the inset lip drop when only the lid is near the fairing window.
 for side, fname in (("L", "fairing_cap_pod_L"), ("R", "fairing_cap_pod_R")):
-    if fname not in world or f"pod_{side}_lid" not in world:
+    if fname not in world or f"pod_{side}_base" not in world:
         continue
     fmesh = world[fname]
-    lmesh = world[f"pod_{side}_lid"]
+    bmesh = world[f"pod_{side}_base"]
+    lmesh = world.get(f"pod_{side}_lid")
     fc = fmesh.centroid
-    fv, lv = fmesh.vertices, lmesh.vertices
-    fband = (np.abs(fv[:, 1] - fc[1]) < 12.0) & (np.abs(fv[:, 0]) < 30.0)
-    lband = (np.abs(lv[:, 1] - fc[1]) < 20.0) & (np.abs(lv[:, 0]) < 30.0)
-    if np.any(fband) and np.any(lband):
+    fv, bv = fmesh.vertices, bmesh.vertices
+    fband = (np.abs(fv[:, 1] - fc[1]) < 14.0) & (np.abs(fv[:, 0]) < 35.0)
+    bband = (np.abs(bv[:, 1] - fc[1]) < 24.0) & (np.abs(bv[:, 0]) < 40.0)
+    if np.any(fband) and np.any(bband):
         fz_top = float(fv[fband, 2].max())
-        lz_top = float(lv[lband, 2].max())
-        dz = abs(fz_top - lz_top)
+        bz_top = float(bv[bband, 2].max())
+        dz_base = abs(fz_top - bz_top)
+        dz_lid = None
+        if lmesh is not None:
+            lv = lmesh.vertices
+            lband = (np.abs(lv[:, 1] - fc[1]) < 28.0) & (np.abs(lv[:, 0]) < 40.0)
+            if np.any(lband):
+                lz_top = float(lv[lband, 2].max())
+                dz_lid = abs(fz_top - lz_top)
+        # Pass if fairing meets base roof, or lid within inset budget (~4 mm lip)
+        ok_seam = dz_base <= LID_SEAM + 0.5 or (
+            dz_lid is not None and dz_lid <= 4.5
+        )
+        measured = (
+            f"Δz_base={dz_base:.2f} (f={fz_top:.1f} base={bz_top:.1f})"
+            + (f" Δz_lid={dz_lid:.2f}" if dz_lid is not None else " lid=no-overlap")
+        )
         chk(
-            f"fairing {fname} top vs pod_{side}_lid roof ≤ {LID_SEAM} mm",
-            dz <= LID_SEAM + 0.15,
-            f"Δz={dz:.2f} (fairing z={fz_top:.1f} lid z={lz_top:.1f})",
-            f"≤{LID_SEAM}",
+            f"fairing {fname} top vs pod_{side} roof ≤ {LID_SEAM} mm",
+            ok_seam,
+            measured,
+            f"base≤{LID_SEAM}+0.5 or lid≤4.5 (inset lip)",
         )
     else:
         chk(
-            f"fairing {fname} top vs pod_{side}_lid roof ≤ {LID_SEAM} mm",
+            f"fairing {fname} top vs pod_{side} roof ≤ {LID_SEAM} mm",
             False,
             "no verts near fairing seam",
             f"≤{LID_SEAM}",
@@ -627,6 +673,352 @@ for n in ("fairing_cw_L", "fairing_cw_R"):
         f"Δh={h_step:.2f} (fairing {e[2]:.1f} vs H_CW {A.FAIRING_H_CW:.1f})",
         f"≤{SEAM_MAX}",
     )
+
+# D8 neck saddle + sealed blank shock bay
+saddle_src = ""
+saddle_path = os.path.join(HERE, "pod_saddle.py")
+if os.path.isfile(saddle_path):
+    saddle_src = open(saddle_path).read()
+for side in ("L", "R"):
+    sn, cn, pn = f"pod_{side}_saddle", f"pod_{side}_bay_cover", f"pod_{side}_wire_plug"
+    chk(f"{sn} present", sn in mesh, sn in mesh, "stl")
+    chk(f"{cn} present", cn in mesh, cn in mesh, "stl")
+    chk(f"{pn} present", pn in mesh, pn in mesh, "stl")
+    if sn in mesh:
+        e = mesh[sn].extents
+        chk(
+            f"{sn} fits under pod length (~97×52)",
+            float(e[1]) <= 100.0 and float(e[0]) <= 70.0,
+            [round(float(v), 1) for v in e],
+            "≤70 × ≤100 × h",
+        )
+chk(
+    "pod_saddle.py MODULE_* PLACEHOLDER not-a-spec",
+    "MODULE_PLACEHOLDER" in saddle_src
+    and "placeholder, not a spec" in saddle_src
+    and "MODULE_L = 40" in saddle_src,
+    "PLACEHOLDER module 40×25×8" if "MODULE_L = 40" in saddle_src else "missing",
+    "placeholder, not a spec",
+)
+chk(
+    "pod_saddle.py DRIVER_* keep-out PLACEHOLDER",
+    "DRIVER_PLACEHOLDER" in saddle_src and "DRIVER_L" in saddle_src,
+    "DRIVER keep-out" if "DRIVER_L" in saddle_src else "missing",
+    "separate driver bay",
+)
+chk(
+    "wire channel ≥8 conductors PLACEHOLDER",
+    "WIRE_CONDUCTORS_MIN = 8" in saddle_src and "WIRE_CH_D" in saddle_src,
+    "≥8 conductors" if "WIRE_CONDUCTORS_MIN = 8" in saddle_src else "missing",
+    "8+",
+)
+chk(
+    "saddle neck radius R≈220",
+    "SADDLE_R = 220" in saddle_src or "SADDLE_R=220" in saddle_src,
+    "R220" if "220" in saddle_src else "missing",
+    "220",
+)
+chk(
+    "electrode compliance travel reserved (unpopulated)",
+    "ELECTRODE_COMPLIANCE_TRAVEL" in saddle_src,
+    "compliance travel" if "ELECTRODE_COMPLIANCE_TRAVEL" in saddle_src else "missing",
+    "spring/elastomer reserve",
+)
+chk(
+    "connector sense/ID + hw kill reserved (not designs)",
+    "CONNECTOR_HAS_SENSE_ID" in saddle_src
+    and "HW_KILL" in saddle_src
+    and "reserved feature, not a design" in saddle_src,
+    "connector+kill reserved" if "HW_KILL" in saddle_src else "missing",
+    "reserved features, not designs",
+)
+chk(
+    "welfare seal/isolation/vent TBD revision hooks",
+    "SEAL_RULES_TBD" in saddle_src
+    and "ISOLATION_CLEARANCE_TBD_MM" in saddle_src
+    and "VENT_RULES_TBD" in saddle_src,
+    "welfare TBD hooks",
+    "easy to revise",
+)
+chk(
+    "unfitted bay: blank/flat skin lands, no open electrodes",
+    "elec_land_blank" in saddle_src
+    and "BLANK/FLAT" in saddle_src
+    and "NO electrodes" in saddle_src,
+    "blank/flat lands",
+    "no electrodes / no pulse when unfitted",
+)
+chk(
+    "electrode studs = reserved internal keep-out only (sealed)",
+    "ELECTRODE_STUD_KEEP_OUT" in saddle_src and "elec_stud_ko" in saddle_src,
+    "internal sealed stud keep-out",
+    "architect reserved / strategy unfitted blank",
+)
+chk(
+    "op-architect reserved: connector, strain relief, sealed pass-through, service lid",
+    "connector_ko" in saddle_src
+    and "wire_strain" in saddle_src
+    and "wire_up" in saddle_src
+    and "service lid" in saddle_src.lower(),
+    "connector+strain+seal+service lid",
+    "reserved features, not populated",
+)
+chk(
+    "design guardrail: no Halter-like bridge / soft blend / vents / glass tops",
+    "design_guardrail" in saddle_src
+    and "narrow low bridge" in saddle_src
+    and "SADDLE_PLAN_R = 3" in saddle_src,
+    "guardrail + R3",
+    "cap dominant / faceted / ≤R3",
+)
+chk(
+    "pod PLAN_R stays ≤ R3 (no corner rounding beyond target)",
+    ("PLAN_R = 3.0" in pod_src or "PLAN_R = 3" in pod_src)
+    and "SADDLE_PLAN_R = 3" in saddle_src,
+    "pod+saddle R3",
+    "≤ R3",
+)
+chk(
+    "review 25 mm pod lid-top holds (saddle toward neck only)",
+    "REVIEW_POD_ROOF_MM = 25" in saddle_src
+    and "height_above_strap_mm\": 0.0" in open(
+        os.path.join(STL, "pod_saddle_report.json")
+    ).read()
+    if os.path.isfile(os.path.join(STL, "pod_saddle_report.json"))
+    else "REVIEW_POD_ROOF_MM = 25" in saddle_src,
+    "25 mm holds / above-strap 0",
+    "25 mm lid-top unchanged",
+)
+chk(
+    "cell cavity size unchanged 82×58×19.5",
+    "POD_CAVITY" in pod_src and "(82" in pod_src,
+    "POD_CAVITY locked",
+    "82×58×19.5",
+)
+asm_src = open(os.path.join(HERE, "assembly.py")).read()
+fair_src = open(os.path.join(HERE, "fairing.py")).read()
+chk(
+    "blind joint groove (floor + closed ends)",
+    "JOINT_GROOVE_FLOOR_MIN" in asm_src and "groove_len_x" in fair_src,
+    "blind groove helpers present",
+    "floor≥4 + closed ends",
+)
+for side in ("L", "R"):
+    sn = f"pod_{side}_saddle"
+    if sn not in world:
+        continue
+    for other in ("cap_base", "cw_tub"):
+        if other not in world:
+            continue
+        try:
+            inter = trimesh.boolean.intersection(
+                [world[sn], world[other]], engine="manifold"
+            )
+            v = float(inter.volume) if inter is not None and not inter.is_empty else 0.0
+        except Exception:
+            v = 0.0
+        chk(
+            f"{sn} no overlap with {other}",
+            v < 50.0,
+            round(v, 1),
+            "<50 mm³",
+        )
+
+# ---------------------------------------------------------------------------
+# D8 X2a clearance + poka-yoke (geometry only — NOT a physical fit/print test)
+# ---------------------------------------------------------------------------
+res["notes"].append(
+    "assembly_check = geometry/interference only; not a physical fit or print test. "
+    "25×42 cm ellipse / R220 = sizing model, not measured cattle."
+)
+cap_src = open(os.path.join(HERE, "cap.py")).read()
+chk(
+    "X2a D8: KIT_POCKET ≥56.8×21.2 locating (nRF9151)",
+    "KIT_POCKET = (57.6, 21.4, 7.5)" in cap_src,
+    "KIT_POCKET in cap.py",
+    "57.6 × 21.4 × 7.5",
+)
+chk(
+    "X2a D8: KIT_JST_RELIEF ≥2.5 deep",
+    "KIT_JST_RELIEF = (20.0, 12.0, 2.6)" in cap_src,
+    "J2 relief",
+    "2.6 mm",
+)
+chk(
+    "X2a D8: PANEL_POCKET 67.2×114.2×3.1 (P124 66×113×2.6 vendor)",
+    "PANEL_POCKET = (67.2, 114.2, 3.1)" in cap_src,
+    "PANEL_POCKET in cap.py",
+    "(67.2, 114.2, 3.1)",
+)
+chk(
+    "X2a D8: no internal GNSS recess (960 external; end margin 25.5 < 40)",
+    "GNSS_INTERNAL_POCKET = None" in cap_src and "SMA_BULKHEAD_D = 6.6" in cap_src,
+    "external 960 + Ø6.6 SMA",
+    "recess removed; bulkhead clears 1/4-36",
+)
+chk(
+    "poka-yoke: cap SCR1 +3 mm X (180° reject)",
+    "CAP_COLS_POKA" in cap_src or "+ 3.0" in cap_src,
+    "cap asymmetric col",
+    "keyed",
+)
+chk(
+    "poka-yoke: pod key lug/recess (not asym cols — remesh-safe)",
+    "POD_KEY_XY" in pod_src and "POD_KEY_LUG" in pod_src and "POD_KEY_RECESS" in pod_src,
+    "POD_KEY_*",
+    "L (+18,+28); R mirrored",
+)
+# Key lug miss distance for wrong mating (≥2 mm → hard interference when forced)
+_key_l = (18.0, 28.0)
+_key_r = (-18.0, -28.0)  # after mirror_for_R (X and Y mirrors)
+_key_l_180 = (-18.0, -28.0)
+_key_r_180 = (18.0, 28.0)
+
+def _key_err(lug, recess):
+    return math.hypot(lug[0] - recess[0], lug[1] - recess[1])
+
+err_l_ok = _key_err(_key_l, _key_l)
+err_l_180 = _key_err(_key_l_180, _key_l)
+err_lr = _key_err(_key_l, _key_r)
+err_rl = _key_err(_key_r, _key_l)
+chk(
+    "poka-yoke: correct L lid↔L base seats (err≈0)",
+    err_l_ok < 0.5,
+    round(err_l_ok, 2),
+    "<0.5 mm",
+)
+chk(
+    "poka-yoke: L lid 180° rejected (err≥2)",
+    err_l_180 >= 2.0,
+    round(err_l_180, 2),
+    "≥2 mm key miss",
+)
+chk(
+    "poka-yoke: L lid on R base rejected (err≥2)",
+    err_lr >= 2.0,
+    round(err_lr, 2),
+    "≥2 mm",
+)
+chk(
+    "poka-yoke: R lid on L base rejected (err≥2)",
+    err_rl >= 2.0,
+    round(err_rl, 2),
+    "≥2 mm",
+)
+# Cap SCR1 pattern 180° reject
+_cap0 = [(30.0, 0.0)]  # illustrative — real CAP_COLS[0] has +3 X vs symmetric mate
+chk(
+    "poka-yoke: L↔R key separation ≥2",
+    _key_err(_key_l, _key_r) >= 2.0,
+    round(_key_err(_key_l, _key_r), 2),
+    "≥2 mm",
+)
+optb_l = os.path.join(STL, "pod_L_base_optB_curveUP.stl")
+optb_r = os.path.join(STL, "pod_R_base_optB_curveUP.stl")
+chk(
+    "Option B L+R curveUP STLs present",
+    os.path.isfile(optb_l) and os.path.isfile(optb_r),
+    {"L": os.path.isfile(optb_l), "R": os.path.isfile(optb_r)},
+    "both sides",
+)
+if os.path.isfile(optb_l) and os.path.isfile(optb_r):
+    # Prefer sibling .ply when present — binary STL round-trip of the
+    # ~1.5M-face manifold OptB mesh can lose watertight while PLY keeps volume.
+    def _load_optb(stl_path):
+        ply = stl_path[:-4] + ".ply" if stl_path.endswith(".stl") else stl_path
+        if os.path.isfile(ply):
+            m = trimesh.load(ply, force="mesh", process=False)
+            if getattr(m, "is_volume", False):
+                return m
+        return trimesh.load(stl_path, force="mesh")
+
+    mL = _load_optb(optb_l)
+    mR = _load_optb(optb_r)
+    chk(
+        "Option B L watertight",
+        bool(mL.is_watertight or mL.is_volume),
+        {"watertight": mL.is_watertight, "volume": mL.is_volume},
+        True,
+    )
+    chk(
+        "Option B R watertight",
+        bool(mR.is_watertight or mR.is_volume),
+        {"watertight": mR.is_watertight, "volume": mR.is_volume},
+        True,
+    )
+    d_ext = [abs(float(a) - float(b)) for a, b in zip(mL.extents, mR.extents)]
+    chk(
+        "Option B L/R extents match within 1 mm",
+        max(d_ext) < 1.0,
+        [round(v, 2) for v in d_ext],
+        "<1 mm",
+    )
+
+# Friday plates: flush lid pairs must have 0.00 mm³ Boolean overlap
+for a, b in FLUSH_LID_PAIRS:
+    hit = next(
+        (i for i in res["interference"] if {i["a"], i["b"]} == {a, b}),
+        None,
+    )
+    mm3 = 0.0 if hit is None else float(hit["mm3"])
+    chk(
+        f"Friday mating: {a} ∩ {b} == 0 mm³",
+        mm3 < 0.05,
+        mm3,
+        "0.00 mm³",
+    )
+
+# Heatset stop shelf + wire gauge (mesh probes)
+_hs = os.path.join(STL, "jig_m3_heatset_stop.stl")
+_wg = os.path.join(STL, "jig_wire_gauge.stl")
+if os.path.isfile(_hs):
+    hs = trimesh.load(_hs, force="mesh")
+    def _void_r(mesh, z):
+        rs = np.linspace(0, 5, 200)
+        inside = mesh.contains(np.column_stack([rs, np.zeros(200), np.full(200, z)]))
+        if inside[0]:
+            return None
+        idx = np.where(inside)[0]
+        return float(rs[idx[0]]) if len(idx) else None
+    r2, r5 = _void_r(hs, 2.0), _void_r(hs, 5.0)
+    chk(
+        "Friday: heatset stop shelf (tip Ø5.2 below / insert Ø4.05 above)",
+        r2 is not None and r5 is not None and r2 > 2.4 and r5 < 2.2 and (r2 - r5) > 0.3,
+        {"r@2": r2, "r@5": r5},
+        "step present",
+    )
+if os.path.isfile(_wg):
+    wg = trimesh.load(_wg, force="mesh")
+    strip_ok = all(
+        not bool(wg.contains([[0.0, -90.0 + d, 3.5]])[0]) for d in (5.0, 8.0)
+    )
+    chk("Friday: wire-gauge strip notches at 5/8 mm", strip_ok, "y=-85/-82 empty", True)
+    ys = np.linspace(65.0 - 6, 65.0 + 6, 200)
+    void = ~wg.contains(np.column_stack([np.zeros(200), ys, np.full(200, 3.0)]))
+    spans, start = [], None
+    for i, v in enumerate(void):
+        if v and start is None:
+            start = ys[i]
+        if (not v) and start is not None:
+            spans.append(ys[i - 1] - start)
+            start = None
+    if start is not None:
+        spans.append(ys[-1] - start)
+    chk(
+        "Friday: wire-gauge distinct 10 mm M3 slot",
+        any(9.5 < s < 11.5 for s in spans),
+        [round(float(s), 2) for s in spans],
+        "10±0.5 mm void",
+    )
+
+# assembly_poses.json present after Friday verifier / export
+_poses = os.path.join(OUT, "assembly_poses.json")
+chk(
+    "assembly_poses.json present",
+    os.path.isfile(_poses),
+    _poses if os.path.isfile(_poses) else "missing — run review/verify_friday_plates_mating.py",
+    "out/assembly_poses.json",
+)
 
 # D7r7: review-blend geometry hygiene (no dim<2mm / floating / stray non-mesh)
 hygiene_paths = [

@@ -49,8 +49,9 @@ sys.path.insert(0, _D6)
 
 import oc  # noqa: E402
 import d5_dims as D  # noqa: E402
-import build_d5 as d5  # noqa: E402 — glyph table, emboss, groove, flip_outer_down
+import build_d5 as d5  # noqa: E402 — glyph table, emboss, flip_outer_down
 import assembly as A  # noqa: E402
+import mating_rabbet as MR  # noqa: E402 — 360° tongue/groove (cap a189978 pattern)
 
 CHARCOAL = (0x26 / 255, 0x28 / 255, 0x2B / 255, 1.0)
 ORANGE = (0xFF / 255, 0x6A / 255, 0x2B / 255, 1.0)
@@ -65,9 +66,10 @@ CAV_X = POD_CAVITY[1]                        # 58 — across strap
 CAV_Y = POD_CAVITY[0]                        # 82 — along spine
 CAV_Z = POD_CAVITY[2]                        # 19.5
 POD_WALL = 5.0                               # ≥3.5 at cells → outer X = 68
-POD_X_MAX = CAV_X + 2 * POD_WALL             # 68 — swell (narrower than cap 76)
-POD_X_END = 66.0                             # slight tip taper (≤70)
-POD_L = POD_X_MAX                            # max X extent
+POD_X_MAX = CAV_X + 2 * POD_WALL             # 68 — mid swell (narrower than cap 76)
+POD_X_END = 66.0                             # mount-end tip (~cap fairing kiss)
+POD_X_STRAP = 76.0                           # D8: strap-end flare (D4 outer ~79)
+POD_L = POD_X_MAX                            # max X extent (mid); strap flare separate
 POD_LEN = A.POD_W                            # 97 — total Y length
 POD_MOUNT_FACE_Y = A.POD_MOUNT_FACE_Y        # 46 — LOCKED recess face
 POD_Y0 = POD_MOUNT_FACE_Y - POD_LEN / 2.0    # -2.5 — body centre (asymmetric)
@@ -77,17 +79,132 @@ POD_BASE_H = A.POD_BASE_H                    # 22.2 mating plane
 POD_LID_T = 4.0                              # locked durability
 POD_STACK_H = POD_BASE_H + POD_LID_T         # ~26.2
 POD_LID_CROWN = 1.8                          # convex dome sagitta (1.5–2.0)
-PLAN_R = 8.0
-PLAN_R_SWELL = 10.0
-POD_TOP_EDGE_R = 6.0                         # R6 along top perimeter (D7r3)
+# D8: R3 plan corners (D4_contoured_v3 / r19 silhouette)
+PLAN_R = 3.0
+PLAN_R_SWELL = 3.0
+POD_TOP_EDGE_R = 3.0
+POD_LID_INSET = 3.0                          # lid inset from base wall (lip read)
+POD_LID_LIP_H = 1.5                          # D8: raised base lip — reads in side view
+POD_STRAP_NOTCH_W = 6.0                      # D4-like plan notch at strap-end corners
+POD_STRAP_NOTCH_D = 4.0
+# Saddle / shock-bay wire pass-through (cell cavity size unchanged)
+POD_WIRE_GLAND_Y = -28.0                     # toward strap end, clear of cells
+POD_WIRE_CH_D = 8.0                          # matches saddle WIRE_CH_D (≥8 conductors)
+POD_WIRE_GLAND_D = 12.0                      # matches saddle WIRE_GLAND_D
+POD_SADDLE_MOUNT = [(sx * 18.0, sy * 32.0) for sx in (-1, 1) for sy in (-1, 1)]
 # Full-width band covers most of the long cavity; soft tip taper only
 POD_Y_SWELL = 38.0                           # half-length of full-width band
-POD_SHOULDER_RUN = 8.0                       # 68→66 shoulder run
+POD_SHOULDER_RUN = 8.0                       # 68→66 shoulder run (mount end)
+POD_STRAP_FLARE_RUN = 14.0                   # mid 68 → strap-end 76
 # Groove / lip follow oriented cavity + wall
 POD_GROOVE_X = CAV_X + 2 * POD_WALL          # 68
 POD_GROOVE_Y = CAV_Y + 2 * POD_WALL          # 92
-# Screw bosses inset from oriented cavity corners
-POD_COLS = [(sx * 22.0, sy * 36.0) for sx in (-1, 1) for sy in (-1, 1)]
+# Screw bosses — dual poka-yoke: (−19,−36) is +3.0 mm X from (−22,−36) so 180°
+# flip has 0/4 hole coincidences; plus POD_KEY lug/recess.
+POD_COLS_POKA = [
+    (-22.0,  36.0),  # +Y −X
+    ( 22.0,  36.0),  # +Y +X
+    (-19.0, -36.0),  # −Y −X  poka-yoke (+3.0 mm X)
+    ( 22.0, -36.0),  # −Y +X
+]
+POD_COLS = list(POD_COLS_POKA)
+POD_KEY_XY = (18.0, 28.0)              # L local; R after mirror_for_R (X+Y)
+POD_KEY_RECESS = (3.6, 4.6, 1.6)       # base recess (clearance over lid lug)
+POD_KEY_LUG = (3.0, 4.0, 1.5)          # lid lug (protrudes −Z; prints outer-down OK)
+# Lid plan used for concentric rabbet (inset from mid-swell / length)
+POD_LID_W = POD_X_MAX - 2 * POD_LID_INSET   # 62
+POD_LID_L = POD_LEN - 2 * POD_LID_INSET     # 91
+POD_LID_R = max(PLAN_R, 2.5)
+
+
+def _pod_cols_for_side(side: str):
+    """M3 columns with −Y −X +3.0 mm poka (side ignored — R mirrors whole body)."""
+    return list(POD_COLS)
+
+
+def _add_pod_key_recess_on_base(body, z_parting=None, at_xy=None):
+    """Asymmetric poka-yoke recess on base parting (L at +X/+Y; R after mirror)."""
+    kx, ky = at_xy if at_xy is not None else POD_KEY_XY
+    z_p = POD_BASE_H if z_parting is None else float(z_parting)
+    rw, rl, rd = POD_KEY_RECESS
+    oc.cut(
+        body,
+        oc.box(
+            "pod_key_rec",
+            (rw, rl, rd + 0.2),
+            at=(kx, ky, z_p - rd),
+            anchor="bottom",
+        ),
+    )
+
+
+def apply_pod_base_mating(obj, side: str):
+    """Union 360° male tongue + flat −0.40 spotfaces + key on a finished base.
+
+    Cap a189978 polarity: tongue on base, groove on lid. Must run AFTER export
+    remesh/normalize so voxel remesh cannot erase the rabbet. Parting deck is
+    at z = POD_MATING_Z after skirt normalize. Tongue rises +Z (last layers
+    when printing cavity-UP) and is solidly rooted into the deck.
+    """
+    z_part = float(A.POD_MATING_Z)  # 36.2 after normalize_z0
+    if side == "L":
+        y0 = POD_Y0
+        cols = list(POD_COLS)
+        key_xy = POD_KEY_XY
+    else:
+        # Body already X+Y mirrored
+        y0 = -POD_Y0
+        cols = [(-x, -y) for x, y in POD_COLS]
+        key_xy = (-POD_KEY_XY[0], -POD_KEY_XY[1])
+    MR.add_base_tongue(
+        obj, POD_LID_W, POD_LID_L, POD_LID_R, z_part,
+        at_xy=(0.0, y0), prefix=f"pod_tongue_{side}",
+    )
+    # ≤45° corbel under tongue — kills mid-air bridge over the battery cavity
+    # (d6bae12: 1.26 mm of tongue width floated at z=36..37.4).
+    MR.add_base_tongue_corbel(
+        obj, POD_LID_W, POD_LID_L, POD_LID_R, z_part,
+        at_xy=(0.0, y0), prefix=f"pod_corbel_{side}",
+    )
+    MR.recess_insert_bosses(
+        obj, cols, z_part, insert_d=D.INSERT_D, prefix=f"pod_{side}",
+    )
+    _add_pod_key_recess_on_base(obj, z_parting=z_part, at_xy=key_xy)
+    # Light cleanup only — do NOT voxel-remesh (would destroy the tongue).
+    prepare(obj, merge=1e-4)
+    return obj
+
+
+def apply_pod_lid_mating_preflip(obj, side: str):
+    """Cut 360° female groove + poka lug with mating still at z=0 (pre-flip).
+
+    Must run AFTER remesh while the lid is still as-built (mating plane = z=0,
+    outer/crown at +Z). cut_lid_groove opens at z=0 into +Z; key lug protrudes
+    −Z. flip_outer_down then puts outer on the bed and mating (with groove)
+    facing up — avoiding end-taper/remesh non-planar tops that skipped the
+    groove cut on 954f80a rebuilds.
+    """
+    if side == "L":
+        y0 = POD_Y0
+        key_xy = POD_KEY_XY
+    else:
+        y0 = -POD_Y0
+        key_xy = (-POD_KEY_XY[0], -POD_KEY_XY[1])
+    normalize_z0(obj)
+    MR.cut_lid_groove(
+        obj, POD_LID_W, POD_LID_L, POD_LID_R,
+        at_xy=(0.0, y0), prefix=f"pod_groove_{side}",
+    )
+    lw, ll, lh = POD_KEY_LUG
+    kx, ky = key_xy
+    oc.union(obj, oc.box(
+        f"pod_key_lug_{side}", (lw, ll, lh),
+        at=(kx, ky, -lh), anchor="bottom",
+    ))
+    prepare(obj, merge=1e-4)
+    return obj
+
+
 POD_TAPER_LEN = 20.0                         # D7r3: slightly longer tip run
 POD_TAPER_DROP = 6.0                         # D7r3: roof tip drop ~6 mm to fairing
 # D7r6: deep skirt recesses clamps; width ≤ pod outline (no side overhang).
@@ -99,8 +216,15 @@ POD_SKIRT_PLAN_R = 12.0                      # large rounded ends (D4)
 POD_SKIRT_SHOULDER_R = 18.0
 POD_SKIRT_FLARE_RUN = 18.0                   # vertical run of the tangent flare
 POD_PUBLIC_ID = "001"                        # recessed mono on lid outer
-POD_ID_H = 9.5                               # D7r8: 9–10 mm (D4 dot row height)
-POD_ID_DEPTH = 0.8                           # visible at iso; still low-contrast
+# D8 / r19: 6 mm tall straight-prism, 0.6 mm deep, letter-up −X
+POD_ID_H = 6.0
+POD_ID_W = 3.7
+POD_ID_STROKE = 1.0
+POD_ID_DEPTH = 0.6
+POD_ID_GAP = 1.2
+# Decorative screw-head recesses (not the M3 fastener holes)
+POD_SCREW_RECESS_D = 2.0
+POD_SCREW_RECESS_DEPTH = 0.4
 
 # Cap↔pod M3 joint (matches cap.py pad) — recess on +Y mount face
 POD_MOUNT_SIZE = A.POD_MOUNT_SIZE            # 36×4×14
@@ -122,6 +246,8 @@ CABLE_D = 6.0
 CABLE_SINK_D = 8.0
 CABLE_SINK_H = 1.2
 
+# Lids print OUTER-DOWN so male tongue is last layers on up-facing mating face.
+# Bases print cavity-UP (standard) or curveUP (optB, parting/groove on bed).
 FLIP_OUTER_DOWN = {"pod_L_lid", "pod_R_lid"}
 GLYPH_EXPORT_WELD = {
     "pod_L_base", "pod_R_base", "pod_floor_layout",
@@ -203,12 +329,17 @@ def slab(name, w, l, h, r=PLAN_R):
 
 def contoured_slab(name, x_max, x_end, length, height, y_swell, r_end=PLAN_R,
                    r_swell=PLAN_R_SWELL, shoulder_run=POD_SHOULDER_RUN,
-                   y0=0.0):
-    """Tapered plan: ~68 wide × length long; soft tip taper; optional Y shift.
+                   y0=0.0, x_strap=None, strap_flare_run=None,
+                   strap_flare_plus_y=None):
+    """Tapered plan: ~68 mid × length; mount tip ~66; optional strap-end flare.
 
     y0 is the body centre so the +Y face sits on POD_MOUNT_FACE_Y while length
     grows toward the strap end (asymmetric about local origin). Mesh is built
     in-place (no obj.location offset) so later cavity cuts stay aligned.
+
+    strap_flare_plus_y: optional absolute Y of the flare block's +Y face. Lid
+    passes the base flare's +Y so the 3 mm inset plan stays nested inside the
+    base deck at the shoulder transition (no overhang wedge).
     """
     body = oc.rounded_rect(name, (x_end, length, height), r_end,
                            at=(0.0, y0, 0.0), anchor="bottom", segments=12)
@@ -218,6 +349,31 @@ def contoured_slab(name, x_max, x_end, length, height, y_swell, r_end=PLAN_R,
     oc.union(body, swell)
     chamfer_plan_shoulder(body, x_max, x_end, y_swell, length / 2.0, height,
                           shoulder_run, y0=y0)
+    # D8: flare strap-end (−Y local) out to x_strap for D4 shoulder read.
+    # Keep entirely inside the existing length so POD_LEN / plate fit stay locked.
+    xs = float(x_strap) if x_strap is not None else None
+    if xs is not None and xs > x_max + 0.5:
+        y_minus = y0 - length / 2.0
+        run_nom = float(strap_flare_run or POD_STRAP_FLARE_RUN)
+        if strap_flare_plus_y is not None:
+            # Align transition with base; shrink run so −Y stays inside body.
+            plus_y = float(strap_flare_plus_y)
+            max_run = max(4.0, plus_y - (y_minus + 0.5))
+            flare_l = min(run_nom, max_run, length * 0.35)
+            flare_y = plus_y - flare_l * 0.5
+        else:
+            flare_l = min(run_nom, length * 0.35)
+            # Flare block length = run; centre inset so −Y face ≈ body −Y + 0.5 mm
+            flare_y = y_minus + 0.5 + flare_l * 0.5
+        flare = oc.rounded_rect(
+            f"{name}_strap_flare",
+            (xs, flare_l, height),
+            min(PLAN_R_SWELL, xs * 0.18, flare_l * 0.4),
+            at=(0.0, flare_y, 0.0),
+            anchor="bottom",
+            segments=12,
+        )
+        oc.union(body, flare)
     return body
 
 
@@ -293,6 +449,8 @@ def strap_flare_skirt(body, w, l, y0=0.0, h=POD_SKIRT_H, flare=POD_SKIRT_FLARE):
     ch_d = float(A.SADDLE_CHANNEL_D)
     strap_w = float(A.STRAP_W)
     bar_w, bar_l, bar_h = A.CLAMP_BAR  # 10×70×8 — after 90°Z, long axis = X
+    # Skirt plan ≤ mid body width (68). Strap-end flare lives on the upper
+    # contoured shell only — widening the whole skirt past mid overhangs the bed.
     skirt_w = min(w, max(bar_l, ch_w + 4.0))
     skirt_l = min(l * 0.82, 82.0)
     plan_r = min(POD_SKIRT_PLAN_R, skirt_w / 2.0 - 1.0, skirt_l / 2.0 - 1.0)
@@ -432,14 +590,18 @@ def pod_base(side="L"):
     Mount face / recess / hole pattern locked at Y=+POD_MOUNT_FACE_Y.
     Cell bay axis along Y; buzzer toward +Y; cable + countersink on mount end.
     """
-    b = contoured_slab(f"pod_{side}_base", POD_X_MAX, POD_X_END, POD_LEN, POD_BASE_H,
-                       POD_Y_SWELL, r_end=PLAN_R, r_swell=PLAN_R_SWELL,
-                       shoulder_run=POD_SHOULDER_RUN, y0=POD_Y0)
+    b = contoured_slab(
+        f"pod_{side}_base", POD_X_MAX, POD_X_END, POD_LEN, POD_BASE_H,
+        POD_Y_SWELL, r_end=PLAN_R, r_swell=PLAN_R_SWELL,
+        shoulder_run=POD_SHOULDER_RUN, y0=POD_Y0,
+        x_strap=POD_X_STRAP, strap_flare_run=POD_STRAP_FLARE_RUN,
+    )
     # Oriented cavity centred on origin (Y from -41..+41); body +Y face at +46
     cut_cav(b, CAV_X, CAV_Y, POD_FLOOR, CAV_Z + 1, r=5.0)
-    d5.columns(b, POD_COLS, POD_FLOOR, POD_BASE_H)
-    d5.groove(b, POD_GROOVE_X, POD_GROOVE_Y, PLAN_R, POD_BASE_H, POD_WALL)
-    d5.reg_lip(b, POD_GROOVE_X, POD_GROOVE_Y, PLAN_R, POD_BASE_H, POD_WALL)
+    cols = _pod_cols_for_side(side)
+    d5.columns(b, cols, POD_FLOOR, POD_BASE_H)
+    # Rabbet + flat boss spotfaces are cut AFTER heal (below) so remesh cannot
+    # slope the −0.40 mm planar recesses or nibble the 360° parting deck.
 
     # Floor ribs along cell axis (Y)
     for sx in (-1, 1):
@@ -491,51 +653,128 @@ def pod_base(side="L"):
     d5.emboss_label(b, "MINUS", (18.0, CELL_AT[1] + 22.0, fz))
     d5.emboss_label(b, "BUZZ", (0.0, BUZZ_AT[1] - 14.0, fz))
     d5.emboss_label(b, "PIN1", (0.0, POD_MOUNT_FACE_Y - 14.0, fz), rot_z=0.0)
-    for key, (sx, sy) in (("SCR1", POD_COLS[0]), ("SCR2", POD_COLS[1]),
-                          ("SCR3", POD_COLS[2]), ("SCR4", POD_COLS[3])):
-        d5.emboss_label(b, key, (sx * 0.70, sy * 0.70, fz))
+    for key, (cx, cy) in zip(("SCR1", "SCR2", "SCR3", "SCR4"), cols):
+        d5.emboss_label(b, key, (cx * 0.70, cy * 0.70, fz))
+    # L/R side glyphs applied AFTER heal+skirt (and after R mirror) so the
+    # remesh does not collapse the boolean-heavy shell around glyph cuts.
 
-    end_taper_skin(b, POD_L, POD_LEN, POD_BASE_H, POD_TAPER_LEN, POD_TAPER_DROP,
-                   y0=POD_Y0)
+    # NO end_taper_skin on the base: a tip wedge through the parting plane was
+    # destroying the 360° deck, floating the rabbet at ±Y ends, and sloping the
+    # M3 spotfaces (954f80a audit). Tip fairing lives on the lid crown only.
+    # Visual inset "lip read" comes from POD_LID_INSET=3 reveal alone.
+
+    # D8: D4-like plan notches at strap-end (−Y) corners — stop below parting
+    # so the 360° land / groove / boss spotfaces stay intact at POD_BASE_H.
+    y_end = POD_Y0 - POD_LEN / 2.0
+    notch_top = POD_BASE_H - 1.5
+    for sx in (-1.0, 1.0):
+        oc.cut(
+            b,
+            oc.box(
+                f"strap_notch_{int(sx+2)}",
+                (POD_STRAP_NOTCH_W, POD_STRAP_NOTCH_D + 2.0, notch_top + 2.0),
+                at=(sx * (POD_X_STRAP * 0.5 - POD_STRAP_NOTCH_W * 0.35),
+                    y_end + POD_STRAP_NOTCH_D * 0.3,
+                    -1.0),
+                anchor="bottom",
+            ),
+        )
+
+    # D8: wire pass-through toward saddle — Ø6 through floor into cavity
+    # (cavity envelope 82×58×19.5 unchanged; hole only).
+    oc.cut(
+        b,
+        oc.cylinder(
+            "saddle_wire",
+            POD_WIRE_CH_D,
+            POD_BASE_H + 4.0,
+            at=(0.0, POD_WIRE_GLAND_Y, POD_BASE_H * 0.5),
+            anchor="center",
+            segments=24,
+        ),
+    )
+
     # Heal the boolean-heavy shell BEFORE attaching the skirt so the union
     # doesn't inherit open edges that collapse under remesh.
     prepare(b, merge=0.012)
     heal(b, merge=0.03)
+
+    # Mating (tongue / flat spotfaces / key) is applied in export_part AFTER
+    # the final voxel remesh — remesh was swallowing the rabbet and sloping
+    # the −0.40 mm spotfaces on 954f80a / earlier builds.
+
     # D7r6: skirt ≤ pod width, tangent into strap, clamp pockets
     strap_flare_skirt(b, POD_L, POD_LEN, y0=POD_Y0)
 
+    # Underside features after skirt exists (bed = z=0 after normalize)
+    oc.cut(
+        b,
+        oc.cylinder(
+            "saddle_gland",
+            POD_WIRE_GLAND_D,
+            2.2,
+            at=(0.0, POD_WIRE_GLAND_Y, -POD_SKIRT_H),
+            anchor="bottom",
+            segments=24,
+        ),
+    )
+    for i, (mx, my) in enumerate(POD_SADDLE_MOUNT):
+        oc.cut(
+            b,
+            oc.cylinder(
+                f"saddle_mnt{i}",
+                3.4,
+                POD_SKIRT_H + 6.0,
+                at=(mx, my, -POD_SKIRT_H),
+                anchor="bottom",
+                segments=16,
+            ),
+        )
+
     if side == "R":
         mirror_for_R(b)
+        # Side letter AFTER mirror so "R" is not X-reversed
+        fz = POD_FLOOR
+        d5.emboss_glyph(b, "R", (22.0, 0.0, fz), size=8.0)
+        d5.emboss_glyph(b, "ARROW", (-22.0, 8.0, fz), size=6.0)
+        return prepare(b, merge=0.01)
+    # L glyphs after solid heal+skirt (same stage as R) — floor-facing
+    fz = POD_FLOOR
+    d5.emboss_glyph(b, "L", (-22.0, 0.0, fz), size=8.0)
+    d5.emboss_glyph(b, "ARROW", (22.0, 8.0, fz), size=6.0)
     return prepare(b, merge=0.01)
 
 
 def pod_lid(side="L"):
-    """Print: OUTER face DOWN. Closed convex dome; screws on flat rim; ID 001."""
-    reveal = D.REVEAL
-    # D7r6: nearly full outline so end-on view is a closed lid, not an open box
+    """Print: OUTER face DOWN (flip on export). Female groove on mating face.
+
+    Lid inset ~3 mm; 360° groove (cut post-remesh); prism 001; screw recesses
+    on outer crown. Groove opens on the up-facing mating face after flip.
+    """
+    reveal = float(POD_LID_INSET)
     lx_max = POD_X_MAX - 2 * reveal
     lx_end = POD_X_END - 2 * reveal
+    lx_strap = POD_X_STRAP - 2 * reveal
     ll = POD_LEN - 2 * reveal
     y_swell = max(8.0, POD_Y_SWELL - reveal)
-    lid = contoured_slab(f"pod_{side}_lid", lx_max, lx_end, ll, POD_LID_T, y_swell,
-                         r_end=max(PLAN_R - 0.5, 8.0), r_swell=max(PLAN_R_SWELL - 0.5, 8.0),
-                         shoulder_run=max(POD_SHOULDER_RUN - 1.0, 6.0),
-                         y0=POD_Y0)
-    d5.lid_fasteners(lid, POD_COLS, POD_LID_T)
-
-    # Landing ring on mating face only (z≈0) — outer stays closed
-    ring_w = 1.5
-    ring_out_w = POD_GROOVE_X - 2 * reveal - 5.0
-    ring_out_l = POD_GROOVE_Y - 2 * reveal - 5.0
-    r_o = 3.5
-    r_i = r_o - ring_w
-    groove_depth = min(1.3, POD_LID_T - 2.5)
-    outer = oc.rounded_rect("plring_o", (ring_out_w, ring_out_l, groove_depth), r_o,
-                            at=(0, 0, -0.1), anchor="bottom")
-    inner = oc.rounded_rect("plring_i",
-                            (ring_out_w - 2 * ring_w, ring_out_l - 2 * ring_w, groove_depth + 0.5),
-                            r_i, at=(0, 0, -0.2), anchor="bottom")
-    oc.cut(lid, oc.cut(outer, inner))
+    # Base strap flare +Y face (same formula as contoured_slab default) so the
+    # lid's ±35 flare starts only where the base deck has already opened to ±38.
+    base_flare_plus_y = (
+        (POD_Y0 - POD_LEN / 2.0) + 0.5 + float(POD_STRAP_FLARE_RUN)
+    )
+    lid = contoured_slab(
+        f"pod_{side}_lid", lx_max, lx_end, ll, POD_LID_T, y_swell,
+        r_end=max(PLAN_R, 2.0), r_swell=max(PLAN_R_SWELL, 2.0),
+        shoulder_run=max(POD_SHOULDER_RUN - 1.0, 6.0),
+        y0=POD_Y0,
+        x_strap=lx_strap,
+        strap_flare_run=POD_STRAP_FLARE_RUN,
+        strap_flare_plus_y=base_flare_plus_y,
+    )
+    cols = _pod_cols_for_side(side)
+    # Mating groove + key lug applied in export_part AFTER flip+remesh so the
+    # 1.6 mm groove survives voxel remesh (same pattern as base tongue).
+    d5.lid_fasteners(lid, cols, POD_LID_T)
 
     rib_len = min(CAV_Y - 20.0, ll - 24.0)
     for i, sx in enumerate((-1.0, 1.0)):
@@ -547,39 +786,66 @@ def pod_lid(side="L"):
                            anchor="bottom", segments=16)
         oc.union(lid, post)
 
-    # Closed convex dome across full outline; light tip ease only (no open end)
     smooth_lid_crown(lid, lx_max, ll, POD_LID_T, sagitta=POD_LID_CROWN, y0=POD_Y0)
     end_taper_skin(lid, lx_max, ll, POD_LID_T + POD_LID_CROWN,
                    POD_TAPER_LEN * 0.55, min(POD_TAPER_DROP * 0.25, 1.5), y0=POD_Y0)
     top_perimeter_chamfer(lid, lx_max, ll, POD_LID_T + POD_LID_CROWN,
-                          r=min(2.0, POD_TOP_EDGE_R * 0.35), y0=POD_Y0)
+                          r=min(1.5, POD_TOP_EDGE_R * 0.5), y0=POD_Y0)
 
-    # Screw heads ON the flat rim (proud of outer deck) — D4 closed-lid read
-    z_rim = POD_LID_T
-    for i, (sx, sy) in enumerate(POD_COLS):
-        head = oc.cylinder(
-            f"pscrew_head{i}", 5.2, 1.2,
-            at=(sx, sy, z_rim), anchor="bottom", segments=20,
+    # D8: Ø2 × 0.4 mm recesses — four, on outer deck, clear of M3 POD_COLS
+    z_outer = POD_LID_T + POD_LID_CROWN
+    hw = lx_max * 0.5 - 3.0
+    hl = ll * 0.5 - 5.0
+    # Mid-edge stations (not extreme corners) keep ≥10 mm from M3 bosses
+    screw_xy = [
+        (-hw, POD_Y0 - hl * 0.55),
+        (+hw, POD_Y0 - hl * 0.55),
+        (-hw, POD_Y0 + hl * 0.55),
+        (+hw, POD_Y0 + hl * 0.55),
+    ]
+    n_screws = 0
+    for i, (px, py) in enumerate(screw_xy):
+        if any(math.hypot(px - cx, py - cy) < 10.0 for cx, cy in cols):
+            continue
+        oc.cut(
+            lid,
+            oc.cylinder(
+                f"pscrew_rec{i}",
+                POD_SCREW_RECESS_D * 0.5,
+                POD_SCREW_RECESS_DEPTH + 0.2,
+                at=(px, py, z_outer - POD_SCREW_RECESS_DEPTH),
+                anchor="bottom",
+                segments=20,
+            ),
         )
-        oc.union(lid, head)
+        n_screws += 1
+    print(f"  pod_{side}_lid screw recesses: {n_screws}/4")
 
-    # D7r8: debossed "001" — baseline across collar width (local +X), like D4's
-    # orange-dot row. Reads L→R when the collar hangs; NO 90° spin. 9.5×0.8 mm.
+    # D8: straight-prism 001 — along +Y, letter-up −X, 6×3.7×0.6
     try:
-        z_outer = POD_LID_T + POD_LID_CROWN
-        font_size = POD_ID_H * 2.0  # DejaVu size≈2× capital H
-        glyph = d5._text_mesh(POD_PUBLIC_ID, font_size, POD_ID_DEPTH + 0.2)
-        lo, hi = oc.bounds(glyph)
-        id_y = POD_Y0 - (ll * 0.28)  # toward strap end (−Y for L)
-        oc.move(
-            glyph,
-            dx=0.0 - (lo[0] + hi[0]) / 2.0,
-            dy=id_y - (lo[1] + hi[1]) / 2.0,
-            dz=(z_outer - POD_ID_DEPTH) - lo[2],
+        import d8_glyphs as g001
+
+        cutters, span = g001.make_001_cutters(
+            size=POD_ID_H, depth=POD_ID_DEPTH + 0.4,
+            stroke=POD_ID_STROKE, width=POD_ID_W, gap=POD_ID_GAP,
         )
-        oc.cut(lid, glyph)
+        # Centre cluster on lid roof, toward strap end, clear of orange-dot zone
+        id_y = POD_Y0 - (ll * 0.18)
+        id_z = z_outer - POD_ID_DEPTH * 0.5
+        for ci, cutter in enumerate(cutters):
+            along = float(cutter.location.y)
+            cutter.location = (0.0, id_y + along, id_z)
+            for cc in list(cutter.users_collection):
+                cc.objects.unlink(cutter)
+            bpy.context.scene.collection.objects.link(cutter)
+            oc.cut(lid, cutter)
+            try:
+                bpy.data.objects.remove(cutter, do_unlink=True)
+            except Exception:
+                pass
+        print(f"  pod_{side}_lid 001 prism span≈{span:.1f} mm at y={id_y:.1f}")
     except Exception as exc:
-        print(f"  public ID emboss skipped: {exc}")
+        print(f"  public ID prism skipped: {exc}")
 
     if side == "R":
         mirror_for_R(lid)
@@ -635,9 +901,9 @@ def fairing_pod_strap(side="L"):
 
 PART_META = {
     "pod_L_base": ("PRINT: cavity UP; bed=underside z=0", "lid screws; cell cradle"),
-    "pod_L_lid": ("PRINT: OUTER face DOWN z=0 (180° about X on export)", "lid screws; ribs"),
+    "pod_L_lid": ("PRINT: OUTER face DOWN z=0 (180° about X; tongue last layers)", "lid screws; ribs"),
     "pod_R_base": ("PRINT: cavity UP; bed=underside z=0", "true mirror of L"),
-    "pod_R_lid": ("PRINT: OUTER face DOWN z=0 (180° about X on export)", "true mirror of L"),
+    "pod_R_lid": ("PRINT: OUTER face DOWN z=0 (180° about X; tongue last layers)", "true mirror of L"),
     "fairing_cap_pod_L": ("PRINT: long axis on bed; slope=WALL", "cap→pod blend"),
     "fairing_cap_pod_R": ("PRINT: long axis on bed; slope=WALL", "mirror"),
     "fairing_pod_strap_L": ("PRINT: long axis on bed; slope=WALL", "pod→strap blend"),
@@ -651,30 +917,106 @@ def export_part(obj, path, meta_key=None):
     prepare(obj, merge=weld)
     if meta_key in GLYPH_EXPORT_WELD or (meta_key and "base" in meta_key):
         heal(obj, merge=0.025)
+    is_pod_lid = meta_key in ("pod_L_lid", "pod_R_lid")
     flipped = False
-    if meta_key in FLIP_OUTER_DOWN:
+    # Pod lids: remesh + cut groove WHILE mating is still at z=0, then flip.
+    if is_pod_lid:
+        normalize_z0(obj)
+        wt = check_wt(obj)
+        if not wt["watertight"]:
+            print(f"  remesh {meta_key} (pre-flip): bad_edges={wt['bad_edges']}")
+            for vx in (0.28, 0.32, 0.42, 0.55):
+                remesh_manifold(obj, voxel=vx)
+                heal(obj, merge=max(0.03, vx * 0.08))
+                normalize_z0(obj)
+                wt = check_wt(obj)
+                print(f"  remesh@{vx}: bad_edges={wt['bad_edges']} wt={wt['watertight']}")
+                if wt["watertight"]:
+                    break
+        side = "L" if "pod_L" in meta_key else "R"
+        print(f"  apply mating groove + key on {meta_key} (pre-flip, z=0)")
+        apply_pod_lid_mating_preflip(obj, side)
         flip_outer_down(obj)
         flipped = True
-    else:
         normalize_z0(obj)
-    wt = check_wt(obj)
-    # Bases/glyphs: remesh if still open so STLs slice cleanly
-    if (meta_key in GLYPH_EXPORT_WELD or (meta_key and "base" in meta_key)) and not wt["watertight"]:
-        print(f"  remesh {meta_key}: bad_edges={wt['bad_edges']}")
-        # 0.32 balances taper retention vs manifold; retry coarser if still open
-        for vx in (0.32, 0.42, 0.55):
-            remesh_manifold(obj, voxel=vx)
-            heal(obj, merge=max(0.03, vx * 0.08))
+        # Measure land Z at outer rim (not key-lug tip at hi[2])
+        z_mat = float(oc.bounds(obj)[1][2] - POD_KEY_LUG[2])
+        try:
+            # Ray/contains probe at side land for a tighter seat constant
+            import bpy as _bpy
+            import bmesh as _bm
+            # Prefer geometric land: POD_LID_T after outer-down ≈ thickness
+            # Empirically the side-land top sits at ≈5.80 with current stack.
+            z_mat = min(z_mat, float(A.POD_LID_T + POD_LID_CROWN))
+            # Clamp to measured rim: sample mesh verts near outer land
+            me = obj.data
+            xs = [v.co.z for v in me.vertices
+                  if abs(v.co.x) > 29.5 and abs(v.co.x) < 31.5
+                  and abs(v.co.y - (POD_Y0 if side == "L" else -POD_Y0)) < 3.0]
+            if xs:
+                z_mat = float(sorted(xs)[len(xs) // 2])
+        except Exception as exc:
+            print(f"  lid land probe: {exc}")
+        try:
+            import json as _json
+            p = os.path.join(_D6, "stl", "pod_lid_mating_z.json")
+            data = {}
+            if os.path.isfile(p):
+                data = _json.loads(open(p).read())
+            data[side] = round(z_mat, 4)
+            open(p, "w").write(_json.dumps(data, indent=2))
+        except Exception as exc:
+            print(f"  lid mating_z persist: {exc}")
+        print(f"  {meta_key} mating_z={z_mat:.3f} (post-flip)")
+        wt = check_wt(obj)
+    else:
+        if meta_key in FLIP_OUTER_DOWN:
+            flip_outer_down(obj)
+            flipped = True
+        else:
+            normalize_z0(obj)
+        wt = check_wt(obj)
+        needs_remesh = (
+            meta_key in GLYPH_EXPORT_WELD
+            or (meta_key and "base" in meta_key)
+        ) and not wt["watertight"]
+        if needs_remesh:
+            print(f"  remesh {meta_key}: bad_edges={wt['bad_edges']}")
+            for vx in (0.28, 0.32, 0.42, 0.55):
+                remesh_manifold(obj, voxel=vx)
+                heal(obj, merge=max(0.03, vx * 0.08))
+                normalize_z0(obj)
+                wt = check_wt(obj)
+                print(f"  remesh@{vx}: bad_edges={wt['bad_edges']} wt={wt['watertight']}")
+                if wt["watertight"]:
+                    break
+        # Pod bases: tongue + flat bosses AFTER remesh so the rabbet survives.
+        if meta_key in ("pod_L_base", "pod_R_base"):
+            side = "L" if "pod_L" in meta_key else "R"
+            print(f"  apply mating tongue + flat bosses on {meta_key}")
+            apply_pod_base_mating(obj, side)
             normalize_z0(obj)
             wt = check_wt(obj)
-            print(f"  remesh@{vx}: bad_edges={wt['bad_edges']} wt={wt['watertight']}")
-            if wt["watertight"]:
-                break
     dims = list(oc.size(obj))
+    # D8 sanity: collapsed boolean stacks can still report watertight with a
+    # tiny face count / short AABB — reject before writing a bad plate STL.
+    n_faces = len(obj.data.polygons) if obj.data else 0
+    if meta_key and "base" in meta_key:
+        if dims[1] < 94.0 or dims[1] > 104.0 or dims[2] < 34.0 or n_faces < 5000:
+            print(f"  SANITY FAIL {meta_key}: dims={dims} faces={n_faces}")
+            wt = dict(wt)
+            wt["watertight"] = False
+    if meta_key and "lid" in meta_key:
+        if dims[0] < 58.0 or dims[1] < 88.0 or n_faces < 1000:
+            print(f"  SANITY FAIL {meta_key}: dims={dims} faces={n_faces}")
+            wt = dict(wt)
+            wt["watertight"] = False
     bed_area = bed_face_area_xy(obj) if flipped or (meta_key and "lid" in meta_key) else None
     oc.export_stl(obj, path)
     stl = check_stl(path)
-    ok = bool(stl["watertight"] and wt["normals_outward"])
+    ok = bool(stl["watertight"] and wt["normals_outward"] and (
+        not (meta_key and "base" in meta_key and (dims[1] < 94.0 or dims[2] < 34.0 or n_faces < 5000))
+    ))
     tag = "OK" if ok else "LOOK"
     print(f"{tag}  {os.path.basename(path)}: {[round(x, 1) for x in dims]}  "
           f"bad_mesh={wt['bad_edges']} bad_stl={stl['bad_edges']}  out={wt['normals_outward']}  "
@@ -834,8 +1176,22 @@ def main():
             "swell_half_y_mm": POD_Y_SWELL,
             "shoulder_run_mm": POD_SHOULDER_RUN,
             "plan_r_mm": PLAN_R,
-            "outer_lid_mm": [POD_X_MAX - 2 * D.REVEAL, POD_LEN - 2 * D.REVEAL, POD_LID_T],
+            "outer_strap_flare_mm": POD_X_STRAP,
+            "lid_inset_mm": POD_LID_INSET,
+            "outer_lid_mm": [
+                POD_X_MAX - 2 * POD_LID_INSET,
+                POD_LEN - 2 * POD_LID_INSET,
+                POD_LID_T,
+            ],
             "lid_crown_sagitta_mm": POD_LID_CROWN,
+            "public_id": {
+                "text": POD_PUBLIC_ID,
+                "h_mm": POD_ID_H,
+                "depth_mm": POD_ID_DEPTH,
+                "cutter": "straight_prism",
+                "letter_up": "-X",
+                "along": "+Y 0→0→1",
+            },
             "cavity_mm": list(POD_CAVITY),
             "cavity_oriented_xyz": [CAV_X, CAV_Y, CAV_Z],
             "stack_mm": POD_STACK_H,
@@ -893,7 +1249,7 @@ def main():
                     "NONE expected for outer shell (flat outer on bed); "
                     "optional tiny supports under mating-face ribs/posts if they bridge"
                 ),
-                "note": "Outer-down; soft tip taper only — not a deep crown",
+                "note": "Outer-down; male tongue last layers; soft tip taper",
             }
 
     report["lid_print"] = lid_support_notes

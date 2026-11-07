@@ -1,0 +1,240 @@
+{
+  "revision": "D8_x2a_datasheet_corrected",
+  "baseline_sha": "4e52f6c",
+  "draft": true,
+  "no_print": true,
+  "assembly_check_note": "geometry/interference only \u2014 not a physical fit or print test",
+  "sizing_model_note": "25x42 cm neck ellipse / R220 = sizing model, not measured cattle",
+  "vendor": {
+    "adafruit_960": {
+      "source": "https://cdn-shop.adafruit.com/datasheets/GPS-01.pdf",
+      "housing_mm": [
+        41.2,
+        38.5,
+        13.3
+      ],
+      "cable": "5 m RG174 SMA male",
+      "mount": "magnetic IP66 external \u2014 cannot fit in 12 mm lid or 12.6 mm cavity"
+    },
+    "sma_ufl_bulkhead": {
+      "class": "Adafruit 851",
+      "thread": "1/4-36 UNEF",
+      "thread_od_mm": 6.35,
+      "through_port_mm": 6.6,
+      "nut_af_mm": [
+        8.0,
+        10.0
+      ],
+      "pigtail": "15 cm RG178 to U.FL"
+    },
+    "nrf9151": {
+      "pcb_mm": [
+        55.88,
+        20.32,
+        1.0
+      ],
+      "height_no_headers_mm": 6.21,
+      "usb_overhang_mm": 1.5,
+      "length_with_usb_mm": 57.38,
+      "j2_underside_mm": 1.95
+    },
+    "p124": {
+      "source": "https://voltaicsystems.com/content/P124_ds.pdf",
+      "size_mm": [
+        113.0,
+        66.0,
+        2.6
+      ],
+      "tolerance_mm": 0.5,
+      "note": "brief 2.8 is NOT the vendor value"
+    }
+  },
+  "end_margin_math": {
+    "cap_l_mm": 164.0,
+    "panel_l_mm": 113.0,
+    "end_margin_mm": 25.5,
+    "keep_clear_mm": 15.0,
+    "ceramic_patch_mm": 25.0,
+    "needed_beyond_panel_mm": 40.0,
+    "shortfall_mm": 14.5,
+    "conclusion": "internal ceramic patch + 15 mm keep-clear impossible with centered P124; 960 external only"
+  },
+  "x2a_4e52f6c": {
+    "kit": {
+      "locating_pocket": null,
+      "j2_recess": false,
+      "glyphs_under_pcb": true,
+      "usb_c_access": false,
+      "status": "FAIL"
+    },
+    "gnss": {
+      "recess_mm": [
+        25.8,
+        25.8,
+        4.3
+      ],
+      "at_y_span": [
+        51.1,
+        76.9
+      ],
+      "vs_960_housing": "FAIL too small",
+      "keep_clear_vs_p124": "FAIL overlap 5.4 mm",
+      "sma_port_d": 6.0,
+      "sma_vs_635": "BLOCKS"
+    },
+    "p124": {
+      "pocket_mm": [
+        66.6,
+        113.6,
+        2.3
+      ],
+      "clearance_xy_per_side": 0.3,
+      "z_vs_26": -0.3,
+      "status": "WARN/FAIL proud"
+    }
+  },
+  "updated_d8": {
+    "kit_pocket_mm": [
+      57.6,
+      21.4,
+      7.5
+    ],
+    "kit_jst_relief_mm": [
+      20.0,
+      12.0,
+      2.6
+    ],
+    "kit_glyphs_clear_of_pcb": true,
+    "usbc_port_mm": [
+      10.5,
+      9.0,
+      6.5
+    ],
+    "usbc_plug_seat_mm": [
+      13.0,
+      3.5,
+      11.0
+    ],
+    "gnss_internal_pocket": null,
+    "gnss_960_mount": "external",
+    "sma_bulkhead_d_mm": 6.6,
+    "sma_nut_seat_af_mm": 10.0,
+    "panel_pocket_mm": [
+      67.2,
+      114.2,
+      3.1
+    ],
+    "panel_size_vendor_mm": [
+      66.0,
+      113.0,
+      2.6
+    ],
+    "panel_y": 0.0,
+    "lid_under_panel_mm": 8.9,
+    "kit_locating": "locate_rib_rect inner 57.6x21.4 h=2.4",
+    "j2_mesh_drop_mm": 2.8,
+    "usbc_tunnel": true,
+    "cap_usbc_plug_stl": "stl/cap_usbc_plug.stl"
+  },
+  "clearance_table_mm": [
+    {
+      "item": "nRF9151 locating X",
+      "x2a": null,
+      "d8": 57.6,
+      "target": 55.88,
+      "d8_clearance": 0.86
+    },
+    {
+      "item": "nRF9151 locating Y",
+      "x2a": null,
+      "d8": 21.4,
+      "target": 20.32,
+      "d8_clearance": 0.54
+    },
+    {
+      "item": "nRF9151 USB overhang L",
+      "x2a": 56.7,
+      "d8": 57.6,
+      "target": 57.38,
+      "x2a_clearance": -0.68,
+      "d8_clearance": 0.22
+    },
+    {
+      "item": "nRF9151 J2 recess depth",
+      "x2a": 0.0,
+      "d8": 2.6,
+      "target": 2.5,
+      "x2a_clearance": -1.95,
+      "d8_clearance": 0.1
+    },
+    {
+      "item": "Adafruit 960 internal XY",
+      "x2a": [
+        25.8,
+        25.8
+      ],
+      "d8": null,
+      "target": [
+        41.2,
+        38.5
+      ],
+      "note": "external only"
+    },
+    {
+      "item": "Adafruit 960 internal Z",
+      "x2a": 4.3,
+      "d8": null,
+      "target": 13.3,
+      "note": "external only"
+    },
+    {
+      "item": "GNSS keep-clear vs P124",
+      "x2a": -5.4,
+      "d8": "N/A (recess removed)",
+      "target": 15.0
+    },
+    {
+      "item": "SMA bulkhead through D",
+      "x2a": 6.0,
+      "d8": 6.6,
+      "target": 6.35,
+      "x2a_clearance": -0.35,
+      "d8_clearance": 0.25
+    },
+    {
+      "item": "P124 pocket X",
+      "x2a": 66.6,
+      "d8": 67.2,
+      "target": 66.0,
+      "x2a_per_side": 0.3,
+      "d8_per_side": 0.6
+    },
+    {
+      "item": "P124 pocket Y",
+      "x2a": 113.6,
+      "d8": 114.2,
+      "target": 113.0,
+      "x2a_per_side": 0.3,
+      "d8_per_side": 0.6
+    },
+    {
+      "item": "P124 pocket Z",
+      "x2a": 2.3,
+      "d8": 3.1,
+      "target_vendor": 2.6,
+      "x2a_clearance": -0.3,
+      "d8_clearance": 0.5
+    }
+  ],
+  "mesh_verification": {
+    "script": "review/verify_cap_base_x2a_mesh.py",
+    "note": "a07db1b coded cuts missed STL; fixed with locate_rib_rect + downward J2 + USB tunnel",
+    "cap_base_stl_checks": {
+      "j2_drop_mm": 2.8,
+      "locating_ribs_at_seat_plus_0_8": true,
+      "glyphs_proud_in_pcb_footprint": 0,
+      "usbc_tunnel_solid_frac": 0.0,
+      "cap_usbc_plug_exported": true
+    }
+  }
+}

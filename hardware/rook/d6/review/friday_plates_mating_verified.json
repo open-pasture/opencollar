@@ -1,0 +1,585 @@
+{
+  "gates": [
+    {
+      "name": "cap_frozen_cap_base.stl",
+      "ok": true,
+      "detail": "sha12=68c3370aaa90 expect=68c3370aaa90"
+    },
+    {
+      "name": "cap_frozen_cap_lid.stl",
+      "ok": true,
+      "detail": "sha12=00c1723b0f07 expect=00c1723b0f07"
+    },
+    {
+      "name": "cap_frozen_cap_usbc_plug.stl",
+      "ok": true,
+      "detail": "sha12=2ef02d0c2b95 expect=2ef02d0c2b95"
+    },
+    {
+      "name": "jig_frozen_jig_m3_heatset_stop.stl",
+      "ok": true,
+      "detail": "sha12=de53273ddc06 expect=de53273ddc06"
+    },
+    {
+      "name": "jig_frozen_jig_wire_gauge.stl",
+      "ok": true,
+      "detail": "sha12=417a5902088a expect=417a5902088a"
+    },
+    {
+      "name": "wire_plug_frozen_pod_L_wire_plug.stl",
+      "ok": true,
+      "detail": "sha12=27ba3832226a expect=27ba3832226a"
+    },
+    {
+      "name": "wire_plug_frozen_pod_R_wire_plug.stl",
+      "ok": true,
+      "detail": "sha12=c73b741bfabb expect=c73b741bfabb"
+    },
+    {
+      "name": "cap_usbc_plug_in_poses",
+      "ok": true,
+      "detail": "keys_have_usbc=True"
+    },
+    {
+      "name": "world_stls_exported",
+      "ok": true,
+      "detail": "n=40"
+    },
+    {
+      "name": "perimeter_sample_count",
+      "ok": true,
+      "detail": "n=40"
+    },
+    {
+      "name": "pod_L_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0004"
+    },
+    {
+      "name": "pod_L_seam_0",
+      "ok": true,
+      "detail": "z_rise=0.0000"
+    },
+    {
+      "name": "pod_L_land_contact",
+      "ok": true,
+      "detail": "ov_at_-0.02=12.7805"
+    },
+    {
+      "name": "pod_L_land_gaps_360",
+      "ok": true,
+      "detail": "valid=24 bad=12 none=16 median|gap|=0.0224 max|gap|=0.4102"
+    },
+    {
+      "name": "pod_L_reveal",
+      "ok": true,
+      "detail": "reveal_x=2.563 overhang=0.000"
+    },
+    {
+      "name": "pod_L_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=0.5454545454545467"
+    },
+    {
+      "name": "pod_L_tongue_support",
+      "ok": true,
+      "detail": "checked=31 bad=0"
+    },
+    {
+      "name": "pod_L_tongue_fully_supported",
+      "ok": true,
+      "detail": "n=1132 miss=0 bridge=0"
+    },
+    {
+      "name": "pod_L_rabbet_xy_2z",
+      "ok": true,
+      "detail": "+0.3:1.772151898734176/0.37974683544304 +0.7:1.772151898734176/0.37974683544304"
+    },
+    {
+      "name": "pod_L_rabbet_z",
+      "ok": true,
+      "detail": "z_clear=0.44999999999999574 tip=37.400000762939456"
+    },
+    {
+      "name": "pod_L_shift_xy",
+      "ok": true,
+      "detail": "shift_x=0.280 shift_y=0.000"
+    },
+    {
+      "name": "pod_L_boss_flat",
+      "ok": true,
+      "detail": "annulus span\u22640.05"
+    },
+    {
+      "name": "pod_L_boss_recess",
+      "ok": true,
+      "detail": "recess 0.35..0.50"
+    },
+    {
+      "name": "pod_L_poka_180",
+      "ok": true,
+      "detail": "coincidences=2"
+    },
+    {
+      "name": "pod_L_proximity",
+      "ok": true,
+      "detail": "prox=1.333"
+    },
+    {
+      "name": "pod_R_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0015"
+    },
+    {
+      "name": "pod_R_seam_0",
+      "ok": true,
+      "detail": "z_rise=0.0000"
+    },
+    {
+      "name": "pod_R_land_contact",
+      "ok": true,
+      "detail": "ov_at_-0.02=12.7820"
+    },
+    {
+      "name": "pod_R_land_gaps_360",
+      "ok": true,
+      "detail": "valid=26 bad=11 none=14 median|gap|=0.0146 max|gap|=0.4102"
+    },
+    {
+      "name": "pod_R_reveal",
+      "ok": true,
+      "detail": "reveal_x=2.563 overhang=0.000"
+    },
+    {
+      "name": "pod_R_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=0.5454545454545467"
+    },
+    {
+      "name": "pod_R_tongue_support",
+      "ok": true,
+      "detail": "checked=33 bad=0"
+    },
+    {
+      "name": "pod_R_tongue_fully_supported",
+      "ok": true,
+      "detail": "n=1132 miss=0 bridge=0"
+    },
+    {
+      "name": "pod_R_rabbet_xy_2z",
+      "ok": true,
+      "detail": "+0.3:1.772151898734176/0.37974683544304 +0.7:1.772151898734176/0.37974683544304"
+    },
+    {
+      "name": "pod_R_rabbet_z",
+      "ok": true,
+      "detail": "z_clear=0.44999999999999574 tip=37.400000762939456"
+    },
+    {
+      "name": "pod_R_shift_xy",
+      "ok": true,
+      "detail": "shift_x=0.280 shift_y=0.000"
+    },
+    {
+      "name": "pod_R_boss_flat",
+      "ok": true,
+      "detail": "annulus span\u22640.05"
+    },
+    {
+      "name": "pod_R_boss_recess",
+      "ok": true,
+      "detail": "recess 0.35..0.50"
+    },
+    {
+      "name": "pod_R_poka_180",
+      "ok": true,
+      "detail": "coincidences=2"
+    },
+    {
+      "name": "pod_R_proximity",
+      "ok": true,
+      "detail": "prox=1.333"
+    },
+    {
+      "name": "cw_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000"
+    },
+    {
+      "name": "cw_land_contact",
+      "ok": true,
+      "detail": "ov_at_-0.02=11.2418"
+    },
+    {
+      "name": "cw_land_gaps_360",
+      "ok": true,
+      "detail": "n=23 median|gap|=0.0714 max|gap|=1.8571"
+    },
+    {
+      "name": "cw_reveal",
+      "ok": true,
+      "detail": "reveal=0.514 overhang=0.000"
+    },
+    {
+      "name": "cw_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=0.0"
+    },
+    {
+      "name": "cw_tongue_support",
+      "ok": true,
+      "detail": "solid=6 float=0"
+    },
+    {
+      "name": "cw_tongue_fully_supported",
+      "ok": true,
+      "detail": "n=1712 miss=0 bridge=0"
+    },
+    {
+      "name": "cw_boss_flat",
+      "ok": true,
+      "detail": "4\u00d7 annulus"
+    },
+    {
+      "name": "cw_no_vertical_bridge",
+      "ok": true,
+      "detail": "bridge_cols=0 screws=[(-19.0, -50.0), (-22.0, 50.0), (22.0, -50.0), (22.0, 50.0)]"
+    },
+    {
+      "name": "cw_poka_180",
+      "ok": true,
+      "detail": "coincidences=2"
+    },
+    {
+      "name": "cw_lid_holes_closed",
+      "ok": true,
+      "detail": "(-19.0, -50.0):OK wall=5.35; (-22.0, 50.0):OK wall=5.35; (22.0, -50.0):OK wall=5.35; (22.0, 50.0):OK wall=5.35"
+    },
+    {
+      "name": "cw_lid_boss_coax",
+      "ok": true,
+      "detail": "(-19.0, -50.0):dxy=0.0000 depth=9.0 recess=0.4; (-22.0, 50.0):dxy=0.0000 depth=9.0 recess=0.4; (22.0, -50.0):dxy=0.0000 depth=9.0 recess=0.4; (22.0, 50.0):dxy=0.0000 depth=9.0 recess=0.4"
+    },
+    {
+      "name": "cw_clamp_holes_4",
+      "ok": true,
+      "detail": "\u00b136,\u00b128.5"
+    },
+    {
+      "name": "cw_proximity",
+      "ok": true,
+      "detail": "prox=0.733"
+    },
+    {
+      "name": "heatset_stop_shelf",
+      "ok": true,
+      "detail": "r@2=2.608695652173913 r@5=2.040133779264214"
+    },
+    {
+      "name": "wire_strip_5_8",
+      "ok": true,
+      "detail": "notches empty at y=-85/-82"
+    },
+    {
+      "name": "wire_plug_L_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000"
+    },
+    {
+      "name": "wire_plug_L_seated",
+      "ok": true,
+      "detail": "prox=0.557"
+    },
+    {
+      "name": "wire_plug_L_radial",
+      "ok": true,
+      "detail": "clear/side=None prox=0.557"
+    },
+    {
+      "name": "wire_plug_R_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000"
+    },
+    {
+      "name": "wire_plug_R_seated",
+      "ok": true,
+      "detail": "prox=0.503"
+    },
+    {
+      "name": "wire_plug_R_radial",
+      "ok": true,
+      "detail": "clear/side=None prox=0.503"
+    },
+    {
+      "name": "wire_plug_LR_mirror",
+      "ok": true,
+      "detail": "tL=[0.0, -151.04, -34.49] tR=[0.0, 151.04, -34.49]"
+    },
+    {
+      "name": "optb_L_volume",
+      "ok": true,
+      "detail": "watertight=True"
+    },
+    {
+      "name": "optb_L_lid_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0004"
+    },
+    {
+      "name": "optb_L_cover_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_L_plug_base_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_L_plug_cover_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_L_wire_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_L_wire_lid_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_L_lid_near",
+      "ok": true,
+      "detail": "prox=0.422"
+    },
+    {
+      "name": "optb_L_cover_near",
+      "ok": true,
+      "detail": "prox=1.707 ov=0.0000"
+    },
+    {
+      "name": "optb_L_plug_near",
+      "ok": true,
+      "detail": "prox=0.224 ov=0.0000"
+    },
+    {
+      "name": "optb_L_wire_near",
+      "ok": true,
+      "detail": "prox=0.359 flange_gap=0.150 gz=34.277"
+    },
+    {
+      "name": "optb_L_cover_land",
+      "ok": true,
+      "detail": "ov_push=0.0 prox=1.707"
+    },
+    {
+      "name": "optb_L_lid_outer_land",
+      "ok": true,
+      "detail": "valid=38 median|gap|=0.0000 seat=1.2"
+    },
+    {
+      "name": "optb_L_lid_z_clear",
+      "ok": true,
+      "detail": "tip=0.028571428571428525 floor=-0.4500015735626221 z_clear=0.47857300213405063"
+    },
+    {
+      "name": "optb_L_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=2.723155843305873"
+    },
+    {
+      "name": "optb_L_tongue_fully_supported",
+      "ok": true,
+      "detail": "n=1144 miss=0 bridge=0"
+    },
+    {
+      "name": "optb_L_boss_coax_4",
+      "ok": true,
+      "detail": "[-22.0, -36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [22.0, -36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [-19.0, 36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [22.0, 36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4"
+    },
+    {
+      "name": "optb_L_poka_180",
+      "ok": true,
+      "detail": "coincidences=2"
+    },
+    {
+      "name": "optb_L_shift_xy",
+      "ok": true,
+      "detail": "+X=0.312 -X=0.312 +Y=0.250 -Y=0.375"
+    },
+    {
+      "name": "optb_L_drop_contact",
+      "ok": true,
+      "detail": "drop=0.0001 ov=0.0004"
+    },
+    {
+      "name": "optb_L_cover_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=15.81818181818182"
+    },
+    {
+      "name": "optb_L_cover_z_clear",
+      "ok": true,
+      "detail": "tip=None z_clear=None"
+    },
+    {
+      "name": "optb_L_plug_radial",
+      "ok": true,
+      "detail": "clear/side=0.228"
+    },
+    {
+      "name": "optb_L_bay_bosses",
+      "ok": true,
+      "detail": "cols=[[-10.0, 14.0], [8.0, 14.0], [-7.0, -14.0], [10.0, -12.0]] boss_ok=True"
+    },
+    {
+      "name": "optb_L_bay_poka",
+      "ok": true,
+      "detail": "coincidences=0"
+    },
+    {
+      "name": "optb_L_lid_land",
+      "ok": true,
+      "detail": "prox=0.422 median|gap|=0.0000"
+    },
+    {
+      "name": "optb_R_volume",
+      "ok": true,
+      "detail": "watertight=True"
+    },
+    {
+      "name": "optb_R_lid_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0028"
+    },
+    {
+      "name": "optb_R_cover_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_R_plug_base_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_R_plug_cover_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_R_wire_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_R_wire_lid_overlap_0",
+      "ok": true,
+      "detail": "ov=0.0000"
+    },
+    {
+      "name": "optb_R_lid_near",
+      "ok": true,
+      "detail": "prox=0.422"
+    },
+    {
+      "name": "optb_R_cover_near",
+      "ok": true,
+      "detail": "prox=1.707 ov=0.0000"
+    },
+    {
+      "name": "optb_R_plug_near",
+      "ok": true,
+      "detail": "prox=0.224 ov=0.0000"
+    },
+    {
+      "name": "optb_R_wire_near",
+      "ok": true,
+      "detail": "prox=0.359 flange_gap=0.150 gz=34.277"
+    },
+    {
+      "name": "optb_R_cover_land",
+      "ok": true,
+      "detail": "ov_push=0.0 prox=1.707"
+    },
+    {
+      "name": "optb_R_lid_outer_land",
+      "ok": true,
+      "detail": "valid=38 median|gap|=0.0000 seat=1.2"
+    },
+    {
+      "name": "optb_R_lid_z_clear",
+      "ok": true,
+      "detail": "tip=0.028571428571428525 floor=-0.4500015735626221 z_clear=0.47857300213405063"
+    },
+    {
+      "name": "optb_R_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=2.7231566280961643"
+    },
+    {
+      "name": "optb_R_tongue_fully_supported",
+      "ok": true,
+      "detail": "n=1144 miss=0 bridge=0"
+    },
+    {
+      "name": "optb_R_boss_coax_4",
+      "ok": true,
+      "detail": "[22.0, 36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [-22.0, 36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [19.0, -36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4; [-22.0, -36.0]:dxy=0.000/depth=5.600000190734863/rec=0.4"
+    },
+    {
+      "name": "optb_R_poka_180",
+      "ok": true,
+      "detail": "coincidences=2"
+    },
+    {
+      "name": "optb_R_shift_xy",
+      "ok": true,
+      "detail": "+X=0.312 -X=0.312 +Y=0.250 -Y=0.188"
+    },
+    {
+      "name": "optb_R_drop_contact",
+      "ok": true,
+      "detail": "drop=0.0001 ov=0.0028"
+    },
+    {
+      "name": "optb_R_cover_poly_overhang_0",
+      "ok": true,
+      "detail": "oh_mm2=0.0 min_inset=15.81818181818182"
+    },
+    {
+      "name": "optb_R_cover_z_clear",
+      "ok": true,
+      "detail": "tip=None z_clear=None"
+    },
+    {
+      "name": "optb_R_plug_radial",
+      "ok": true,
+      "detail": "clear/side=0.228"
+    },
+    {
+      "name": "optb_R_bay_bosses",
+      "ok": true,
+      "detail": "cols=[[10.0, -14.0], [-8.0, -14.0], [7.0, 14.0], [-10.0, 12.0]] boss_ok=True"
+    },
+    {
+      "name": "optb_R_bay_poka",
+      "ok": true,
+      "detail": "coincidences=0"
+    },
+    {
+      "name": "optb_R_lid_land",
+      "ok": true,
+      "detail": "prox=0.422 median|gap|=0.0000"
+    }
+  ],
+  "all_pass": true,
+  "assembly_poses": "/agent/repos/opencollar/hardware/rook/d6/out/assembly_poses.json",
+  "world_dir": "/agent/repos/opencollar/hardware/rook/d6/out/world",
+  "n_world": 40,
+  "n_gates": 115,
+  "n_fail": 0
+}

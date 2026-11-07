@@ -45,6 +45,7 @@ sys.path.insert(0, _HERE)
 import oc  # noqa: E402
 import d5_dims as D  # noqa: E402
 import assembly as A  # noqa: E402
+import mating_rabbet as MR  # noqa: E402
 
 # Calm light-gray ASA body; orange only on tiny functional accents (renders /
 # review blend). Print STLs are geometry-only.
@@ -82,8 +83,16 @@ CW_LID_T = 7.5
 CW_LID_FLAT = 3.0
 CW_CROWN_RISE = CW_LID_T - CW_LID_FLAT              # 4.5
 CW_CROWN_LAND = (36.0, 48.0)                        # land elongated along Y
-# Screws sit in the Y-end land outside the 2×2 pack (|y|≥ pack_y/2 + boss)
-CW_SCREWS = [(sx * 22.0, sy * 54.0) for sx in (-1, 1) for sy in (-1, 1)]
+# Screws sit in the Y-end land outside the 2×2 pack (|y|≥ pack_y/2 + boss).
+# d6bae12 had y=±54 with lid outer ±55.35 — Ø3.4/Ø6.2 broke the edge into
+# open U-notches. y=±50.0 keeps ≥2.0 mm closed wall to the lid perimeter
+# (50 + 3.1 + 2.0 = 55.1 ≤ 55.35) and clears clamp holes at y=±28.5.
+# Poka-yoke: shift one boss (+3 X on the −Y/−X corner → (−19, −y)) so 180°
+# lid rotation cannot seat.
+_CW_SCREW_Y = 50.0
+_CW_SCREWS_BASE = [(sx * 22.0, sy * _CW_SCREW_Y) for sx in (-1, 1) for sy in (-1, 1)]
+CW_SCREWS = [(_CW_SCREWS_BASE[0][0] + 3.0, _CW_SCREWS_BASE[0][1]),
+             _CW_SCREWS_BASE[1], _CW_SCREWS_BASE[2], _CW_SCREWS_BASE[3]]
 # Clamp bar holes stay y=±28.5; X stays ±36 (see assembly.py)
 CW_CLAMP = list(A.CW_CLAMP)                         # (±36, ±28.5)
 CAP_CLAMP = list(A.CAP_CLAMP)                       # (±28.5, ±20) strap-along-Y
@@ -570,12 +579,14 @@ def cw_tub():
     cav_w, cav_l = cx, cy
     cut_cav(b, cav_w, cav_l, CW_FLOOR, ch + 1, r=4.0)
     columns(b, CW_SCREWS, CW_FLOOR, CW_H, d=8.0)
-    # Groove / lip follow the (untapered) plan so the lid still seats
-    groove(b, CW_L - 2 * CW_TAPER_INSET, CW_W - 2 * CW_TAPER_INSET,
-           max(PLAN_R - CW_TAPER_INSET, 4.0), CW_H, CW_WALL - 0.5)
-    reg_lip(b, CW_L - 2 * CW_TAPER_INSET, CW_W - 2 * CW_TAPER_INSET,
-            max(PLAN_R - CW_TAPER_INSET, 4.0), CW_H, CW_WALL - 0.5)
-    # Clamp through-holes — y=±28.5 locked
+    # Lid sized to the TAPERED top deck (not the bottom envelope) so the lid
+    # sits with a clean 0.50 mm inset reveal instead of a 1.60 mm overhang.
+    cw_lid_w, cw_lid_l, cw_lid_r = _cw_lid_plan()
+    MR.add_base_tongue(b, cw_lid_w, cw_lid_l, cw_lid_r, CW_H, prefix="cw_tongue")
+    MR.recess_insert_bosses(
+        b, CW_SCREWS, CW_H, insert_d=D.INSERT_D, prefix="cw",
+    )
+    # Clamp through-holes — y=±28.5 locked; keep Ø4.0 family (D.CLEAR→insert seats on lid)
     for i, (x, y) in enumerate(CW_CLAMP):
         oc.cut(b, oc.cylinder(f"cwcl{i}", D.CLEAR, CW_H + 2, at=(x, y, -1), anchor="bottom"))
 
@@ -615,26 +626,35 @@ def cw_tub():
     return prepare(b)
 
 
+def _cw_lid_plan():
+    """Lid plan = tub top outer − inset reveal, matching tapered top deck.
+
+    Target reveal 0.40 mm (within 0.00–0.50). D.REVEAL=0.50 plus remesh
+    shrinkage previously yielded ~0.61 measured — use 0.40 explicitly.
+    """
+    reveal = 0.35  # measured ~+0.15 remesh; targets 0.40–0.50 inset on STL
+    top_w = CW_L - 2 * CW_TAPER_INSET
+    top_l = CW_W - 2 * CW_TAPER_INSET
+    lw = top_w - 2 * reveal
+    ll = top_l - 2 * reveal
+    lr = max(PLAN_R - CW_TAPER_INSET - reveal, 4.0)
+    return lw, ll, lr
+
+
 def cw_lid():
     """Low domed lid. Mating@z=0; PRINT mating-face-down (no outer flip).
 
     Soft crown + stepped strap channel (wide shallow → deep) for a smoother
     tangent into the strap 'saddle' face. Seal: O-ring land, 4× M3, foam.
+    Sized to the tapered tub TOP (not the bottom envelope) for a 0.50 mm
+    inset reveal all 360° — eliminates the 1.60 mm overhang on 954f80a.
     """
-    lw, ll = CW_L - 2 * D.REVEAL, CW_W - 2 * D.REVEAL
+    lw, ll, lr = _cw_lid_plan()
     lid = _domed_lid_solid("cw_lid", lw, ll, CW_LID_FLAT, CW_LID_T,
-                           PLAN_R - 0.5, CW_CROWN_LAND)
+                           lr, CW_CROWN_LAND)
+    # 360° mating groove on z=0 (print mating-down) — replaces colliding lring
+    MR.cut_lid_groove(lid, lw, ll, lr, prefix="cw_groove")
     lid_fasteners(lid, CW_SCREWS, CW_LID_T)
-    # Landing ring on mating face
-    ring_w = 1.6
-    ring_out_w, ring_out_l = lw - 6.0, ll - 6.0
-    r_o = 5.0
-    r_i = r_o - ring_w
-    outer = oc.rounded_rect("lring_o", (ring_out_w, ring_out_l, 1.5), r_o,
-                            at=(0, 0, -0.1), anchor="bottom")
-    inner = oc.rounded_rect("lring_i", (ring_out_w - 2 * ring_w, ring_out_l - 2 * ring_w, 2.0),
-                            r_i, at=(0, 0, -0.2), anchor="bottom")
-    oc.cut(lid, oc.cut(outer, inner))
     # Strap channel on OUTER face — soft stepped mouth into the dome
     # (wide shallow first, then full-depth channel) ≈ tangent blend
     oc.cut(lid, oc.box("cwchan_soft",

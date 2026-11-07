@@ -1,0 +1,28 @@
+{
+  "plate": "D8_P0_fit_coupon",
+  "bed_mm": 256,
+  "material": "PLA",
+  "est_hours": 11.65,
+  "parts": [
+    {
+      "stl": "d8_fit_coupon.stl",
+      "qty": 1,
+      "material": "PLA"
+    }
+  ],
+  "arrange": "centre; features UP; no brim required; leave 4 mm margin",
+  "contains": [
+    "blind 1.5 mm cap\u2194pod groove (floor + closed ends)",
+    "strap-end flare + D4 notches",
+    "lid inset 3 mm + strengthened lip",
+    "prism 001 span\u224812.3 mm",
+    "\u00d82 screw-head recess",
+    "convex gauges R208/218/221 + R350",
+    "flat + saddle 97 mm footprints (feeler mid-mark)"
+  ],
+  "op_strategy": {
+    "saddle_print": "PICK: flat pod-face on bed, concave R220 UP, light bowl supports. Why: mating/seal face = bed accuracy; curve never on bed. REJECT upside-down-with-lid (curve on bed violates bed rule). REJECT side-print as default (seal face = vertical layers). See review/d8_fit_coupon_notes.md.",
+    "electrode": "Shock-electrode bay + compliant/floating contact STILL REQUIRED. Rigid R220 matches one ideal shape only; 25\u00d742 cm ellipse is a model, not measured cattle \u2014 do not rely on the rigid saddle alone for skin contact. Reserve spring/elastomer travel in the bay (unpopulated).",
+    "ellipse_ask": "Check the 25\u00d742 cm ellipse and R 208/218/221 mm against any real neck measurements on hand. Do not invent measurements."
+  }
+}

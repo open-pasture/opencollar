@@ -1,0 +1,192 @@
+{
+  "skirt_offset": 14.0,
+  "mating_z_stl": 33.0,
+  "overlap_mm3": 0.0,
+  "max_land_seam_gap": 0.0,
+  "bosses": [
+    {
+      "xy": [
+        -28.0,
+        69.5
+      ],
+      "bore_empty": true,
+      "lid_hole_empty": true,
+      "annulus_solid": true,
+      "under_P124": false
+    },
+    {
+      "xy": [
+        28.0,
+        69.5
+      ],
+      "bore_empty": true,
+      "lid_hole_empty": true,
+      "annulus_solid": true,
+      "under_P124": false
+    },
+    {
+      "xy": [
+        -24.5,
+        -67.5
+      ],
+      "bore_empty": true,
+      "lid_hole_empty": true,
+      "annulus_solid": true,
+      "under_P124": false
+    },
+    {
+      "xy": [
+        28.0,
+        -67.5
+      ],
+      "bore_empty": true,
+      "lid_hole_empty": true,
+      "annulus_solid": true,
+      "under_P124": false
+    }
+  ],
+  "gates": [
+    {
+      "name": "base_watertight",
+      "ok": true,
+      "detail": "wt=True"
+    },
+    {
+      "name": "lid_watertight",
+      "ok": true,
+      "detail": "wt=True"
+    },
+    {
+      "name": "plug_watertight",
+      "ok": true,
+      "detail": "wt=True"
+    },
+    {
+      "name": "base_zmin0",
+      "ok": true,
+      "detail": "zmin=0.0"
+    },
+    {
+      "name": "lid_zmin0",
+      "ok": true,
+      "detail": "zmin=0.0"
+    },
+    {
+      "name": "boolean_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000"
+    },
+    {
+      "name": "lid_plan_75x163",
+      "ok": true,
+      "detail": "lid_ext=[75.0, 163.0]"
+    },
+    {
+      "name": "reveal_0p50",
+      "ok": true,
+      "detail": "\u0394W/2=0.500"
+    },
+    {
+      "name": "seam_gap_0",
+      "ok": true,
+      "detail": "max_land_seam_gap=0.0000 mm over 67 samples"
+    },
+    {
+      "name": "rabbet_xy_outer",
+      "ok": true,
+      "detail": "outer_clear=0.275 (target 0.25\u20130.30)"
+    },
+    {
+      "name": "rabbet_xy_inner",
+      "ok": true,
+      "detail": "inner_clear=0.275 (target 0.25\u20130.30)"
+    },
+    {
+      "name": "rabbet_z_clear",
+      "ok": true,
+      "detail": "z_clear_design=0.400"
+    },
+    {
+      "name": "rabbet_present_plusY",
+      "ok": true,
+      "detail": "tongue_Y_spans=[(78.31664580725908, 79.68710888610764)]"
+    },
+    {
+      "name": "bosses_4of4_coaxial",
+      "ok": true,
+      "detail": "[{\"xy\": [-28.0, 69.5], \"bore_empty\": true, \"lid_hole_empty\": true, \"annulus_solid\": true, \"under_P124\": false}, {\"xy\": [28.0, 69.5], \"bore_empty\": true, \"lid_hole_empty\": true, \"annulus_solid\": true, \"under_P124\": false}, {\"xy\": [-24.5, -67.5], \"bore_empty\": true, \"lid_hole_empty\": true, \"annulus_solid\": true, \"under_P124\": false}, {\"xy\": [28.0, -67.5], \"bore_empty\": true, \"lid_hole_empty\": true, \"annulus_solid\": true, \"under_P124\": false}]"
+    },
+    {
+      "name": "no_screw_under_P124",
+      "ok": true,
+      "detail": "cols=[(-28.0, 69.5), (28.0, 69.5), (-24.5, -67.5), (28.0, -67.5)]"
+    },
+    {
+      "name": "poka_yoke_180",
+      "ok": true,
+      "detail": "rot=[(28.0, -69.5), (-28.0, -69.5), (24.5, 67.5), (-28.0, 67.5)]"
+    },
+    {
+      "name": "P124_pocket_depth",
+      "ok": true,
+      "detail": "pocket_floor_z=8.90000057220459 expect~8.9"
+    },
+    {
+      "name": "P124_lid_under_ge_2",
+      "ok": true,
+      "detail": "under=8.90000057220459"
+    },
+    {
+      "name": "usbc_tunnel_open",
+      "ok": true,
+      "detail": "open_samples=8/8"
+    },
+    {
+      "name": "usbc_plug_xy_clear",
+      "ok": true,
+      "detail": "stem_w=10.433 tun_w=10.874 clear/side=0.220 flange_w=12.556 seat_w=12.991 fl_clear=0.218"
+    },
+    {
+      "name": "usbc_plug_seated_overlap_0",
+      "ok": true,
+      "detail": "overlap_mm3=0.0000 plug_h=9.060 seat_z=[20.70,30.20]"
+    },
+    {
+      "name": "pod_pad_usb_notch_open",
+      "ok": true,
+      "detail": "open=12/12 critical=4/4 (need U-notch \u226512.0 mm through pad at X=0)"
+    }
+  ],
+  "all_pass": true,
+  "design_targets": {
+    "CAP_COLS": [
+      [
+        -28.0,
+        69.5
+      ],
+      [
+        28.0,
+        69.5
+      ],
+      [
+        -24.5,
+        -67.5
+      ],
+      [
+        28.0,
+        -67.5
+      ]
+    ],
+    "R_BASE": 14.0,
+    "R_LID": 13.5,
+    "rabbet": {
+      "LAND_W": 1.8,
+      "GROOVE_IN0": 1.52,
+      "GROOVE_IN1": 3.48,
+      "GROOVE_D": 1.6,
+      "TONGUE_IN0": 1.8,
+      "TONGUE_IN1": 3.2,
+      "TONGUE_H": 1.2
+    }
+  }
+}

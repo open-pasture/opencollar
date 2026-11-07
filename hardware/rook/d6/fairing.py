@@ -173,8 +173,8 @@ def fairing_cap_pod(side: str = "L"):
     w1 = float(getattr(A, "FAIRING_W1_CAP_POD", w0))
     h = float(getattr(A, "FAIRING_H_CAP_POD", A.FAIRING_H))
     over = float(getattr(A, "FAIRING_BEVEL_OVERSIZE_CAP_POD", 0.0))
-    # Match cap/pod tip plan R so the hero roof has no shadow line at the join
-    r_nose = min(max(A.FAIRING_PLAN_R0, 10.0), run / 2.0, w0 / 2.0 - 0.5)
+    # Match cap/pod tip plan R (D8 R3) so the hero roof has no shadow line
+    r_nose = min(max(A.FAIRING_PLAN_R0, 3.0), run / 2.0, w0 / 2.0 - 0.5)
     f = fairing_body(
         f"fairing_cap_pod_{side}",
         run=run, w0=w0, w1=w1, h=h,
@@ -208,14 +208,34 @@ def fairing_cap_pod(side: str = "L"):
             ]
         oc.cut(f, oc.prism_x(f"fairing_cap_pod_{side}_ramp", profile, w0 + 8.0))
         oc.bake(f)
+    # D8: blind joint groove — solid floor + closed ends (no see-through sliver).
+    # Keeps lower body + mount path intact for fastening/fit; not a dirt tunnel.
+    groove_w = float(getattr(A, "JOINT_GROOVE_W", 1.5))
+    groove_d = float(getattr(A, "JOINT_GROOVE_D", 3.0))
+    floor_min = float(getattr(A, "JOINT_GROOVE_FLOOR_MIN", 4.0))
+    if groove_w > 0.4 and groove_d > 0.4:
+        depth = min(groove_d, max(0.8, h - floor_min))
+        # Inset from ±X edges so the channel ends are closed (blind).
+        groove_len_x = max(12.0, w0 - 8.0)
+        oc.cut(
+            f,
+            oc.box(
+                f"fairing_cap_pod_{side}_groove",
+                (groove_len_x, groove_w, depth),
+                at=(0.0, 0.0, h - depth),
+                anchor="bottom",
+            ),
+        )
+        oc.bake(f)
     return f
 
 
 def fairing_pod_strap(side: str = "L"):
-    """Pod↔strap bridge: brand 28 mm run; wide end = slim tip."""
+    """Pod↔strap bridge: brand 28 mm run; wide end = D8 strap-end flare."""
+    w0 = float(getattr(A, "FAIRING_W0_POD_STRAP", A.FAIRING_W0))
     return fairing_body(
         f"fairing_pod_strap_{side}",
-        run=A.FAIRING_RUN, w0=A.FAIRING_W0, w1=A.FAIRING_W1, h=A.FAIRING_H,
+        run=A.FAIRING_RUN, w0=w0, w1=A.FAIRING_W1, h=A.FAIRING_H,
         plan_r0=A.FAIRING_PLAN_R0,
         plan_r1=min(A.FAIRING_PLAN_R1, A.STRAP_HALF * 0.9),
     )

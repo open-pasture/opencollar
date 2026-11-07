@@ -1,0 +1,228 @@
+{
+  "experiment": "opt_B_integral_R220_L_and_R",
+  "warning": "DRAFT \u2014 assembly_check is geometry only, not fit/print proof.",
+  "chosen_orientation": "curve_UP_cavity_DOWN",
+  "bodies": {
+    "pod_L_base_optB_curveUP": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/pod_L_base_optB_curveUP.stl",
+      "size_mm": [
+        76.0,
+        98.74,
+        33.08
+      ],
+      "watertight": {
+        "watertight": true,
+        "blender": {
+          "watertight": false,
+          "bad_edges": 188,
+          "faces": 1598742
+        },
+        "trimesh_volume": true
+      },
+      "first_layer_area_mm2": 1990.3,
+      "sagitta_mm": 5.41,
+      "bay": {
+        "bay_w": 29.0,
+        "bay_l": 43.0,
+        "land_floor_t": 6.0,
+        "shock_bore_d": 8.05,
+        "cover_cols": [
+          [
+            -10.0,
+            14.0
+          ],
+          [
+            8.0,
+            14.0
+          ],
+          [
+            -7.0,
+            -14.0
+          ],
+          [
+            10.0,
+            -12.0
+          ]
+        ],
+        "cover_seat_z_curveUP": 31.076969146728516,
+        "body_h_curveUP": 33.076969146728516,
+        "h_cavityUP": 35.255550384521484,
+        "h_before": 37.400001525878906,
+        "land_cav": 7.0,
+        "wire_gland_z": 32.576969146728516,
+        "wire_gland_y": 28.0
+      }
+    },
+    "optb_bay_cover_L": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/optb_bay_cover_L.stl",
+      "size_mm": [
+        28.0,
+        42.0,
+        2.5
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 2142
+      },
+      "cols": [
+        [
+          -10.0,
+          14.0
+        ],
+        [
+          8.0,
+          14.0
+        ],
+        [
+          -7.0,
+          -14.0
+        ],
+        [
+          10.0,
+          -12.0
+        ]
+      ],
+      "cover_h": 2.5
+    },
+    "pod_R_base_optB_curveUP": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/pod_R_base_optB_curveUP.stl",
+      "size_mm": [
+        76.0,
+        98.74,
+        33.08
+      ],
+      "watertight": {
+        "watertight": true
+      },
+      "first_layer_area_mm2": 1990.3,
+      "sagitta_mm": 5.41,
+      "bay": {
+        "bay_w": 29.0,
+        "bay_l": 43.0,
+        "land_floor_t": 6.0,
+        "shock_bore_d": 8.05,
+        "cover_cols": [
+          [
+            10.0,
+            -14.0
+          ],
+          [
+            -8.0,
+            -14.0
+          ],
+          [
+            7.0,
+            14.0
+          ],
+          [
+            -10.0,
+            12.0
+          ]
+        ],
+        "cover_seat_z_curveUP": 31.076969146728516,
+        "body_h_curveUP": 33.076969146728516,
+        "h_cavityUP": 35.255550384521484,
+        "h_before": 37.400001525878906,
+        "land_cav": 7.0,
+        "wire_gland_z": 32.576969146728516,
+        "wire_gland_y": -28.0
+      },
+      "derived_from": "mirror_L"
+    },
+    "optb_bay_cover_R": {
+      "path": "/agent/repos/opencollar/hardware/rook/d6/stl/optb_bay_cover_R.stl",
+      "size_mm": [
+        28.0,
+        42.0,
+        2.5
+      ],
+      "watertight": {
+        "watertight": true
+      },
+      "cols": [
+        [
+          10.0,
+          -14.0
+        ],
+        [
+          -8.0,
+          -14.0
+        ],
+        [
+          7.0,
+          14.0
+        ],
+        [
+          -10.0,
+          12.0
+        ]
+      ],
+      "cover_h": 2.5,
+      "derived_from": "mirror_L"
+    }
+  },
+  "pass": true,
+  "optb_seats": {
+    "L": {
+      "cover_seat_z": 31.076969146728516,
+      "body_h": 33.076969146728516,
+      "cols": [
+        [
+          -10.0,
+          14.0
+        ],
+        [
+          8.0,
+          14.0
+        ],
+        [
+          -7.0,
+          -14.0
+        ],
+        [
+          10.0,
+          -12.0
+        ]
+      ],
+      "cover_h_print": 2.5,
+      "cover_mating_from_bed": 0.0,
+      "cover_h": 2.5,
+      "cover_flange_seat_from_outer": 1.85,
+      "plug_flange_underside_z": 5.5,
+      "wire_gland_z": 32.576969146728516,
+      "wire_gland_y": 28.0,
+      "wire_gland_note": "OptB curveUP: former skirt bed gland is on the high-Z saddle face after Rx(\u03c0). Channel is intentionally wider than the frozen \u00d87.6 wire_plug stem (RTV strain relief); do not edit pod_*_wire_plug.stl."
+    },
+    "R": {
+      "cover_seat_z": 31.076969146728516,
+      "body_h": 33.076969146728516,
+      "cols": [
+        [
+          10.0,
+          -14.0
+        ],
+        [
+          -8.0,
+          -14.0
+        ],
+        [
+          7.0,
+          14.0
+        ],
+        [
+          -10.0,
+          12.0
+        ]
+      ],
+      "cover_h_print": 2.5,
+      "cover_mating_from_bed": 0.0,
+      "cover_h": 2.5,
+      "cover_flange_seat_from_outer": 1.85,
+      "plug_flange_underside_z": 5.5,
+      "wire_gland_z": 32.576969146728516,
+      "wire_gland_y": -28.0,
+      "wire_gland_note": "OptB curveUP: former skirt bed gland is on the high-Z saddle face after Rx(\u03c0). Channel is intentionally wider than the frozen \u00d87.6 wire_plug stem (RTV strain relief); do not edit pod_*_wire_plug.stl."
+    }
+  }
+}

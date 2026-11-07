@@ -1,0 +1,23 @@
+{
+  "round": "D7r17",
+  "base_head": "802eaed",
+  "keeps": [
+    "arc / heights 48.2/25 / stages ≤12",
+    "navy strips arc-inlaid flush",
+    "1.8 mm tier chamfers",
+    "orange dots",
+    "closed underside / no lit outline",
+    "print STLs + assembly_check 144/144"
+  ],
+  "fixes": {
+    "001_orientation": "baseline ALONG strap (world +Y / tangent); letter-up across strap (world +X); identical on both lids; increasing world Y = 0,0,1; no cross-strap slot",
+    "001_glyphs": "height 5 mm, stroke 0.9 mm, gap ≥1.2 mm; sharp-walled 0.6 mm recess; rounded-rect ring 0 + bar/flag 1; no pillow bevel",
+    "verify_cam": "world +Z ortho, screen-up=+X, screen-right=+Y (strap horizontal)"
+  },
+  "glyph_centres_xyz": {
+    "L_Y_asc": "see stations json id_001.L.glyph_centres_xyz; y_order_sign=+1",
+    "R_Y_asc": "see stations json id_001.R.glyph_centres_xyz; y_order_sign=+1"
+  },
+  "assembly_check": "144/144",
+  "hygiene": "PASS"
+}

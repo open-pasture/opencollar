@@ -1,0 +1,52 @@
+{
+  "name": "d8_fit_coupon",
+  "stl": "/agent/repos/opencollar/hardware/rook/d6/stl/d8_fit_coupon.stl",
+  "dims_mm": [
+    238.0,
+    207.0,
+    13.5
+  ],
+  "fits_p2s_256": true,
+  "features": {
+    "gauges_R_mm": [
+      208.0,
+      218.0,
+      221.0,
+      350.0
+    ],
+    "gauge_sagitta_mm": {
+      "208": 5.73,
+      "218": 5.46,
+      "221": 5.39,
+      "350": 3.38
+    },
+    "footprints": [
+      "flat_underside_97",
+      "saddle_R220_underside_97"
+    ],
+    "001_span_mm": 12.3
+  },
+  "also": [
+    "blind 1.5 mm cap\u2194pod groove (floor + closed ends)",
+    "strap-end flare + D4 notches",
+    "lid inset 3 mm + strengthened lip",
+    "prism 001 span\u224812.3 mm",
+    "\u00d82 screw-head recess",
+    "convex gauges R208/218/221 + R350",
+    "flat + saddle 97 mm footprints (feeler mid-mark)"
+  ],
+  "print": {
+    "material": "PLA",
+    "plate": "P0",
+    "orientation": "features UP",
+    "brim": "optional",
+    "bed": "Bambu P2S 256",
+    "est_hours_pla": 11.65,
+    "est_note": "rough volume heuristic \u2014 re-slice before any real plate"
+  },
+  "saddle_print_note": "PICK: flat pod-face on bed, concave R220 UP, light bowl supports. Why: mating/seal face = bed accuracy; curve never on bed. REJECT upside-down-with-lid (curve on bed violates bed rule). REJECT side-print as default (seal face = vertical layers). See review/d8_fit_coupon_notes.md.",
+  "electrode_note": "Shock-electrode bay + compliant/floating contact STILL REQUIRED. Rigid R220 matches one ideal shape only; 25\u00d742 cm ellipse is a model, not measured cattle \u2014 do not rely on the rigid saddle alone for skin contact. Reserve spring/elastomer travel in the bay (unpopulated).",
+  "note": "Fit-check only. Owner must approve before any print. Draft \u2014 no merge.",
+  "ellipse_measurement_ask": "Check the 25\u00d742 cm ellipse and R 208/218/221 mm against any real neck measurements on hand. Do not invent measurements.",
+  "notes_md": "review/d8_fit_coupon_notes.md"
+}

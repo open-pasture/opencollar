@@ -34,7 +34,7 @@ Electronics stay out of the CW (D5 / contract).
 
 | Feature | XY (mm) |
 | --- | --- |
-| Lid / tub M3 (`CW_SCREWS`) | (±22, ±54) — Y-end land outside 2×2 pack |
+| Lid / tub M3 (`CW_SCREWS`) | (±22, ±50) + poka (−19, −50) — Y-end land; ≥2 mm closed wall to lid ±55.35 |
 | CW clamp holes (`CW_CLAMP`) | (**±36, ±28.5**) — Y locked to clamp bars |
 | Cap/saddle clamp family | (±28.5, ±20) strap-along-Y |
 | LoRa crest ref | (0, 64) |

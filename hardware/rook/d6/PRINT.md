@@ -1,18 +1,32 @@
-# D7r4 print plan — Rook collar (ASA, P2S 256)
+# D8 printable candidate — Rook collar (ASA, P2S 256)
 
-Material: **ASA**. Bed: **Bambu P2S 256×256×256**. **Brim 8 mm** on every ASA
-shell. Enclosure closed; dry filament. PLA floor coupons = fit-check only.
+Material: **ASA** for collar shells. Bed: **Bambu P2S 256×256×256**. **Brim 8 mm**
+on every ASA shell. Enclosure closed; dry filament. PLA coupons = fit-check only.
+**Nothing is printed without the owner's explicit say-so.**
 
 Times/grams are **estimates**. Re-slice before any real plate.
+
+## D8 delta vs D6 @ debb5de
+
+- Pod plan: R3 corners; mount tip ~66; mid swell 68; **strap-end flare ~76**
+- Pod lids: **3 mm inset** + lip; prism **`001`** (6×0.6 mm, letter-up −X); 4× Ø2 recesses
+- Cap↔pod fairings: **1.5 mm top groove** (fastening intact); pod↔strap fairings kiss flare
+- Cap plan R3; heights / arc / panel keep-clear unchanged (cap roof 48.2 / pod 25 review; print stacks lay-flat as today)
+- **P0 first:** `d8_fit_coupon.stl` (gauges + footprints + joint) before any ASA plate
+- **+2 neck saddles +2 service lids +2 wire blank plugs**; height **0 mm above strap** (module/driver depth extra toward neck only); 25 mm pod lid-top holds
 
 ## Parts list (1 collar)
 
 | STL | Print bbox (mm) | Vol (cm³) | Qty | Bed / notes |
-| --- | --- | --- | ---: | --- |
-| `cap_base` | 76.0 × 186.9 × 27.2 | ~130 | 1 | cavity UP + strap skirts; **Y+brim=202.9 ≤256** |
-| `cap_lid` | 75.0 × 163.0 × 13.15 | ~110 | 1 | mating DOWN; lower crown/nose |
-| `pod_L_base` / `pod_R_base` | **68.0 × 98.8 × 30.4** | ~59 each | 1+1 | cavity UP + strap skirts |
-| `pod_L_lid` / `pod_R_lid` | 67.0 × 96.0 × 6.0 | ~24 each | 1+1 | outer DOWN; public ID `001` |
+| --- | --- | ---: | ---: | --- |
+| `d8_fit_coupon` | ~238 × 207 × 14 | ~138 | 1 | **PLA P0** — R208/218/221/350 gauges + footprints + joint; re-slice |
+| `cap_base` | 76.0 × 186.9 × 34.2 | ~130 | 1 | cavity UP + strap skirts; **Y+brim ≤256** |
+| `cap_lid` | 75.0 × 163.0 × 12.0 | ~110 | 1 | mating DOWN; lower crown/nose |
+| `pod_L_base` / `pod_R_base` | **76.0 × 98.8 × 37.7** | ~59 each | 1+1 | cavity UP; flare 76 + D4 strap notches |
+| `pod_L_lid` / `pod_R_lid` | 70.0 × 91.0 × 6.0 | ~24 each | 1+1 | outer DOWN; prism `001` + screw recesses |
+| `pod_L/R_saddle` | **52 × 97 × ~12** | — | 1+1 | ASA; flat on bed, R220 concave UP + bowl supports; module+driver keep-outs |
+| `pod_L/R_bay_cover` | ~service opening × 2.5 | — | 1+1 | service lid (bay without opening cell cavity) |
+| `pod_L/R_wire_plug` | ~Ø13 × 7 | — | 1+1 | blank plug — seals wire path when bay unfitted |
 | `cw_tub` | 89.1 × 116.0 × 19.2 | 59.9 | 1 | cavity UP; 2×2 steel |
 | `cw_lid` | 88.4 × 114.8 × 6.35 | 46.3 | 1 | mating DOWN |
 | `saddle` | 76.0 × 96.0 × 6.5 | 20.9 | 1 | channel along Y |
@@ -30,7 +44,7 @@ Usable ≈ **240 mm** after dual-side brim.
 
 | Plate | Parts | Fit note | Est. ASA |
 | --- | --- | --- | --- |
-| **P0** | floor coupons | PLA; no brim | ~1.2 h |
+| **P0** | `d8_fit_coupon` (+ floor coupons) | PLA; no brim; **print first**; re-slice (~12 h heuristic) | PLA |
 | **P1** | `cap_base` | Y+brim 203 ≤ 256; alone on long axis | ~4.5 h / ~130 g |
 | **P1b** | `cap_lid` | 75×163 + brim | ~3.5 h / ~90 g |
 | **P2** | both pod bases | two 68×99 + brims side-by-side ≈ 2×84 ≤ 240 | ~5.5 h / ~100 g |

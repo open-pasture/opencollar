@@ -102,19 +102,19 @@
     "cw_tub": {
       "size_mm": [
         89.123,
-        116.0,
+        115.523,
         19.2
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 59868.63067250622
+        "volume_mm3": 54208.881077957834
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 32882
+        "faces": 31734
       },
       "pass": true,
       "stl_path": "stl/cw_tub.stl",
@@ -128,27 +128,27 @@
     },
     "cw_lid": {
       "size_mm": [
-        88.4,
-        114.8,
-        6.35
+        84.3,
+        110.7,
+        6.294
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 46333.90948343443
+        "volume_mm3": 41710.60703886188
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4450
+        "faces": 5008
       },
       "pass": true,
       "stl_path": "stl/cw_lid.stl",
       "export_flipped_outer_down": false,
       "normals_outward": true,
       "bed_face_at_z0": true,
-      "bed_face_area_mm2": 9464.0,
+      "bed_face_area_mm2": 8539.1,
       "support_note": "Flat crown land on bed (~42\u00d736 mm). Strap channel is a pocket on the bed (no bridge). Internal cbore/landing after flip face UP \u2014 no large tree supports expected; optional tiny supports only if land bridges fail.",
       "orientation": "PRINT: MATING face DOWN z=0 (no outer flip; less support)",
       "load_path": "lid screws; dome up; strap channel on outer",
@@ -165,12 +165,12 @@
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 20915.871087480475
+        "volume_mm3": 16247.483630228611
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 2392
+        "faces": 1468
       },
       "pass": true,
       "stl_path": "stl/saddle.stl",
@@ -211,20 +211,20 @@
     },
     "fairing_cw_L": {
       "size_mm": [
-        88.778,
-        31.992,
-        12.0
+        89.731,
+        31.999,
+        14.0
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 26518.947885389083
+        "volume_mm3": 31377.95741499021
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4244
+        "faces": 4096
       },
       "pass": true,
       "stl_path": "stl/fairing_cw_L.stl",
@@ -238,20 +238,20 @@
     },
     "fairing_cw_R": {
       "size_mm": [
-        88.778,
-        31.992,
-        12.0
+        89.731,
+        31.999,
+        14.0
       ],
       "watertight": {
         "watertight": true,
         "bad_edges": 0,
         "normals_outward": true,
-        "volume_mm3": 26518.947885389083
+        "volume_mm3": 31377.95741499021
       },
       "stl": {
         "watertight": true,
         "bad_edges": 0,
-        "faces": 4244
+        "faces": 4096
       },
       "pass": true,
       "stl_path": "stl/fairing_cw_R.stl",

@@ -1,0 +1,381 @@
+{
+  "revision": "D8_saddle_complete_bay_keepouts",
+  "location_caveat": "Pod bay is a working assumption under Cody's Nov 4 stance (pilot = production, each pod gets a spot). docs/BOTTOM-BAY.md and older CAD place pulse elsewhere \u2014 neither is final.",
+  "unfitted_state": "Service lid + gasket + screws; blank wire plug in sealed pass-through; blank flat skin-contact lands (no open electrode holes); connector sense/ID reads not-fitted; no pulse circuit.",
+  "op_architect_vs_strategy": "op-architect: keep electrode studs in the design. op-strategy: unfitted bay holds no electrodes. Resolution: reserved stud keep-outs with blank/sealed lands when unfitted; open studs only when fitted. Flagged for op-strategy to confirm.",
+  "height": {
+    "review_pod_lid_top_above_strap_mm": 25.0,
+    "holds_25mm_lid_top": true,
+    "why": "Saddle + bay stack sits on the neck side of the strap (fills the ~5.4 mm flat-underside gap). It does not raise the pod lid-top above the strap. Print pod stack above strap unchanged.",
+    "toward_neck_mm": 5.41,
+    "module_vs_sagitta": "MODULE_H=8.0 (+margins) vs sagitta 5.41: any shortfall grows toward neck only, not above strap.",
+    "hinge_vs_compliant": "Measured residual vs R208\u2013221 after R220 saddle is \u22640.32 mm. That does NOT need a hinge. It DOES need compliant/floating electrode contact (spring or elastomer) when fitted \u2014 rigid curve alone is not skin contact. Hinge reserved only if later real-neck data shows much larger mismatch."
+  },
+  "part_count_delta": {
+    "per_pod_was": 2,
+    "per_pod_now": 5,
+    "added": [
+      "pod_*_saddle",
+      "pod_*_bay_cover (service lid)",
+      "pod_*_wire_plug"
+    ],
+    "collar_added_qty": 6
+  },
+  "bodies": {
+    "pod_L_saddle": {
+      "size_mm": [
+        52.0,
+        97.0,
+        13.7
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 2870
+      },
+      "side": "L",
+      "saddle_R_mm": 220.0,
+      "sagitta_mm": 5.36,
+      "total_h_mm": 13.7,
+      "extra_toward_neck_mm": 6.29,
+      "height_above_strap_mm": 0.0,
+      "review_pod_roof_mm_unchanged": 25.0,
+      "layout_y_mm": {
+        "module_y": -21.5,
+        "driver_y": 24.0,
+        "wire_gland_y": -28.0,
+        "bay_span": 89.0
+      },
+      "placeholders": {
+        "module": {
+          "note": "placeholder, not a spec \u2014 no shock module chosen",
+          "L_W_H": [
+            40.0,
+            25.0,
+            8.0
+          ],
+          "margin_xy_z": [
+            3.0,
+            2.0
+          ],
+          "envelope_mm": [
+            31.0,
+            46.0,
+            10.0
+          ]
+        },
+        "driver": {
+          "note": "placeholder, not a spec \u2014 no driver board chosen",
+          "L_W_H": [
+            35.0,
+            22.0,
+            6.0
+          ],
+          "margin_xy_z": [
+            3.0,
+            2.0
+          ],
+          "envelope_mm": [
+            28.0,
+            41.0,
+            8.0
+          ]
+        },
+        "electrode": {
+          "note": "placeholder, not a spec \u2014 reserved geometry only; unfitted skin face is BLANK/FLAT (no electrodes, no open holes, no pulse circuit)",
+          "D_spacing": [
+            6.0,
+            25.0
+          ],
+          "skin_land": "blank/flat only",
+          "stud_keep_out_internal": true,
+          "unfitted": "NO electrodes, NO pulse circuit; blank/flat lands; studs/pass-throughs reserved + sealed",
+          "compliance_travel_mm": 3.0,
+          "architect_vs_strategy": "op-architect: keep electrode studs in the design. op-strategy: unfitted bay holds no electrodes. CAD: blank/flat skin lands + internal sealed stud keep-out. Flagged for op-strategy to resolve."
+        },
+        "op_architect_reserved": [
+          "connector_position",
+          "wire_path_with_strain_relief",
+          "sealed_pass_through",
+          "service_lid_gasket_screws",
+          "electrode_stud_keep_out_internal"
+        ],
+        "unfitted_bay_contents": [
+          "service_lid_or_blank_plug",
+          "connector_position",
+          "wire_path_with_strain_relief",
+          "sealed_pass_through",
+          "blank_flat_skin_lands"
+        ],
+        "wire": {
+          "note": "placeholder, not a spec \u2014 pod-to-cap harness channel; count/gauge unknown; sized \u22658 conductors for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; NOT a final pinout",
+          "conductors_min": 8,
+          "channel_d_mm": 8.0,
+          "gland_y_mm": -28.0
+        },
+        "connector_sense_id": {
+          "reserved_not_a_design": true,
+          "has_sense_id": true,
+          "keep_out_LWH": [
+            12.0,
+            10.0,
+            6.0
+          ],
+          "note": "reserved feature, not a design \u2014 connector position with sense/ID so an unfitted bay reads as not-fitted"
+        },
+        "hw_kill": {
+          "reserved_not_a_design": true,
+          "keep_out_LWH": [
+            8.0,
+            6.0,
+            4.0
+          ],
+          "note": "reserved feature, not a design \u2014 reachable hardware kill that cuts the driver rail independent of firmware (switch / jumper / fuse-link); accessible via service lid without opening the cell cavity"
+        },
+        "welfare_tbd": {
+          "seal_rules_tbd": true,
+          "isolation_clearance_tbd_mm": 0.0,
+          "vent_rules_tbd": true,
+          "note": "seal, isolation distance, and venting come later from the welfare reviewer; adjust MODULE_/DRIVER_/WIRE_ margins and BAY_WALL / GASKET_* \u2014 do not hard-code a sealing scheme yet"
+        }
+      },
+      "print": {
+        "orientation": "flat pod-face on bed; concave neck-face UP; light bowl supports",
+        "material": "ASA",
+        "brim_mm": 8
+      },
+      "design_guardrail": {
+        "source": "op-strategy / op-office Halter design-patent comparison",
+        "do_not": [
+          "narrow low bridge between dominant pods",
+          "soft rounded blending",
+          "raised ribbed bridge top",
+          "vent slots at the pod-bridge joint",
+          "glass-look flat pod tops"
+        ],
+        "keep": [
+          "cap dominant",
+          "faceted segmented look",
+          "blind groove at cap-to-pod joint as a distinct step (no soft blend)",
+          "plan corners \u2264 R3 (SADDLE_PLAN_R / POD PLAN_R = 3)"
+        ],
+        "saddle_plan_r_mm": 3.0,
+        "note": "Pod and saddle changes must not flatten pod tops or add vents or ribs on the bridge. Earlier fixes must not round corners beyond the R3 target."
+      },
+      "shock_module_interface": "draft PR #30 docs/SHOCK-MODULE-INTERFACE.md \u2014 do not edit from this work",
+      "pod_bay_status": "working assumption under Cody Nov 4 stance; placement pending Cody"
+    },
+    "pod_L_bay_cover": {
+      "size_mm": [
+        39.0,
+        97.0,
+        3.1
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 21700
+      },
+      "role": "service lid \u2014 bay openable without cell cavity",
+      "print": {
+        "orientation": "flat; label UP",
+        "material": "ASA or PLA"
+      }
+    },
+    "pod_L_wire_plug": {
+      "size_mm": [
+        12.5,
+        12.5,
+        7.45
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 868
+      },
+      "role": "blank plug \u2014 seals wire pass-through when unfitted",
+      "print": {
+        "orientation": "flange UP or stem down",
+        "material": "ASA or TPU"
+      }
+    },
+    "pod_R_saddle": {
+      "size_mm": [
+        52.0,
+        97.0,
+        13.7
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 2870
+      },
+      "side": "R",
+      "saddle_R_mm": 220.0,
+      "sagitta_mm": 5.36,
+      "total_h_mm": 13.7,
+      "extra_toward_neck_mm": 6.29,
+      "height_above_strap_mm": 0.0,
+      "review_pod_roof_mm_unchanged": 25.0,
+      "layout_y_mm": {
+        "module_y": -21.5,
+        "driver_y": 24.0,
+        "wire_gland_y": -28.0,
+        "bay_span": 89.0
+      },
+      "placeholders": {
+        "module": {
+          "note": "placeholder, not a spec \u2014 no shock module chosen",
+          "L_W_H": [
+            40.0,
+            25.0,
+            8.0
+          ],
+          "margin_xy_z": [
+            3.0,
+            2.0
+          ],
+          "envelope_mm": [
+            31.0,
+            46.0,
+            10.0
+          ]
+        },
+        "driver": {
+          "note": "placeholder, not a spec \u2014 no driver board chosen",
+          "L_W_H": [
+            35.0,
+            22.0,
+            6.0
+          ],
+          "margin_xy_z": [
+            3.0,
+            2.0
+          ],
+          "envelope_mm": [
+            28.0,
+            41.0,
+            8.0
+          ]
+        },
+        "electrode": {
+          "note": "placeholder, not a spec \u2014 reserved geometry only; unfitted skin face is BLANK/FLAT (no electrodes, no open holes, no pulse circuit)",
+          "D_spacing": [
+            6.0,
+            25.0
+          ],
+          "skin_land": "blank/flat only",
+          "stud_keep_out_internal": true,
+          "unfitted": "NO electrodes, NO pulse circuit; blank/flat lands; studs/pass-throughs reserved + sealed",
+          "compliance_travel_mm": 3.0,
+          "architect_vs_strategy": "op-architect: keep electrode studs in the design. op-strategy: unfitted bay holds no electrodes. CAD: blank/flat skin lands + internal sealed stud keep-out. Flagged for op-strategy to resolve."
+        },
+        "op_architect_reserved": [
+          "connector_position",
+          "wire_path_with_strain_relief",
+          "sealed_pass_through",
+          "service_lid_gasket_screws",
+          "electrode_stud_keep_out_internal"
+        ],
+        "unfitted_bay_contents": [
+          "service_lid_or_blank_plug",
+          "connector_position",
+          "wire_path_with_strain_relief",
+          "sealed_pass_through",
+          "blank_flat_skin_lands"
+        ],
+        "wire": {
+          "note": "placeholder, not a spec \u2014 pod-to-cap harness channel; count/gauge unknown; sized \u22658 conductors for ~4\u20136 signals/pod (enable, fault, current sense, module-detect, GND, HV rail) + spare; NOT a final pinout",
+          "conductors_min": 8,
+          "channel_d_mm": 8.0,
+          "gland_y_mm": -28.0
+        },
+        "connector_sense_id": {
+          "reserved_not_a_design": true,
+          "has_sense_id": true,
+          "keep_out_LWH": [
+            12.0,
+            10.0,
+            6.0
+          ],
+          "note": "reserved feature, not a design \u2014 connector position with sense/ID so an unfitted bay reads as not-fitted"
+        },
+        "hw_kill": {
+          "reserved_not_a_design": true,
+          "keep_out_LWH": [
+            8.0,
+            6.0,
+            4.0
+          ],
+          "note": "reserved feature, not a design \u2014 reachable hardware kill that cuts the driver rail independent of firmware (switch / jumper / fuse-link); accessible via service lid without opening the cell cavity"
+        },
+        "welfare_tbd": {
+          "seal_rules_tbd": true,
+          "isolation_clearance_tbd_mm": 0.0,
+          "vent_rules_tbd": true,
+          "note": "seal, isolation distance, and venting come later from the welfare reviewer; adjust MODULE_/DRIVER_/WIRE_ margins and BAY_WALL / GASKET_* \u2014 do not hard-code a sealing scheme yet"
+        }
+      },
+      "print": {
+        "orientation": "flat pod-face on bed; concave neck-face UP; light bowl supports",
+        "material": "ASA",
+        "brim_mm": 8
+      },
+      "design_guardrail": {
+        "source": "op-strategy / op-office Halter design-patent comparison",
+        "do_not": [
+          "narrow low bridge between dominant pods",
+          "soft rounded blending",
+          "raised ribbed bridge top",
+          "vent slots at the pod-bridge joint",
+          "glass-look flat pod tops"
+        ],
+        "keep": [
+          "cap dominant",
+          "faceted segmented look",
+          "blind groove at cap-to-pod joint as a distinct step (no soft blend)",
+          "plan corners \u2264 R3 (SADDLE_PLAN_R / POD PLAN_R = 3)"
+        ],
+        "saddle_plan_r_mm": 3.0,
+        "note": "Pod and saddle changes must not flatten pod tops or add vents or ribs on the bridge. Earlier fixes must not round corners beyond the R3 target."
+      },
+      "shock_module_interface": "draft PR #30 docs/SHOCK-MODULE-INTERFACE.md \u2014 do not edit from this work",
+      "pod_bay_status": "working assumption under Cody Nov 4 stance; placement pending Cody"
+    },
+    "pod_R_bay_cover": {
+      "size_mm": [
+        39.0,
+        97.0,
+        3.1
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 21700
+      },
+      "role": "service lid \u2014 bay openable without cell cavity",
+      "print": {
+        "orientation": "flat; label UP",
+        "material": "ASA or PLA"
+      }
+    },
+    "pod_R_wire_plug": {
+      "size_mm": [
+        12.5,
+        12.5,
+        7.45
+      ],
+      "watertight": {
+        "watertight": true,
+        "bad_edges": 0,
+        "faces": 1090
+      },
+      "role": "blank plug \u2014 seals wire pass-through when unfitted",
+      "print": {
+        "orientation": "flange UP or stem down",
+        "material": "ASA or TPU"
+      }
+    }
+  },
+  "pass": true
+}

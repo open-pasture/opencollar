@@ -1,0 +1,12 @@
+D8 P0 fit coupon — Bambu P2S 256×256 (PLA, features UP)
+bbox ≈ 238 × 207 × 14 mm  est ≈ 11.7 h PLA
+Contents: feature block (groove/flare/lip/001) + R208/218/221/350
+gauges + flat & saddle 97 mm footprints.
+
+SADDLE PRINT (full part, not coupon): PICK flat-on-bed + bowl supports;
+REJECT upside-down-with-lid; REJECT side-print as default.
+ELECTRODES: bay + compliant/floating contact still required;
+rigid R220 alone is not skin contact (ellipse is a model).
+ASK: check 25×42 cm ellipse / R208–221 vs real neck data — do not invent.
+Details: review/d8_fit_coupon_notes.md
+Owner must approve before any print. Draft — no merge.

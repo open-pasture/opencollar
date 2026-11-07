@@ -35,7 +35,27 @@ POD_BASE_H = 22.2          # cavity stack to mating (pre-skirt); cavity still 19
 POD_SKIRT_H = 14.0         # D7r5/r6 deep strap skirt below z=0 before normalize
 # Print-STL mating Z after skirt normalize (underside z=0 → mating at skirt+base)
 POD_MATING_Z = POD_BASE_H + POD_SKIRT_H  # 36.2
-POD_LID_T = 4.2            # as-exported lid thickness (~4.0 modeled + ribs)
+POD_LID_T = 4.0            # solid lid body (excl. crown / tongue)
+POD_LID_CROWN = 1.8        # outer dome sagitta
+POD_LID_TONGUE_H = 1.20    # male rabbet tongue (matches mating_rabbet.TONGUE_H)
+# After outer-down flip: bed=outer at z=0, mating land at measured top (see
+# stl/pod_lid_mating_z.json). Fallback ≈ POD_LID_T once crown sits on the bed.
+POD_LID_MATING_FROM_BED = 5.80  # measured side-land top after outer-down flip
+POD_LID_PRINT_H = 7.45
+
+
+def pod_lid_mating_from_bed(side: str = "L") -> float:
+    """Measured lid mating-face Z in print frame (outer-down), fallback constant."""
+    import json
+    from pathlib import Path
+    p = Path(__file__).resolve().parent / "stl" / "pod_lid_mating_z.json"
+    if p.is_file():
+        data = json.loads(p.read_text())
+        if side in data:
+            return float(data[side])
+        if "L" in data:
+            return float(data["L"])
+    return float(POD_LID_MATING_FROM_BED)
 # D7r2: cavity rotated — 58 across X / 82 along Y → outer ~68 wide × ~97 long
 # (was 92 wide with 82 across X). Mount face local Y locked at old ±46.
 POD_L = 68.0               # max X = cell swell (58 + 2×5); narrower than cap 76
@@ -43,7 +63,7 @@ POD_X_END = 66.0           # tip width (slight taper; ≤70)
 POD_W = 97.0               # along strap (Y) — D4-ish length; strap-end grows
 POD_MOUNT_FACE_Y = 46.0    # LOCKED local |Y| of recess face (was POD_W/2 when W=92)
 POD_FLOOR = 1.5
-POD_PLAN_R = 8.0           # outer tip plan R (pod.py PLAN_R)
+POD_PLAN_R = 3.0           # D8: R3 plan corners (D4 / r19 silhouette)
 
 CAP_Z0 = -3.6              # D4 cap_base world min z
 CAP_BASE_H = 19.0
@@ -87,9 +107,9 @@ SADDLE_H = SADDLE_ROOF + SADDLE_CHANNEL_D
 FAIRING_POD_OUTER_X = POD_L              # 68 swell
 FAIRING_POD_TIP_X = POD_X_END            # 66 — join width at ±Y ends
 FAIRING_POD_OUTER_Y = POD_W
-FAIRING_POD_PLAN_R = POD_PLAN_R          # 8
+FAIRING_POD_PLAN_R = POD_PLAN_R          # 3
 FAIRING_CAP_W = CAP_W                    # 76
-FAIRING_CAP_PLAN_R = 7.0
+FAIRING_CAP_PLAN_R = 3.0                 # D8: R3
 FAIRING_CW_OUTER = CW_L                  # 89.4
 FAIRING_RUN = 28.0
 # D7r3: D4-like short rounded nose (~16.6); must not sail past pod tip outline.
@@ -98,6 +118,10 @@ FAIRING_RUN_CW = 32.0                    # longer blend saddle ↔ lower CW
 # Wide end = pod outer (narrower than cap); fairing_cw() overrides W0 to CW.
 FAIRING_W0 = FAIRING_POD_OUTER_X         # 68 — kiss swell / tip band
 FAIRING_W1 = 52.0                        # narrow end toward strap / mate (strap+CW)
+# D8 joint groove — blind (closed ends + solid floor); fastening intact below
+JOINT_GROOVE_W = 1.5
+JOINT_GROOVE_D = 3.0
+JOINT_GROOVE_FLOOR_MIN = 4.0           # solid floor under trough (≥4 mm)
 # Cap↔pod: nearly constant width (no sail taper / creases at tip).
 FAIRING_W1_CAP_POD = FAIRING_W0          # 68 — flush rounded nose, not a flap
 FAIRING_W0_CW = FAIRING_CW_OUTER         # 89.4 — wide end = CW outer (no plan step)
@@ -114,8 +138,10 @@ FAIRING_EDGE_R = 4.0
 FAIRING_BEVEL_OVERSIZE = 0.75
 # Cap↔pod stadium (W1=W0, large plan R) barely shrinks under bevel — skip oversize.
 FAIRING_BEVEL_OVERSIZE_CAP_POD = 0.0
-FAIRING_PLAN_R0 = max(FAIRING_POD_PLAN_R, 8.0)
-FAIRING_PLAN_R1 = max(FAIRING_CAP_PLAN_R, 6.0)
+FAIRING_PLAN_R0 = max(FAIRING_POD_PLAN_R, 3.0)
+FAIRING_PLAN_R1 = max(FAIRING_CAP_PLAN_R, 3.0)
+# Pod↔strap fairing wide end follows strap-end flare
+FAIRING_W0_POD_STRAP = 76.0              # kiss POD_X_STRAP
 FAIRING_TOP_CROWN = 0.0                 # D7r3: no crown cuts → no crease lines
 FAIRING_RAMP_DROP = 8.0                 # D7r7: stronger tangent step-down (D4-like)
 FAIRING_INTERFERE_TOL = 0.2
@@ -172,9 +198,19 @@ def world_poses():
 
     X = [1, 0, 0]
     Zax = [0, 0, 1]
+    # USB-C blank plug seated in cap_base −Y wall (stl/cap_report.json
+    # T_plug_in_base): Rz(π) so flange faces −Y; flange outer at y=−82;
+    # Z bbox centered in seat band [20.7, 30.2] (skirt-normalized STL).
+    _usbc_print_ymax = 6.0 + 2.6  # stem_l + fl_t
+    _usbc_print_zmid = 0.5 * 9.06  # fl_h after normalize_z0
+    usbc_plug = (
+        T([0.0, -82.0 + _usbc_print_ymax, CAP_Z0 + 0.5 * (20.7 + 30.2) - _usbc_print_zmid])
+        @ R(math.pi, Zax)
+    )
     poses = {
         "cap_base": T([0, 0, CAP_Z0]),
         "cap_lid": T([0, 0, CAP_Z0 + CAP_MATING_Z]),
+        "cap_usbc_plug": usbc_plug,
         # Saddle STL: channel along Y (width X); roof was bed → flip 180 X so roof
         # sits under the cap, no extra Z rot needed for strap-along-Y.
         "saddle": T([0, 0, CAP_Z0]) @ R(math.pi, X),
@@ -182,8 +218,28 @@ def world_poses():
     for side in ("L", "R"):
         A = pod_anchor_matrix(side)
         poses[f"pod_{side}_base"] = A @ T([0, 0, POD_Z0])
+        # Lid prints outer-down; Rx(π) + shift puts mating face on base parting.
+        lid_mz = pod_lid_mating_from_bed(side)
         poses[f"pod_{side}_lid"] = (
-            A @ T([0, 0, POD_Z0 + POD_MATING_Z]) @ R(math.pi, X) @ T([0, 0, -POD_LID_T])
+            A @ T([0, 0, POD_Z0 + POD_MATING_Z])
+            @ R(math.pi, X)
+            @ T([0, 0, -lid_mz])
+        )
+        # Neck saddle: flat mates pod skirt bed (z=0); Rx(π) points concave to neck.
+        poses[f"pod_{side}_saddle"] = (
+            A @ T([0, 0, POD_Z0]) @ R(math.pi, X)
+        )
+        # Service lid — on saddle neck/service face (approx)
+        poses[f"pod_{side}_bay_cover"] = (
+            A @ T([0, 0, POD_Z0]) @ R(math.pi, X) @ T([0, 0, -2.5])
+        )
+        # Wire blank plug — stem into underside gland at POD_WIRE_GLAND_Y.
+        # R base is X+Y mirrored so the gland sits at −(−28)=+28 in R print frame.
+        # Rx aims the stem (+Z after flip) into the channel; flange seats on bed.
+        gy = -28.0 if side == "L" else 28.0
+        wire_flange_z = 5.5  # stem×6 with flange overlap; underside of flange
+        poses[f"pod_{side}_wire_plug"] = (
+            A @ T([0.0, gy, POD_Z0]) @ R(math.pi, X) @ T([0.0, 0.0, -wire_flange_z])
         )
 
     CWA = T([0, 0, CW_ANCH_Z]) @ R(math.pi, X)
@@ -233,3 +289,88 @@ def world_poses():
     for i, B in enumerate(bars):
         poses[f"clamp_bar_{i + 1}"] = B
     return poses
+
+
+def _load_optb_seats():
+    """Seat Z / cover print metrics from last optB build (stl/optb_seats.json)."""
+    import json
+    from pathlib import Path
+    p = Path(__file__).resolve().parent / "stl" / "optb_seats.json"
+    if p.is_file():
+        return json.loads(p.read_text())
+    # Safe fallbacks until build_opt_b writes the file
+    return {
+        side: {
+            "cover_seat_z": 29.7,
+            "cover_mating_from_bed": 0.0,
+            "cover_h": 2.5,
+            "plug_flange_underside_z": 5.5,
+            "cover_flange_seat_from_outer": 1.85,
+            "wire_gland_z": 34.5,
+            "wire_gland_y": 28.0 if side == "L" else -28.0,
+            "lid_seat_z": POD_LID_TONGUE_H,
+        }
+        for side in ("L", "R")
+    }
+
+
+def optb_world_poses():
+    """Option B poses (mutually exclusive with Option A saddle in assembly_check).
+
+    curveUP print: tongue tip on bed (z=0), lid seat land at lid_seat_z
+    (TONGUE_H), bay land near max Z. Shared Rx(π,X) maps the OptB print frame
+    onto the standard pod mating plane. Cover prints mating-down (z=0);
+    blank-plug flange seats on the cover countersink; stem into Ø8.05 bore.
+    """
+    from trimesh.transformations import rotation_matrix as R
+    from trimesh.transformations import translation_matrix as T
+
+    X = [1, 0, 0]
+    seats = _load_optb_seats()
+    poses = {}
+    for side in ("L", "R"):
+        Am = pod_anchor_matrix(side)
+        s = seats[side]
+        # Parting (print z=0 tongue tip) → world; lid seats on raised land.
+        shared = Am @ T([0, 0, POD_Z0 + POD_MATING_Z]) @ R(math.pi, X)
+        poses[f"pod_{side}_base_optB_curveUP"] = shared
+        # Frozen pod_*_lid.stl keeps its groove; OptB land is at lid_seat_z
+        # (TONGUE_H) so the male tongue tip on the bed enters the groove.
+        lid_mz = pod_lid_mating_from_bed(side)
+        lid_seat = float(s.get("lid_seat_z", POD_LID_TONGUE_H))
+        poses[f"pod_{side}_lid_optB"] = (
+            Am @ T([0, 0, POD_Z0 + POD_MATING_Z])
+            @ R(math.pi, X)
+            @ T([0, 0, lid_seat - lid_mz])
+        )
+        seat_z = float(s["cover_seat_z"])
+        cov_mating = float(s.get("cover_mating_from_bed", 0.0))
+        cover_h = float(s.get("cover_h", 2.5))
+        poses[f"optb_bay_cover_{side}"] = (
+            shared @ T([0, 0, seat_z - cov_mating])
+        )
+        flange_z = float(s.get("plug_flange_underside_z", 5.5))
+        # Exterior CB depth from outer face (default 1.85 = flange thickness).
+        seat_from_outer = float(s.get("cover_flange_seat_from_outer", 1.85))
+        # Cover mating-down: outer at seat+cover_h; CB floor at outer−depth.
+        # Blank plug STL has stem at low Z, flange underside at flange_z — NO
+        # Rx(π): stem already points −Z into the bore when flange seats on CB.
+        flange_seat_z = (seat_z - cov_mating) + (cover_h - seat_from_outer)
+        poses[f"jig_blank_shock_plug_{side}"] = (
+            shared @ T([0, 0, flange_seat_z]) @ T([0, 0, -flange_z])
+        )
+        # Wire plug on OptB: gland is on the high-Z (former skirt) face after
+        # curveUP flip. Seat flange on gland face; stem into −Z (no Rx).
+        gy = float(s.get("wire_gland_y", 28.0 if side == "L" else -28.0))
+        gland_z = float(s.get("wire_gland_z", s.get("body_h", seat_z)))
+        poses[f"pod_{side}_wire_plug_optB"] = (
+            shared @ T([0.0, gy, gland_z]) @ T([0.0, 0.0, -flange_z])
+        )
+    return poses
+
+
+def all_assembly_poses():
+    """Union of standard + Option B poses for assembly_poses.json export."""
+    p = world_poses()
+    p.update(optb_world_poses())
+    return p
