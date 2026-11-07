@@ -1,28 +1,30 @@
 #!/usr/bin/env python3
-"""Surgical OptB patch on the known-good 749b9f4 curveUP mesh.
+"""Surgical OptB patch on 749b9f4 curveUP (keep overlap≈0 / spotface / coax).
 
-Full remate rebuilds tongue/deck and caused large lid overlap. This script only:
-  1. Adds M3 land rings + 0.40 spotfaces at bed columns (no wide pillars
-     into the lid tongue band; existing through-bores keep ≥5.8 mm depth).
-  2. Stitches Y-end wall feet to the deck OUTSIDE the lid envelope.
-  3. Mirrors L→R and promotes to d6/stl + experiments/stl.
+Fixes for audit 352e734:
+  1. Rabbet → 0.28 mm/side via tongue shave (dy=0.22; dx=0)
+  2. Y-end outer-land plugs (lid \\ tongue, lid-subtracted) → land_360 + wall feet
+  3. +Z M3 pads, 0.40 spotface, ≥45° top chamfer
+  4. Punch+chamfer cavity shelves at (±22,−35) Z≈20.5
+  5. Y-end wall/deck stitch OUTSIDE lid+0.40
+  6. Restore cover_seat_z=29.476 (46dc5f7) + rewrite assembly_poses.json
 """
 from __future__ import annotations
 
 import json
-import math
 import os
 import shutil
+import subprocess
 import sys
 
 import numpy as np
 import trimesh
-from shapely.geometry import box as shapely_box
-from shapely.ops import transform
+from shapely.geometry import box as shapely_box, Polygon
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _D6 = os.path.abspath(os.path.join(_HERE, "..", ".."))
 D6_STL = os.path.join(_D6, "stl")
+D6_OUT = os.path.join(_D6, "out")
 OUT = os.path.join(_HERE, "stl")
 
 TONGUE_H = 1.20
@@ -30,14 +32,31 @@ BOSS_SPOT_D, BOSS_RECESS = 8.4, 0.40
 INSERT_D, INSERT_DEPTH = 4.0, 5.9
 OPTB_BED_COLS_L = [(-22.0, -36.0), (22.0, -36.0), (-19.0, 36.0), (22.0, 36.0)]
 OPTB_BED_Y0_L = 2.5
+OPTB_KEY_XY_L = (18.0, -28.0)
 OPTB_LID_SEAT_Z = TONGUE_H
 CAV_X, CAV_Y = 58.0, 82.0
+IN0_X_749, IN0_Y_749 = 1.80, 1.58
+IN1_X_749, IN1_Y_749 = 3.20, 2.98
+SHAVE_DX, SHAVE_DY = 0.0, 0.22
+COVER_SEAT_Z_46 = 29.4764419837619
 
 
 def _cyl(r, h, at, segs=48):
     c = trimesh.creation.cylinder(radius=r, height=h, sections=segs)
     c.apply_translation([at[0], at[1], at[2] + 0.5 * h])
     return c
+
+
+def _cone_frustum(r_bot, r_top, h, at, segs=48):
+    ring0 = trimesh.creation.cylinder(radius=r_bot, height=0.02, sections=segs)
+    ring0.apply_translation([0, 0, 0.01])
+    ring1 = trimesh.creation.cylinder(radius=r_top, height=0.02, sections=segs)
+    ring1.apply_translation([0, 0, h - 0.01])
+    hull = trimesh.convex.convex_hull(
+        np.vstack([ring0.vertices, ring1.vertices])
+    )
+    hull.apply_translation([at[0], at[1], at[2]])
+    return hull
 
 
 def _extrude_poly(poly, h):
@@ -48,49 +67,49 @@ def _extrude_poly(poly, h):
     try:
         return trimesh.creation.extrude_polygon(poly, height=h)
     except Exception:
-        return None
+        try:
+            return trimesh.creation.extrude_polygon(poly.buffer(0), height=h)
+        except Exception:
+            return None
 
 
-def _patch_bosses(body, cols, seat: float):
-    """Cavity-side M3 pads with +Z spotface (OptB land-at-bed).
+def _stad(w, l, r, y0=0.0):
+    hw, hl = 0.5 * w, 0.5 * l
+    rr = min(r, hw - 0.05, hl - 0.05)
+    core = shapely_box(-hw + rr, -hl + rr + y0, hw - rr, hl - rr + y0)
+    return core.buffer(rr)
 
-    Lid solid fills z≲seat under the land; any base pad below seat overlaps.
-    Lid is empty for z>seat at the boss XY, so pads/pillars live strictly on
-    the cavity side of the land:
-      - wipe any solid in the lid/tongue band (z < seat) at the boss
-      - union pad from seat → seat+H
-      - spotface: empty seat..seat+0.40 at the annulus (recess measured +Z)
-      - Ø4 bore through the pad (existing through-bore from bed kept)
-    """
-    pad_r = 0.5 * BOSS_SPOT_D + 1.0  # 5.2
-    spot_r = 0.5 * BOSS_SPOT_D       # 4.2
-    pad_h = INSERT_DEPTH + 1.5
-    wipe_r = pad_r + 0.5
-    for i, (x, y) in enumerate(cols):
-        # Clear base solid in the lid body band (below seat) at this column.
-        body = body.difference(
-            _cyl(wipe_r, seat - 0.05, (x, y, 0.05)),
-            engine="manifold",
-        )
-        # Cavity-side pad sitting on the land.
-        pad = _cyl(pad_r, pad_h, (x, y, seat))
-        body = body.union(pad, engine="manifold")
-        # +Z spotface: remove seat..seat+0.40 at the annulus (keep bore core).
-        spot = _cyl(spot_r, BOSS_RECESS + 0.02, (x, y, seat))
-        core = _cyl(0.5 * INSERT_D + 0.15, BOSS_RECESS + 0.2, (x, y, seat - 0.05))
-        spot_cut = spot.difference(core, engine="manifold")
-        body = body.difference(spot_cut, engine="manifold")
-        # Ø4 insert bore through pad (and into the bed through-hole).
-        body = body.difference(
-            _cyl(0.5 * INSERT_D, pad_h + seat + 0.5, (x, y, 0.0)),
-            engine="manifold",
-        )
-        print(f"  boss pad+spot {i} @ ({x:.0f},{y:.0f}) +Z recess={BOSS_RECESS}")
+
+def _shave_tongue(body, y0: float, seat: float,
+                  dx: float = SHAVE_DX, dy: float = SHAVE_DY):
+    tw_o = 62.0 - 2 * IN0_X_749
+    tl_o = 91.0 - 2 * IN0_Y_749
+    tw_i = 62.0 - 2 * IN1_X_749
+    tl_i = 91.0 - 2 * IN1_Y_749
+    r_o = max(3.0 - min(IN0_X_749, IN0_Y_749), 0.5)
+    r_i = max(3.0 - min(IN1_X_749, IN1_Y_749), 0.4)
+    tw_ot = 62.0 - 2 * (IN0_X_749 + dx)
+    tl_ot = 91.0 - 2 * (IN0_Y_749 + dy)
+    tw_it = 62.0 - 2 * (IN1_X_749 - dx)
+    tl_it = 91.0 - 2 * (IN1_Y_749 - dy)
+    shave_o = _stad(tw_o + 0.3, tl_o + 0.3, r_o + 0.2, y0).difference(
+        _stad(tw_ot, tl_ot, max(r_o - max(dx, dy), 0.5), y0)
+    )
+    shave_i = _stad(tw_it, tl_it, max(r_i + max(dx, dy), 0.4), y0).difference(
+        _stad(tw_i, tl_i, r_i, y0)
+    )
+    for label, poly in (("outer", shave_o), ("inner", shave_i)):
+        if poly.is_empty:
+            continue
+        cut = _extrude_poly(poly, seat + 0.05)
+        if cut is not None:
+            body = body.difference(cut, engine="manifold")
+            print(f"  tongue shave {label} area={poly.area:.1f}")
+    print(f"  tongue shave ΔX={dx:+.3f} ΔY={dy:+.3f}")
     return body
 
 
-def _stitch_walls_outside_lid(body, y0: float, seat: float):
-    """Fill wall-foot air gaps only OUTSIDE the lid outline (+0.40 clear)."""
+def _lid_poly():
     lid = trimesh.load(os.path.join(D6_STL, "pod_L_lid.stl"), force="mesh")
     lid_mz = 5.8
     mz_path = os.path.join(D6_STL, "pod_lid_mating_z.json")
@@ -101,39 +120,97 @@ def _stitch_walls_outside_lid(body, y0: float, seat: float):
         plane_normal=[0.0, 0.0, 1.0],
     )
     if sec is None:
-        print("  wall stitch: no lid section")
-        return body
+        return None
     verts = np.asarray(sec.vertices)
-    from shapely.geometry import Polygon, MultiPolygon
     polys = []
     for entity in sec.entities:
         idx = np.asarray(entity.points)
         if len(idx) < 3:
             continue
-        pts = verts[idx][:, :2]
         try:
-            polys.append(Polygon(pts))
+            polys.append(Polygon(verts[idx][:, :2]))
         except Exception:
             pass
     if not polys:
+        return None
+    return max(polys, key=lambda g: g.area)
+
+
+def _lid_in_base_frame():
+    """Frozen lid posed into OptB base print frame (for boolean clearance)."""
+    if _D6 not in sys.path:
+        sys.path.insert(0, _D6)
+    import importlib
+    import assembly as A
+    importlib.reload(A)
+    lid = trimesh.load(os.path.join(D6_STL, "pod_L_lid.stl"), force="mesh")
+    optb = A.optb_world_poses()
+    Mo = optb["pod_L_base_optB_curveUP"]
+    Ml = optb["pod_L_lid_optB"]
+    lid_p = lid.copy()
+    lid_p.apply_transform(np.linalg.inv(Mo) @ Ml)
+    return lid_p
+
+
+def _y_end_land_plugs(body, y0: float, seat: float, lid_p):
+    """Fill outer-land / wall-foot voids at Y-ends under the lid.
+
+    Annulus = lid_outline \\ tongue(+0.85). Subtract posed lid so rabbet and
+    overlap stay clean. Closes land_360 cavity drop (~19.75) and wall-deck air.
+    """
+    lid_poly = _lid_poly()
+    if lid_poly is None:
+        print("  land plugs: no lid poly")
         return body
-    lid_poly = max(polys, key=lambda g: g.area).buffer(0.40)
+    tw_o = 62.0 - 2 * (IN0_X_749 + SHAVE_DX)
+    tl_o = 91.0 - 2 * (IN0_Y_749 + SHAVE_DY)
+    r_o = max(3.0 - min(IN0_X_749 + SHAVE_DX, IN0_Y_749 + SHAVE_DY), 0.5)
+    tongue = _stad(tw_o, tl_o, r_o, y0).buffer(0.85)
+    ring = lid_poly.difference(tongue)
+    for y_sign in (-1.0, +1.0):
+        band = shapely_box(-36.0, y0 + y_sign * 38.0, 36.0, y0 + y_sign * 48.0)
+        plug_poly = ring.intersection(band)
+        if plug_poly.is_empty:
+            continue
+        slab = _extrude_poly(plug_poly, seat + 0.02)
+        if slab is None:
+            continue
+        slab.apply_translation([0.0, 0.0, 0.02])
+        try:
+            slab = slab.difference(lid_p, engine="manifold")
+        except Exception as exc:
+            print(f"  land plug lid-diff fail: {exc}")
+            continue
+        try:
+            body = body.union(slab, engine="manifold")
+            print(f"  land plug y_sign={y_sign:+.0f} area={plug_poly.area:.1f}")
+        except Exception as exc:
+            print(f"  land plug union fail: {exc}")
+    return body
+
+
+def _stitch_walls_outside_lid(body, y0: float, seat: float):
+    lid_poly = _lid_poly()
+    if lid_poly is None:
+        print("  wall stitch: no lid poly")
+        return body
+    lid_buf = lid_poly.buffer(0.40)
     parts = []
     for y_sign in (-1.0, +1.0):
-        yc = y0 + y_sign * 45.0
-        band = shapely_box(-36.0, yc - 6.0, 36.0, yc + 6.0)
-        # Outside lid, and prefer outer wall (outside cavity).
+        yc = y0 + y_sign * 43.0
+        band = shapely_box(-36.0, yc - 5.0, 36.0, yc + 5.0)
         cav = shapely_box(
-            -0.5 * CAV_X, y0 - 0.5 * CAV_Y, 0.5 * CAV_X, y0 + 0.5 * CAV_Y
-        ).buffer(1.0)
-        poly = band.difference(lid_poly).difference(cav)
+            -0.5 * CAV_X, y0 - 0.5 * CAV_Y,
+            0.5 * CAV_X, y0 + 0.5 * CAV_Y,
+        ).buffer(0.5)
+        poly = band.difference(lid_buf).difference(cav)
         if poly.is_empty:
             continue
-        slab = _extrude_poly(poly, seat + 0.20)
+        slab = _extrude_poly(poly, seat + 0.15)
         if slab is not None:
             parts.append(slab)
     if not parts:
-        print("  wall stitch: empty outside-lid collar")
+        print("  wall stitch: empty")
         return body
     collar = parts[0] if len(parts) == 1 else trimesh.util.concatenate(parts)
     body = body.union(collar, engine="manifold")
@@ -141,16 +218,64 @@ def _stitch_walls_outside_lid(body, y0: float, seat: float):
     return body
 
 
-def _sanitize(mesh):
-    try:
-        mesh.merge_vertices()
-        mesh.update_faces(mesh.unique_faces())
-        mesh.update_faces(mesh.nondegenerate_faces())
-        mesh.fill_holes()
-        mesh.process(validate=True)
-    except Exception as exc:
-        print("  sanitize warn:", exc)
-    return mesh
+def _patch_bosses(body, cols, seat: float):
+    pad_r = 0.5 * BOSS_SPOT_D + 1.0
+    spot_r = 0.5 * BOSS_SPOT_D
+    pad_h = INSERT_DEPTH + 1.5
+    wipe_r = pad_r + 0.5
+    chamfer_h = 1.20
+    for i, (x, y) in enumerate(cols):
+        body = body.difference(
+            _cyl(wipe_r, seat - 0.05, (x, y, 0.05)), engine="manifold",
+        )
+        body = body.union(_cyl(pad_r, pad_h, (x, y, seat)), engine="manifold")
+        spot = _cyl(spot_r, BOSS_RECESS + 0.02, (x, y, seat))
+        core = _cyl(0.5 * INSERT_D + 0.15, BOSS_RECESS + 0.2, (x, y, seat - 0.05))
+        body = body.difference(
+            spot.difference(core, engine="manifold"), engine="manifold",
+        )
+        top_z = seat + pad_h
+        cham = _cone_frustum(
+            pad_r + 0.05, pad_r - chamfer_h, chamfer_h,
+            (x, y, top_z - chamfer_h),
+        )
+        keep = _cyl(
+            pad_r - chamfer_h - 0.05, chamfer_h + 0.4,
+            (x, y, top_z - chamfer_h - 0.2),
+        )
+        try:
+            body = body.difference(
+                cham.difference(keep, engine="manifold"), engine="manifold",
+            )
+        except Exception as exc:
+            print(f"  chamfer {i} soft-fail:", exc)
+        body = body.difference(
+            _cyl(0.5 * INSERT_D, pad_h + seat + 0.5, (x, y, 0.0)),
+            engine="manifold",
+        )
+        print(f"  boss pad+spot+chamfer {i} @ ({x:.0f},{y:.0f})")
+    return body
+
+
+def _chamfer_cavity_shelves(body):
+    """Chamfer flat ceilings at (±22,−35) Z≈20.5–21.2 at ≥45°.
+
+    Cut an inverted frustum sitting on the ceiling plane so the remaining
+    underside slopes (≥45°) into the cavity — no flat punch floor left behind.
+    """
+    z_face = 20.55
+    cham_h = 3.0  # run = rise → 45°
+    r_top = 9.0
+    for x, y in [(22.0, -35.0), (-22.0, -35.0)]:
+        # Wide base of cone deeper in cavity; tip near ceiling centre.
+        cone = _cone_frustum(r_top, max(r_top - cham_h, 0.5), cham_h,
+                             (x, y, z_face - cham_h))
+        try:
+            body = body.difference(cone, engine="manifold")
+            print(f"  shelf ≥45° chamfer @ ({x:.0f},{y:.0f}) h={cham_h}")
+        except Exception as exc:
+            print(f"  shelf chamfer fail: {exc}")
+    return body
 
 
 def mirror_R(src_l, dst_r):
@@ -159,11 +284,7 @@ def mirror_R(src_l, dst_r):
         src = src_l
     m = trimesh.load(src, force="mesh", process=False)
     T = np.array(
-        [[-1.0, 0.0, 0.0, 0.0],
-         [0.0, -1.0, 0.0, 0.0],
-         [0.0, 0.0, 1.0, 0.0],
-         [0.0, 0.0, 0.0, 1.0]],
-        dtype=float,
+        [[-1.0, 0, 0, 0], [0, -1.0, 0, 0], [0, 0, 1.0, 0], [0, 0, 0, 1.0]]
     )
     m.apply_transform(T)
     m.apply_translation([0.0, 0.0, -float(m.bounds[0, 2])])
@@ -175,110 +296,122 @@ def mirror_R(src_l, dst_r):
     return bool(check.is_volume)
 
 
-def _grow_tongue_xy(body, y0: float, seat: float, d_out_x: float = 0.07):
-    """Additive ±X tongue shell so contains-scan rabbet snaps to 0.25 mm.
+def _write_seats_and_poses(body_h: float):
+    seats_path = os.path.join(D6_STL, "optb_seats.json")
+    seats = json.loads(open(seats_path).read()) if os.path.isfile(seats_path) else {}
+    for side in ("L", "R"):
+        s = seats.setdefault(side, {})
+        s["cover_seat_z"] = float(COVER_SEAT_Z_46)
+        s["body_h"] = float(body_h)
+        s["lid_seat_z"] = float(OPTB_LID_SEAT_Z)
+        s["tongue_tip_z"] = 0.0
+        s["cover_h_print"] = 2.5
+        s["cover_mating_from_bed"] = 0.0
+        s["cover_h"] = 2.5
+        s["cover_flange_seat_from_outer"] = 0.5
+        s["plug_flange_underside_z"] = 5.5
+        s["wire_gland_z"] = float(body_h)
+        if side == "L":
+            s["bed_cols"] = [list(c) for c in OPTB_BED_COLS_L]
+            s["bed_y0"] = OPTB_BED_Y0_L
+            s["bed_key_xy"] = list(OPTB_KEY_XY_L)
+            s["wire_gland_y"] = 28.0
+        else:
+            s["bed_cols"] = [[-c[0], -c[1]] for c in OPTB_BED_COLS_L]
+            s["bed_y0"] = -OPTB_BED_Y0_L
+            s["bed_key_xy"] = [-OPTB_KEY_XY_L[0], -OPTB_KEY_XY_L[1]]
+            s["wire_gland_y"] = -28.0
+    with open(seats_path, "w") as f:
+        json.dump(seats, f, indent=2)
+        f.write("\n")
+    print(f"  seats cover_seat_z={COVER_SEAT_Z_46}")
 
-    Scan quantum is 0.0625 mm; 749 seed reads ±X=0.3125 (one step over
-    0.305). A +0.07 mm outer shell brings ±X to 0.25 without overlap.
-    ±Y is left alone — −Y=0.375 is a shoulder-skirt artifact at the tip
-    station, not a real tongue/groove gap (boolean shift on 749 was ~0.06).
-    """
-    IN0_X, IN0_Y = 1.80, 1.58
-    tw_o = 62.0 - 2 * IN0_X
-    tl_o = 91.0 - 2 * IN0_Y
-    r_o = max(3.0 - min(IN0_X, IN0_Y), 0.5)
-
-    def _stad(w, l, r):
-        hw, hl = 0.5 * w, 0.5 * l
-        rr = min(r, hw - 0.05, hl - 0.05)
-        core = shapely_box(-hw + rr, -hl + rr, hw - rr, hl - rr)
-        return core.buffer(rr)
-
-    outer = _stad(tw_o + 2 * d_out_x, tl_o, r_o + d_out_x)
-    inner = _stad(tw_o, tl_o, r_o)
-    ring = outer.difference(inner)
-    ring = transform(lambda x, y, z=None: (x, y + y0), ring)
-    if ring.is_empty:
-        print("  tongue grow empty")
-        return body
-    shell = _extrude_poly(ring, seat)
-    if shell is None:
-        print("  tongue grow extrude failed")
-        return body
-    body = body.union(shell, engine="manifold")
-    print(f"  tongue grow ΔX={d_out_x:+.3f}")
-    return body
+    if _D6 not in sys.path:
+        sys.path.insert(0, _D6)
+    import importlib
+    import assembly as A
+    importlib.reload(A)
+    poses = A.all_assembly_poses()
+    pose_json = {
+        name: {
+            "matrix_4x4": np.asarray(M, float).reshape(4, 4).tolist(),
+            "translation_mm": np.asarray(M, float).reshape(4, 4)[:3, 3].tolist(),
+        }
+        for name, M in poses.items()
+    }
+    poses_path = os.path.join(D6_OUT, "assembly_poses.json")
+    with open(poses_path, "w") as f:
+        json.dump(pose_json, f, indent=2)
+        f.write("\n")
+    print(f"  wrote {poses_path}")
+    world = os.path.join(D6_OUT, "world")
+    os.makedirs(world, exist_ok=True)
+    for name in (
+        "pod_L_base_optB_curveUP", "pod_R_base_optB_curveUP",
+        "optb_bay_cover_L", "optb_bay_cover_R",
+        "pod_L_base", "pod_R_base",
+    ):
+        src = os.path.join(D6_STL, f"{name}.ply")
+        if not os.path.isfile(src):
+            src = os.path.join(D6_STL, f"{name}.stl")
+        if not os.path.isfile(src) or name not in poses:
+            continue
+        m = trimesh.load(src, force="mesh")
+        w = m.copy()
+        w.apply_transform(np.asarray(poses[name], float))
+        w.export(os.path.join(world, f"{name}.stl"))
+    tL = np.asarray(poses["optb_bay_cover_L"])[:3, 3]
+    print(f"  cover_L translation {tL.round(3).tolist()}")
 
 
 def main():
-    src = os.path.join(D6_STL, "pod_L_base_optB_curveUP.ply")
-    if not os.path.isfile(src):
-        src = os.path.join(D6_STL, "pod_L_base_optB_curveUP.stl")
-    body = trimesh.load(src, force="mesh")
-    if not body.is_volume:
-        body = _sanitize(body)
+    subprocess.check_call(
+        ["git", "show", "749b9f4:hardware/rook/d6/stl/pod_L_base_optB_curveUP.ply"],
+        stdout=open(os.path.join(D6_STL, "pod_L_base_optB_curveUP.ply"), "wb"),
+    )
+    body = trimesh.load(
+        os.path.join(D6_STL, "pod_L_base_optB_curveUP.ply"), force="mesh"
+    )
+    assert body.is_volume, "749 seed must be volume"
     seat = float(OPTB_LID_SEAT_Z)
-    cols = list(OPTB_BED_COLS_L)
     y0 = float(OPTB_BED_Y0_L)
+    cols = list(OPTB_BED_COLS_L)
+    lid_p = _lid_in_base_frame()
 
-    print("Growing tongue for rabbet window…")
-    try:
-        body = _grow_tongue_xy(body, y0, seat)
-    except Exception as exc:
-        print("  tongue grow failed:", exc)
-
+    print("Shaving tongue for 0.28 rabbet…")
+    body = _shave_tongue(body, y0, seat)
+    print("Y-end land plugs (lid-safe)…")
+    body = _y_end_land_plugs(body, y0, seat, lid_p)
+    print("Stitching walls outside lid…")
+    body = _stitch_walls_outside_lid(body, y0, seat)
     print("Patching bosses…")
     body = _patch_bosses(body, cols, seat)
-    # Wall stitch disabled: outside-lid collar at z=seat created a coplanar
-    # land sheet vs the lid (~100+ mm³ boolean). 749 walls are continuous at
-    # the outer skirt; interior Y-end float is below the lid land and not in
-    # the tongue interference set.
-    print("Skipping wall stitch (outside-lid collar caused coplanar overlap)")
-    body = _sanitize(body)
+    print("Chamfering cavity shelves…")
+    body = _chamfer_cavity_shelves(body)
+    assert body.is_volume, "patch lost volume"
 
+    os.makedirs(OUT, exist_ok=True)
+    ply_l = os.path.join(OUT, "pod_L_base_optB_curveUP.ply")
     out_l = os.path.join(OUT, "pod_L_base_optB_curveUP.stl")
-    ply_l = out_l.replace(".stl", ".ply")
     body.export(ply_l)
     body.export(out_l)
-    promo_l = os.path.join(D6_STL, "pod_L_base_optB_curveUP.stl")
-    shutil.copy2(out_l, promo_l)
-    shutil.copy2(ply_l, promo_l.replace(".stl", ".ply"))
+    shutil.copy2(out_l, os.path.join(D6_STL, "pod_L_base_optB_curveUP.stl"))
+    shutil.copy2(ply_l, os.path.join(D6_STL, "pod_L_base_optB_curveUP.ply"))
     print(
-        f"  L exported vol={body.is_volume} wt={body.is_watertight} "
-        f"faces={len(body.faces)} h={body.bounds[1,2]-body.bounds[0,2]:.2f}"
+        f"  L vol={body.is_volume} faces={len(body.faces)} "
+        f"h={body.bounds[1,2]-body.bounds[0,2]:.2f}"
     )
 
     promo_r = os.path.join(D6_STL, "pod_R_base_optB_curveUP.stl")
     print("Mirroring R…")
     mirror_R(ply_l, promo_r)
     shutil.copy2(promo_r, os.path.join(OUT, "pod_R_base_optB_curveUP.stl"))
-    ply_r = promo_r.replace(".stl", ".ply")
-    if os.path.isfile(ply_r):
-        shutil.copy2(ply_r, os.path.join(OUT, "pod_R_base_optB_curveUP.ply"))
+    shutil.copy2(
+        promo_r.replace(".stl", ".ply"),
+        os.path.join(OUT, "pod_R_base_optB_curveUP.ply"),
+    )
 
-    # Keep seats JSON in sync (cover seat from current body height / bay).
-    seats_path = os.path.join(D6_STL, "optb_seats.json")
-    if os.path.isfile(seats_path):
-        seats = json.loads(open(seats_path).read())
-    else:
-        seats = {"L": {}, "R": {}}
-    body_h = float(body.bounds[1, 2])
-    # Preserve cover_seat_z if present; only refresh bed cols / lid seat.
-    for side in ("L", "R"):
-        s = seats.setdefault(side, {})
-        s["lid_seat_z"] = seat
-        s["body_h"] = body_h
-        s["tongue_tip_z"] = 0.0
-        if side == "L":
-            s["bed_cols"] = [list(c) for c in OPTB_BED_COLS_L]
-            s["bed_y0"] = OPTB_BED_Y0_L
-        else:
-            s["bed_cols"] = [[-c[0], -c[1]] for c in OPTB_BED_COLS_L]
-            s["bed_y0"] = -OPTB_BED_Y0_L
-    with open(seats_path, "w") as f:
-        json.dump(seats, f, indent=2)
-        f.write("\n")
-    print("Updated", seats_path)
+    _write_seats_and_poses(float(body.bounds[1, 2]))
     print("PASS")
 
 
