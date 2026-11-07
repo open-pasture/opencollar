@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Surgical OptB patch on 749b9f4 curveUP (keep rabbet 0.28 / overlap≈0 / spotface).
 
-Fixes for audit 9f15f6b:
+Fixes for audit 5e4eaed:
   1. Keep tongue shave dy=0.22 → rigid-shift X=Y≈0.28
   2. Full-360 outer-land plate (lid\\tongue, lid-subtracted) → land_360_flush
   3. Outside-lid Y-end wall stitch + under-lid wall-foot boxes (inset)
   4. +Z M3 pads / 0.40 spotface / ≥45° top chamfer
   5. ≥45° cavity-shelf chamfer at (±22,−35) Z≈20.5 (hole + cone)
-  6. Bay clear (cover+0.16) + flush land + tongue + shock Ø8.05 bore
+  6. Bay clear + RING land + ≥45° wall-rooted corbel (no cavity ceiling slab)
   7. Restore cover_seat_z=29.476; regenerate assembly_poses + out/world
      including shock-plug world STLs
 """
@@ -22,6 +22,7 @@ import sys
 import numpy as np
 import trimesh
 from shapely.geometry import box as shapely_box, Polygon
+from shapely.ops import unary_union
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _D6 = os.path.abspath(os.path.join(_HERE, "..", ".."))
@@ -158,10 +159,41 @@ def _lid_in_base_frame():
     return lid_p
 
 
-def _outer_land_plate_360(body, y0: float, seat: float, lid_p):
-    """Full-360 outer land under lid, outside tongue+0.85, excluding bay.
+def _section_exterior(mesh, z):
+    """Largest filled XY exterior at plane z."""
+    sec = mesh.section(
+        plane_origin=[0.0, 0.0, float(z)],
+        plane_normal=[0.0, 0.0, 1.0],
+    )
+    if sec is None:
+        return None
+    verts = np.asarray(sec.vertices)
+    polys = []
+    for entity in sec.entities:
+        idx = np.asarray(entity.points)
+        if len(idx) < 3:
+            continue
+        xy = verts[idx][:, :2]
+        try:
+            p = Polygon(xy)
+            if p.is_valid and p.area > 1.0:
+                polys.append(p)
+        except Exception:
+            continue
+    if not polys:
+        return None
+    u = unary_union(polys)
+    if u.geom_type == "MultiPolygon":
+        u = max(u.geoms, key=lambda g: g.area)
+    return Polygon(u.exterior)
 
-    Lid-subtracted so rabbet/overlap stay clean. Closes land_360 cavity voids.
+
+def _outer_land_plate_360(body, y0: float, seat: float, lid_p):
+    """Restore 360° outer land under lid (0.3–1.2 mm band), excluding bay.
+
+    Two fills:
+      1) band ring (lid outline \\ tongue \\ bay), thin near seat, lid-subtracted
+      2) missing std-Y-flip deck silhouette vs current section (remate recipe)
     """
     lid_poly = _lid_poly()
     if lid_poly is None:
@@ -170,22 +202,63 @@ def _outer_land_plate_360(body, y0: float, seat: float, lid_p):
     tw_o = 62.0 - 2 * (IN0_X_749 + SHAVE_DX)
     tl_o = 91.0 - 2 * (IN0_Y_749 + SHAVE_DY)
     r_o = max(3.0 - min(IN0_X_749 + SHAVE_DX, IN0_Y_749 + SHAVE_DY), 0.5)
-    tongue = _stad(tw_o, tl_o, r_o, y0).buffer(0.85)
+    # 0.45 clears the 0.28 rabbet channel but keeps the outer 0.3–1.2 land band
+    # (0.12 ate the rabbet; 0.85 ate the +Y land band).
+    tongue = _stad(tw_o, tl_o, r_o, y0).buffer(0.45)
     bay = _stad(COVER_W + 2.0, COVER_L + 2.0, COVER_R + 1.0)
-    ring = lid_poly.difference(tongue).difference(bay)
-    if ring.is_empty:
-        print("  land plate: empty")
-        return body
-    slab = _extrude_poly(ring, seat + 0.02)
-    if slab is None:
-        return body
-    slab.apply_translation([0.0, 0.0, 0.02])
+    band = lid_poly.difference(lid_poly.buffer(-1.35))
+    ring = band.difference(tongue).difference(bay)
+    if not ring.is_empty:
+        h = 0.30
+        z0 = seat - 0.31
+        slab = _extrude_poly(ring, h)
+        if slab is not None:
+            slab.apply_translation([0.0, 0.0, z0])
+            try:
+                slab = slab.difference(lid_p, engine="manifold")
+                if slab.is_volume:
+                    body = body.union(slab, engine="manifold")
+                    print(f"  outer-land band plate area={ring.area:.1f}")
+                else:
+                    print("  land band non-volume after lid subtract; skip")
+            except Exception as exc:
+                print("  land band failed:", exc)
+    # Remate-style missing deck fill vs std Y-flip silhouette at seat.
     try:
-        slab = slab.difference(lid_p, engine="manifold")
-        body = body.union(slab, engine="manifold")
-        print(f"  outer-land 360 plate area={ring.area:.1f}")
+        std = trimesh.load(os.path.join(D6_STL, "pod_L_base.stl"), force="mesh")
+        # Std mating silhouette at z≈36 (std land), Y-negated into OptB y0 frame.
+        std_poly = _section_exterior(std, 36.05)
+        if std_poly is not None:
+            # Y-flip about 0 then shift by y0 - (-2.5) = y0+2.5... OptB y0=+2.5,
+            # std cavity centre −2.5; remate uses Y-negate into OptB bed frame.
+            from shapely.affinity import affine_transform
+            # Y -> -Y (std to OptB Y-flip), no extra shift: OptB bed y0=+2.5
+            # matches negated std y0=-2.5.
+            std_poly = affine_transform(std_poly, [1, 0, 0, -1, 0, 0])
+            cur_poly = _section_exterior(body, seat + 0.05)
+            if cur_poly is not None:
+                missing = std_poly.difference(cur_poly.buffer(0.05))
+                missing = missing.difference(bay)
+                if (not missing.is_empty) and missing.area > 1.0:
+                    fill = _extrude_poly(missing, 0.08)
+                    if fill is not None:
+                        fill.apply_translation([0.0, 0.0, seat - 0.02])
+                        fill = fill.difference(lid_p, engine="manifold")
+                        if fill.is_volume:
+                            body = body.union(fill, engine="manifold")
+                            print(f"  missing land-plate area={missing.area:.1f}")
+                        else:
+                            print("  missing land non-volume; skip")
+                else:
+                    print("  missing land empty")
+            else:
+                print("  missing land: no current section")
+        else:
+            print("  missing land: no std section")
     except Exception as exc:
-        print("  land plate failed:", exc)
+        print("  missing land fill failed:", exc)
+    if not body.is_volume:
+        print("  WARN: body non-volume after land fills")
     return body
 
 
@@ -217,13 +290,13 @@ def _stitch_walls_outside_lid(body, y0: float, seat: float):
     return body
 
 
-def _wall_foot_boxes(body, y0: float, seat: float):
+def _wall_foot_boxes(body, y0: float, seat: float, lid_p=None):
     """Close remaining under-lid deck/wall 0.05 gaps at Y− end tongue feet.
 
     Boxes stay ≥0.55 inside tongue outer so rabbet clearance is untouched.
     Only the known gap clusters at y≈−41, |x|≈20..24 (lid-empty in z≥0).
     """
-    del y0
+    del y0, lid_p
     # Stay inside tongue outer (y≳−41.2 after shave): centre y=−40.5, half-Y=0.4.
     for sx in (-1.0, +1.0):
         box = trimesh.creation.box(extents=(5.0, 0.8, seat + 0.05))
@@ -295,22 +368,53 @@ def _chamfer_cavity_shelves(body):
 
 
 def _bay_clear_and_seat(body, land_z: float):
-    """Clear cover footprint +0.16, rebuild flush land/tongue, clear Ø8.05 bore."""
-    # Clear old bay roof / plugs invading the cover seat.
-    clearer = _extrude_poly(
-        _stad(COVER_W + 0.32, COVER_L + 0.32, COVER_R + 0.16), 5.0,
+    """Clear bay cavity, ring land at land_z, ≥45° wall-rooted corbel, tongue/shock.
+
+    No flat downfacing slab over cavity air: land is a RING rooted to the side
+    walls by a stair corbel (run=rise per step). Cover flange mates on the ring.
+    """
+    LAND_W = 2.2
+    CHAM = 7.0
+    N = 12
+    dz = CHAM / N
+    outer = _stad(COVER_W + 0.8, COVER_L + 0.8, COVER_R + 0.3)
+    inner = _stad(
+        COVER_W + 0.8 - 2 * LAND_W,
+        COVER_L + 0.8 - 2 * LAND_W,
+        max(COVER_R + 0.3 - LAND_W, 0.4),
     )
+    # Deep clear of old roof/plugs down to ~deck shelf so no floating ceiling remains.
+    clearer = _extrude_poly(outer.buffer(0.5), land_z + 2.5 - 21.0)
     if clearer is not None:
-        clearer.apply_translation([0.0, 0.0, land_z - 0.5])
+        clearer.apply_translation([0.0, 0.0, 21.0])
         body = body.difference(clearer, engine="manifold")
-        print("  bay cover footprint cleared (+0.16)")
-    # Flush land plate top at land_z.
-    land_poly = _stad(COVER_W + 0.8, COVER_L + 0.8, COVER_R + 0.3)
-    plate = _extrude_poly(land_poly, 1.0)
+        print("  bay cavity cleared to Z≈21 (no floating slab)")
+
+    # Thin land RING — top face at land_z (NOT a solid stadium plate).
+    ring = outer.difference(inner)
+    plate = _extrude_poly(ring, 0.35)
     if plate is not None:
-        plate.apply_translation([0.0, 0.0, land_z - 1.0])
+        plate.apply_translation([0.0, 0.0, land_z - 0.35])
         body = body.union(plate, engine="manifold")
-        print(f"  bay land plate area={land_poly.area:.1f}")
+        print(f"  bay land RING area={ring.area:.1f}")
+
+    # ≥45° corbel: under-land fill + outside grow (run=rise) rooted to walls.
+    z_land_bot = land_z - 0.35
+    corb = None
+    for i in range(N):
+        d_mid = (i + 0.5) * dz
+        under = outer.difference(inner)
+        outside = outer.buffer(d_mid + 0.01).difference(outer)
+        layer_poly = unary_union([under, outside])
+        layer = _extrude_poly(layer_poly, dz + 0.05)
+        if layer is None:
+            continue
+        layer.apply_translation([0.0, 0.0, z_land_bot - (i + 1) * dz - 0.02])
+        corb = layer if corb is None else corb.union(layer, engine="manifold")
+    if corb is not None:
+        body = body.union(corb, engine="manifold")
+        print(f"  bay ≥45° wall corbel CHAM={CHAM:.1f} N={N}")
+
     # Bay tongue (slightly undersize for 0.28 clear).
     BAY_IN0 = TONGUE_IN0 + 0.12
     BAY_IN1 = TONGUE_IN1 + 0.12
@@ -327,18 +431,30 @@ def _bay_clear_and_seat(body, land_z: float):
         body = body.union(bay_t, engine="manifold")
         print(f"  bay tongue IN0={BAY_IN0:.2f}")
     for i, (x, y) in enumerate(OPTB_COVER_COLS):
-        pad_h = 1.2
+        pad_h = CHAM + 0.4
         body = body.union(
             _cyl(0.5 * BOSS_SPOT_D + 1.2, pad_h, (x, y, land_z - pad_h)),
             engine="manifold",
         )
+        # ≥45° underside chamfer on bay boss pads.
+        try:
+            body = body.difference(
+                _cone_frustum(
+                    0.5 * BOSS_SPOT_D + 1.3,
+                    max(0.5 * BOSS_SPOT_D + 1.2 - min(pad_h, 4.0) * 0.9, 1.0),
+                    min(pad_h, 4.0),
+                    (x, y, land_z - pad_h),
+                ),
+                engine="manifold",
+            )
+        except Exception as exc:
+            print(f"  bay boss chamfer soft-fail {i}:", exc)
         body = body.difference(
             _cyl(0.5 * BOSS_SPOT_D, BOSS_RECESS + 0.05, (x, y, land_z - BOSS_RECESS)),
             engine="manifold",
         )
         body = body.difference(
-            _cyl(0.5 * INSERT_D, INSERT_DEPTH + 0.05,
-                 (x, y, land_z - BOSS_RECESS - INSERT_DEPTH)),
+            _cyl(0.5 * INSERT_D, pad_h + 1.0, (x, y, land_z - pad_h - 0.5)),
             engine="manifold",
         )
         body = body.difference(
@@ -347,7 +463,7 @@ def _bay_clear_and_seat(body, land_z: float):
         )
         print(f"  bay boss {i} @ ({x:.0f},{y:.0f})")
     body = body.difference(
-        _cyl(0.5 * SHOCK_BORE_D, INSERT_DEPTH + 1.0, (0.0, 0.0, land_z - INSERT_DEPTH)),
+        _cyl(0.5 * SHOCK_BORE_D, INSERT_DEPTH + 2.0, (0.0, 0.0, land_z - INSERT_DEPTH - 1.0)),
         engine="manifold",
     )
     body = body.difference(
@@ -477,7 +593,7 @@ def main():
     print("Stitching walls outside lid…")
     body = _stitch_walls_outside_lid(body, y0, seat)
     print("Under-lid wall-foot boxes…")
-    body = _wall_foot_boxes(body, y0, seat)
+    body = _wall_foot_boxes(body, y0, seat, lid_p=lid_p)
     print("Patching bosses…")
     body = _patch_bosses(body, cols, seat)
     print("Chamfering cavity shelves…")
@@ -489,14 +605,23 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     ply_l = os.path.join(OUT, "pod_L_base_optB_curveUP.ply")
     out_l = os.path.join(OUT, "pod_L_base_optB_curveUP.stl")
+    if not body.is_volume:
+        # Last-resort repair before export.
+        try:
+            body.fill_holes()
+        except Exception:
+            pass
+        print(f"  WARN pre-export vol={body.is_volume}")
     body.export(ply_l)
     body.export(out_l)
     shutil.copy2(out_l, os.path.join(D6_STL, "pod_L_base_optB_curveUP.stl"))
     shutil.copy2(ply_l, os.path.join(D6_STL, "pod_L_base_optB_curveUP.ply"))
+    check = trimesh.load(ply_l, force="mesh", process=False)
     print(
-        f"  L vol={body.is_volume} faces={len(body.faces)} "
-        f"h={body.bounds[1,2]-body.bounds[0,2]:.2f}"
+        f"  L vol={body.is_volume} reload_vol={check.is_volume} "
+        f"faces={len(body.faces)} h={body.bounds[1,2]-body.bounds[0,2]:.2f}"
     )
+    assert check.is_volume, "PLY reload lost volume"
 
     promo_r = os.path.join(D6_STL, "pod_R_base_optB_curveUP.stl")
     print("Mirroring R…")
