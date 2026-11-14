@@ -1,0 +1,479 @@
+{
+ "name": "overnight_petg_A3_d4",
+ "process": "process_petg_020.json",
+ "arrange_pass1": "1",
+ "orca_rc": 0,
+ "overrides_applied": [
+  [
+   "action_pod_R_base.stl",
+   "pos",
+   [
+    126,
+    56
+   ]
+  ],
+  [
+   "action_pod_L_base.stl",
+   "pos",
+   [
+    44,
+    56
+   ]
+  ],
+  [
+   "action_pod_R_lid.stl",
+   "pos",
+   [
+    126,
+    160
+   ]
+  ],
+  [
+   "action_pod_L_lid.stl",
+   "pos",
+   [
+    44,
+    160
+   ]
+  ],
+  [
+   "clamp_bar_1.stl",
+   "pos",
+   [
+    210,
+    16
+   ]
+  ],
+  [
+   "clamp_bar_2.stl",
+   "pos",
+   [
+    210,
+    39
+   ]
+  ],
+  [
+   "clamp_bar_3.stl",
+   "pos",
+   [
+    210,
+    62
+   ]
+  ],
+  [
+   "clamp_bar_4.stl",
+   "pos",
+   [
+    210,
+    85
+   ]
+  ],
+  [
+   "clamp_bar_5.stl",
+   "pos",
+   [
+    210,
+    108
+   ]
+  ],
+  [
+   "clamp_bar_6.stl",
+   "pos",
+   [
+    210,
+    131
+   ]
+  ],
+  [
+   "clamp_bar_7.stl",
+   "pos",
+   [
+    210,
+    154
+   ]
+  ],
+  [
+   "clamp_bar_8.stl",
+   "pos",
+   [
+    210,
+    177
+   ]
+  ],
+  [
+   "width_shim_04.stl",
+   "pos",
+   [
+    132,
+    226
+   ]
+  ],
+  [
+   "width_shim_03.stl",
+   "pos",
+   [
+    98,
+    226
+   ]
+  ],
+  [
+   "width_shim_02.stl",
+   "pos",
+   [
+    64,
+    226
+   ]
+  ],
+  [
+   "width_shim_01.stl",
+   "pos",
+   [
+    30,
+    226
+   ]
+  ],
+  [
+   "spacer_1p0_01.stl",
+   "pos",
+   [
+    228,
+    200
+   ]
+  ],
+  [
+   "spacer_1p0_02.stl",
+   "pos",
+   [
+    240,
+    200
+   ]
+  ],
+  [
+   "spacer_1p0_03.stl",
+   "pos",
+   [
+    180,
+    212
+   ]
+  ],
+  [
+   "spacer_1p0_04.stl",
+   "pos",
+   [
+    192,
+    212
+   ]
+  ],
+  [
+   "spacer_2p0_01.stl",
+   "pos",
+   [
+    180,
+    200
+   ]
+  ],
+  [
+   "spacer_2p0_02.stl",
+   "pos",
+   [
+    192,
+    200
+   ]
+  ],
+  [
+   "spacer_2p0_03.stl",
+   "pos",
+   [
+    204,
+    200
+   ]
+  ],
+  [
+   "spacer_2p0_04.stl",
+   "pos",
+   [
+    216,
+    200
+   ]
+  ],
+  [
+   "spacer_0p5_04.stl",
+   "pos",
+   [
+    240,
+    212
+   ]
+  ],
+  [
+   "spacer_0p5_03.stl",
+   "pos",
+   [
+    228,
+    212
+   ]
+  ],
+  [
+   "spacer_0p5_02.stl",
+   "pos",
+   [
+    216,
+    212
+   ]
+  ],
+  [
+   "spacer_0p5_01.stl",
+   "pos",
+   [
+    204,
+    212
+   ]
+  ],
+  [
+   "width_shim_01.stl",
+   "brim_type",
+   "outer_only"
+  ],
+  [
+   "width_shim_01.stl",
+   "brim_width",
+   "5"
+  ],
+  [
+   "width_shim_02.stl",
+   "brim_type",
+   "outer_only"
+  ],
+  [
+   "width_shim_02.stl",
+   "brim_width",
+   "5"
+  ],
+  [
+   "width_shim_03.stl",
+   "brim_type",
+   "outer_only"
+  ],
+  [
+   "width_shim_03.stl",
+   "brim_width",
+   "5"
+  ],
+  [
+   "width_shim_04.stl",
+   "brim_type",
+   "outer_only"
+  ],
+  [
+   "width_shim_04.stl",
+   "brim_width",
+   "5"
+  ]
+ ],
+ "parts": [
+  "action_pod_L_base.stl",
+  "action_pod_L_lid.stl",
+  "action_pod_R_base.stl",
+  "action_pod_R_lid.stl",
+  "clamp_bar_1.stl",
+  "clamp_bar_2.stl",
+  "clamp_bar_3.stl",
+  "clamp_bar_4.stl",
+  "clamp_bar_5.stl",
+  "clamp_bar_6.stl",
+  "clamp_bar_7.stl",
+  "clamp_bar_8.stl",
+  "spacer_0p5_01.stl",
+  "spacer_0p5_02.stl",
+  "spacer_0p5_03.stl",
+  "spacer_0p5_04.stl",
+  "spacer_1p0_01.stl",
+  "spacer_1p0_02.stl",
+  "spacer_1p0_03.stl",
+  "spacer_1p0_04.stl",
+  "spacer_2p0_01.stl",
+  "spacer_2p0_02.stl",
+  "spacer_2p0_03.stl",
+  "spacer_2p0_04.stl",
+  "width_shim_01.stl",
+  "width_shim_02.stl",
+  "width_shim_03.stl",
+  "width_shim_04.stl"
+ ],
+ "fix_bbl_rc": 0,
+ "fix_bbl": "",
+ "plates": [
+  {
+   "gcode": "out_overnight_petg_A3_d4/plate_1.gcode",
+   "time": "4h 43m 22s",
+   "layers": 116,
+   "max_z": 23.2,
+   "grams": 150.0,
+   "extrusion_X": [
+    5.61,
+    248.79
+   ],
+   "extrusion_Y": [
+    5.21,
+    232.942
+   ],
+   "extrusion_zmax": 23.2,
+   "margin_min_mm": 5.21,
+   "within_4mm_margin": true,
+   "support_moves_total": 0,
+   "per_object": {
+    "spacer_0p5_03.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 263
+    },
+    "spacer_0p5_04.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 263
+    },
+    "spacer_1p0_02.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 804
+    },
+    "spacer_1p0_01.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 804
+    },
+    "action_pod_R_lid.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 17130
+    },
+    "action_pod_L_lid.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 17169
+    },
+    "_none": {
+     "support": 0,
+     "brim": 1570,
+     "moves": 1570
+    },
+    "width_shim_01.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 196
+    },
+    "width_shim_02.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 196
+    },
+    "width_shim_03.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 196
+    },
+    "width_shim_04.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 196
+    },
+    "spacer_2p0_01.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 1709
+    },
+    "spacer_1p0_03.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 804
+    },
+    "spacer_1p0_04.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 804
+    },
+    "spacer_0p5_01.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 263
+    },
+    "spacer_0p5_02.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 263
+    },
+    "spacer_2p0_04.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 1709
+    },
+    "spacer_2p0_03.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 1709
+    },
+    "spacer_2p0_02.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 1709
+    },
+    "clamp_bar_8.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 21208
+    },
+    "clamp_bar_7.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 21208
+    },
+    "clamp_bar_6.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 21208
+    },
+    "clamp_bar_5.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 21208
+    },
+    "clamp_bar_4.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 21208
+    },
+    "clamp_bar_3.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 21208
+    },
+    "clamp_bar_2.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 21208
+    },
+    "clamp_bar_1.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 21208
+    },
+    "action_pod_R_base.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 233311
+    },
+    "action_pod_L_base.stl": {
+     "support": 0,
+     "brim": 0,
+     "moves": 232991
+    }
+   },
+   "layout_png": "overnight_petg_A3_d4_plate_1_layout.png"
+  }
+ ],
+ "gcode_in_3mf": [
+  "Metadata/plate_1.gcode"
+ ],
+ "printer_model_id": [
+  "N7"
+ ]
+}

@@ -1,0 +1,189 @@
+{
+ "_asm_action_pod_L_lid.stl": {
+  "sha256": "59b89a62053b65abec9fc7170f885d2be80be25870b9addb27c76644ec06680c",
+  "watertight": true,
+  "volume_mm3": 14015.0,
+  "bounds": [
+   [
+    -31.11,
+    -48.6,
+    21.4
+   ],
+   [
+    31.11,
+    43.6,
+    25.8
+   ]
+  ]
+ },
+ "_asm_action_pod_R_lid.stl": {
+  "sha256": "961c8bc32bb8f43ac35873d65c1df3bcd82a5f7ffe236e09827be5a17d7f2761",
+  "watertight": true,
+  "volume_mm3": 14015.0,
+  "bounds": [
+   [
+    -31.11,
+    -43.6,
+    21.4
+   ],
+   [
+    31.11,
+    48.6,
+    25.8
+   ]
+  ]
+ },
+ "action_pod_L_base.stl": {
+  "sha256": "1ac6edb5ff3e0ceef9c53cd643170e38cbaa4d9051849237fd93e6d7cf965c67",
+  "watertight": true,
+  "volume_mm3": 52614.6,
+  "bounds": [
+   [
+    -38.6,
+    -51.0,
+    0.0
+   ],
+   [
+    38.6,
+    46.0,
+    23.2
+   ]
+  ]
+ },
+ "action_pod_L_lid.stl": {
+  "sha256": "c43b90e9408ebe8372ead573c391ddec24126147b837da82eebb428d4a69431c",
+  "watertight": true,
+  "volume_mm3": 14015.0,
+  "bounds": [
+   [
+    -31.11,
+    -43.6,
+    0.0
+   ],
+   [
+    31.11,
+    48.6,
+    4.4
+   ]
+  ]
+ },
+ "action_pod_R_base.stl": {
+  "sha256": "b6cb00869b8a6e8e3460e6b5914b9169de18208272b60e3ccde89511fc12b537",
+  "watertight": true,
+  "volume_mm3": 52615.3,
+  "bounds": [
+   [
+    -38.6,
+    -46.0,
+    0.0
+   ],
+   [
+    38.6,
+    51.0,
+    23.2
+   ]
+  ]
+ },
+ "action_pod_R_lid.stl": {
+  "sha256": "93321d35e2dc583bbc11a7bac8d499a84875e8f7446bcdd2e05b9ca2d0d521e3",
+  "watertight": true,
+  "volume_mm3": 14015.0,
+  "bounds": [
+   [
+    -31.11,
+    -48.6,
+    0.0
+   ],
+   [
+    31.11,
+    43.6,
+    4.4
+   ]
+  ]
+ },
+ "clamp_bar.stl": {
+  "sha256": "d66deae9b56199ba6c951a4b61156f94d9b9f15e5a504f904e1f27959ca4e2e0",
+  "watertight": true,
+  "volume_mm3": 7321.2,
+  "bounds": [
+   [
+    -39.0,
+    -10.0,
+    0.0
+   ],
+   [
+    39.0,
+    10.0,
+    6.5
+   ]
+  ]
+ },
+ "spacer_0p5.stl": {
+  "sha256": "17d64e40bc9a3b0ed25f335fc0d7bf0db0e2b5e0707666a115a85bb0a7b5efa7",
+  "watertight": true,
+  "volume_mm3": 12.2,
+  "bounds": [
+   [
+    -3.5,
+    -3.5,
+    0.0
+   ],
+   [
+    3.5,
+    3.25,
+    0.5
+   ]
+  ]
+ },
+ "spacer_1p0.stl": {
+  "sha256": "72c2d04d15a3e9c51041abe836cab902599011aa2498534d3bb8b04cc0e95be1",
+  "watertight": true,
+  "volume_mm3": 24.4,
+  "bounds": [
+   [
+    -3.5,
+    -3.5,
+    0.0
+   ],
+   [
+    3.5,
+    3.25,
+    1.0
+   ]
+  ]
+ },
+ "spacer_2p0.stl": {
+  "sha256": "cd878af13824f599a2b0265ce7838b6a0629e268c58a96e15d054e0d8ffb9413",
+  "watertight": true,
+  "volume_mm3": 48.8,
+  "bounds": [
+   [
+    -3.5,
+    -3.5,
+    0.0
+   ],
+   [
+    3.5,
+    3.25,
+    2.0
+   ]
+  ]
+ },
+ "width_shim.stl": {
+  "sha256": "6fb165ae6945ddd946e318a9ba7b063b5636c4f78c33b7e7e11d388087cce6f2",
+  "watertight": true,
+  "volume_mm3": 115.0,
+  "bounds": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    20.0,
+    2.5,
+    2.3
+   ]
+  ]
+ }
+}

@@ -1,0 +1,12 @@
+plates/**/*.gcode.3mf
+plates/**/*_perobj_input.3mf
+plates/**/out_*/
+plates/**/_pass1_arrange_DO_NOT_SEND/
+plates/**/00000.log
+plates/src_A3/
+plates/audit_src/
+plates/supaudit*/
+plates/*.log
+review/_r4_*.png
+review/*.blend1
+checks/*_run.log
