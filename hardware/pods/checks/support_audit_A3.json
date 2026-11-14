@@ -1,0 +1,15 @@
+{
+ "threshold_45": {
+  "rc": 0,
+  "support_moves": 329219,
+  "note": "audit only: supports forced ON; the real plate has supports OFF",
+  "where": "bases: organic trees under the inherited 45\u00b0 rim-ledge chamfers inside the cavity (to z 22.8), insert pockets, mount recess; lids: the 45\u00b0 edge chamfer (top-down print) at z<=1.0; bars: c'bores"
+ },
+ "threshold_40": {
+  "rc": 0,
+  "support_moves": 46189,
+  "note": "audit only: supports forced ON; the real plate has supports OFF",
+  "where": "bases only at the 4 insert-pocket ceilings (z 6.5) and the inherited mount-recess ceiling (z 16.3-19.3); bars at the c'bores (z 1.5); lids, spacers, shims 0"
+ },
+ "real_plate": "overnight_petg_A3_d4: support_used=false, 0 Support/Support-interface extrusions"
+}

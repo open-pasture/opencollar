@@ -1,0 +1,394 @@
+{
+ "source": "PR #28 352e734 pod_saddle.py / pod.py (placeholders, not a spec)",
+ "keepouts": {
+  "module": {
+   "x": [
+    -15.5,
+    15.5
+   ],
+   "y": [
+    -44.5,
+    1.5
+   ],
+   "z": [
+    -12.5,
+    -2.5
+   ]
+  },
+  "driver": {
+   "x": [
+    -14.0,
+    14.0
+   ],
+   "y": [
+    3.5,
+    44.5
+   ],
+   "z": [
+    -10.5,
+    -2.5
+   ]
+  }
+ },
+ "saddle_envelope": {
+  "x": [
+   -26,
+   26
+  ],
+  "y": [
+   -48.5,
+   48.5
+  ],
+  "z": [
+   -13.7,
+   0.0
+  ]
+ },
+ "wire_pass_through": {
+  "xy": [
+   0.0,
+   -28.0
+  ],
+  "d": 8.0,
+  "gland_d": 12.0
+ },
+ "saddle_mounts": [
+  [
+   -18.0,
+   -32.0
+  ],
+  [
+   -18.0,
+   32.0
+  ],
+  [
+   18.0,
+   -32.0
+  ],
+  [
+   18.0,
+   32.0
+  ]
+ ],
+ "electrode_lands": [
+  [
+   0.0,
+   -34.0
+  ],
+  [
+   0.0,
+   -9.0
+  ]
+ ],
+ "bar_y": [
+  -27.5,
+  22.5
+ ],
+ "configs": {
+  "thin 3.0 strap, stack 0.5": {
+   "strap_t": 3.0,
+   "stack": 0.5,
+   "lip_gap": 3.0,
+   "strap_z": [
+    -3.0,
+    0.0
+   ],
+   "bar_z": [
+    -7.0,
+    -0.5
+   ],
+   "per_keepout": {
+    "module": {
+     "keepout_mm3": 14260,
+     "strap_intrusion_mm3": 713.0,
+     "strap_intrusion_depth_z": 0.5,
+     "strap_to_keepout_z_gap": -0.5,
+     "clampbar_intrusion_mm3": 2464.5,
+     "clampbar_to_keepout_z_gap": -4.5,
+     "clampbar_z_in_keepout_footprint": [
+      -7.0,
+      -2.4
+     ],
+     "clampbar_overlap_thickness_z": 4.5,
+     "bars_over_keepout_y": [
+      -27.5
+     ],
+     "screw_shank_lateral_clear": 16.6,
+     "screw_head_lateral_clear": 15.35,
+     "spacer_lateral_clear": 14.6,
+     "width_shim_lateral_clear": 7.2
+    },
+    "driver": {
+     "keepout_mm3": 9184,
+     "strap_intrusion_mm3": 574.0,
+     "strap_intrusion_depth_z": 0.5,
+     "strap_to_keepout_z_gap": -0.5,
+     "clampbar_intrusion_mm3": 2226.0,
+     "clampbar_to_keepout_z_gap": -4.5,
+     "clampbar_z_in_keepout_footprint": [
+      -7.0,
+      -2.4
+     ],
+     "clampbar_overlap_thickness_z": 4.5,
+     "bars_over_keepout_y": [
+      22.5
+     ],
+     "screw_shank_lateral_clear": 18.1,
+     "screw_head_lateral_clear": 16.85,
+     "spacer_lateral_clear": 16.1,
+     "width_shim_lateral_clear": 8.7
+    }
+   },
+   "saddle_envelope": {
+    "strap_intrusion_mm3": 12935,
+    "clampbar_intrusion_mm3": 8465,
+    "screw_head_lateral_clear": 4.85
+   },
+   "mounts_under_bar": [
+    [
+     -18.0,
+     -32.0
+    ],
+    [
+     -18.0,
+     32.0
+    ],
+    [
+     18.0,
+     -32.0
+    ],
+    [
+     18.0,
+     32.0
+    ]
+   ],
+   "wire_under_bar": true,
+   "relocate_below_bars": {
+    "keepout_top_z": -9.5,
+    "extra_standoff_vs_saddle_on_pod": 7.0
+   }
+  },
+  "nominal 3.8 strap, stack 1.0+0.5": {
+   "strap_t": 3.8,
+   "stack": 1.5,
+   "lip_gap": 4.0,
+   "strap_z": [
+    -4.0,
+    -0.20000000000000018
+   ],
+   "bar_z": [
+    -8.0,
+    -1.5
+   ],
+   "per_keepout": {
+    "module": {
+     "keepout_mm3": 14260,
+     "strap_intrusion_mm3": 2139.0,
+     "strap_intrusion_depth_z": 1.5,
+     "strap_to_keepout_z_gap": -1.5,
+     "clampbar_intrusion_mm3": 2465.4,
+     "clampbar_to_keepout_z_gap": -5.5,
+     "clampbar_z_in_keepout_footprint": [
+      -8.0,
+      -3.4
+     ],
+     "clampbar_overlap_thickness_z": 4.6,
+     "bars_over_keepout_y": [
+      -27.5
+     ],
+     "screw_shank_lateral_clear": 16.6,
+     "screw_head_lateral_clear": 15.35,
+     "spacer_lateral_clear": 14.6,
+     "width_shim_lateral_clear": 7.2
+    },
+    "driver": {
+     "keepout_mm3": 9184,
+     "strap_intrusion_mm3": 1722.0,
+     "strap_intrusion_depth_z": 1.5,
+     "strap_to_keepout_z_gap": -1.5,
+     "clampbar_intrusion_mm3": 2226.8,
+     "clampbar_to_keepout_z_gap": -5.5,
+     "clampbar_z_in_keepout_footprint": [
+      -8.0,
+      -3.4
+     ],
+     "clampbar_overlap_thickness_z": 4.6,
+     "bars_over_keepout_y": [
+      22.5
+     ],
+     "screw_shank_lateral_clear": 18.1,
+     "screw_head_lateral_clear": 16.85,
+     "spacer_lateral_clear": 16.1,
+     "width_shim_lateral_clear": 8.7
+    }
+   },
+   "saddle_envelope": {
+    "strap_intrusion_mm3": 16384,
+    "clampbar_intrusion_mm3": 8465,
+    "screw_head_lateral_clear": 4.85
+   },
+   "mounts_under_bar": [
+    [
+     -18.0,
+     -32.0
+    ],
+    [
+     -18.0,
+     32.0
+    ],
+    [
+     18.0,
+     -32.0
+    ],
+    [
+     18.0,
+     32.0
+    ]
+   ],
+   "wire_under_bar": true,
+   "relocate_below_bars": {
+    "keepout_top_z": -10.5,
+    "extra_standoff_vs_saddle_on_pod": 8.0
+   }
+  },
+  "thick 7.5 strap, stack 4.5": {
+   "strap_t": 7.5,
+   "stack": 4.5,
+   "lip_gap": 7.0,
+   "strap_z": [
+    -7.0,
+    0.0
+   ],
+   "bar_z": [
+    -11.0,
+    -4.5
+   ],
+   "per_keepout": {
+    "module": {
+     "keepout_mm3": 14260,
+     "strap_intrusion_mm3": 6417.0,
+     "strap_intrusion_depth_z": 4.5,
+     "strap_to_keepout_z_gap": -4.5,
+     "clampbar_intrusion_mm3": 2465.4,
+     "clampbar_to_keepout_z_gap": -8.0,
+     "clampbar_z_in_keepout_footprint": [
+      -11.0,
+      -6.4
+     ],
+     "clampbar_overlap_thickness_z": 4.6,
+     "bars_over_keepout_y": [
+      -27.5
+     ],
+     "screw_shank_lateral_clear": 16.6,
+     "screw_head_lateral_clear": 15.35,
+     "spacer_lateral_clear": 14.6,
+     "width_shim_lateral_clear": 7.2
+    },
+    "driver": {
+     "keepout_mm3": 9184,
+     "strap_intrusion_mm3": 5166.0,
+     "strap_intrusion_depth_z": 4.5,
+     "strap_to_keepout_z_gap": -4.5,
+     "clampbar_intrusion_mm3": 1972.6,
+     "clampbar_to_keepout_z_gap": -6.0,
+     "clampbar_z_in_keepout_footprint": [
+      -11.0,
+      -6.4
+     ],
+     "clampbar_overlap_thickness_z": 4.1,
+     "bars_over_keepout_y": [
+      22.5
+     ],
+     "screw_shank_lateral_clear": 18.1,
+     "screw_head_lateral_clear": 16.85,
+     "spacer_lateral_clear": 16.1,
+     "width_shim_lateral_clear": 8.7
+    }
+   },
+   "saddle_envelope": {
+    "strap_intrusion_mm3": 30182,
+    "clampbar_intrusion_mm3": 8465,
+    "screw_head_lateral_clear": 4.85
+   },
+   "mounts_under_bar": [
+    [
+     -18.0,
+     -32.0
+    ],
+    [
+     -18.0,
+     32.0
+    ],
+    [
+     18.0,
+     -32.0
+    ],
+    [
+     18.0,
+     32.0
+    ]
+   ],
+   "wire_under_bar": true,
+   "relocate_below_bars": {
+    "keepout_top_z": -13.5,
+    "extra_standoff_vs_saddle_on_pod": 11.0
+   }
+  }
+ },
+ "a3_interface": {
+  "wire_hole_and_saddle_mounts_open_from_z": 1.75,
+  "below_that": "solid skin (no through-hole from the underside)",
+  "holes_z2": [
+   [
+    -33.6,
+    -27.5,
+    12.5
+   ],
+   [
+    -33.6,
+    22.5,
+    12.5
+   ],
+   [
+    -18.0,
+    -32.0,
+    8.5
+   ],
+   [
+    -18.0,
+    32.0,
+    8.6
+   ],
+   [
+    0.0,
+    -28.0,
+    49.8
+   ],
+   [
+    18.0,
+    -32.0,
+    8.6
+   ],
+   [
+    18.0,
+    32.0,
+    8.6
+   ],
+   [
+    33.6,
+    -27.5,
+    12.5
+   ],
+   [
+    33.6,
+    22.5,
+    12.5
+   ]
+  ],
+  "bars_gap_between_y": [
+   -17.5,
+   12.5
+  ],
+  "bar_gap_len": 30.0
+ }
+}

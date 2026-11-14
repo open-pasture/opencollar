@@ -1,0 +1,87 @@
+{
+ "clamp_bar": {
+  "bounds": [
+   [
+    -39.0,
+    -10.0,
+    0.0
+   ],
+   [
+    39.0,
+    10.0,
+    6.5
+   ]
+  ],
+  "watertight": true,
+  "volume": 7321.16,
+  "genus": 2
+ },
+ "spacer_0p5": {
+  "bounds": [
+   [
+    -3.5,
+    -3.5,
+    0.0
+   ],
+   [
+    3.5,
+    3.247,
+    0.5
+   ]
+  ],
+  "watertight": true,
+  "volume": 12.19,
+  "genus": 0
+ },
+ "spacer_1p0": {
+  "bounds": [
+   [
+    -3.5,
+    -3.5,
+    0.0
+   ],
+   [
+    3.5,
+    3.247,
+    1.0
+   ]
+  ],
+  "watertight": true,
+  "volume": 24.38,
+  "genus": 0
+ },
+ "spacer_2p0": {
+  "bounds": [
+   [
+    -3.5,
+    -3.5,
+    0.0
+   ],
+   [
+    3.5,
+    3.247,
+    2.0
+   ]
+  ],
+  "watertight": true,
+  "volume": 48.76,
+  "genus": 0
+ },
+ "width_shim": {
+  "bounds": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    20.0,
+    2.5,
+    2.3
+   ]
+  ],
+  "watertight": true,
+  "volume": 115.0,
+  "genus": 0
+ }
+}

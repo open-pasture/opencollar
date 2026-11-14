@@ -1,0 +1,25 @@
+{
+ "checks": {
+  "1_opens": true,
+  "2_has_VIEW_3D": true,
+  "3_clip_end_ge_10000": true,
+  "4_clip_start_le_0p1": true,
+  "5_solid_object_colour": true,
+  "6_view_frames_all": true,
+  "7_all_meshes_nonempty": true,
+  "8_units_mm": true,
+  "9_collections": true,
+  "10_camera_and_pngs": true
+ },
+ "score": "10/10",
+ "n_view3d": 10,
+ "n_mesh": 68,
+ "plate_objects": 28,
+ "collections": [
+  "Collection",
+  "Compare_old_A2_A3_D4",
+  "Plate_A3_overnight_petg_A3_d4",
+  "Pod_clamp_assembled",
+  "Section_cavity_envelope"
+ ]
+}

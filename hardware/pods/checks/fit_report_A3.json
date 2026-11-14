@@ -1,0 +1,225 @@
+{
+ "cavity": {
+  "spec": "58 x 82 x 19.5 (POD.md, locked)",
+  "new_L": [
+   58.0,
+   82.25
+  ],
+  "new_R": [
+   58.0,
+   82.25
+  ],
+  "internal_height_floor_to_lid": 20.7,
+  "old_internal_height": 20.7,
+  "envelope_headroom": 1.2,
+  "internals_material_old_vs_new_mm3": [
+   4758.57,
+   4761.79
+  ],
+  "note": "cavity interior copied from printed pr28 (columns, buzzer seat at (0,28), cell bay, glyphs, rim ledge, port/recess); 58 x 82.25 is the printed source size"
+ },
+ "floor": {
+  "old": 1.4,
+  "new": 2.5,
+  "added_below": 1.1
+ },
+ "side_ear_inserts": {
+  "xy_L": [
+   [
+    -33.6,
+    -27.5
+   ],
+   [
+    -33.6,
+    22.5
+   ],
+   [
+    33.6,
+    -27.5
+   ],
+   [
+    33.6,
+    22.5
+   ]
+  ],
+  "xy_R": [
+   [
+    -33.6,
+    -22.5
+   ],
+   [
+    -33.6,
+    27.5
+   ],
+   [
+    33.6,
+    -22.5
+   ],
+   [
+    33.6,
+    27.5
+   ]
+  ],
+  "pocket": "\u00d84.0 x 6.5 deep blind from the underside (M3 heat-set, e.g. M3 x 5.7)",
+  "ear": "R5.0 x 9.4 high, 0.5 bevels, from x=\u00b131 outward",
+  "wall_around_pocket_mm": 3.0,
+  "cap_above_pocket_mm": 2.9,
+  "ring_2p4_miss_mm3": {
+   "-33.6,-27.5": 0.0,
+   "-33.6,22.5": 0.0,
+   "33.6,-27.5": 0.0,
+   "33.6,22.5": 0.0
+  },
+  "nothing_under_cavity": true
+ },
+ "lid_screws": {
+  "xy_L": [
+   [
+    -22.0,
+    36.0
+   ],
+   [
+    22.0,
+    36.0
+   ],
+   [
+    -19.0,
+    -36.0
+   ],
+   [
+    22.0,
+    -36.0
+   ]
+  ],
+  "type": "M3 countersunk ISO 10642 (\u00d86.3 x 1.45 csk in the 2.6 lid)",
+  "column_top_z": 22.8,
+  "insert_bore_bottom_z": 16.3,
+  "lid_top_z": 25.8,
+  "recommended": "M3x8 (engagement 5.0 into the column insert, tip 1.5 above the bore bottom)",
+  "M3x6": "engagement 3.0 (marginal)",
+  "M3x10": "tip 0.5 BELOW bore bottom - do not use"
+ },
+ "clamp": {
+  "bar": "78 x 20 x 6.5, holes \u00d83.4 at x=\u00b133.6 (= ear inserts), \u00d86 x 1.5 head c'bore on neck face, R2 neck-face roll; bar centres at plan centre \u00b125 (L y -27.5/+22.5, R -22.5/+27.5)",
+  "stack_table": [
+   {
+    "stack_mm": 0,
+    "strap_gap_mm(lip-free channel floor->pod)": 2.5,
+    "M3x10_tip_into_ear": 5,
+    "M3x12_tip_into_ear": "BOTTOMS",
+    "M3x14_tip_into_ear": "BOTTOMS",
+    "use": "M3x10"
+   },
+   {
+    "stack_mm": 0.5,
+    "strap_gap_mm(lip-free channel floor->pod)": 3.0,
+    "M3x10_tip_into_ear": 4.5,
+    "M3x12_tip_into_ear": "BOTTOMS",
+    "M3x14_tip_into_ear": "BOTTOMS",
+    "use": "M3x10"
+   },
+   {
+    "stack_mm": 1.0,
+    "strap_gap_mm(lip-free channel floor->pod)": 3.5,
+    "M3x10_tip_into_ear": 4.0,
+    "M3x12_tip_into_ear": 6.0,
+    "M3x14_tip_into_ear": "BOTTOMS",
+    "use": "M3x12"
+   },
+   {
+    "stack_mm": 1.5,
+    "strap_gap_mm(lip-free channel floor->pod)": 4.0,
+    "M3x10_tip_into_ear": 3.5,
+    "M3x12_tip_into_ear": 5.5,
+    "M3x14_tip_into_ear": "BOTTOMS",
+    "use": "M3x12"
+   },
+   {
+    "stack_mm": 2.0,
+    "strap_gap_mm(lip-free channel floor->pod)": 4.5,
+    "M3x10_tip_into_ear": 3.0,
+    "M3x12_tip_into_ear": 5.0,
+    "M3x14_tip_into_ear": "BOTTOMS",
+    "use": "M3x12"
+   },
+   {
+    "stack_mm": 2.5,
+    "strap_gap_mm(lip-free channel floor->pod)": 5.0,
+    "M3x10_tip_into_ear": 2.5,
+    "M3x12_tip_into_ear": 4.5,
+    "M3x14_tip_into_ear": "BOTTOMS",
+    "use": "M3x12"
+   },
+   {
+    "stack_mm": 3.0,
+    "strap_gap_mm(lip-free channel floor->pod)": 5.5,
+    "M3x10_tip_into_ear": 2.0,
+    "M3x12_tip_into_ear": 4.0,
+    "M3x14_tip_into_ear": 6.0,
+    "use": "M3x14"
+   },
+   {
+    "stack_mm": 3.5,
+    "strap_gap_mm(lip-free channel floor->pod)": 6.0,
+    "M3x10_tip_into_ear": 1.5,
+    "M3x12_tip_into_ear": 3.5,
+    "M3x14_tip_into_ear": 5.5,
+    "use": "M3x14"
+   },
+   {
+    "stack_mm": 4.0,
+    "strap_gap_mm(lip-free channel floor->pod)": 6.5,
+    "M3x10_tip_into_ear": 1.0,
+    "M3x12_tip_into_ear": 3.0,
+    "M3x14_tip_into_ear": 5.0,
+    "use": "M3x14"
+   },
+   {
+    "stack_mm": 4.5,
+    "strap_gap_mm(lip-free channel floor->pod)": 7.0,
+    "M3x10_tip_into_ear": 0.5,
+    "M3x12_tip_into_ear": 2.5,
+    "M3x14_tip_into_ear": 4.5,
+    "use": "M3x14"
+   }
+  ],
+  "strap_note": "strap 3.8 thick: stack 1.0-1.5 gives gap 3.5-4.0 (ribs 0.6 pinch); measure the strap first"
+ },
+ "heights": {
+  "PR21_old": 26.2,
+  "A2_pr28_reskin": 37.2,
+  "A3_new": 25.8,
+  "D4_contoured_v3": 21.3,
+  "why": "floor 2.5 + locked internal 20.7 + lid 2.6; D4 21.3 would need the cavity \u226416 tall or walls <2.4"
+ },
+ "plan": {
+  "A3": "67.0 x 97.0 (77.2 across the ears)",
+  "D4": "67 x 97.2",
+  "corners": "D4 plan (x-symmetrised, y-scaled to the locked -51..46): R10 / R19",
+  "underside": "flat"
+ },
+ "shoulder": {
+  "arc_R": 10.24,
+  "arc_z": [
+   15.96,
+   23.2
+  ],
+  "inset_at_seam": 3.0,
+  "lid_land": 1.2,
+  "lid_chamfer_45": 1.4,
+  "inset_at_top": 4.4,
+  "drop": 9.84
+ },
+ "walls": {
+  "min_wall_check": 2.4,
+  "base_thin_area_new_vs_source": [
+   2511.8,
+   3739.3
+  ],
+  "lid_thin_area_new_vs_source": [
+   758.7,
+   2563.8
+  ],
+  "all_manifold": true
+ }
+}
