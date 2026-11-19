@@ -9,6 +9,22 @@ Printer: Bambu Lab P2S (home, Cody's LAN 192.168.1.248, cloud mode)
 | 3 | 2026-11-02 | Node V1 cap v3 (76×160, P124 pocket, gabled roof, no supports) | PLA (Bambu PLA, AMS A1) | Started | From commit `951e057`. P2S Openpasture-1. Fast-fit profile (0.28 mm, 21 mm³/s, 10% gyroid, no supports). 148 layers; estimate 3h51m, 156.27 g. Started ~3:53 PM CT via Bambu Connect on Cody's Mac. |
 | 4 | 2026-11-02 | Bases-only plate: slim `node_cap_base_saddle` + `node_pod_base` (L) + pod R mirrored | PLA | Stopped (~16 min) | Pre-aids STLs (no cradle/labels). 0.16 mm layer, 153 layers; est 5h55m, 173.3 g. Started 8:19 PM CT via Bambu Connect on Openpasture-1; Cody stopped ~8:35 PM CT to restart with assembly aids (REV AID1). **Lid screw decision: M3×16** (clamp M3×14). |
 | 5 | 2026-11-02 | Aids plate v7: slim cap base + pod L + pod R + test coupon + XYZ scale bar (main `7a3660f`, PR #18 `f906926`) | PLA | Started 10:33 PM CT, result pending | `aids_plate_0.16_PLA_p2s.gcode.3mf` (cap_set_v7), 0.16 mm, 15% gyroid, 4 walls, tree supports on pods only, 153 layers, estimate 6h55m / 192.39 g. Sent via Bambu Connect on Openpasture-1, PLA in AMS A1. 15% gyroid is a fit test only, not a strength test. |
+| 11 | 2026-11-16 | bars_petg_A3c_nominal | PETG AMS A2 | Done FINISH 32/32 | first LAN print; sha fee11ea0…; dry-fit not logged |
+| 12 | 2026-11-16 | infinity_cubes_x2_pla_A4 | PLA AMS A4 | Done FINISH | sha ea3c0868… |
+| 13 | 2026-11-17 | kid_turtles4_aroundcubes_pla_A4 | PLA AMS A4 | FAILED L0 (FOD) | sha dbe25b2c… |
+| 14 | 2026-11-17 | kid_turtles4_aroundcubes_noFOD_pla_A4 | PLA AMS A4 | FAILED (cause unknown) | sha 40350e4b… |
+
+## Print #11 — bars_petg_A3c_nominal — Done (Mon Nov 16, 2026) — first LAN-started print
+- sha256 `fee11ea0fc4f33ab5fe71f2d020a04d5f8b60c9f4fc6ee1ddab6c8e93f8ac96c`, plate dir `hardware/pods/plates/bars_petg_A3c_nominal/`
+- 4 clamp bars, 8 spacers (1.5 mm), 8 width shims. PETG AMS A2, 32 layers, slice estimate 56m 37s / 22.71 g, no supports.
+- First direct LAN start from the garage host (lan_p2s.py over MQTT), not Bambu Connect, under Cody's typed go. The first attempt failed with `mqtt message verify failed` (err 84033543) until Developer Mode was turned on. Started ~4:40 PM CT.
+- Result: FINISH, print_error 0, 32/32 at the 5:58 PM CT check. Quality / dry-fit not logged.
+
+## Prints #12–#14 — overnight kid plates (Nov 16–17, 2026) — LAN from garage, PLA AMS A4 (non-collar fun prints)
+- #12 infinity_cubes_x2_pla_A4 (sha ea3c0868…4c224cc9; Sturdy Infinity Cube by Jan Pieper, CC0, https://makerworld.com/en/models/21188-sturdy-infinity-cube). Started 9:41 PM CT under Cody's typed go. FINISH, print_error 0, ~12:50 AM CT.
+- #13 kid_turtles4_aroundcubes_pla_A4 (sha dbe25b2c…06bd8ee3; Cutie Baby Turtle by squinn, CC BY-NC-SA, https://www.printables.com/model/504361-cutie-baby-turtle), printed around the cubes left on the bed under Cody's one-time waiver (keep-out zone, ABL and calibrations off). Started ~12:51 AM CT; paused at layer 0 on foreign-object detection, error 83918958 / 0500-806E (it saw the cubes). Stopped. FAILED, no plastic.
+- #14 kid_turtles4_aroundcubes_noFOD_pla_A4 (sha 40350e4b240ac5501b8d7e31a29df1994f3814d69b8fed51f7f851ae5e7ab772; M972 S24/S26/S42 commented out, md5 regenerated, 0 keep-out violations). Started 12:57:29 AM CT; last read RUNNING L1/115, error 0 at 1:06 AM CT, ETA ~2:59 AM. FAILED per Cody (7:08 AM CT Nov 17), cause unknown.
+- Printing paused per Cody, 7:08 AM CT Nov 17, until he returns and lifts it himself.
 
 ## CAD change 2026-11-02
 

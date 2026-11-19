@@ -1,5 +1,7 @@
 # How to start a print fast (Bambu P2S "Openpasture-1")
 
+Printing paused since 2026-11-17 per Cody; see POST-RETURN-CHECKLIST.md before the next print.
+
 Last verified: 2026-11-02 (print #2, the Node V1 cap). Total hands-on time once the route is known: about 2 minutes.
 
 ## The working route (use this first)
