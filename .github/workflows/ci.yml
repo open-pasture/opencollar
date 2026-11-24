@@ -20,6 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - run: make -C firmware/tests/host
+      - name: No wall clock in the collar logic, its tests or the protocol tools
+        run: scripts/check-no-wall-clock.sh
 
   vectors:
     name: Protocol vectors
