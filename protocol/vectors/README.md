@@ -10,6 +10,8 @@ cp -R crates/op-protocol/vectors/. ../opencollar/protocol/vectors/
 cp ../opencollar/protocol/vectors/{commands,config,shapes,geofence,slots,cue}.json ../opencollar/firmware/tests/host/vectors/
 ```
 
+openpasture's CI compares its copy with the opencollar commit pinned as `OPENCOLLAR_REF` in its `.github/workflows/ci.yml`, so after the opencollar PR merges, set that pin to the merge commit in an openpasture PR. The opencollar PR's `protocol/CHANGELOG.md` entry says so in a line naming `OPENCOLLAR_REF`; `scripts/check-vectors.sh origin/main` fails without it.
+
 Without `OP_WRITE_VECTORS` the same tests fail when a file is out of date, and check op-protocol against every case.
 
 Each file is one JSON object; cases are one per line. Times in v1 files are RFC 3339 UTC; in `v2/` they are Unix seconds. Coordinates are `[lon, lat]`: degrees with at most 7 decimals in v1 files, integers in units of 10⁻⁷ degrees in `v2/`. Byte strings in `v2/` are lowercase hex.

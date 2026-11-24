@@ -26,17 +26,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - name: Firmware copies match protocol/vectors
-        run: |
-          fail=0
-          for f in firmware/tests/host/vectors/*.json; do
-            want="protocol/vectors/$(basename "$f")"
-            if ! cmp -s "$f" "$want"; then
-              echo "::error file=$f::differs from $want (copy it over: protocol/vectors/README.md)"
-              fail=1
-            fi
-          done
-          exit "$fail"
+        with:
+          fetch-depth: 0
+      # The firmware's copies match protocol/vectors/, and a vector change carries the
+      # openpasture OPENCOLLAR_REF note. Run the same locally: scripts/check-vectors.sh origin/main
+      - name: Vector copies and the openpasture pin
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: scripts/check-vectors.sh "$BASE"
       - name: Reference reader
         run: |
           python3 -I protocol/reference/opencollar_decode.py --test protocol/vectors/v2/records.json
