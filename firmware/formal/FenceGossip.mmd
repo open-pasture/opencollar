@@ -1,0 +1,23 @@
+---
+title: "Fence gossip: beacon hint vs signed manifest (spec section 4)"
+---
+stateDiagram-v2
+  s0: Fence 0 in force, idle
+  s1: Fence 0 in force, waiting on a beacon's hint
+  s2: Fence 0 in force, assembling a signed fence
+  s3: Fence 1 in force, idle
+  s4: Fence 2 in force, idle
+  s5: Fence 1 in force, waiting on a beacon's hint
+  s6: Fence 2 in force, waiting on a beacon's hint
+  s7: Fence 1 in force, assembling a signed fence
+  [*] --> s0
+  s0 --> s1: hears a newer beacon
+  s0 --> s2: gets a signed manifest
+  s1 --> s2: gets a signed manifest
+  s2 --> s3: all fragments check out
+  s2 --> s4: all fragments check out
+  s3 --> s5: hears a newer beacon
+  s3 --> s7: gets a signed manifest
+  s4 --> s6: hears a newer beacon
+  s5 --> s7: gets a signed manifest
+  s7 --> s4: all fragments check out

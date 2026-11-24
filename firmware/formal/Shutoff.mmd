@@ -1,0 +1,49 @@
+---
+title: "Collar welfare shut-off (main)"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: on
+    lg1: off
+    lg2: Breaks ShutoffSurvivesReboot in some cases
+    lg3: Path to the ShutoffSurvivesReboot bug
+  }
+  class lg0 blue
+  class lg1 orange
+  class lg2 mayBreak
+  class lg3 bugPath
+  s0: Not armed
+  s1: Armed
+  s2: Outside, cues cut off
+  s3: Outside, cueing
+  s4: Escaped, not yet back inside
+  s5: Shut off: no cues
+  [*] --> s0
+  s0 --> s1: fix inside or fix in warning zone
+  s1 --> s0: new fence or power cycle
+  s1 --> s2: fix outside
+  s1 --> s3: fix outside
+  s2 --> s0: new fence or power cycle or caretaker re-arms
+  s2 --> s1: fix inside
+  s3 --> s0: new fence or power cycle or caretaker re-arms
+  s3 --> s2: fix outside
+  s3 --> s4: fix in warning zone
+  s3 --> s1: fix inside
+  s4 --> s0: new fence or power cycle or caretaker re-arms
+  s4 --> s1: fix inside
+  s2 --> s5: fix inside
+  s3 --> s5: fix inside
+  s4 --> s5: fix inside
+  s5 --> s0: caretaker re-arms or power cycle
+  classDef mayBreak fill:#fff3e6,stroke:#e8730c,stroke-width:2.5px,color:#b85a06
+  class s0 blue
+  class s0 mayBreak
+  class s0 bugPath
+  class s1 blue
+  class s1 bugPath
+  class s2 blue
+  class s2 bugPath
+  class s3 blue
+  class s4 blue
+  class s5 orange
+  class s5 bugPath
